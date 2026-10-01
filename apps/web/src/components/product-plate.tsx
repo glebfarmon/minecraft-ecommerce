@@ -1,17 +1,17 @@
-import { ProductIcon } from '@/components/product-icon';
-import type { Product } from '@/lib/catalog';
-import { useTranslations } from 'next-intl';
+import {ProductIcon} from '@/components/product-icon'
+import type {Product} from '@/lib/catalog'
+import {useTranslations} from 'next-intl'
 
 /** Typographic stand-in for a product render until real artwork exists. */
 export function ProductPlate({
   product,
-  size = 'card',
+  size = 'card'
 }: {
-  product: Product;
-  size?: 'card' | 'large';
+  product: Product
+  size?: 'card' | 'large'
 }) {
-  const t = useTranslations('catalog');
-  const large = size === 'large';
+  const t = useTranslations('catalog')
+  const large = size === 'large'
   return (
     <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[var(--radius-inner)] bg-plate text-ink">
       <ProductIcon
@@ -27,11 +27,10 @@ export function ProductPlate({
       <span
         className={`px-5 text-center font-display leading-none font-bold tracking-[-0.01em] uppercase transition-transform duration-300 ease-[var(--ease-out-expo)] group-hover:scale-[1.04] ${
           large ? 'text-[clamp(3rem,8vw,5.5rem)]' : 'text-[clamp(1.75rem,2.6vw,2.75rem)]'
-        }`}
-      >
+        }`}>
         {product.mark}
       </span>
       <span aria-hidden className="absolute inset-x-6 bottom-5 h-1.5 rounded-full bg-accent" />
     </div>
-  );
+  )
 }

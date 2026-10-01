@@ -1,3 +1,3 @@
-import { next } from '@shop/config/eslint/next';
+import {next} from '@shop/config/eslint/next'
 
-export default next;
+export default next

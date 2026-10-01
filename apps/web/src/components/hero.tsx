@@ -1,18 +1,18 @@
-import { CopyIp } from '@/components/copy-ip';
-import { GridGuides } from '@/components/grid-guides';
-import { OnlineDot } from '@/components/online-dot';
-import { SERVER_IP, networkOnline } from '@/lib/catalog';
-import { ArrowDown, Plus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+import {CopyIp} from '@/components/copy-ip'
+import {GridGuides} from '@/components/grid-guides'
+import {OnlineDot} from '@/components/online-dot'
+import {SERVER_IP, networkOnline} from '@/lib/catalog'
+import {ArrowDown, Plus} from 'lucide-react'
+import {useTranslations} from 'next-intl'
+import Image from 'next/image'
 
-import steve from '../../public/hero-steve.webp';
+import steve from '../../public/hero-steve.webp'
 
 const word =
-  'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase';
+  'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase'
 
 export function Hero() {
-  const t = useTranslations('hero');
+  const t = useTranslations('hero')
 
   return (
     <section id="top" className="relative isolate overflow-hidden border-b border-line">
@@ -22,15 +22,13 @@ export function Hero() {
           <span className="sr-only">{t('title')}</span>
           <span
             aria-hidden
-            className="relative z-20 lg:absolute lg:top-[19%] lg:left-[var(--gutter)]"
-          >
+            className="relative z-20 lg:absolute lg:top-[19%] lg:left-[var(--gutter)]">
             <span className={word}>{t('left1')}</span>
             <span className={word}>{t('left2')}</span>
           </span>
           <span
             aria-hidden
-            className="relative z-20 mt-2 justify-self-end text-right lg:absolute lg:top-[27%] lg:right-[var(--gutter)] lg:mt-0"
-          >
+            className="relative z-20 mt-2 justify-self-end text-right lg:absolute lg:top-[27%] lg:right-[var(--gutter)] lg:mt-0">
             <span className={word}>{t('right1')}</span>
             <span className={word}>{t('right2')}</span>
           </span>
@@ -67,8 +65,7 @@ export function Hero() {
 
         <span
           aria-hidden
-          className="hidden size-14 place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid"
-        >
+          className="hidden size-14 place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid">
           <Plus className="size-6" strokeWidth={2.5} />
         </span>
 
@@ -76,8 +73,7 @@ export function Hero() {
           <div
             className="flex items-center gap-3"
             role="status"
-            aria-label={t('onlineLabel', { count: networkOnline })}
-          >
+            aria-label={t('onlineLabel', {count: networkOnline})}>
             <span className="tabular text-[clamp(3rem,5vw,4.25rem)] leading-none font-bold tracking-[-0.04em]">
               {networkOnline}
             </span>
@@ -92,8 +88,7 @@ export function Hero() {
             <CopyIp ip={SERVER_IP} />
             <a
               href="#shop"
-              className="flex h-12 items-center gap-2 rounded-full bg-accent pr-5 pl-6 font-semibold text-on-accent shadow-[0_8px_24px_var(--color-accent-soft)] transition-[filter] hover:brightness-110"
-            >
+              className="flex h-12 items-center gap-2 rounded-full bg-accent pr-5 pl-6 font-semibold text-on-accent shadow-[0_8px_24px_var(--color-accent-soft)] transition-[filter] hover:brightness-110">
               {t('browse')}
               <ArrowDown className="size-4" />
             </a>
@@ -101,5 +96,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-  );
+  )
 }

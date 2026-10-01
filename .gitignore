@@ -18,3 +18,4 @@ next-env.d.ts
 references/
 .impeccable/build/
 .impeccable/review/
+graphify-out/

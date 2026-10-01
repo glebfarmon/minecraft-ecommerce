@@ -1,38 +1,38 @@
-'use client';
+'use client'
 
-import { demoPrizes } from '@/lib/catalog';
-import type { Roll } from '@/lib/fairness';
-import { roll, sha256Hex } from '@/lib/fairness';
-import { RefreshCw } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useEffect, useId, useState } from 'react';
+import {demoPrizes} from '@/lib/catalog'
+import type {Roll} from '@/lib/fairness'
+import {roll, sha256Hex} from '@/lib/fairness'
+import {RefreshCw} from 'lucide-react'
+import {useTranslations} from 'next-intl'
+import {useEffect, useId, useState} from 'react'
 
-const SERVER_SEED = 'demo-7f3c9a1e5b2d4086';
+const SERVER_SEED = 'demo-7f3c9a1e5b2d4086'
 
 export function FairCases() {
-  const t = useTranslations('fair');
-  const clientId = useId();
-  const nonceId = useId();
-  const [clientSeed, setClientSeed] = useState('my-lucky-seed');
-  const [nonce, setNonce] = useState(1);
-  const [hash, setHash] = useState('');
-  const [result, setResult] = useState<Roll | null>(null);
+  const t = useTranslations('fair')
+  const clientId = useId()
+  const nonceId = useId()
+  const [clientSeed, setClientSeed] = useState('my-lucky-seed')
+  const [nonce, setNonce] = useState(1)
+  const [hash, setHash] = useState('')
+  const [result, setResult] = useState<Roll | null>(null)
 
-  const total = demoPrizes.reduce((sum, p) => sum + p.weight, 0);
-
-  useEffect(() => {
-    void sha256Hex(SERVER_SEED).then(setHash);
-  }, []);
+  const total = demoPrizes.reduce((sum, p) => sum + p.weight, 0)
 
   useEffect(() => {
-    let current = true;
-    void roll(SERVER_SEED, clientSeed, nonce, demoPrizes).then((r) => {
-      if (current) setResult(r);
-    });
+    void sha256Hex(SERVER_SEED).then(setHash)
+  }, [])
+
+  useEffect(() => {
+    let current = true
+    void roll(SERVER_SEED, clientSeed, nonce, demoPrizes).then(r => {
+      if (current) setResult(r)
+    })
     return () => {
-      current = false;
-    };
-  }, [clientSeed, nonce]);
+      current = false
+    }
+  }, [clientSeed, nonce])
 
   return (
     <section id="fair" aria-labelledby="fair-title" className="scroll-mt-24 border-b border-line">
@@ -40,8 +40,7 @@ export function FairCases() {
         <div className="lg:col-span-5">
           <h2
             id="fair-title"
-            className="max-w-[14ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]"
-          >
+            className="max-w-[14ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]">
             {t('title')}
           </h2>
           <p className="mt-6 max-w-[52ch] leading-relaxed text-fg/80">{t('lead')}</p>
@@ -51,8 +50,8 @@ export function FairCases() {
               {`//${t('odds')} · Mythic case`}
             </caption>
             <tbody className="divide-y divide-line">
-              {demoPrizes.map((prize) => {
-                const won = result?.prize.id === prize.id;
+              {demoPrizes.map(prize => {
+                const won = result?.prize.id === prize.id
                 return (
                   <tr key={prize.id} className={won ? 'text-fg' : 'text-fg/70'}>
                     <td className="py-3">
@@ -69,7 +68,7 @@ export function FairCases() {
                       {((prize.weight / total) * 100).toFixed(1)}%
                     </td>
                   </tr>
-                );
+                )
               })}
             </tbody>
           </table>
@@ -89,8 +88,8 @@ export function FairCases() {
                 <input
                   id={clientId}
                   value={clientSeed}
-                  onChange={(e) => {
-                    setClientSeed(e.target.value);
+                  onChange={e => {
+                    setClientSeed(e.target.value)
                   }}
                   spellCheck={false}
                   className="mt-2 h-12 w-full rounded-xl border border-border bg-bg px-4 font-mono text-sm outline-none focus-visible:border-accent"
@@ -103,8 +102,8 @@ export function FairCases() {
                   type="number"
                   min={0}
                   value={nonce}
-                  onChange={(e) => {
-                    setNonce(Math.max(0, Number(e.target.value) || 0));
+                  onChange={e => {
+                    setNonce(Math.max(0, Number(e.target.value) || 0))
                   }}
                   className="tabular mt-2 h-12 w-full rounded-xl border border-border bg-bg px-4 font-mono text-sm outline-none focus-visible:border-accent sm:w-28"
                 />
@@ -143,10 +142,9 @@ export function FairCases() {
               <button
                 type="button"
                 onClick={() => {
-                  setNonce((n) => n + 1);
+                  setNonce(n => n + 1)
                 }}
-                className="flex h-12 items-center gap-2 rounded-full bg-accent px-5 font-semibold text-on-accent transition-[filter] hover:brightness-110"
-              >
+                className="flex h-12 items-center gap-2 rounded-full bg-accent px-5 font-semibold text-on-accent transition-[filter] hover:brightness-110">
                 <RefreshCw className="size-4" />
                 {t('roll')} · {t('nonce').toLowerCase()} {nonce + 1}
               </button>
@@ -159,22 +157,22 @@ export function FairCases() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-function FieldLabel({ children }: { children: string }) {
+function FieldLabel({children}: {children: string}) {
   return (
     <span className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
       {children}
     </span>
-  );
+  )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({label, children}: {label: string; children: React.ReactNode}) {
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
       <div className="mt-2">{children}</div>
     </div>
-  );
+  )
 }

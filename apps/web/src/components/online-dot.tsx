@@ -1,4 +1,4 @@
-export function OnlineDot({ online }: { online: boolean }) {
+export function OnlineDot({online}: {online: boolean}) {
   return (
     <span aria-hidden className="relative inline-flex size-2 shrink-0">
       {online && (
@@ -8,5 +8,5 @@ export function OnlineDot({ online }: { online: boolean }) {
         className={`relative inline-flex size-2 rounded-full ${online ? 'bg-online' : 'bg-muted'}`}
       />
     </span>
-  );
+  )
 }

@@ -1,28 +1,28 @@
-'use client';
+'use client'
 
-import { useAddToCart } from '@/components/add-to-cart';
-import { ProductPlate } from '@/components/product-plate';
-import { useShop } from '@/components/shop-provider';
-import type { Product, Server } from '@/lib/catalog';
-import { formatPrice } from '@/lib/catalog';
-import { Check, ShoppingBag } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import {useAddToCart} from '@/components/add-to-cart'
+import {ProductPlate} from '@/components/product-plate'
+import {useShop} from '@/components/shop-provider'
+import type {Product, Server} from '@/lib/catalog'
+import {formatPrice} from '@/lib/catalog'
+import {Check, ShoppingBag} from 'lucide-react'
+import {useLocale, useTranslations} from 'next-intl'
 
 export function ProductDetail({
   product,
   server,
-  titleId,
+  titleId
 }: {
-  product: Product;
-  server: Server;
-  titleId: string;
+  product: Product
+  server: Server
+  titleId: string
 }) {
-  const t = useTranslations('product');
-  const tc = useTranslations('catalog');
-  const locale = useLocale();
-  const { currency, lines } = useShop();
-  const { added, addToCart } = useAddToCart(product);
-  const inCart = lines.some((l) => l.product === product);
+  const t = useTranslations('product')
+  const tc = useTranslations('catalog')
+  const locale = useLocale()
+  const {currency, lines} = useShop()
+  const {added, addToCart} = useAddToCart(product)
+  const inCart = lines.some(l => l.product === product)
 
   return (
     <div className="grid gap-6 md:grid-cols-2 md:gap-8">
@@ -30,8 +30,7 @@ export function ProductDetail({
       <div className="flex flex-col">
         <h2
           id={titleId}
-          className="text-[clamp(2.25rem,4vw,3.25rem)] leading-[1] font-bold tracking-[-0.03em]"
-        >
+          className="text-[clamp(2.25rem,4vw,3.25rem)] leading-[1] font-bold tracking-[-0.03em]">
           {product.name}
         </h2>
         <p className="mt-4 leading-relaxed text-fg/80">
@@ -50,7 +49,7 @@ export function ProductDetail({
           <div>
             <dt className="text-muted">{t('duration')}</dt>
             <dd className="mt-1 font-medium">
-              {product.durationDays ? tc('days', { count: product.durationDays }) : tc('forever')}
+              {product.durationDays ? tc('days', {count: product.durationDays}) : tc('forever')}
             </dd>
           </div>
           <div>
@@ -70,15 +69,14 @@ export function ProductDetail({
         <button
           type="button"
           onClick={addToCart}
-          className="mt-auto flex h-14 items-center justify-center gap-2 rounded-full bg-accent px-6 font-semibold text-on-accent transition-[filter] hover:brightness-110 max-md:mt-6"
-        >
+          className="mt-auto flex h-14 items-center justify-center gap-2 rounded-full bg-accent px-6 font-semibold text-on-accent transition-[filter] hover:brightness-110 max-md:mt-6">
           {added ? <Check className="size-5" /> : <ShoppingBag className="size-5" />}
           {inCart ? t('inCart') : t('addToCart')}
         </button>
         <span aria-live="polite" className="sr-only">
-          {added ? tc('added', { name: product.name }) : ''}
+          {added ? tc('added', {name: product.name}) : ''}
         </span>
       </div>
     </div>
-  );
+  )
 }

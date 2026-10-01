@@ -1,12 +1,12 @@
-import { Catalog } from '@/components/catalog';
-import { FairCases } from '@/components/fair-cases';
-import { Faq } from '@/components/faq';
-import { Footer } from '@/components/footer';
-import { Hero } from '@/components/hero';
-import { HowItWorks } from '@/components/how-it-works';
-import { LiveFeed } from '@/components/live-feed';
+import {Catalog} from '@/components/catalog'
+import {FairCases} from '@/components/fair-cases'
+import {Faq} from '@/components/faq'
+import {Footer} from '@/components/footer'
+import {Hero} from '@/components/hero'
+import {HowItWorks} from '@/components/how-it-works'
+import {LiveFeed} from '@/components/live-feed'
 
-export function HomeView({ server }: { server: string }) {
+export function HomeView({server}: {server: string}) {
   return (
     <>
       <main>
@@ -19,5 +19,5 @@ export function HomeView({ server }: { server: string }) {
       </main>
       <Footer />
     </>
-  );
+  )
 }

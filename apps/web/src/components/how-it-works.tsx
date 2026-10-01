@@ -1,20 +1,19 @@
-import { useTranslations } from 'next-intl';
+import {useTranslations} from 'next-intl'
 
 export function HowItWorks() {
-  const t = useTranslations('how');
+  const t = useTranslations('how')
   const steps = [
-    { title: t('step1Title'), body: t('step1') },
-    { title: t('step2Title'), body: t('step2') },
-    { title: t('step3Title'), body: t('step3') },
-  ];
+    {title: t('step1Title'), body: t('step1')},
+    {title: t('step2Title'), body: t('step2')},
+    {title: t('step3Title'), body: t('step3')}
+  ]
 
   return (
     <section aria-labelledby="how-title" className="border-b border-line">
       <div className="mx-auto max-w-[1440px] px-[var(--gutter)] py-24 lg:py-32">
         <h2
           id="how-title"
-          className="max-w-[18ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]"
-        >
+          className="max-w-[18ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]">
           {t('title')}
         </h2>
         <ol className="mt-14 grid gap-px overflow-hidden rounded-[var(--radius-card)] bg-line md:grid-cols-3">
@@ -34,5 +33,5 @@ export function HowItWorks() {
         </ol>
       </div>
     </section>
-  );
+  )
 }

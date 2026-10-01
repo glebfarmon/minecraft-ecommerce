@@ -1,9 +1,9 @@
-import { OnlineDot } from '@/components/online-dot';
-import { useTranslations } from 'next-intl';
+import {OnlineDot} from '@/components/online-dot'
+import {useTranslations} from 'next-intl'
 
 /** Purchase feed (SSE arrives with the API). The demo has no purchases, so it shows the honest empty state. */
 export function LiveFeed() {
-  const t = useTranslations('feed');
+  const t = useTranslations('feed')
   return (
     <section aria-labelledby="feed-title" className="border-b border-line">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-[var(--gutter)] py-10 sm:flex-row sm:items-center sm:gap-8">
@@ -17,5 +17,5 @@ export function LiveFeed() {
         <p className="text-sm text-muted">{t('empty')}</p>
       </div>
     </section>
-  );
+  )
 }

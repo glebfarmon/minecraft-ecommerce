@@ -18,10 +18,10 @@ http:
   services:
     api:
       loadBalancer:
-        servers: [{ url: 'http://api:4000' }]
+        servers: [{url: 'http://api:4000'}]
     admin:
       loadBalancer:
-        servers: [{ url: 'http://admin:3001' }]
+        servers: [{url: 'http://admin:3001'}]
     web:
       loadBalancer:
-        servers: [{ url: 'http://web:3000' }]
+        servers: [{url: 'http://web:3000'}]
