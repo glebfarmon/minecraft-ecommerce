@@ -21,7 +21,7 @@ export function NavLinks({
       <LayoutGroup id="main-nav">
         {/* Links touch (padding, no gap), so the cursor never falls between them and the pill slides instead of blinking. */}
         <ul
-          onMouseLeave={() => {
+          onPointerLeave={() => {
             setHovered(null)
           }}
           className="mx-auto hidden items-center lg:flex">
@@ -29,8 +29,9 @@ export function NavLinks({
             <li key={link.href}>
               <Link
                 href={link.href}
-                onMouseEnter={() => {
-                  setHovered(link.href)
+                // Touch taps emulate hover with no leave afterwards, so only a real mouse shows the pill.
+                onPointerEnter={event => {
+                  if (event.pointerType === 'mouse') setHovered(link.href)
                 }}
                 onClick={event => {
                   onLinkClick(event, link.href)
