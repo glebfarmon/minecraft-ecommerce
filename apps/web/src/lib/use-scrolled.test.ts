@@ -44,11 +44,24 @@ describe('useScrolled', () => {
     expect(result.current).toBe(false)
   })
 
-  it('removes the scroll listener on unmount', () => {
+  it('stays on while jittering just below the threshold', () => {
+    const {result} = renderHook(() => useScrolled())
+    scrollTo(300)
+    scrollTo(5)
+    expect(result.current).toBe(true)
+    scrollTo(2)
+    expect(result.current).toBe(false)
+  })
+
+  it('removes the same scroll listener on unmount', () => {
+    const add = jest.spyOn(window, 'addEventListener')
     const remove = jest.spyOn(window, 'removeEventListener')
     const {unmount} = renderHook(() => useScrolled())
+    const handler = add.mock.calls.find(([type]) => type === 'scroll')?.[1]
     unmount()
-    expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function))
+    expect(handler).toBeDefined()
+    expect(remove).toHaveBeenCalledWith('scroll', handler)
+    add.mockRestore()
     remove.mockRestore()
   })
 })

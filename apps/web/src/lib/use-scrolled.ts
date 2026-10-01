@@ -1,16 +1,19 @@
 'use client'
 
-import {useEffect, useState} from 'react'
+import {useLayoutEffect, useState} from 'react'
 
-const THRESHOLD = 8
+// Two thresholds so a trackpad resting near one of them does not toggle the state back and forth.
+const ON_ABOVE = 8
+const OFF_AT_OR_BELOW = 2
 
 /** True once the window is scrolled more than a few pixels from the top. */
 export function useScrolled() {
   const [scrolled, setScrolled] = useState(false)
 
-  useEffect(() => {
+  // Layout effect: on a reload mid-page the first paint after hydration already has the right state.
+  useLayoutEffect(() => {
     const update = () => {
-      setScrolled(window.scrollY > THRESHOLD)
+      setScrolled(prev => window.scrollY > (prev ? OFF_AT_OR_BELOW : ON_ABOVE))
     }
     update()
     window.addEventListener('scroll', update, {passive: true})

@@ -24,7 +24,7 @@ The example toggles classes on one bar element; nothing else moves.
 | height, top margin, radius | `h-14`, `mt-2`, `rounded-xl`                                            | unchanged                                     |
 | animation                  | `transition-all duration-300 ease-in-out` on the bar                    |                                               |
 
-Our mapping: keep our height (64px), top offset (16px), `rounded-full` and dark palette. Width goes `1440px → 1200px` (same −240px feel as the example's −128px, scaled to our wider layout). Transition lists explicit properties instead of `transition-all`, uses our `ease-out-expo` token and `--dur-base` (300ms).
+Our mapping: keep our height (64px), top offset (16px), `rounded-full` and dark palette. Width goes `1440px → 1200px` (same −240px feel as the example's −128px, scaled to our wider layout). Transition lists explicit properties instead of `transition-all`, uses `ease-in-out` (as in the reference; `ease-out-expo` was tried and jumped 74px in the first frame) and `--dur-base` (300ms).
 
 ## Global Constraints
 
@@ -214,7 +214,7 @@ const TRANSPARENT = 'rgba(0, 0, 0, 0)'
 test.use({viewport: {width: 1600, height: 900}})
 
 test('navbar turns into a floating pill on scroll', async ({page}) => {
-  await page.goto(`${WEB}/en`)
+  await page.goto(`${WEB}/`)
   const nav = page.getByRole('navigation', {name: 'Main'})
   const width = async () => (await nav.boundingBox())?.width ?? 0
   const bg = () => nav.evaluate(el => getComputedStyle(el).backgroundColor)
@@ -236,7 +236,7 @@ test('navbar turns into a floating pill on scroll', async ({page}) => {
 })
 
 test('pill is on after loading a deep anchor', async ({page}) => {
-  await page.goto(`${WEB}/en#faq`)
+  await page.goto(`${WEB}/#faq`)
   await expect(page.getByRole('navigation', {name: 'Main'})).toHaveAttribute('data-scrolled')
 })
 ```
@@ -276,7 +276,7 @@ with:
       <nav
         aria-label="Main"
         data-scrolled={scrolled || undefined}
-        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-out-expo motion-reduce:transition-[background-color,border-color,box-shadow] motion-reduce:duration-200 data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md">
+        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-in-out motion-reduce:transition-[background-color,border-color,box-shadow] motion-reduce:duration-200 data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md">
 ```
 
 Why each piece:
@@ -284,7 +284,7 @@ Why each piece:
 - `border border-transparent` at top: border always occupies 1px, so content does not jump 1px when it becomes visible (same trick as `border-neutral-200/0` in the example).
 - `data-scrolled={scrolled || undefined}`: React omits the attribute when `undefined`, so the Tailwind v4 `data-scrolled:` variant (matches attribute presence) applies only when scrolled.
 - Explicit `transition-[…]` list instead of `transition-all`: avoids animating `gap`, `padding`, etc. on breakpoint changes.
-- `ease-out-expo` is the existing `--ease-out-expo` token from `globals.css`; `duration-300` is `--dur-base`.
+- `ease-in-out` matches the reference; `duration-300` is `--dur-base`.
 - `motion-reduce:` drops `max-width`/`backdrop-filter` from the transition (size snaps) and shortens to 200ms, per design-system §8.
 
 - [x] **Step 4: Run e2e to verify it passes**
@@ -305,12 +305,12 @@ In `docs/design-system.md` §6 Navbar, replace the first bullet:
 with:
 
 ```md
-- Два состояния, высота 64px и отступ сверху 16px в обоих. **Вверху страницы** — плоская, прозрачная, без рамки и blur, ширина до 1440px. **После скролла > 8px** — «floating pill»: сужается до 1200px, фон `--color-surface` 70%, рамка `--color-border`, `backdrop-filter: blur(12px)`, мягкая тень. Переход 300ms `--ease-out-expo` по `max-width`, фону, рамке, тени, blur; при `prefers-reduced-motion` — только цвета, 200ms.
+- Два состояния, высота 64px и отступ сверху 16px в обоих. **Вверху страницы** — плоская, прозрачная, без рамки и blur, ширина до 1440px. **После скролла > 8px** — «floating pill»: сужается до 1200px, фон `--color-surface` 70%, рамка `--color-border`, `backdrop-filter: blur(12px)`, мягкая тень. Переход 300ms `ease-in-out` по `max-width`, фону, рамке, тени, blur; при `prefers-reduced-motion` — только цвета, 200ms.
 ```
 
 - [x] **Step 6: Manual check in the browser**
 
-Run `pnpm dev`, open `http://localhost:3000/en` at ≥1600px wide:
+Run `pnpm dev`, open `http://localhost:3000/` at ≥1600px wide:
 
 1. Top: bar is flat, guides of the hero visible behind it.
 2. Scroll: bar narrows and frosts in one smooth 300ms motion.
@@ -328,3 +328,12 @@ git commit -m "feat(web): shrink navbar into floating pill on scroll
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
+
+---
+
+## Post-review follow-ups (implemented)
+
+- `useScrolled` has hysteresis (on above 8px, off at ≤ 2px) and reads the scroll position in `useLayoutEffect`.
+- `Navbar` sets `data-animate` two frames after mount; `transition-*`, `duration-*` and `ease-*` all sit behind `data-animate:`, so a reload mid-page shows the pill without animating. (A bare `duration-300` animates every property, because `transition-property` defaults to `all`.)
+- e2e waits for `data-animate` (hydrated) before asserting, compares widths relatively, and checks the deep-anchor load does not animate.
+- Known limit: before hydration the bar renders in its flat state; fixing that needs an inline pre-paint script, not worth it.

@@ -22,6 +22,18 @@ export function Navbar() {
   const t = useTranslations('nav')
   const [menuOpen, setMenuOpen] = useState(false)
   const scrolled = useScrolled()
+  // Transitions turn on two frames after mount, so a reload mid-page shows the pill without animating into it.
+  const [animate, setAnimate] = useState(false)
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        setAnimate(true)
+      })
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+    }
+  }, [])
 
   const links = [
     {href: '/#top', label: t('home')},
@@ -42,7 +54,8 @@ export function Navbar() {
       <nav
         aria-label="Main"
         data-scrolled={scrolled || undefined}
-        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md motion-reduce:transition-[background-color,border-color,box-shadow] motion-reduce:duration-200">
+        data-animate={animate || undefined}
+        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 data-animate:transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] data-animate:duration-300 data-animate:ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md data-animate:motion-reduce:transition-[background-color,border-color,box-shadow] data-animate:motion-reduce:duration-200">
         <Link href="/" className="font-display text-xl font-bold tracking-wide uppercase">
           Block<span className="text-accent">haus</span>
         </Link>
