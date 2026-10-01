@@ -9,10 +9,7 @@ export function Footer() {
   const columns = [
     {
       title: t('shop'),
-      links: [
-        ...servers.map(s => ({label: s.name, href: `/${s.slug}#shop`})),
-        {label: t('fairness'), href: '#fair'}
-      ]
+      links: servers.map(s => ({label: s.name, href: `/${s.slug}#shop`}))
     },
     {
       title: t('help'),

@@ -1,5 +1,4 @@
 import {Catalog} from '@/components/catalog'
-import {FairCases} from '@/components/fair-cases'
 import {Faq} from '@/components/faq'
 import {Footer} from '@/components/footer'
 import {Hero} from '@/components/hero'
@@ -13,7 +12,6 @@ export function HomeView({server}: {server: string}) {
         <Hero />
         <Catalog initialServer={server} />
         <HowItWorks />
-        <FairCases />
         <LiveFeed />
         <Faq />
       </main>
