@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "title": "Blockhaus — ranks, coins and cases",
+    "description": "Donation shop for the Blockhaus Minecraft servers. Ranks, coins, kits and provably fair cases."
+  },
+  "nav": {
+    "home": "Home",
+    "cases": "Donate cases",
+    "rules": "Rules",
+    "contacts": "Contacts",
+    "menu": "Menu",
+    "close": "Close menu",
+    "language": "Language",
+    "currency": "Currency",
+    "settings": "Language and currency",
+    "online": "{count} online"
+  },
+  "cart": {
+    "label": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
+    "title": "Your cart",
+    "empty": "Nothing here yet. Pick a server and add something.",
+    "total": "Total",
+    "checkout": "Checkout",
+    "checkoutSoon": "Checkout arrives with payments",
+    "remove": "Remove {name}"
+  },
+  "hero": {
+    "left1": "your",
+    "left2": "- new",
+    "right1": "second",
+    "right2": "- home",
+    "title": "Your new second home",
+    "joinUs": "//JOIN US",
+    "newSeason": "//NEW SEASON",
+    "version": "/ Version 1.20+",
+    "lead": "Looking for a place to just unwind after a long day? Welcome. Build incredible bases, survive, and make new friends on our cozy server.",
+    "browse": "Browse shop",
+    "playersOnline": "players online",
+    "offline": "Offline",
+    "onlineLabel": "Server online, {count} players"
+  },
+  "ip": {
+    "copy": "Copy server address {ip}",
+    "copied": "IP copied"
+  },
+  "catalog": {
+    "title": "Shop",
+    "servers": "Servers",
+    "prev": "Previous server",
+    "next": "Next server",
+    "categories": "Categories",
+    "all": "All",
+    "ranks": "Ranks",
+    "cases": "Cases",
+    "currency": "Currency",
+    "kits": "Kits",
+    "more": "Show more categories",
+    "empty": "No items in this category on {server} yet.",
+    "showAll": "Show all items",
+    "add": "Add {name} to cart",
+    "added": "{name} added to cart",
+    "days": "{count} days",
+    "forever": "Forever",
+    "adult": "18+",
+    "online": "{count} online",
+    "demo": "Demo catalog — prices and items are placeholders.",
+    "descriptions": {
+      "survival": "Classic survival with land claims, a player economy and seasonal events. No pay-to-win: ranks are comfort and cosmetics.",
+      "anarchy": "No rules, no claims, no resets. Everything you build can be raided, and everything they build can be yours.",
+      "minigames": "Bed Wars, Sky Wars and parkour in one lobby. Short rounds, ranked seasons, new maps every month."
+    }
+  },
+  "product": {
+    "close": "Close",
+    "back": "Back to shop",
+    "server": "Server",
+    "category": "Category",
+    "duration": "Duration",
+    "price": "Price",
+    "addToCart": "Add to cart",
+    "inCart": "In cart · add another",
+    "adultNote": "Cases are for players 18+. You confirm your age before the first opening.",
+    "fairNote": "Odds are published and every opening can be verified."
+  },
+  "how": {
+    "title": "From the shop to your game in three steps",
+    "step1Title": "Pick",
+    "step1": "Choose a server and add items. One cart can hold items for several servers.",
+    "step2Title": "Pay",
+    "step2": "Enter your nickname and email, then pay by card, BLIK or Przelewy24.",
+    "step3Title": "Play",
+    "step3": "Items arrive in game within seconds. Track delivery on the order page."
+  },
+  "fair": {
+    "title": "Case odds you can check yourself",
+    "lead": "Before you open a case we publish a hash of the server seed. You choose the client seed. The result is computed from both, so neither side can change it afterwards. Try it with the demo seeds below — your browser does the maths.",
+    "serverSeed": "Server seed (revealed after opening)",
+    "serverHash": "Server seed hash (published before)",
+    "clientSeed": "Client seed",
+    "nonce": "Nonce",
+    "roll": "Roll",
+    "hmac": "HMAC-SHA256",
+    "value": "First 52 bits → roll",
+    "result": "Result",
+    "odds": "Odds",
+    "verifyLink": "How the verifier works",
+    "demo": "Demo seeds. Real openings use a fresh server seed per order."
+  },
+  "feed": {
+    "title": "Recent purchases",
+    "empty": "No purchases yet. The first one will show up here live.",
+    "live": "Live"
+  },
+  "faq": {
+    "title": "Questions",
+    "q1": "My item didn't arrive. What now?",
+    "a1": "Most items arrive within seconds. If the order page still says pending after 10 minutes, write to us with your order number — failed deliveries are retried automatically and refunded if they keep failing.",
+    "q2": "Can I get a refund?",
+    "a2": "Items are delivered immediately, so refunds are only possible when delivery fails or after review by an admin. Orders with an opened case can't be refunded.",
+    "q3": "Do I need a premium Minecraft account?",
+    "a3": "No. Our servers accept offline accounts, so your nickname is your identity. Double-check it before paying.",
+    "q4": "Is this a real shop?",
+    "a4": "This is a demo. Payments run in Stripe test mode and no real money is charged."
+  },
+  "footer": {
+    "shop": "//SHOP",
+    "help": "//HELP",
+    "legal": "//LEGAL",
+    "community": "//COMMUNITY",
+    "allServers": "All servers",
+    "cases": "Cases",
+    "fairness": "Fairness verifier",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "orderStatus": "Order status",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "refunds": "Refunds",
+    "cookies": "Cookies",
+    "rules": "Server rules",
+    "discord": "Discord",
+    "demo": "Demo shop · Stripe test mode · not affiliated with Mojang or Microsoft",
+    "copyright": "© {year} Blockhaus"
+  },
+  "skip": "Skip to shop"
+}

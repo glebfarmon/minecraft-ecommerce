@@ -1,9 +1,96 @@
 @import 'tailwindcss';
-@import '@shop/ui/theme.css';
 
-@source '../../../../packages/ui/src';
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ff6b1a;
+}
+
+@theme {
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-oswald), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  --color-bg: #0e0e10;
+  --color-surface: #17171a;
+  --color-card: #232326;
+  --color-plate: #ececec;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-border: rgb(255 255 255 / 0.12);
+  --color-fg: #f2f2f2;
+  --color-muted: #8e8e93;
+  --color-ink: #0e0e10;
+  --color-online: #3ddc84;
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+
+  --radius-card: 28px;
+  --radius-inner: 20px;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --accent: #ff6b1a;
+  --on-accent: #0e0e10;
+  --gutter: clamp(16px, 4.5vw, 64px);
+  color-scheme: dark;
+}
+
+:root,
+[data-server] {
+  transition: --accent 700ms var(--ease-out-expo);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+}
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 9999px;
+}
+
+input,
+textarea {
+  caret-color: var(--accent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-server] {
+    transition: none;
+  }
 }
