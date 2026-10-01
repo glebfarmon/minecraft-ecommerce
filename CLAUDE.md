@@ -14,6 +14,7 @@ Rules for AI agents working in this repository.
 - NestJS global prefix is `/api`. Ports: web 3000, admin 3001, api 4000.
 - Shared code goes in `packages/*` and is imported as `@shop/<name>`.
 - Money is `amountMinor: Int` + `currency`. Never floats.
+- Do not bump ESLint (9) or TypeScript (6) majors; see `docs/adr/0002-monorepo-tooling.md`.
 
 ## Workflow
 

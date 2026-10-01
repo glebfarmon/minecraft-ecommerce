@@ -73,3 +73,17 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<domain>/
 curl -s -o /dev/null -w '%{http_code}\n' https://admin.<domain>/
 curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 ```
+
+## 8. GitHub repository settings
+
+- Security → enable **CodeQL default setup**.
+- Security → enable **secret scanning** and **push protection**.
+- Settings → Rules → branch rule on `main` requiring status checks `quality`, `commitlint`, `e2e`, `gitleaks`.
+
+## 9. First push
+
+`quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
+
+## 10. Rollback
+
+In Dokploy set the app image to `ghcr.io/<owner>/<repo>/<app>:sha-<previous sha>` and redeploy. Set it back to `:latest` after the fix lands. `<owner>/<repo>` must be lowercase in GHCR names.

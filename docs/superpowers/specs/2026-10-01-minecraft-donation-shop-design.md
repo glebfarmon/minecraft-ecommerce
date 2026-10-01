@@ -89,7 +89,7 @@ Player/Admin ──► Cloudflare edge (DNS proxy, DDoS, WAF, Turnstile, TLS)
 ```
 
 - Same-origin API: Traefik routes `/api/*` by path before Next.js. No CORS, host-only cookies. Next.js contains **no route handlers / business logic**.
-- SSR in Next.js calls NestJS over the internal Docker network (`http://api:3000`), forwarding the user's cookies.
+- SSR in Next.js calls NestJS over the internal Docker network (`http://api:4000`), forwarding the user's cookies.
 - Local dev runs the same Traefik rules in `docker compose`.
 
 ### 3.2 Monorepo layout
