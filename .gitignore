@@ -1,0 +1,5 @@
+.superpowers/
+.impeccable/config.local.json
+.DS_Store
+.claude/settings.local.json
+.claude/skills/impeccable/scripts/bin/
