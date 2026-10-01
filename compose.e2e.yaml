@@ -1,0 +1,20 @@
+services:
+  traefik:
+    volumes: !override
+      - ./infra/traefik/e2e.yml:/etc/traefik/dynamic.yml:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args: { APP_VERSION: e2e }
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile

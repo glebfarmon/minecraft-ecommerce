@@ -1,0 +1,11 @@
+{
+  "extends": "@shop/config/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["tests", "playwright.config.ts"]
+}
