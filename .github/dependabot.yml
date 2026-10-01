@@ -3,6 +3,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule: { interval: weekly }
+    commit-message: { prefix: 'build(deps)' }
     groups:
       minor-and-patch:
         update-types: [minor, patch]
@@ -16,6 +17,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    commit-message: { prefix: ci }
   - package-ecosystem: docker
     directories: [/apps/api, /apps/web, /apps/admin]
     schedule: { interval: weekly }
+    commit-message: { prefix: build }
