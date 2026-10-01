@@ -1,6 +1,6 @@
 'use client'
 
-import {NavLinks} from '@/components/nav-links'
+import {NavLinks} from '@/app/[locale]/_components/nav-links'
 import {OnlineDot} from '@/components/online-dot'
 import {useShop} from '@/components/shop-provider'
 import {useDismiss} from '@/hooks/use-dismiss'

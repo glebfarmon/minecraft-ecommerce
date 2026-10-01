@@ -1,4 +1,4 @@
-import {Footer} from '@/components/footer'
+import {Footer} from '@/app/[locale]/_components/footer'
 import {ProductDetail} from '@/components/product-detail'
 import {Link} from '@/i18n/navigation'
 import {findProduct, findServer, products} from '@/lib/catalog'

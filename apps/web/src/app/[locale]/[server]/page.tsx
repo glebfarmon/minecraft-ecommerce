@@ -1,4 +1,4 @@
-import {HomeView} from '@/components/home-view'
+import {HomeView} from '@/app/[locale]/_components/home-view'
 import {findServer, servers} from '@/lib/catalog'
 import {notFound} from 'next/navigation'
 

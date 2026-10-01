@@ -6,7 +6,7 @@ import {ArrowDown, Plus} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import Image from 'next/image'
 
-import steve from '../../public/hero-steve.webp'
+import steve from '../../../../public/hero-steve.webp'
 
 const word =
   'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase'

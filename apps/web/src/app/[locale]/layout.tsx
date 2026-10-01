@@ -1,4 +1,4 @@
-import {Navbar} from '@/components/navbar'
+import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/components/shop-provider'
 import {routing} from '@/i18n/routing'
 import type {Metadata} from 'next'
