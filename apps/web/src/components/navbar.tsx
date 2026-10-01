@@ -75,7 +75,7 @@ export function Navbar() {
           Block<span className="text-accent">haus</span>
         </Link>
 
-        <NavLinks links={links} onLinkClick={scrollToTopIfCurrent} />
+        <NavLinks links={links} currentPath={pathname} onLinkClick={scrollToTopIfCurrent} />
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <span className="tabular hidden items-center gap-2 px-3 text-sm text-muted sm:flex">

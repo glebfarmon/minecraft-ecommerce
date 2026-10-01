@@ -7,11 +7,17 @@ import {useState} from 'react'
 
 export type NavLinkItem = {href: string; label: string}
 
+// Home matches only itself; other sections stay current on their nested pages.
+const isCurrent = (href: string, path: string) =>
+  path === href || (href !== '/' && path.startsWith(`${href}/`))
+
 export function NavLinks({
   links,
+  currentPath,
   onLinkClick
 }: {
   links: NavLinkItem[]
+  currentPath: string
   onLinkClick: (event: MouseEvent<HTMLAnchorElement>, href: string) => void
 }) {
   const [hovered, setHovered] = useState<string | null>(null)
@@ -29,6 +35,7 @@ export function NavLinks({
             <li key={link.href}>
               <Link
                 href={link.href}
+                aria-current={isCurrent(link.href, currentPath) ? 'page' : undefined}
                 // Touch taps emulate hover with no leave afterwards, so only a real mouse shows the pill.
                 onPointerEnter={event => {
                   if (event.pointerType === 'mouse') setHovered(link.href)
@@ -36,7 +43,7 @@ export function NavLinks({
                 onClick={event => {
                   onLinkClick(event, link.href)
                 }}
-                className="relative flex h-11 items-center justify-center px-4 text-[13px] font-semibold tracking-[0.14em] text-muted uppercase transition-colors hover:text-fg">
+                className="relative flex h-11 items-center justify-center px-4 text-[13px] font-semibold tracking-[0.14em] text-muted uppercase transition-colors hover:text-fg aria-[current=page]:text-fg">
                 <AnimatePresence>
                   {hovered === link.href && (
                     <motion.span
