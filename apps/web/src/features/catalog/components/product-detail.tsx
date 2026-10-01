@@ -1,7 +1,7 @@
 'use client'
 
-import {useAddToCart} from '@/components/add-to-cart'
-import {useShop} from '@/components/shop-provider'
+import {useAddToCart} from '@/features/cart/components/add-to-cart'
+import {useShop} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import type {Product, Server} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'

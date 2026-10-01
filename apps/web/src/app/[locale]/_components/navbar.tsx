@@ -2,7 +2,7 @@
 
 import {NavLinks} from '@/app/[locale]/_components/nav-links'
 import {OnlineDot} from '@/components/online-dot'
-import {useShop} from '@/components/shop-provider'
+import {useShop} from '@/features/cart/shop-provider'
 import {useDismiss} from '@/hooks/use-dismiss'
 import {useScrolled} from '@/hooks/use-scrolled'
 import {Link, usePathname, useRouter} from '@/i18n/navigation'

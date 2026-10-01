@@ -1,5 +1,5 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
-import {ShopProvider} from '@/components/shop-provider'
+import {ShopProvider} from '@/features/cart/shop-provider'
 import {routing} from '@/i18n/routing'
 import type {Metadata} from 'next'
 import {NextIntlClientProvider, hasLocale} from 'next-intl'
