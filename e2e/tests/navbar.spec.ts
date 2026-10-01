@@ -40,3 +40,28 @@ test('pill shows at once, without animating, after loading a deep anchor', async
   await page.waitForTimeout(400)
   expect(await width()).toBe(first)
 })
+
+test('pill slides between links on hover and hides on leave', async ({page}) => {
+  await page.goto(`${WEB}/`)
+  const nav = page.getByRole('navigation', {name: 'Main'})
+  await expect(nav).toHaveAttribute('data-animate')
+  const pill = nav.locator('[data-nav-pill]')
+  const pillX = async () => (await pill.first().boundingBox())?.x ?? -1
+
+  await expect(pill).toHaveCount(0)
+
+  const links = nav.getByRole('list').getByRole('link')
+  await links.nth(1).hover()
+  await expect(pill).toHaveCount(1)
+  const firstX = await pillX()
+
+  await links.nth(2).hover()
+  // The pill ends exactly under the new link (inset-x-0), and there is still only one.
+  const target = (await links.nth(2).boundingBox())?.x ?? 0
+  await expect.poll(pillX).toBeGreaterThan(firstX)
+  await expect.poll(pillX).toBeCloseTo(target, 0)
+  await expect(pill).toHaveCount(1)
+
+  await page.mouse.move(5, 450)
+  await expect(pill).toHaveCount(0)
+})
