@@ -1,0 +1,53 @@
+name: shop
+
+services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --providers.file.watch=true
+      - --log.level=INFO
+    ports: ['80:80']
+    volumes:
+      - ./infra/traefik/dev.yml:/etc/traefik/dynamic.yml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shop
+    ports: ['127.0.0.1:5432:5432']
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shop']
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    ports: ['127.0.0.1:6379:6379']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  redisdata:

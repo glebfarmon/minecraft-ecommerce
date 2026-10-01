@@ -1,0 +1,17 @@
+{
+  "name": "@shop/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@shop/config": "workspace:*",
+    "@types/node": "^26.6.3",
+    "eslint": "^9.39.5",
+    "typescript": "^6.0.3"
+  }
+}

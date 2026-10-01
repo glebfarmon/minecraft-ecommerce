@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    commit-message: { prefix: 'build(deps)' }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    # ESLint 10 / TypeScript 7 majors are known-incompatible with the
+    # workspace toolchain; see docs/adr/0002-monorepo-tooling.md.
+    ignore:
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    commit-message: { prefix: ci }
+  - package-ecosystem: docker
+    directories: [/apps/api, /apps/web, /apps/admin]
+    schedule: { interval: weekly }
+    commit-message: { prefix: build }
+    # Keep node in step with .nvmrc (24 LTS); never auto-propose majors.
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']

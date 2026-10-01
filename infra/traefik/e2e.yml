@@ -1,0 +1,27 @@
+http:
+  routers:
+    api:
+      rule: 'Host(`api.shop.localhost`) || ((Host(`shop.localhost`) || Host(`admin.shop.localhost`)) && PathPrefix(`/api/`))'
+      service: api
+      priority: 100
+      entryPoints: [web]
+    admin:
+      rule: 'Host(`admin.shop.localhost`)'
+      service: admin
+      priority: 10
+      entryPoints: [web]
+    web:
+      rule: 'Host(`shop.localhost`)'
+      service: web
+      priority: 10
+      entryPoints: [web]
+  services:
+    api:
+      loadBalancer:
+        servers: [{ url: 'http://api:4000' }]
+    admin:
+      loadBalancer:
+        servers: [{ url: 'http://admin:3001' }]
+    web:
+      loadBalancer:
+        servers: [{ url: 'http://web:3000' }]
