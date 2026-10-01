@@ -6,7 +6,8 @@ const API = process.env.API_URL ?? 'http://api.shop.localhost'
 
 test('storefront renders styled home page', async ({page}) => {
   await page.goto(WEB)
-  await expect(page).toHaveURL(/\/en$/)
+  // Default locale is unprefixed (localePrefix: 'as-needed'), so no redirect to /en.
+  expect(new URL(page.url()).pathname).toBe('/')
   await expect(page.getByRole('heading', {level: 1, name: 'Your new second home'})).toBeAttached()
   const browse = page.getByRole('link', {name: 'Browse shop'})
   await expect(browse).toBeVisible()
