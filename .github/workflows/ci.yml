@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
@@ -50,13 +50,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @shop/e2e exec playwright install --with-deps chromium
+      - id: playwright
+        run: echo "version=$(pnpm --filter @shop/e2e exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @shop/e2e exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @shop/e2e exec playwright install-deps chromium
       - run: echo "127.0.0.1 shop.localhost admin.shop.localhost api.shop.localhost" | sudo tee -a /etc/hosts
       - run: docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait
       - run: pnpm test:e2e
