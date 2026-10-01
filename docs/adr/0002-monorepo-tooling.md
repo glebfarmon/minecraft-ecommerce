@@ -15,6 +15,10 @@ pnpm workspaces for dependency management; Turborepo for task orchestration and 
 
 - `turbo run <task>` only runs affected packages and caches results.
 - `turbo prune --docker` produces minimal Docker build contexts per app.
+- ESLint is pinned to 9 because the eslint-config-next plugins do not support 10.
+- TypeScript is pinned to ^6 because typescript-eslint rejects TS 7.
+- `.claude/` is prettier-ignored because it holds vendored skill files.
+- `@shop/config` has `next`, `react` and `react-dom` as devDependencies so `eslint-config-next` resolves from the config package.
 
 ## Alternatives rejected
 
