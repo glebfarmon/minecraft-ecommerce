@@ -1,5 +1,6 @@
 'use client'
 
+import {NavLinks} from '@/components/nav-links'
 import {OnlineDot} from '@/components/online-dot'
 import {useShop} from '@/components/shop-provider'
 import {Link, usePathname, useRouter} from '@/i18n/navigation'
@@ -74,20 +75,7 @@ export function Navbar() {
           Block<span className="text-accent">haus</span>
         </Link>
 
-        <ul className="mx-auto hidden items-center gap-8 lg:flex">
-          {links.map(link => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                onClick={event => {
-                  scrollToTopIfCurrent(event, link.href)
-                }}
-                className="text-[13px] font-semibold tracking-[0.14em] text-muted uppercase transition-colors hover:text-fg">
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <NavLinks links={links} onLinkClick={scrollToTopIfCurrent} />
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           <span className="tabular hidden items-center gap-2 px-3 text-sm text-muted sm:flex">
