@@ -5,7 +5,7 @@ WORKDIR /repo
 
 FROM base AS pruner
 COPY . .
-RUN pnpm dlx turbo@2 prune @shop/api --docker
+RUN pnpm dlx turbo@2.11.5 prune @shop/api --docker
 
 FROM base AS builder
 COPY --from=pruner /repo/out/json/ .

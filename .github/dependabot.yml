@@ -22,3 +22,7 @@ updates:
     directories: [/apps/api, /apps/web, /apps/admin]
     schedule: { interval: weekly }
     commit-message: { prefix: build }
+    # Keep node in step with .nvmrc (24 LTS); never auto-propose majors.
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
