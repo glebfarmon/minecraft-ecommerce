@@ -45,7 +45,13 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 | `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
 | `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
 
-Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`. 4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility). 5. Settings → Profile → API → generate an API key. 6. Copy each application's ID from its URL in the Dokploy UI.
+Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
+
+The Foundation apps read only `PORT`, `APP_VERSION` and `HOSTNAME`, which the images set. No database or Redis env vars and no migrations are needed yet. Later sub-projects add their env vars and migration step to this runbook.
+
+4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility).
+5. Settings → Profile → API → generate an API key.
+6. Copy each application's ID from its URL in the Dokploy UI.
 
 ## 6. GitHub secrets (repo → Settings → Secrets and variables → Actions)
 

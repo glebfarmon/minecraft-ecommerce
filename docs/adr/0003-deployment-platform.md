@@ -19,6 +19,7 @@ Free or near-free hosting for a live demo with Postgres, Redis and three apps; p
 - Builds run on GitHub runners, not on the 4 GB VPS.
 - Single environment; no staging.
 - Rollback = redeploy a previous `sha-<sha>` tag in Dokploy.
+- Deploy verification checks only the api's `/api/health` version against `GITHUB_SHA`. web and admin are deployed from the same push but expose no version yet; verifying them is deferred to the storefront sub-project.
 
 ## Alternatives rejected
 
