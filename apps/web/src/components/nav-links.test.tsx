@@ -70,6 +70,13 @@ describe('NavLinks', () => {
     expect(screen.getByRole('link', {name: 'Home'})).not.toHaveAttribute('aria-current')
   })
 
+  // Server pages (/<server>, /<server>/<product>) are the home page for that server.
+  it('keeps Home current on server pages', () => {
+    render(<NavLinks links={links} currentPath="/survival/vip" onLinkClick={jest.fn()} />)
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', {name: 'Rules'})).not.toHaveAttribute('aria-current')
+  })
+
   it('forwards clicks with the link href', () => {
     const onLinkClick = jest.fn()
     render(<NavLinks links={links} currentPath="/" onLinkClick={onLinkClick} />)
