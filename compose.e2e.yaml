@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-      args: { APP_VERSION: e2e }
+      args: {APP_VERSION: e2e}
 
   web:
     build:

@@ -1,4 +1,4 @@
-import { Button } from '@shop/ui/button';
+import {Button} from '@shop/ui/button'
 
 export default function AdminHomePage() {
   return (
@@ -6,5 +6,5 @@ export default function AdminHomePage() {
       <h1 className="text-4xl font-bold">Shop Admin</h1>
       <Button variant="outline">Sign in</Button>
     </main>
-  );
+  )
 }

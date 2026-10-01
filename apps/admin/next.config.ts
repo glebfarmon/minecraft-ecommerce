@@ -1,14 +1,14 @@
-import path from 'node:path';
+import path from 'node:path'
 
-import type { NextConfig } from 'next';
+import type {NextConfig} from 'next'
 
-const repoRoot = path.resolve(process.cwd(), '../..');
+const repoRoot = path.resolve(process.cwd(), '../..')
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: repoRoot,
-  turbopack: { root: repoRoot },
-  transpilePackages: ['@shop/ui'],
-};
+  turbopack: {root: repoRoot},
+  transpilePackages: ['@shop/ui']
+}
 
-export default nextConfig;
+export default nextConfig

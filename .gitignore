@@ -16,3 +16,6 @@ test-results/
 next-env.d.ts
 *.tsbuildinfo
 references/
+.impeccable/build/
+.impeccable/review/
+graphify-out/

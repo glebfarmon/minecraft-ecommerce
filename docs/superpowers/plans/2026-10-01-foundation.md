@@ -161,7 +161,7 @@ This writes `packageManager` into `package.json`. Then set the rest of `package.
 {
   "name": "shop",
   "private": true,
-  "engines": { "node": ">=24" },
+  "engines": {"node": ">=24"},
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -188,12 +188,12 @@ pnpm add -Dw turbo typescript prettier @trivago/prettier-plugin-sort-imports pre
 {
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"] },
-    "dev": { "cache": false, "persistent": true },
-    "lint": { "dependsOn": ["^build"] },
-    "typecheck": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["^build"], "outputs": ["coverage/**"] },
-    "test:e2e": { "cache": false }
+    "build": {"dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"]},
+    "dev": {"cache": false, "persistent": true},
+    "lint": {"dependsOn": ["^build"]},
+    "typecheck": {"dependsOn": ["^build"]},
+    "test": {"dependsOn": ["^build"], "outputs": ["coverage/**"]},
+    "test:e2e": {"cache": false}
   }
 }
 ```
@@ -214,17 +214,17 @@ export default {
   importOrderSortSpecifiers: true,
   importOrderParserPlugins: ['typescript', 'jsx', 'decorators-legacy'],
   overrides: [
-    { files: 'apps/web/**', options: { tailwindStylesheet: './apps/web/src/app/globals.css' } },
-    { files: 'apps/admin/**', options: { tailwindStylesheet: './apps/admin/src/app/globals.css' } },
-    { files: 'packages/ui/**', options: { tailwindStylesheet: './apps/web/src/app/globals.css' } },
-  ],
-};
+    {files: 'apps/web/**', options: {tailwindStylesheet: './apps/web/src/app/globals.css'}},
+    {files: 'apps/admin/**', options: {tailwindStylesheet: './apps/admin/src/app/globals.css'}},
+    {files: 'packages/ui/**', options: {tailwindStylesheet: './apps/web/src/app/globals.css'}}
+  ]
+}
 ```
 
 `commitlint.config.mjs`:
 
 ```js
-export default { extends: ['@commitlint/config-conventional'] };
+export default {extends: ['@commitlint/config-conventional']}
 ```
 
 `.lintstagedrc.mjs` (ESLint runs per package because each package has its own config; lint-staged passes absolute paths):
@@ -232,17 +232,17 @@ export default { extends: ['@commitlint/config-conventional'] };
 ```js
 export default {
   '*.{ts,tsx,js,mjs,cjs}': ['prettier --write'],
-  '{apps,packages,e2e}/**/*.{ts,tsx}': (files) => {
-    const byPkg = new Map();
+  '{apps,packages,e2e}/**/*.{ts,tsx}': files => {
+    const byPkg = new Map()
     for (const f of files) {
-      const m = f.match(/((?:apps|packages)\/[^/]+|e2e)\//);
-      if (!m) continue;
-      byPkg.set(m[1], [...(byPkg.get(m[1]) ?? []), f]);
+      const m = f.match(/((?:apps|packages)\/[^/]+|e2e)\//)
+      if (!m) continue
+      byPkg.set(m[1], [...(byPkg.get(m[1]) ?? []), f])
     }
-    return [...byPkg].map(([pkg, fs]) => `pnpm --dir ${pkg} exec eslint --fix ${fs.join(' ')}`);
+    return [...byPkg].map(([pkg, fs]) => `pnpm --dir ${pkg} exec eslint --fix ${fs.join(' ')}`)
   },
-  '*.{json,md,yml,yaml,css}': ['prettier --write'],
-};
+  '*.{json,md,yml,yaml,css}': ['prettier --write']
+}
 ```
 
 Husky:
@@ -325,7 +325,7 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
     "allowJs": false,
     "noEmit": true,
     "incremental": true,
-    "plugins": [{ "name": "next" }]
+    "plugins": [{"name": "next"}]
   }
 }
 ```
@@ -348,21 +348,21 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
 `packages/config/eslint/base.mjs`:
 
 ```js
-import js from '@eslint/js';
-import prettier from 'eslint-config-prettier/flat';
-import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
+import js from '@eslint/js'
+import prettier from 'eslint-config-prettier/flat'
+import {defineConfig} from 'eslint/config'
+import tseslint from 'typescript-eslint'
 
 export const base = defineConfig(
-  { ignores: ['dist/**', '.next/**', 'coverage/**', 'next-env.d.ts', '*.config.{js,mjs,cjs}'] },
+  {ignores: ['dist/**', '.next/**', 'coverage/**', 'next-env.d.ts', '*.config.{js,mjs,cjs}']},
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
-  { languageOptions: { parserOptions: { projectService: true } } },
+  {languageOptions: {parserOptions: {projectService: true}}},
   {
     rules: {
       // NestJS modules are empty classes carrying a decorator.
-      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
-    },
+      '@typescript-eslint/no-extraneous-class': ['error', {allowWithDecorator: true}]
+    }
   },
   {
     // Test helpers (supertest, Nest testing) return `any`; keep production code strict.
@@ -370,22 +370,22 @@ export const base = defineConfig(
     rules: {
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-    },
+      '@typescript-eslint/no-unsafe-member-access': 'off'
+    }
   },
-  prettier,
-);
+  prettier
+)
 ```
 
 `packages/config/eslint/next.mjs`:
 
 ```js
-import nextVitals from 'eslint-config-next/core-web-vitals';
-import { defineConfig } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals'
+import {defineConfig} from 'eslint/config'
 
-import { base } from './base.mjs';
+import {base} from './base.mjs'
 
-export const next = defineConfig(base, nextVitals);
+export const next = defineConfig(base, nextVitals)
 ```
 
 - [ ] **Step 5: `CLAUDE.md` and ADRs 0001–0002**
@@ -543,7 +543,7 @@ git commit -m "chore: set up monorepo tooling, shared config and agent docs"
     "rootDir": ".",
     "roots": ["<rootDir>/src", "<rootDir>/test"],
     "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
-    "transform": { "^.+\\.ts$": "ts-jest" },
+    "transform": {"^.+\\.ts$": "ts-jest"},
     "moduleFileExtensions": ["ts", "js", "json"],
     "testEnvironment": "node"
   }
@@ -564,7 +564,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
-  "compilerOptions": { "tsConfigPath": "tsconfig.build.json", "deleteOutDir": true }
+  "compilerOptions": {"tsConfigPath": "tsconfig.build.json", "deleteOutDir": true}
 }
 ```
 
@@ -573,7 +573,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 ```json
 {
   "extends": "@shop/config/tsconfig/nest.json",
-  "compilerOptions": { "outDir": "dist" },
+  "compilerOptions": {"outDir": "dist"},
   "include": ["src", "test"]
 }
 ```
@@ -583,7 +583,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 ```json
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "rootDir": "src" },
+  "compilerOptions": {"rootDir": "src"},
   "include": ["src"],
   "exclude": ["test", "**/*.spec.ts"]
 }
@@ -592,9 +592,9 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 `apps/api/eslint.config.mjs`:
 
 ```js
-import { base } from '@shop/config/eslint/base';
+import {base} from '@shop/config/eslint/base'
 
-export default base;
+export default base
 ```
 
 - [ ] **Step 2: Write the failing test**
@@ -602,43 +602,43 @@ export default base;
 `apps/api/test/health.e2e-spec.ts`:
 
 ```ts
-import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
+import {INestApplication} from '@nestjs/common'
+import {Test} from '@nestjs/testing'
+import request from 'supertest'
 
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/configure-app';
+import {AppModule} from '../src/app.module'
+import {configureApp} from '../src/configure-app'
 
 describe('health', () => {
-  let app: INestApplication;
+  let app: INestApplication
 
   beforeAll(async () => {
-    process.env.APP_VERSION = 'test-sha';
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
-  });
+    process.env.APP_VERSION = 'test-sha'
+    const moduleRef = await Test.createTestingModule({imports: [AppModule]}).compile()
+    app = moduleRef.createNestApplication()
+    configureApp(app)
+    await app.init()
+  })
 
   afterAll(async () => {
-    await app.close();
-  });
+    await app.close()
+  })
 
   it('GET /api/health returns status and deployed version', async () => {
-    const res = await request(app.getHttpServer()).get('/api/health').expect(200);
-    expect(res.body).toEqual({ status: 'ok', version: 'test-sha' });
-  });
+    const res = await request(app.getHttpServer()).get('/api/health').expect(200)
+    expect(res.body).toEqual({status: 'ok', version: 'test-sha'})
+  })
 
   it('routes without the /api prefix are not served', async () => {
-    await request(app.getHttpServer()).get('/health').expect(404);
-  });
+    await request(app.getHttpServer()).get('/health').expect(404)
+  })
 
   it('unknown api route returns JSON 404', async () => {
-    const res = await request(app.getHttpServer()).get('/api/does-not-exist').expect(404);
-    expect(res.type).toBe('application/json');
-    expect(res.body).toMatchObject({ statusCode: 404 });
-  });
-});
+    const res = await request(app.getHttpServer()).get('/api/does-not-exist').expect(404)
+    expect(res.type).toBe('application/json')
+    expect(res.body).toMatchObject({statusCode: 404})
+  })
+})
 ```
 
 - [ ] **Step 3: Run test to verify it fails**
@@ -651,29 +651,29 @@ Expected: FAIL with `Cannot find module '../src/app.module'`.
 `apps/api/src/configure-app.ts`:
 
 ```ts
-import { INestApplication } from '@nestjs/common';
+import {INestApplication} from '@nestjs/common'
 
 export function configureApp(app: INestApplication): void {
-  app.setGlobalPrefix('api');
-  app.enableShutdownHooks();
+  app.setGlobalPrefix('api')
+  app.enableShutdownHooks()
 }
 ```
 
 `apps/api/src/health/health.controller.ts`:
 
 ```ts
-import { Controller, Get } from '@nestjs/common';
+import {Controller, Get} from '@nestjs/common'
 
 export interface HealthResponse {
-  status: 'ok';
-  version: string;
+  status: 'ok'
+  version: string
 }
 
 @Controller('health')
 export class HealthController {
   @Get()
   get(): HealthResponse {
-    return { status: 'ok', version: process.env.APP_VERSION ?? 'dev' };
+    return {status: 'ok', version: process.env.APP_VERSION ?? 'dev'}
   }
 }
 ```
@@ -681,41 +681,41 @@ export class HealthController {
 `apps/api/src/health/health.module.ts`:
 
 ```ts
-import { Module } from '@nestjs/common';
+import {Module} from '@nestjs/common'
 
-import { HealthController } from './health.controller';
+import {HealthController} from './health.controller'
 
-@Module({ controllers: [HealthController] })
+@Module({controllers: [HealthController]})
 export class HealthModule {}
 ```
 
 `apps/api/src/app.module.ts`:
 
 ```ts
-import { Module } from '@nestjs/common';
+import {Module} from '@nestjs/common'
 
-import { HealthModule } from './health/health.module';
+import {HealthModule} from './health/health.module'
 
-@Module({ imports: [HealthModule] })
+@Module({imports: [HealthModule]})
 export class AppModule {}
 ```
 
 `apps/api/src/main.ts`:
 
 ```ts
-import { NestFactory } from '@nestjs/core';
-import 'reflect-metadata';
+import {NestFactory} from '@nestjs/core'
+import 'reflect-metadata'
 
-import { AppModule } from './app.module';
-import { configureApp } from './configure-app';
+import {AppModule} from './app.module'
+import {configureApp} from './configure-app'
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
-  configureApp(app);
-  await app.listen(Number(process.env.PORT ?? 4000), '0.0.0.0');
+  const app = await NestFactory.create(AppModule)
+  configureApp(app)
+  await app.listen(Number(process.env.PORT ?? 4000), '0.0.0.0')
 }
 
-void bootstrap();
+void bootstrap()
 ```
 
 - [ ] **Step 5: Run tests, lint, typecheck, format, build**
@@ -789,36 +789,36 @@ Also declare the peer: add `"peerDependencies": { "react": "^19" }` to `packages
 `packages/ui/tsconfig.json`:
 
 ```json
-{ "extends": "@shop/config/tsconfig/react-library.json", "include": ["src"] }
+{"extends": "@shop/config/tsconfig/react-library.json", "include": ["src"]}
 ```
 
 `packages/ui/eslint.config.mjs`:
 
 ```js
-import { base } from '@shop/config/eslint/base';
+import {base} from '@shop/config/eslint/base'
 
-export default base;
+export default base
 ```
 
 `packages/ui/src/lib/utils.ts`:
 
 ```ts
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import {type ClassValue, clsx} from 'clsx'
+import {twMerge} from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]): string {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 ```
 
 `packages/ui/src/button.tsx`:
 
 ```tsx
-import { Slot } from '@radix-ui/react-slot';
-import { type VariantProps, cva } from 'class-variance-authority';
-import type * as React from 'react';
+import {Slot} from '@radix-ui/react-slot'
+import {type VariantProps, cva} from 'class-variance-authority'
+import type * as React from 'react'
 
-import { cn } from './lib/utils';
+import {cn} from './lib/utils'
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
@@ -826,32 +826,32 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        outline: 'border-input bg-background hover:bg-accent border',
+        outline: 'border-input bg-background hover:bg-accent border'
       },
       size: {
         default: 'h-9 px-4 py-2',
-        lg: 'h-10 px-6',
-      },
+        lg: 'h-10 px-6'
+      }
     },
-    defaultVariants: { variant: 'default', size: 'default' },
-  },
-);
+    defaultVariants: {variant: 'default', size: 'default'}
+  }
+)
 
 type ButtonProps = React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & { asChild?: boolean };
+  VariantProps<typeof buttonVariants> & {asChild?: boolean}
 
-function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : 'button';
+function Button({className, variant, size, asChild = false, ...props}: ButtonProps) {
+  const Comp = asChild ? Slot : 'button'
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({variant, size, className}))}
       {...props}
     />
-  );
+  )
 }
 
-export { Button, buttonVariants };
+export {Button, buttonVariants}
 ```
 
 `packages/ui/src/theme.css` (temporary neutral tokens; the visual-design track replaces the values, not the names):
@@ -906,26 +906,26 @@ pnpm --filter @shop/web add -D @shop/config@workspace:* typescript @types/react 
 `apps/web/next.config.ts`:
 
 ```ts
-import path from 'node:path';
+import path from 'node:path'
 
-import type { NextConfig } from 'next';
+import type {NextConfig} from 'next'
 
-const repoRoot = path.resolve(process.cwd(), '../..');
+const repoRoot = path.resolve(process.cwd(), '../..')
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: repoRoot,
-  turbopack: { root: repoRoot },
-  transpilePackages: ['@shop/ui'],
-};
+  turbopack: {root: repoRoot},
+  transpilePackages: ['@shop/ui']
+}
 
-export default nextConfig;
+export default nextConfig
 ```
 
 `apps/web/postcss.config.mjs`:
 
 ```js
-export default { plugins: { '@tailwindcss/postcss': {} } };
+export default {plugins: {'@tailwindcss/postcss': {}}}
 ```
 
 `apps/web/tsconfig.json`:
@@ -933,7 +933,7 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 ```json
 {
   "extends": "@shop/config/tsconfig/next.json",
-  "compilerOptions": { "types": ["node", "jest", "@testing-library/jest-dom"] },
+  "compilerOptions": {"types": ["node", "jest", "@testing-library/jest-dom"]},
   "include": ["next-env.d.ts", "next.config.ts", "src", ".next/types/**/*.ts", "jest.setup.ts"],
   "exclude": ["node_modules"]
 }
@@ -942,28 +942,28 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 `apps/web/eslint.config.mjs`:
 
 ```js
-import { next } from '@shop/config/eslint/next';
+import {next} from '@shop/config/eslint/next'
 
-export default next;
+export default next
 ```
 
 `apps/web/jest.config.mjs`:
 
 ```js
-import nextJest from 'next/jest.js';
+import nextJest from 'next/jest.js'
 
-const createJestConfig = nextJest({ dir: './' });
+const createJestConfig = nextJest({dir: './'})
 
 export default createJestConfig({
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-});
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']
+})
 ```
 
 `apps/web/jest.setup.ts`:
 
 ```ts
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom'
 ```
 
 Create an empty `apps/web/public/.gitkeep` (the Docker image copies `public/`).
@@ -973,18 +973,18 @@ Create an empty `apps/web/public/.gitkeep` (the Docker image copies `public/`).
 `apps/web/src/app/page.test.tsx`:
 
 ```tsx
-import { render, screen } from '@testing-library/react';
+import {render, screen} from '@testing-library/react'
 
-import HomePage from './page';
+import HomePage from './page'
 
 describe('HomePage', () => {
   it('renders the shop heading and the shared ui button', () => {
-    render(<HomePage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Minecraft Shop' })).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: 'Browse servers' });
-    expect(button).toHaveAttribute('data-slot', 'button');
-  });
-});
+    render(<HomePage />)
+    expect(screen.getByRole('heading', {level: 1, name: 'Minecraft Shop'})).toBeInTheDocument()
+    const button = screen.getByRole('button', {name: 'Browse servers'})
+    expect(button).toHaveAttribute('data-slot', 'button')
+  })
+})
 ```
 
 - [ ] **Step 4: Run test to verify it fails**
@@ -1011,29 +1011,29 @@ body {
 `apps/web/src/app/layout.tsx`:
 
 ```tsx
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import type {Metadata} from 'next'
+import type {ReactNode} from 'react'
 
-import './globals.css';
+import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Minecraft Shop',
-  description: 'Ranks, coins and cases for Minecraft servers.',
-};
+  description: 'Ranks, coins and cases for Minecraft servers.'
+}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({children}: {children: ReactNode}) {
   return (
     <html lang="en">
       <body>{children}</body>
     </html>
-  );
+  )
 }
 ```
 
 `apps/web/src/app/page.tsx`:
 
 ```tsx
-import { Button } from '@shop/ui/button';
+import {Button} from '@shop/ui/button'
 
 export default function HomePage() {
   return (
@@ -1041,7 +1041,7 @@ export default function HomePage() {
       <h1 className="text-4xl font-bold">Minecraft Shop</h1>
       <Button>Browse servers</Button>
     </main>
-  );
+  )
 }
 ```
 
@@ -1112,26 +1112,26 @@ pnpm --filter @shop/admin add -D @shop/config@workspace:* typescript @types/reac
 `apps/admin/next.config.ts`:
 
 ```ts
-import path from 'node:path';
+import path from 'node:path'
 
-import type { NextConfig } from 'next';
+import type {NextConfig} from 'next'
 
-const repoRoot = path.resolve(process.cwd(), '../..');
+const repoRoot = path.resolve(process.cwd(), '../..')
 
 const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: repoRoot,
-  turbopack: { root: repoRoot },
-  transpilePackages: ['@shop/ui'],
-};
+  turbopack: {root: repoRoot},
+  transpilePackages: ['@shop/ui']
+}
 
-export default nextConfig;
+export default nextConfig
 ```
 
 `apps/admin/postcss.config.mjs`:
 
 ```js
-export default { plugins: { '@tailwindcss/postcss': {} } };
+export default {plugins: {'@tailwindcss/postcss': {}}}
 ```
 
 `apps/admin/tsconfig.json`:
@@ -1139,7 +1139,7 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 ```json
 {
   "extends": "@shop/config/tsconfig/next.json",
-  "compilerOptions": { "types": ["node", "jest", "@testing-library/jest-dom"] },
+  "compilerOptions": {"types": ["node", "jest", "@testing-library/jest-dom"]},
   "include": ["next-env.d.ts", "next.config.ts", "src", ".next/types/**/*.ts", "jest.setup.ts"],
   "exclude": ["node_modules"]
 }
@@ -1148,28 +1148,28 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 `apps/admin/eslint.config.mjs`:
 
 ```js
-import { next } from '@shop/config/eslint/next';
+import {next} from '@shop/config/eslint/next'
 
-export default next;
+export default next
 ```
 
 `apps/admin/jest.config.mjs`:
 
 ```js
-import nextJest from 'next/jest.js';
+import nextJest from 'next/jest.js'
 
-const createJestConfig = nextJest({ dir: './' });
+const createJestConfig = nextJest({dir: './'})
 
 export default createJestConfig({
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-});
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts']
+})
 ```
 
 `apps/admin/jest.setup.ts`:
 
 ```ts
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom'
 ```
 
 Create an empty `apps/admin/public/.gitkeep`.
@@ -1179,29 +1179,29 @@ Create an empty `apps/admin/public/.gitkeep`.
 `apps/admin/src/app/page.test.tsx`:
 
 ```tsx
-import { render, screen } from '@testing-library/react';
+import {render, screen} from '@testing-library/react'
 
-import AdminHomePage from './page';
+import AdminHomePage from './page'
 
 describe('AdminHomePage', () => {
   it('renders the admin heading and sign-in button', () => {
-    render(<AdminHomePage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Shop Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
-  });
-});
+    render(<AdminHomePage />)
+    expect(screen.getByRole('heading', {level: 1, name: 'Shop Admin'})).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'Sign in'})).toBeInTheDocument()
+  })
+})
 ```
 
 `apps/admin/src/app/layout.test.ts`:
 
 ```ts
-import { metadata } from './layout';
+import {metadata} from './layout'
 
 describe('admin layout metadata', () => {
   it('keeps the whole admin out of search engines', () => {
-    expect(metadata.robots).toEqual({ index: false, follow: false });
-  });
-});
+    expect(metadata.robots).toEqual({index: false, follow: false})
+  })
+})
 ```
 
 - [ ] **Step 3: Run tests to verify they fail**
@@ -1228,29 +1228,29 @@ body {
 `apps/admin/src/app/layout.tsx`:
 
 ```tsx
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import type {Metadata} from 'next'
+import type {ReactNode} from 'react'
 
-import './globals.css';
+import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Shop Admin',
-  robots: { index: false, follow: false },
-};
+  robots: {index: false, follow: false}
+}
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({children}: {children: ReactNode}) {
   return (
     <html lang="en">
       <body>{children}</body>
     </html>
-  );
+  )
 }
 ```
 
 `apps/admin/src/app/page.tsx`:
 
 ```tsx
-import { Button } from '@shop/ui/button';
+import {Button} from '@shop/ui/button'
 
 export default function AdminHomePage() {
   return (
@@ -1258,7 +1258,7 @@ export default function AdminHomePage() {
       <h1 className="text-4xl font-bold">Shop Admin</h1>
       <Button variant="outline">Sign in</Button>
     </main>
-  );
+  )
 }
 ```
 
@@ -1495,13 +1495,13 @@ http:
   services:
     api:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:4000' }]
+        servers: [{url: 'http://host.docker.internal:4000'}]
     admin:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:3001' }]
+        servers: [{url: 'http://host.docker.internal:3001'}]
     web:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:3000' }]
+        servers: [{url: 'http://host.docker.internal:3000'}]
 ```
 
 `infra/traefik/e2e.yml` — identical routers, services point at containers:
@@ -1527,13 +1527,13 @@ http:
   services:
     api:
       loadBalancer:
-        servers: [{ url: 'http://api:4000' }]
+        servers: [{url: 'http://api:4000'}]
     admin:
       loadBalancer:
-        servers: [{ url: 'http://admin:3001' }]
+        servers: [{url: 'http://admin:3001'}]
     web:
       loadBalancer:
-        servers: [{ url: 'http://web:3000' }]
+        servers: [{url: 'http://web:3000'}]
 ```
 
 - [ ] **Step 2: Compose files**
@@ -1581,7 +1581,7 @@ services:
         '--maxmemory',
         '256mb',
         '--maxmemory-policy',
-        'noeviction',
+        'noeviction'
       ]
     ports: ['6379:6379']
     volumes:
@@ -1608,7 +1608,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-      args: { APP_VERSION: e2e }
+      args: {APP_VERSION: e2e}
 
   web:
     build:
@@ -1665,25 +1665,25 @@ pnpm --filter @shop/e2e exec playwright install chromium
 `e2e/eslint.config.mjs`:
 
 ```js
-import { base } from '@shop/config/eslint/base';
+import {base} from '@shop/config/eslint/base'
 
-export default base;
+export default base
 ```
 
 `e2e/playwright.config.ts`:
 
 ```ts
-import { defineConfig, devices } from '@playwright/test';
+import {defineConfig, devices} from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['html', { open: 'never' }], ['github']] : 'list',
-  use: { trace: 'retain-on-failure', video: 'retain-on-failure' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-});
+  reporter: process.env.CI ? [['html', {open: 'never'}], ['github']] : 'list',
+  use: {trace: 'retain-on-failure', video: 'retain-on-failure'},
+  projects: [{name: 'chromium', use: {...devices['Desktop Chrome']}}]
+})
 ```
 
 - [ ] **Step 4: Write the smoke tests**
@@ -1691,40 +1691,40 @@ export default defineConfig({
 `e2e/tests/smoke.spec.ts`:
 
 ```ts
-import { expect, test } from '@playwright/test';
+import {expect, test} from '@playwright/test'
 
-const WEB = process.env.WEB_URL ?? 'http://shop.localhost';
-const ADMIN = process.env.ADMIN_URL ?? 'http://admin.shop.localhost';
-const API = process.env.API_URL ?? 'http://api.shop.localhost';
+const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
+const ADMIN = process.env.ADMIN_URL ?? 'http://admin.shop.localhost'
+const API = process.env.API_URL ?? 'http://api.shop.localhost'
 
-test('storefront renders styled home page', async ({ page }) => {
-  await page.goto(WEB);
-  const heading = page.getByRole('heading', { level: 1, name: 'Minecraft Shop' });
-  await expect(heading).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Browse servers' })).toBeVisible();
+test('storefront renders styled home page', async ({page}) => {
+  await page.goto(WEB)
+  const heading = page.getByRole('heading', {level: 1, name: 'Minecraft Shop'})
+  await expect(heading).toBeVisible()
+  await expect(page.getByRole('button', {name: 'Browse servers'})).toBeVisible()
   // `text-4xl` = 36px. Browser default h1 is 32px, so this fails if Tailwind CSS did not load.
-  expect(await heading.evaluate((el) => getComputedStyle(el).fontSize)).toBe('36px');
-});
+  expect(await heading.evaluate(el => getComputedStyle(el).fontSize)).toBe('36px')
+})
 
-test('admin renders and is noindex', async ({ page }) => {
-  await page.goto(ADMIN);
-  await expect(page.getByRole('heading', { level: 1, name: 'Shop Admin' })).toBeVisible();
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
-});
+test('admin renders and is noindex', async ({page}) => {
+  await page.goto(ADMIN)
+  await expect(page.getByRole('heading', {level: 1, name: 'Shop Admin'})).toBeVisible()
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
+})
 
-test('api health reachable on every host', async ({ request }) => {
+test('api health reachable on every host', async ({request}) => {
   for (const url of [`${WEB}/api/health`, `${ADMIN}/api/health`, `${API}/api/health`]) {
-    const res = await request.get(url);
-    expect(res.status(), url).toBe(200);
-    expect(await res.json(), url).toMatchObject({ status: 'ok' });
+    const res = await request.get(url)
+    expect(res.status(), url).toBe(200)
+    expect(await res.json(), url).toMatchObject({status: 'ok'})
   }
-});
+})
 
-test('unknown api route returns JSON 404 from api, not a Next page', async ({ request }) => {
-  const res = await request.get(`${WEB}/api/does-not-exist`);
-  expect(res.status()).toBe(404);
-  expect(res.headers()['content-type']).toContain('application/json');
-});
+test('unknown api route returns JSON 404 from api, not a Next page', async ({request}) => {
+  const res = await request.get(`${WEB}/api/does-not-exist`)
+  expect(res.status()).toBe(404)
+  expect(res.headers()['content-type']).toContain('application/json')
+})
 ```
 
 - [ ] **Step 5: Run against the containerised stack**
@@ -1933,16 +1933,16 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    schedule: { interval: weekly }
+    schedule: {interval: weekly}
     groups:
       minor-and-patch:
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly }
+    schedule: {interval: weekly}
   - package-ecosystem: docker
     directories: [/apps/api, /apps/web, /apps/admin]
-    schedule: { interval: weekly }
+    schedule: {interval: weekly}
 ```
 
 - [ ] **Step 3: Push and verify on GitHub**

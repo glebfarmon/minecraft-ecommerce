@@ -6,3 +6,4 @@ allowBuilds:
   sharp: true
   unrs-resolver: false
   '@parcel/watcher': false
+  '@swc/core': false

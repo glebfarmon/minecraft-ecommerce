@@ -18,10 +18,10 @@ http:
   services:
     api:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:4000' }]
+        servers: [{url: 'http://host.docker.internal:4000'}]
     admin:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:3001' }]
+        servers: [{url: 'http://host.docker.internal:3001'}]
     web:
       loadBalancer:
-        servers: [{ url: 'http://host.docker.internal:3000' }]
+        servers: [{url: 'http://host.docker.internal:3000'}]

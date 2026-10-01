@@ -1,0 +1,146 @@
+{
+  "meta": {
+    "title": "Blockhaus — rangi, monety i skrzynki",
+    "description": "Sklep serwerów Minecraft Blockhaus. Rangi, monety, zestawy i uczciwe skrzynki."
+  },
+  "nav": {
+    "home": "Strona główna",
+    "cases": "Skrzynki",
+    "rules": "Zasady",
+    "contacts": "Kontakt",
+    "menu": "Menu",
+    "close": "Zamknij menu",
+    "language": "Język",
+    "currency": "Waluta",
+    "settings": "Język i waluta",
+    "online": "{count} online"
+  },
+  "cart": {
+    "label": "Koszyk, {count, plural, =0 {pusty} one {# przedmiot} few {# przedmioty} other {# przedmiotów}}",
+    "title": "Twój koszyk",
+    "empty": "Na razie pusto. Wybierz serwer i coś dodaj.",
+    "total": "Razem",
+    "checkout": "Do kasy",
+    "checkoutSoon": "Kasa pojawi się razem z płatnościami",
+    "remove": "Usuń {name}"
+  },
+  "hero": {
+    "left1": "twój",
+    "left2": "- nowy",
+    "right1": "drugi",
+    "right2": "- dom",
+    "title": "Twój nowy drugi dom",
+    "joinUs": "//DOŁĄCZ",
+    "newSeason": "//NOWY SEZON",
+    "version": "/ Wersja 1.20+",
+    "lead": "Szukasz miejsca, gdzie po prostu odpoczniesz po ciężkim dniu? Witaj. Buduj niesamowite bazy, przetrwaj i poznawaj nowych znajomych na naszym przytulnym serwerze.",
+    "browse": "Przejdź do sklepu",
+    "playersOnline": "graczy online",
+    "offline": "Offline",
+    "onlineLabel": "Serwer online, {count} graczy"
+  },
+  "ip": {
+    "copy": "Skopiuj adres serwera {ip}",
+    "copied": "Skopiowano IP"
+  },
+  "catalog": {
+    "title": "Sklep",
+    "servers": "Serwery",
+    "prev": "Poprzedni serwer",
+    "next": "Następny serwer",
+    "categories": "Kategorie",
+    "all": "Wszystko",
+    "ranks": "Rangi",
+    "cases": "Skrzynki",
+    "currency": "Waluta",
+    "kits": "Zestawy",
+    "more": "Pokaż więcej kategorii",
+    "empty": "Na serwerze {server} nie ma jeszcze nic w tej kategorii.",
+    "showAll": "Pokaż wszystko",
+    "add": "Dodaj {name} do koszyka",
+    "added": "Dodano {name} do koszyka",
+    "days": "{count} dni",
+    "forever": "Na zawsze",
+    "adult": "18+",
+    "online": "{count} online",
+    "demo": "Katalog demo — ceny i przedmioty są przykładowe.",
+    "descriptions": {
+      "survival": "Klasyczny survival z działkami, ekonomią graczy i sezonowymi eventami. Bez pay-to-win: rangi to wygoda i kosmetyka.",
+      "anarchy": "Bez zasad, bez działek, bez resetów. Wszystko, co zbudujesz, można zrajdować, a wszystko, co zbudują inni, może być Twoje.",
+      "minigames": "Bed Wars, Sky Wars i parkour w jednym lobby. Krótkie rundy, rankingowe sezony, nowe mapy co miesiąc."
+    }
+  },
+  "product": {
+    "close": "Zamknij",
+    "back": "Wróć do sklepu",
+    "server": "Serwer",
+    "category": "Kategoria",
+    "duration": "Czas trwania",
+    "price": "Cena",
+    "addToCart": "Dodaj do koszyka",
+    "inCart": "W koszyku · dodaj kolejny",
+    "adultNote": "Skrzynki są dla graczy 18+. Wiek potwierdzasz przed pierwszym otwarciem.",
+    "fairNote": "Szanse są jawne, a każde otwarcie można sprawdzić."
+  },
+  "how": {
+    "title": "Ze sklepu do gry w trzech krokach",
+    "step1Title": "Wybierz",
+    "step1": "Wybierz serwer i dodaj przedmioty. Jeden koszyk może zawierać rzeczy z kilku serwerów.",
+    "step2Title": "Zapłać",
+    "step2": "Podaj nick i e-mail, a potem zapłać kartą, BLIK-iem albo Przelewy24.",
+    "step3Title": "Graj",
+    "step3": "Przedmioty trafiają do gry w kilka sekund. Dostawę śledzisz na stronie zamówienia."
+  },
+  "fair": {
+    "title": "Szanse w skrzynkach, które sprawdzisz sam",
+    "lead": "Zanim otworzysz skrzynkę, publikujemy hash ziarna serwera. Ziarno klienta wybierasz Ty. Wynik powstaje z obu, więc żadna strona nie może go potem zmienić. Sprawdź to na ziarnach demo poniżej — liczy Twoja przeglądarka.",
+    "serverSeed": "Ziarno serwera (ujawniane po otwarciu)",
+    "serverHash": "Hash ziarna serwera (publikowany wcześniej)",
+    "clientSeed": "Ziarno klienta",
+    "nonce": "Nonce",
+    "roll": "Losuj",
+    "hmac": "HMAC-SHA256",
+    "value": "Pierwsze 52 bity → wynik",
+    "result": "Wynik",
+    "odds": "Szanse",
+    "verifyLink": "Jak działa weryfikator",
+    "demo": "Ziarna demo. Prawdziwe otwarcia używają nowego ziarna serwera dla każdego zamówienia."
+  },
+  "feed": {
+    "title": "Ostatnie zakupy",
+    "empty": "Na razie brak zakupów. Pierwszy pojawi się tu na żywo.",
+    "live": "Na żywo"
+  },
+  "faq": {
+    "title": "Pytania",
+    "q1": "Przedmiot nie dotarł. Co teraz?",
+    "a1": "Większość przedmiotów dociera w kilka sekund. Jeśli po 10 minutach zamówienie nadal czeka, napisz do nas z numerem zamówienia — nieudane dostawy są ponawiane automatycznie, a gdy dalej się nie udają, zwracamy pieniądze.",
+    "q2": "Czy mogę dostać zwrot?",
+    "a2": "Przedmioty są dostarczane od razu, więc zwrot jest możliwy tylko przy nieudanej dostawie albo po decyzji administratora. Zamówień z otwartą skrzynką nie zwracamy.",
+    "q3": "Czy potrzebuję konta premium Minecraft?",
+    "a3": "Nie. Nasze serwery przyjmują konta offline, więc Twoim identyfikatorem jest nick. Sprawdź go przed zapłatą.",
+    "q4": "Czy to prawdziwy sklep?",
+    "a4": "To wersja demo. Płatności działają w trybie testowym Stripe i nie są pobierane prawdziwe pieniądze."
+  },
+  "footer": {
+    "shop": "//SKLEP",
+    "help": "//POMOC",
+    "legal": "//PRAWNE",
+    "community": "//SPOŁECZNOŚĆ",
+    "allServers": "Wszystkie serwery",
+    "cases": "Skrzynki",
+    "fairness": "Weryfikator uczciwości",
+    "faq": "FAQ",
+    "contact": "Kontakt",
+    "orderStatus": "Status zamówienia",
+    "terms": "Regulamin",
+    "privacy": "Prywatność",
+    "refunds": "Zwroty",
+    "cookies": "Cookies",
+    "rules": "Zasady serwera",
+    "discord": "Discord",
+    "demo": "Sklep demo · tryb testowy Stripe · niepowiązany z Mojang ani Microsoft",
+    "copyright": "© {year} Blockhaus"
+  },
+  "skip": "Przejdź do sklepu"
+}
