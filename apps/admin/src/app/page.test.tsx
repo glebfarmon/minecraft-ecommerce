@@ -1,6 +1,5 @@
+import AdminHomePage from '@/app/page'
 import {render, screen} from '@testing-library/react'
-
-import AdminHomePage from './page'
 
 describe('AdminHomePage', () => {
   it('renders the admin heading and sign-in button', () => {
