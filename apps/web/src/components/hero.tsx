@@ -24,13 +24,13 @@ export function Hero() {
             aria-hidden
             className="relative z-20 lg:absolute lg:top-[19%] lg:left-[var(--gutter)]">
             <span className={word}>{t('left1')}</span>
-            <span className={word}>{t('left2')}</span>
+            <span className={`${word} ml-[0.6em] text-accent`}>{t('left2')}</span>
           </span>
           <span
             aria-hidden
             className="relative z-20 mt-2 justify-self-end text-right lg:absolute lg:top-[27%] lg:right-[var(--gutter)] lg:mt-0">
             <span className={word}>{t('right1')}</span>
-            <span className={word}>{t('right2')}</span>
+            <span className={`${word} text-accent`}>{t('right2')}</span>
           </span>
         </h1>
 
