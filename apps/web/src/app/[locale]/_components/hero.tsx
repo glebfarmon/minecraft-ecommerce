@@ -6,7 +6,7 @@ import {ArrowDown, Plus} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import Image from 'next/image'
 
-import steve from '../../public/hero-steve.webp'
+import steve from '../../../../public/hero-steve.webp'
 
 const word =
   'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase'
@@ -24,13 +24,13 @@ export function Hero() {
             aria-hidden
             className="relative z-20 lg:absolute lg:top-[19%] lg:left-[var(--gutter)]">
             <span className={word}>{t('left1')}</span>
-            <span className={word}>{t('left2')}</span>
+            <span className={`${word} ml-[0.6em] text-accent`}>{t('left2')}</span>
           </span>
           <span
             aria-hidden
             className="relative z-20 mt-2 justify-self-end text-right lg:absolute lg:top-[27%] lg:right-[var(--gutter)] lg:mt-0">
             <span className={word}>{t('right1')}</span>
-            <span className={word}>{t('right2')}</span>
+            <span className={`${word} text-accent`}>{t('right2')}</span>
           </span>
         </h1>
 
@@ -65,7 +65,7 @@ export function Hero() {
 
         <span
           aria-hidden
-          className="hidden size-14 place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid">
+          className="hidden size-14 rotate-[30deg] place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid">
           <Plus className="size-6" strokeWidth={2.5} />
         </span>
 

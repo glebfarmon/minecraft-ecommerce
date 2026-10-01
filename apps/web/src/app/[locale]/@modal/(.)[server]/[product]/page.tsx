@@ -1,4 +1,4 @@
-import {ProductModal} from '@/components/product-modal'
+import {ProductModal} from '@/features/catalog/components/product-modal'
 import {findProduct, findServer} from '@/lib/catalog'
 import {notFound} from 'next/navigation'
 

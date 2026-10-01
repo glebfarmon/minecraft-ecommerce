@@ -1,8 +1,8 @@
 'use client'
 
-import {AddToCartIconButton} from '@/components/add-to-cart'
-import {ProductPlate} from '@/components/product-plate'
-import {useShop} from '@/components/shop-provider'
+import {AddToCartIconButton} from '@/features/cart/components/add-to-cart'
+import {useShop} from '@/features/cart/shop-provider'
+import {ProductPlate} from '@/features/catalog/components/product-plate'
 import {Link} from '@/i18n/navigation'
 import type {Product} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'

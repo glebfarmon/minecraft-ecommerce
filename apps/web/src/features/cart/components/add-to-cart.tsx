@@ -1,6 +1,6 @@
 'use client'
 
-import {useShop} from '@/components/shop-provider'
+import {useShop} from '@/features/cart/shop-provider'
 import type {Product} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useTranslations} from 'next-intl'

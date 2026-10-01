@@ -1,6 +1,6 @@
 'use client'
 
-import {ProductDetail} from '@/components/product-detail'
+import {ProductDetail} from '@/features/catalog/components/product-detail'
 import type {Product, Server} from '@/lib/catalog'
 import {X} from 'lucide-react'
 import {MotionConfig, motion} from 'motion/react'

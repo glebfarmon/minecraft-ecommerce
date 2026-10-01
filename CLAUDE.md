@@ -15,6 +15,7 @@ Rules for AI agents working in this repository.
 - Shared code goes in `packages/*` and is imported as `@shop/<name>`.
 - Money is `amountMinor: Int` + `currency`. Never floats.
 - Do not bump ESLint (9) or TypeScript (6) majors; see `docs/adr/0002-monorepo-tooling.md`.
+- Frontend layout (web, admin): `app/` + `_components`, `features/<name>/`, `components/`, `hooks/`, `lib/`; imports flow shared → features → app; no barrels; see `docs/adr/0004-frontend-structure.md`.
 
 ## Workflow
 

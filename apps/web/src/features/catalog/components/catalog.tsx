@@ -1,7 +1,7 @@
 'use client'
 
 import {OnlineDot} from '@/components/online-dot'
-import {ProductCard} from '@/components/product-card'
+import {ProductCard} from '@/features/catalog/components/product-card'
 import type {CategoryId} from '@/lib/catalog'
 import {categories, defaultServer, findServer, products, servers} from '@/lib/catalog'
 import {ChevronLeft, ChevronRight} from 'lucide-react'
