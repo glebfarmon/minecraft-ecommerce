@@ -1,5 +1,5 @@
 import {Footer} from '@/app/[locale]/_components/footer'
-import {ProductDetail} from '@/components/product-detail'
+import {ProductDetail} from '@/features/catalog/components/product-detail'
 import {Link} from '@/i18n/navigation'
 import {findProduct, findServer, products} from '@/lib/catalog'
 import {ArrowLeft} from 'lucide-react'

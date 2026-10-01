@@ -1,4 +1,4 @@
-import {ProductIcon} from '@/components/product-icon'
+import {ProductIcon} from '@/features/catalog/components/product-icon'
 import type {Product} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 
