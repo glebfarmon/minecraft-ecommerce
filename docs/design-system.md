@@ -153,7 +153,7 @@ Fluid-размеры (`clamp`), база 16px.
 
 ### Navbar (navbar-2/3 + `navbar.txt`)
 
-- Плавающая пилюля `--color-surface`, рамка `--color-border`, отступ сверху 16px, высота 64px, `backdrop-filter: blur(12px)` поверх фона.
+- Два состояния, высота 64px и отступ сверху 16px в обоих. **Вверху страницы** — плоская, прозрачная, без рамки и blur, ширина до 1440px. **После скролла > 8px** — «floating pill»: сужается до 1200px, фон `--color-surface` 70%, рамка `--color-border`, `backdrop-filter: blur(12px)`, мягкая тень. Переход 300ms `ease-in-out` (как в референсе; `ease-out-expo` даёт рывок в первом кадре) по `max-width`, фону, рамке, тени, blur; при `prefers-reduced-motion` — только цвета, 200ms.
 - Слева лого. По центру: Home, Donate Cases, Rules, Contacts (`text-nav`, `--color-fg-muted`, активный — `--color-fg`).
 - Справа: онлайн (точка `--color-online` + число), пилюля язык/валюта (`EN · €`), корзина (иконка + счётчик на `--accent`).
 - Дропдаун язык/валюта — как navbar-3: группы `LANGUAGE` / `CURRENCY` (EN / PL и EUR / PLN), пункт с кодом слева и галочкой справа, выбранный — фон `rgb(255 255 255 / 0.06)`.

@@ -7,6 +7,7 @@ import {routing} from '@/i18n/routing'
 import type {Currency} from '@/lib/catalog'
 import {formatPrice, networkOnline} from '@/lib/catalog'
 import {useDismiss} from '@/lib/use-dismiss'
+import {useScrolled} from '@/lib/use-scrolled'
 import {Check, ChevronDown, Globe, Menu, ShoppingBag, X} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useCallback, useEffect, useRef, useState} from 'react'
@@ -20,6 +21,7 @@ const CURRENCIES: {code: Currency; symbol: string}[] = [
 export function Navbar() {
   const t = useTranslations('nav')
   const [menuOpen, setMenuOpen] = useState(false)
+  const scrolled = useScrolled()
 
   const links = [
     {href: '/#top', label: t('home')},
@@ -39,7 +41,8 @@ export function Navbar() {
     <header className="fixed inset-x-0 top-0 z-40 px-[var(--gutter)] pt-4">
       <nav
         aria-label="Main"
-        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-border bg-surface/80 pr-2 pl-6 backdrop-blur-md">
+        data-scrolled={scrolled || undefined}
+        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md motion-reduce:transition-[background-color,border-color,box-shadow] motion-reduce:duration-200">
         <Link href="/" className="font-display text-xl font-bold tracking-wide uppercase">
           Block<span className="text-accent">haus</span>
         </Link>
