@@ -65,7 +65,7 @@ export function Hero() {
 
         <span
           aria-hidden
-          className="hidden size-14 place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid">
+          className="hidden size-14 rotate-[30deg] place-items-center rounded-full bg-accent text-on-accent lg:absolute lg:top-[60%] lg:right-[19%] lg:grid">
           <Plus className="size-6" strokeWidth={2.5} />
         </span>
 
