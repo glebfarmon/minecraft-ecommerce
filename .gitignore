@@ -15,3 +15,4 @@ test-results/
 .claude/skills/impeccable/scripts/bin/
 next-env.d.ts
 *.tsbuildinfo
+references/
