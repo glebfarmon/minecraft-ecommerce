@@ -70,7 +70,7 @@ Our mapping: keep our height (64px), top offset (16px), `rounded-full` and dark 
 - Consumes: nothing.
 - Produces: `export function useScrolled(): boolean` — `true` while `window.scrollY > 8`. Updates on `scroll` (passive listener) and once on mount.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/web/src/lib/use-scrolled.test.ts`:
 
@@ -131,12 +131,12 @@ describe('useScrolled', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @shop/web test -- use-scrolled`
 Expected: FAIL with `Cannot find module './use-scrolled'`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `apps/web/src/lib/use-scrolled.ts`:
 
@@ -171,12 +171,12 @@ Notes for the implementer:
 - Initial state is `false` so server HTML and first client render match (no hydration warning); `update()` in the effect fixes it right after mount.
 - React skips re-render when `setScrolled` gets the same boolean, so no throttling is needed.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @shop/web test -- use-scrolled`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/lib/use-scrolled.ts apps/web/src/lib/use-scrolled.test.ts
@@ -200,7 +200,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Consumes: `useScrolled(): boolean` from `@/lib/use-scrolled` (Task 1).
 - Produces: `<nav aria-label="Main">` carries `data-scrolled=""` when scrolled and no attribute at the top. The e2e test relies on this.
 
-- [ ] **Step 1: Write the failing e2e test**
+- [x] **Step 1: Write the failing e2e test**
 
 Create `e2e/tests/navbar.spec.ts`:
 
@@ -241,14 +241,14 @@ test('pill is on after loading a deep anchor', async ({page}) => {
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Start the local stack the same way as for `smoke.spec.ts` (Traefik + `pnpm dev`), then:
 
 Run: `pnpm --filter @shop/e2e test:e2e -- navbar`
 Expected: FAIL. First test fails on `expect(await bg()).toBe(TRANSPARENT)` (today the nav always has `bg-surface/80`); second fails waiting for `data-scrolled`.
 
-- [ ] **Step 3: Implement the two states in `navbar.tsx`**
+- [x] **Step 3: Implement the two states in `navbar.tsx`**
 
 Add the import (Prettier sort-imports will place it; keep `@/lib/*` group):
 
@@ -287,14 +287,14 @@ Why each piece:
 - `ease-out-expo` is the existing `--ease-out-expo` token from `globals.css`; `duration-300` is `--dur-base`.
 - `motion-reduce:` drops `max-width`/`backdrop-filter` from the transition (size snaps) and shortens to 200ms, per design-system §8.
 
-- [ ] **Step 4: Run e2e to verify it passes**
+- [x] **Step 4: Run e2e to verify it passes**
 
 Run: `pnpm --filter @shop/e2e test:e2e -- navbar`
 Expected: PASS, 2 tests. Then run the whole suite to make sure smoke still passes:
 Run: `pnpm --filter @shop/e2e test:e2e`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Update the design system**
+- [x] **Step 5: Update the design system**
 
 In `docs/design-system.md` §6 Navbar, replace the first bullet:
 
@@ -308,7 +308,7 @@ with:
 - Два состояния, высота 64px и отступ сверху 16px в обоих. **Вверху страницы** — плоская, прозрачная, без рамки и blur, ширина до 1440px. **После скролла > 8px** — «floating pill»: сужается до 1200px, фон `--color-surface` 70%, рамка `--color-border`, `backdrop-filter: blur(12px)`, мягкая тень. Переход 300ms `--ease-out-expo` по `max-width`, фону, рамке, тени, blur; при `prefers-reduced-motion` — только цвета, 200ms.
 ```
 
-- [ ] **Step 6: Manual check in the browser**
+- [x] **Step 6: Manual check in the browser**
 
 Run `pnpm dev`, open `http://localhost:3000/en` at ≥1600px wide:
 
@@ -318,7 +318,7 @@ Run `pnpm dev`, open `http://localhost:3000/en` at ≥1600px wide:
 4. DevTools → Rendering → "Emulate CSS prefers-reduced-motion: reduce": width snaps, colors fade.
 5. Open a server page (`/en/<server>`) at the top: links stay readable over its content.
 
-- [ ] **Step 7: Gate, graph update, commit**
+- [x] **Step 7: Gate, graph update, commit**
 
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
