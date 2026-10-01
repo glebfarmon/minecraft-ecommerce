@@ -75,21 +75,25 @@ e2e/                         Playwright smoke tests
 ### Task 1: Workspace, shared config, tooling, agent docs
 
 **Files:**
+
 - Create: `.editorconfig`, `.nvmrc`, `.gitignore` (modify existing), `.prettierignore`, `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `prettier.config.mjs`, `commitlint.config.mjs`, `.lintstagedrc.mjs`, `.husky/pre-commit`, `.husky/commit-msg`
 - Create: `packages/config/package.json`, `packages/config/tsconfig/base.json`, `packages/config/tsconfig/nest.json`, `packages/config/tsconfig/next.json`, `packages/config/tsconfig/react-library.json`, `packages/config/eslint/base.mjs`, `packages/config/eslint/next.mjs`
 - Create: `CLAUDE.md`, `docs/adr/0001-modular-monolith.md`, `docs/adr/0002-monorepo-tooling.md`
 
 **Interfaces:**
+
 - Produces: root scripts `build`, `dev`, `lint`, `typecheck`, `test`, `format`, `format:check`; turbo tasks with the same names plus `test:e2e`; tsconfig presets `@shop/config/tsconfig/{base,nest,next,react-library}.json`; ESLint exports `@shop/config/eslint/base` (named export `base`) and `@shop/config/eslint/next` (named export `next`).
 
 - [ ] **Step 1: Root files**
 
 `.nvmrc`:
+
 ```
 24
 ```
 
 `.editorconfig`:
+
 ```ini
 root = true
 
@@ -103,6 +107,7 @@ trim_trailing_whitespace = true
 ```
 
 `.gitignore` (replace contents):
+
 ```
 node_modules/
 .turbo/
@@ -119,6 +124,7 @@ test-results/
 ```
 
 `.prettierignore`:
+
 ```
 pnpm-lock.yaml
 .next/
@@ -130,6 +136,7 @@ test-results/
 ```
 
 `pnpm-workspace.yaml`:
+
 ```yaml
 packages:
   - apps/*
@@ -142,11 +149,14 @@ onlyBuiltDependencies:
 - [ ] **Step 2: Root package.json and install root tooling**
 
 Run:
+
 ```bash
 corepack enable
 corepack use pnpm@latest
 ```
+
 This writes `packageManager` into `package.json`. Then set the rest of `package.json`:
+
 ```json
 {
   "name": "shop",
@@ -165,12 +175,15 @@ This writes `packageManager` into `package.json`. Then set the rest of `package.
   }
 }
 ```
+
 Keep the `packageManager` field corepack wrote. Install:
+
 ```bash
 pnpm add -Dw turbo typescript prettier @trivago/prettier-plugin-sort-imports prettier-plugin-tailwindcss husky lint-staged @commitlint/cli @commitlint/config-conventional
 ```
 
 `turbo.json`:
+
 ```json
 {
   "$schema": "https://turborepo.com/schema.json",
@@ -188,6 +201,7 @@ pnpm add -Dw turbo typescript prettier @trivago/prettier-plugin-sort-imports pre
 - [ ] **Step 3: Prettier, commitlint, lint-staged, Husky**
 
 `prettier.config.mjs`:
+
 ```js
 /** @type {import('prettier').Config} */
 export default {
@@ -208,11 +222,13 @@ export default {
 ```
 
 `commitlint.config.mjs`:
+
 ```js
 export default { extends: ['@commitlint/config-conventional'] };
 ```
 
 `.lintstagedrc.mjs` (ESLint runs per package because each package has its own config; lint-staged passes absolute paths):
+
 ```js
 export default {
   '*.{ts,tsx,js,mjs,cjs}': ['prettier --write'],
@@ -230,6 +246,7 @@ export default {
 ```
 
 Husky:
+
 ```bash
 pnpm exec husky init
 printf 'pnpm exec lint-staged\n' > .husky/pre-commit
@@ -239,6 +256,7 @@ printf 'pnpm exec commitlint --edit "$1"\n' > .husky/commit-msg
 - [ ] **Step 4: `@shop/config` package**
 
 `packages/config/package.json`:
+
 ```json
 {
   "name": "@shop/config",
@@ -252,12 +270,15 @@ printf 'pnpm exec commitlint --edit "$1"\n' > .husky/commit-msg
   }
 }
 ```
+
 Install its dependencies:
+
 ```bash
 pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config-prettier eslint-config-next@16
 ```
 
 `packages/config/tsconfig/base.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -275,6 +296,7 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
 ```
 
 `packages/config/tsconfig/nest.json`:
+
 ```json
 {
   "extends": "./base.json",
@@ -291,6 +313,7 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
 ```
 
 `packages/config/tsconfig/next.json`:
+
 ```json
 {
   "extends": "./base.json",
@@ -308,6 +331,7 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
 ```
 
 `packages/config/tsconfig/react-library.json`:
+
 ```json
 {
   "extends": "./base.json",
@@ -322,6 +346,7 @@ pnpm --filter @shop/config add eslint @eslint/js typescript-eslint eslint-config
 ```
 
 `packages/config/eslint/base.mjs`:
+
 ```js
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier/flat';
@@ -353,6 +378,7 @@ export const base = defineConfig(
 ```
 
 `packages/config/eslint/next.mjs`:
+
 ```js
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import { defineConfig } from 'eslint/config';
@@ -365,23 +391,27 @@ export const next = defineConfig(base, nextVitals);
 - [ ] **Step 5: `CLAUDE.md` and ADRs 0001–0002**
 
 `CLAUDE.md`:
+
 ```markdown
 # CLAUDE.md
 
 Rules for AI agents working in this repository.
 
 ## Source of truth
+
 - Design: `docs/superpowers/specs/2026-10-01-minecraft-donation-shop-design.md`
 - Plans: `docs/superpowers/plans/` — implement task by task, tick checkboxes.
 - Decisions: `docs/adr/` — do not contradict an ADR; propose a new one instead.
 
 ## Architecture rules
+
 - Business logic lives only in `apps/api` (NestJS). Next.js apps have no route handlers.
 - NestJS global prefix is `/api`. Ports: web 3000, admin 3001, api 4000.
 - Shared code goes in `packages/*` and is imported as `@shop/<name>`.
 - Money is `amountMinor: Int` + `currency`. Never floats.
 
 ## Workflow
+
 - TDD: failing test first, then code.
 - Before a commit: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`.
 - Conventional Commits (`feat(api): …`, `fix(web): …`, `chore: …`).
@@ -390,6 +420,7 @@ Rules for AI agents working in this repository.
 ```
 
 `docs/adr/0001-modular-monolith.md`:
+
 ```markdown
 # ADR 0001: Modular monolith instead of microservices
 
@@ -397,25 +428,31 @@ Rules for AI agents working in this repository.
 - Date: 2026-10-01
 
 ## Context
+
 The shop needs a public storefront, an admin panel, payment webhooks, and a delivery worker. It runs on one small VPS, handles tens of orders per day, and the order write and the delivery outbox write must happen in one database transaction.
 
 ## Decision
+
 One NestJS codebase (`apps/api`) with strict modules (`catalog`, `orders`, `payments`, `delivery`, `cases`, `auth`, `admin`, `feed`, `mail`), started as two processes from one image: `api` (HTTP) and `worker` (queues, schedulers). Two Next.js frontends: `web` and `admin`.
 
 ## Consequences
+
 - Order + outbox is a single Postgres transaction; no sagas.
 - One deploy pipeline and one image for the backend.
 - Module boundaries are enforced by code review: modules import only other modules' public services.
 
 ## When we would split
+
 If `delivery` needed independent scaling or a separate team, it would become its own service consuming an `order.paid` event through a broker (see the queues ADR). Not before.
 
 ## Alternatives rejected
+
 - Separate `api-public` and `api-admin` on a shared database: two deploys with no real independence.
 - Microservices with per-service databases and RabbitMQ/Kafka: distributed transactions and extra containers on a 4 GB VPS for no user-visible benefit.
 ```
 
 `docs/adr/0002-monorepo-tooling.md`:
+
 ```markdown
 # ADR 0002: pnpm workspaces + Turborepo
 
@@ -423,16 +460,20 @@ If `delivery` needed independent scaling or a separate team, it would become its
 - Date: 2026-10-01
 
 ## Context
+
 Three apps share schemas, UI components and configs. CI time matters on free runners.
 
 ## Decision
+
 pnpm workspaces for dependency management; Turborepo for task orchestration and caching. Shared configs in `@shop/config`, UI in `@shop/ui`.
 
 ## Consequences
+
 - `turbo run <task>` only runs affected packages and caches results.
 - `turbo prune --docker` produces minimal Docker build contexts per app.
 
 ## Alternatives rejected
+
 - Nx: more features than needed, heavier configuration.
 - npm/yarn workspaces without an orchestrator: no task caching.
 ```
@@ -440,18 +481,22 @@ pnpm workspaces for dependency management; Turborepo for task orchestration and 
 - [ ] **Step 6: Verify tooling**
 
 Run:
+
 ```bash
 pnpm install
 pnpm format
 pnpm format:check
 ```
+
 Expected: `format:check` prints "All matched files use Prettier code style!".
 
 Verify commitlint blocks a bad message (a commit needs at least one staged change):
+
 ```bash
 git add -A
 git commit -m "bad message"
 ```
+
 Expected: FAIL with `subject may not be empty` / `type may not be empty`.
 
 - [ ] **Step 7: Commit**
@@ -466,17 +511,20 @@ git commit -m "chore: set up monorepo tooling, shared config and agent docs"
 ### Task 2: NestJS `api` skeleton with liveness endpoint
 
 **Files:**
+
 - Create: `apps/api/package.json`, `apps/api/nest-cli.json`, `apps/api/tsconfig.json`, `apps/api/tsconfig.build.json`, `apps/api/eslint.config.mjs`
 - Create: `apps/api/src/main.ts`, `apps/api/src/configure-app.ts`, `apps/api/src/app.module.ts`, `apps/api/src/health/health.module.ts`, `apps/api/src/health/health.controller.ts`
 - Test: `apps/api/test/health.e2e-spec.ts`
 
 **Interfaces:**
+
 - Consumes: `@shop/config/tsconfig/nest.json`, `@shop/config/eslint/base`.
 - Produces: `GET /api/health` → `200 { "status": "ok", "version": string }` where `version = process.env.APP_VERSION ?? "dev"`; `configureApp(app: INestApplication): void` (sets `/api` prefix and shutdown hooks) used by both `main.ts` and tests; server listens on `PORT` (default 4000) on `0.0.0.0`; built entry `dist/main.js`.
 
 - [ ] **Step 1: Package setup**
 
 `apps/api/package.json`:
+
 ```json
 {
   "name": "@shop/api",
@@ -501,13 +549,16 @@ git commit -m "chore: set up monorepo tooling, shared config and agent docs"
   }
 }
 ```
+
 Install:
+
 ```bash
 pnpm --filter @shop/api add @nestjs/common@11 @nestjs/core@11 @nestjs/platform-express@11 reflect-metadata rxjs
 pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@workspace:* typescript jest ts-jest @types/jest supertest @types/supertest @types/node
 ```
 
 `apps/api/nest-cli.json`:
+
 ```json
 {
   "$schema": "https://json.schemastore.org/nest-cli",
@@ -518,6 +569,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 ```
 
 `apps/api/tsconfig.json`:
+
 ```json
 {
   "extends": "@shop/config/tsconfig/nest.json",
@@ -527,6 +579,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 ```
 
 `apps/api/tsconfig.build.json`:
+
 ```json
 {
   "extends": "./tsconfig.json",
@@ -537,6 +590,7 @@ pnpm --filter @shop/api add -D @nestjs/cli@11 @nestjs/testing@11 @shop/config@wo
 ```
 
 `apps/api/eslint.config.mjs`:
+
 ```js
 import { base } from '@shop/config/eslint/base';
 
@@ -546,6 +600,7 @@ export default base;
 - [ ] **Step 2: Write the failing test**
 
 `apps/api/test/health.e2e-spec.ts`:
+
 ```ts
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -594,6 +649,7 @@ Expected: FAIL with `Cannot find module '../src/app.module'`.
 - [ ] **Step 4: Implement**
 
 `apps/api/src/configure-app.ts`:
+
 ```ts
 import { INestApplication } from '@nestjs/common';
 
@@ -604,6 +660,7 @@ export function configureApp(app: INestApplication): void {
 ```
 
 `apps/api/src/health/health.controller.ts`:
+
 ```ts
 import { Controller, Get } from '@nestjs/common';
 
@@ -622,6 +679,7 @@ export class HealthController {
 ```
 
 `apps/api/src/health/health.module.ts`:
+
 ```ts
 import { Module } from '@nestjs/common';
 
@@ -632,6 +690,7 @@ export class HealthModule {}
 ```
 
 `apps/api/src/app.module.ts`:
+
 ```ts
 import { Module } from '@nestjs/common';
 
@@ -642,10 +701,10 @@ export class AppModule {}
 ```
 
 `apps/api/src/main.ts`:
-```ts
-import 'reflect-metadata';
 
+```ts
 import { NestFactory } from '@nestjs/core';
+import 'reflect-metadata';
 
 import { AppModule } from './app.module';
 import { configureApp } from './configure-app';
@@ -662,6 +721,7 @@ void bootstrap();
 - [ ] **Step 5: Run tests, lint, typecheck, format, build**
 
 Run:
+
 ```bash
 pnpm --filter @shop/api test
 pnpm --filter @shop/api lint
@@ -669,6 +729,7 @@ pnpm --filter @shop/api typecheck
 pnpm prettier --check apps/api
 pnpm --filter @shop/api build && ls apps/api/dist/main.js
 ```
+
 Expected: 3 tests PASS; lint and typecheck exit 0; Prettier reports no issues on decorator files; `apps/api/dist/main.js` exists.
 
 - [ ] **Step 6: Commit**
@@ -683,18 +744,21 @@ git commit -m "feat(api): add NestJS skeleton with /api/health"
 ### Task 3: `@shop/ui` package and `web` storefront skeleton
 
 **Files:**
+
 - Create: `packages/ui/package.json`, `packages/ui/tsconfig.json`, `packages/ui/eslint.config.mjs`, `packages/ui/src/lib/utils.ts`, `packages/ui/src/button.tsx`, `packages/ui/src/theme.css`
 - Create: `apps/web/package.json`, `apps/web/next.config.ts`, `apps/web/postcss.config.mjs`, `apps/web/tsconfig.json`, `apps/web/eslint.config.mjs`, `apps/web/jest.config.mjs`, `apps/web/jest.setup.ts`, `apps/web/public/.gitkeep`
 - Create: `apps/web/src/app/globals.css`, `apps/web/src/app/layout.tsx`, `apps/web/src/app/page.tsx`
 - Test: `apps/web/src/app/page.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `@shop/config/tsconfig/{next,react-library}.json`, `@shop/config/eslint/{base,next}`.
 - Produces: `@shop/ui/button` exports `Button` and `buttonVariants`; `@shop/ui/lib/utils` exports `cn(...inputs: ClassValue[]): string`; `@shop/ui/theme.css` defines tokens `--color-primary`, `--color-primary-foreground`, `--color-background`, `--color-foreground`, `--color-input`, `--color-accent`. `web` runs on port 3000, builds to `.next/standalone/apps/web/server.js`.
 
 - [ ] **Step 1: `@shop/ui`**
 
 `packages/ui/package.json`:
+
 ```json
 {
   "name": "@shop/ui",
@@ -712,19 +776,24 @@ git commit -m "feat(api): add NestJS skeleton with /api/health"
   }
 }
 ```
+
 Install:
+
 ```bash
 pnpm --filter @shop/ui add class-variance-authority clsx tailwind-merge @radix-ui/react-slot
 pnpm --filter @shop/ui add -D @shop/config@workspace:* typescript @types/react react
 ```
+
 Also declare the peer: add `"peerDependencies": { "react": "^19" }` to `packages/ui/package.json`.
 
 `packages/ui/tsconfig.json`:
+
 ```json
 { "extends": "@shop/config/tsconfig/react-library.json", "include": ["src"] }
 ```
 
 `packages/ui/eslint.config.mjs`:
+
 ```js
 import { base } from '@shop/config/eslint/base';
 
@@ -732,6 +801,7 @@ export default base;
 ```
 
 `packages/ui/src/lib/utils.ts`:
+
 ```ts
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -742,6 +812,7 @@ export function cn(...inputs: ClassValue[]): string {
 ```
 
 `packages/ui/src/button.tsx`:
+
 ```tsx
 import { Slot } from '@radix-ui/react-slot';
 import { type VariantProps, cva } from 'class-variance-authority';
@@ -784,6 +855,7 @@ export { Button, buttonVariants };
 ```
 
 `packages/ui/src/theme.css` (temporary neutral tokens; the visual-design track replaces the values, not the names):
+
 ```css
 :root {
   --primary: oklch(0.62 0.19 145);
@@ -807,6 +879,7 @@ export { Button, buttonVariants };
 - [ ] **Step 2: `web` package setup**
 
 `apps/web/package.json`:
+
 ```json
 {
   "name": "@shop/web",
@@ -822,15 +895,19 @@ export { Button, buttonVariants };
   }
 }
 ```
+
 Install:
+
 ```bash
 pnpm --filter @shop/web add next@16 react react-dom @shop/ui@workspace:*
 pnpm --filter @shop/web add -D @shop/config@workspace:* typescript @types/react @types/react-dom @types/node tailwindcss@4 @tailwindcss/postcss jest jest-environment-jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom @types/jest
 ```
 
 `apps/web/next.config.ts`:
+
 ```ts
 import path from 'node:path';
+
 import type { NextConfig } from 'next';
 
 const repoRoot = path.resolve(process.cwd(), '../..');
@@ -846,11 +923,13 @@ export default nextConfig;
 ```
 
 `apps/web/postcss.config.mjs`:
+
 ```js
 export default { plugins: { '@tailwindcss/postcss': {} } };
 ```
 
 `apps/web/tsconfig.json`:
+
 ```json
 {
   "extends": "@shop/config/tsconfig/next.json",
@@ -861,6 +940,7 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 ```
 
 `apps/web/eslint.config.mjs`:
+
 ```js
 import { next } from '@shop/config/eslint/next';
 
@@ -868,6 +948,7 @@ export default next;
 ```
 
 `apps/web/jest.config.mjs`:
+
 ```js
 import nextJest from 'next/jest.js';
 
@@ -880,6 +961,7 @@ export default createJestConfig({
 ```
 
 `apps/web/jest.setup.ts`:
+
 ```ts
 import '@testing-library/jest-dom';
 ```
@@ -889,6 +971,7 @@ Create an empty `apps/web/public/.gitkeep` (the Docker image copies `public/`).
 - [ ] **Step 3: Write the failing test**
 
 `apps/web/src/app/page.test.tsx`:
+
 ```tsx
 import { render, screen } from '@testing-library/react';
 
@@ -912,6 +995,7 @@ Expected: FAIL with `Cannot find module './page'`.
 - [ ] **Step 5: Implement**
 
 `apps/web/src/app/globals.css`:
+
 ```css
 @import 'tailwindcss';
 @import '@shop/ui/theme.css';
@@ -925,6 +1009,7 @@ body {
 ```
 
 `apps/web/src/app/layout.tsx`:
+
 ```tsx
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -946,6 +1031,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 ```
 
 `apps/web/src/app/page.tsx`:
+
 ```tsx
 import { Button } from '@shop/ui/button';
 
@@ -962,6 +1048,7 @@ export default function HomePage() {
 - [ ] **Step 6: Run tests, lint, typecheck, build**
 
 Run:
+
 ```bash
 pnpm --filter @shop/web test
 pnpm --filter @shop/web lint
@@ -970,6 +1057,7 @@ pnpm --filter @shop/web typecheck
 pnpm --filter @shop/ui typecheck
 pnpm --filter @shop/web build && ls apps/web/.next/standalone/apps/web/server.js
 ```
+
 Expected: test PASS; lint/typecheck exit 0; `server.js` exists at that path.
 
 - [ ] **Step 7: Commit**
@@ -984,17 +1072,20 @@ git commit -m "feat(web): add Next.js storefront skeleton and shared ui package"
 ### Task 4: `admin` skeleton
 
 **Files:**
+
 - Create: `apps/admin/package.json`, `apps/admin/next.config.ts`, `apps/admin/postcss.config.mjs`, `apps/admin/tsconfig.json`, `apps/admin/eslint.config.mjs`, `apps/admin/jest.config.mjs`, `apps/admin/jest.setup.ts`, `apps/admin/public/.gitkeep`
 - Create: `apps/admin/src/app/globals.css`, `apps/admin/src/app/layout.tsx`, `apps/admin/src/app/page.tsx`
 - Test: `apps/admin/src/app/page.test.tsx`, `apps/admin/src/app/layout.test.ts`
 
 **Interfaces:**
+
 - Consumes: `@shop/ui/button`, `@shop/ui/theme.css`, config presets from Task 1.
 - Produces: `admin` on port 3001; root `metadata.robots = { index: false, follow: false }`; builds to `.next/standalone/apps/admin/server.js`.
 
 - [ ] **Step 1: Package setup**
 
 `apps/admin/package.json`:
+
 ```json
 {
   "name": "@shop/admin",
@@ -1010,15 +1101,19 @@ git commit -m "feat(web): add Next.js storefront skeleton and shared ui package"
   }
 }
 ```
+
 Install:
+
 ```bash
 pnpm --filter @shop/admin add next@16 react react-dom @shop/ui@workspace:*
 pnpm --filter @shop/admin add -D @shop/config@workspace:* typescript @types/react @types/react-dom @types/node tailwindcss@4 @tailwindcss/postcss jest jest-environment-jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom @types/jest
 ```
 
 `apps/admin/next.config.ts`:
+
 ```ts
 import path from 'node:path';
+
 import type { NextConfig } from 'next';
 
 const repoRoot = path.resolve(process.cwd(), '../..');
@@ -1034,11 +1129,13 @@ export default nextConfig;
 ```
 
 `apps/admin/postcss.config.mjs`:
+
 ```js
 export default { plugins: { '@tailwindcss/postcss': {} } };
 ```
 
 `apps/admin/tsconfig.json`:
+
 ```json
 {
   "extends": "@shop/config/tsconfig/next.json",
@@ -1049,6 +1146,7 @@ export default { plugins: { '@tailwindcss/postcss': {} } };
 ```
 
 `apps/admin/eslint.config.mjs`:
+
 ```js
 import { next } from '@shop/config/eslint/next';
 
@@ -1056,6 +1154,7 @@ export default next;
 ```
 
 `apps/admin/jest.config.mjs`:
+
 ```js
 import nextJest from 'next/jest.js';
 
@@ -1068,6 +1167,7 @@ export default createJestConfig({
 ```
 
 `apps/admin/jest.setup.ts`:
+
 ```ts
 import '@testing-library/jest-dom';
 ```
@@ -1077,6 +1177,7 @@ Create an empty `apps/admin/public/.gitkeep`.
 - [ ] **Step 2: Write the failing tests**
 
 `apps/admin/src/app/page.test.tsx`:
+
 ```tsx
 import { render, screen } from '@testing-library/react';
 
@@ -1092,6 +1193,7 @@ describe('AdminHomePage', () => {
 ```
 
 `apps/admin/src/app/layout.test.ts`:
+
 ```ts
 import { metadata } from './layout';
 
@@ -1110,6 +1212,7 @@ Expected: FAIL with `Cannot find module './page'` and `Cannot find module './lay
 - [ ] **Step 4: Implement**
 
 `apps/admin/src/app/globals.css`:
+
 ```css
 @import 'tailwindcss';
 @import '@shop/ui/theme.css';
@@ -1123,6 +1226,7 @@ body {
 ```
 
 `apps/admin/src/app/layout.tsx`:
+
 ```tsx
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -1144,6 +1248,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 ```
 
 `apps/admin/src/app/page.tsx`:
+
 ```tsx
 import { Button } from '@shop/ui/button';
 
@@ -1160,12 +1265,14 @@ export default function AdminHomePage() {
 - [ ] **Step 5: Run tests, lint, typecheck, build**
 
 Run:
+
 ```bash
 pnpm --filter @shop/admin test
 pnpm --filter @shop/admin lint
 pnpm --filter @shop/admin typecheck
 pnpm --filter @shop/admin build && ls apps/admin/.next/standalone/apps/admin/server.js
 ```
+
 Expected: 2 tests PASS; lint/typecheck exit 0; `server.js` exists.
 
 - [ ] **Step 6: Commit**
@@ -1180,9 +1287,11 @@ git commit -m "feat(admin): add Next.js admin skeleton"
 ### Task 5: Production Docker images
 
 **Files:**
+
 - Create: `.dockerignore`, `apps/api/Dockerfile`, `apps/web/Dockerfile`, `apps/admin/Dockerfile`
 
 **Interfaces:**
+
 - Consumes: build scripts from Tasks 2–4.
 - Produces: images that listen on 4000 (api), 3000 (web), 3001 (admin); accept build arg `APP_VERSION` exposed as env `APP_VERSION`; run as user `node`; define `HEALTHCHECK`. Build context is always the repo root: `docker build -f apps/<app>/Dockerfile .`.
 
@@ -1303,6 +1412,7 @@ CMD ["node", "apps/admin/server.js"]
 - [ ] **Step 5: Build and verify each image**
 
 Run:
+
 ```bash
 docker build -f apps/api/Dockerfile --build-arg APP_VERSION=local-test -t shop-api .
 docker run -d --rm --name shop-api-test -p 4000:4000 shop-api
@@ -1311,6 +1421,7 @@ curl -s http://localhost:4000/api/health
 docker exec shop-api-test whoami
 docker stop shop-api-test
 ```
+
 Expected: `{"status":"ok","version":"local-test"}` and `node`.
 
 ```bash
@@ -1321,6 +1432,7 @@ curl -s http://localhost:3000/ | grep -o 'Minecraft Shop' | head -1
 curl -s http://localhost:3000/ | grep -o '/_next/static/[^"]*\.css' | head -1 | xargs -I{} curl -s -o /dev/null -w '%{http_code}\n' http://localhost:3000{}
 docker stop shop-web-test
 ```
+
 Expected: `Minecraft Shop`, then `200` for the CSS file.
 
 ```bash
@@ -1330,6 +1442,7 @@ sleep 3
 curl -s http://localhost:3001/ | grep -o 'noindex' | head -1
 docker stop shop-admin-test
 ```
+
 Expected: `noindex`.
 
 If `pnpm deploy --legacy` is rejected by the installed pnpm version, replace that line with `pnpm --filter @shop/api deploy --prod /out` and add `inject-workspace-packages=true` to a root `.npmrc`; rebuild and re-run the api check.
@@ -1346,18 +1459,21 @@ git commit -m "build: add production Docker images for api, web and admin"
 ### Task 6: Local stack with Traefik routing + Playwright smoke tests
 
 **Files:**
+
 - Create: `compose.yaml`, `compose.e2e.yaml`, `infra/traefik/dev.yml`, `infra/traefik/e2e.yml`
 - Create: `e2e/package.json`, `e2e/tsconfig.json`, `e2e/eslint.config.mjs`, `e2e/playwright.config.ts`
 - Test: `e2e/tests/smoke.spec.ts`
 - Create: `README.md`
 
 **Interfaces:**
+
 - Consumes: images from Task 5; dev servers from Tasks 2–4.
 - Produces: `docker compose up -d` (infra + Traefik routing to apps on the host) and `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait` (everything in containers). Routing contract used by prod (Task 8): `api.<host>` → api; `<host>/api/*` and `admin.<host>/api/*` → api; `admin.<host>` → admin; `<host>` → web. `pnpm test:e2e` runs smoke tests against `WEB_URL`, `ADMIN_URL`, `API_URL` (defaults: `http://shop.localhost`, `http://admin.shop.localhost`, `http://api.shop.localhost`).
 
 - [ ] **Step 1: Traefik routes**
 
 `infra/traefik/dev.yml`:
+
 ```yaml
 http:
   routers:
@@ -1389,6 +1505,7 @@ http:
 ```
 
 `infra/traefik/e2e.yml` — identical routers, services point at containers:
+
 ```yaml
 http:
   routers:
@@ -1422,6 +1539,7 @@ http:
 - [ ] **Step 2: Compose files**
 
 `compose.yaml`:
+
 ```yaml
 name: shop
 
@@ -1479,6 +1597,7 @@ volumes:
 ```
 
 `compose.e2e.yaml`:
+
 ```yaml
 services:
   traefik:
@@ -1505,6 +1624,7 @@ services:
 - [ ] **Step 3: Playwright package**
 
 `e2e/package.json`:
+
 ```json
 {
   "name": "@shop/e2e",
@@ -1517,24 +1637,33 @@ services:
   }
 }
 ```
+
 The script is named `test:e2e`, so root `pnpm test` (turbo `test`) skips it and root `pnpm test:e2e` (turbo `test:e2e`, uncached) runs it.
 
 Install:
+
 ```bash
 pnpm --filter @shop/e2e add -D @playwright/test @shop/config@workspace:* typescript @types/node
 pnpm --filter @shop/e2e exec playwright install chromium
 ```
 
 `e2e/tsconfig.json`:
+
 ```json
 {
   "extends": "@shop/config/tsconfig/base.json",
-  "compilerOptions": { "module": "esnext", "moduleResolution": "bundler", "noEmit": true, "types": ["node"] },
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": ["node"]
+  },
   "include": ["tests", "playwright.config.ts"]
 }
 ```
 
 `e2e/eslint.config.mjs`:
+
 ```js
 import { base } from '@shop/config/eslint/base';
 
@@ -1542,6 +1671,7 @@ export default base;
 ```
 
 `e2e/playwright.config.ts`:
+
 ```ts
 import { defineConfig, devices } from '@playwright/test';
 
@@ -1559,6 +1689,7 @@ export default defineConfig({
 - [ ] **Step 4: Write the smoke tests**
 
 `e2e/tests/smoke.spec.ts`:
+
 ```ts
 import { expect, test } from '@playwright/test';
 
@@ -1599,20 +1730,25 @@ test('unknown api route returns JSON 404 from api, not a Next page', async ({ re
 - [ ] **Step 5: Run against the containerised stack**
 
 Node resolves `*.localhost` through the OS resolver, so add hosts entries once:
+
 ```bash
 echo "127.0.0.1 shop.localhost admin.shop.localhost api.shop.localhost" | sudo tee -a /etc/hosts
 ```
+
 Run:
+
 ```bash
 docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait
 pnpm test:e2e
 ```
+
 Expected: 4 tests PASS.
 
 Check that the test catches a broken route: in `infra/traefik/e2e.yml` change the api router's `PathPrefix(`/api/`)` to `PathPrefix(`/nope/`)`, wait 2 s (Traefik watches the file), re-run `pnpm test:e2e`.
 Expected: "api health reachable on every host" and "unknown api route…" FAIL. Revert the change and re-run: PASS.
 
 Then:
+
 ```bash
 docker compose -f compose.yaml -f compose.e2e.yaml down
 ```
@@ -1620,21 +1756,26 @@ docker compose -f compose.yaml -f compose.e2e.yaml down
 - [ ] **Step 6: Verify dev mode routing**
 
 Run:
+
 ```bash
 docker compose up -d
 pnpm dev
 ```
+
 In a second terminal:
+
 ```bash
 curl -s http://shop.localhost/api/health
 curl -s -o /dev/null -w '%{http_code}\n' http://shop.localhost/
 curl -s -o /dev/null -w '%{http_code}\n' http://admin.shop.localhost/
 ```
+
 Expected: `{"status":"ok","version":"dev"}`, `200`, `200`. Stop `pnpm dev` and run `docker compose down`.
 
 - [ ] **Step 7: README**
 
 `README.md`:
+
 ````markdown
 # Minecraft Shop
 
@@ -1642,6 +1783,7 @@ Donation shop for Minecraft servers: ranks, coins, kits and provably fair cases,
 Portfolio project — payments run in Stripe **test mode**.
 
 ## Stack
+
 NestJS 11 · Next.js 16 · PostgreSQL · Redis · Turborepo · Docker · Traefik · Dokploy · Cloudflare
 
 ## Local development
@@ -1656,11 +1798,11 @@ docker compose up -d
 pnpm dev
 ```
 
-| URL | App |
-|---|---|
-| http://shop.localhost | Storefront |
-| http://admin.shop.localhost | Admin |
-| http://shop.localhost/api/health | API |
+| URL                              | App        |
+| -------------------------------- | ---------- |
+| http://shop.localhost            | Storefront |
+| http://admin.shop.localhost      | Admin      |
+| http://shop.localhost/api/health | API        |
 
 ## Checks
 
@@ -1670,6 +1812,7 @@ docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait && pnpm 
 ```
 
 ## Docs
+
 - Design: `docs/superpowers/specs/`
 - Plans: `docs/superpowers/plans/`
 - Decisions: `docs/adr/`
@@ -1688,9 +1831,11 @@ git commit -m "test(e2e): add local Traefik routing and Playwright smoke tests"
 ### Task 7: CI workflow, commit checks, dependency and security scanning
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`, `.github/dependabot.yml`
 
 **Interfaces:**
+
 - Consumes: root scripts (Task 1), compose e2e stack and `@shop/e2e` (Task 6).
 - Produces: jobs `quality`, `commitlint`, `e2e`, `gitleaks` in workflow `CI`; Task 8 adds `publish` and `deploy` jobs with `needs: [quality, e2e]`.
 
@@ -1803,11 +1948,14 @@ updates:
 - [ ] **Step 3: Push and verify on GitHub**
 
 Create the public GitHub repository (name chosen by the owner), then:
+
 ```bash
 git remote add origin git@github.com:<owner>/<repo>.git
 git push -u origin main
 ```
+
 In repository settings:
+
 1. **Code security → CodeQL analysis → Default setup → Enable** (languages: JavaScript/TypeScript, Actions).
 2. **Code security → Secret protection and push protection → Enable.**
 3. **Branches → Add rule for `main`:** require status checks `quality`, `e2e`, `gitleaks`; require PRs before merging.
@@ -1823,7 +1971,9 @@ git add packages/ui/src/unformatted.ts
 git commit --no-verify -m "chore: ci check"
 git push -u origin chore/ci-check
 ```
+
 Open a PR. Expected: `quality` FAILS at `pnpm format:check` because the file lacks the semicolon Prettier requires. Close the PR and delete the branch:
+
 ```bash
 git checkout main
 git push origin --delete chore/ci-check
@@ -1843,28 +1993,33 @@ git push
 ### Task 8: Production deploy (Hetzner + Cloudflare + Dokploy + GHCR)
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml` (add `publish` and `deploy` jobs)
 - Create: `docs/runbooks/deploy.md`, `docs/adr/0003-deployment-platform.md`
 
 **Interfaces:**
+
 - Consumes: Dockerfiles (Task 5), routing contract (Task 6), CI jobs (Task 7).
 - Produces: images `ghcr.io/<owner>/<repo>/{api,web,admin}:{latest,sha-<sha>}`; Dokploy applications `shop-api`, `shop-web`, `shop-admin`; GitHub secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_API_APP_ID`, `DOKPLOY_WEB_APP_ID`, `DOKPLOY_ADMIN_APP_ID`, `CF_ACCESS_CLIENT_ID`, `CF_ACCESS_CLIENT_SECRET`, `PROD_URL`; `https://<domain>/api/health` returning the deployed commit SHA.
 
 - [ ] **Step 1: Write the runbook**
 
 `docs/runbooks/deploy.md`:
+
 ````markdown
 # Deploy runbook
 
 One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip>`.
 
 ## 1. Domain and Cloudflare
+
 1. Buy a domain at any registrar.
 2. Cloudflare → Add site → Free plan → set the registrar's nameservers to Cloudflare's.
 3. SSL/TLS → Overview → **Full (strict)**. Edge Certificates → **Always Use HTTPS** on.
 4. SSL/TLS → Origin Server → **Create certificate** for `<domain>, *.<domain>` (15 years). Save the certificate and private key.
 
 ## 2. Hetzner server
+
 1. Hetzner Cloud → new server: Ubuntu 24.04, smallest shared x86 plan with 4 GB RAM (CX22 or its successor), your SSH key.
 2. Firewalls → create `shop-fw`, attach to the server:
    - TCP 22 from `<your-ip>/32`
@@ -1873,12 +2028,14 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 3. Cloudflare DNS → A records, **proxied (orange cloud)**, to the server IPv4: `@`, `admin`, `api`, `deploy`.
 
 ## 3. Dokploy
+
 1. `ssh root@<server-ip>` then `curl -sSL https://dokploy.com/install.sh | sh`.
 2. Open the UI through a tunnel for first setup: `ssh -L 3000:localhost:3000 root@<server-ip>` → http://localhost:3000 → create the admin account.
 3. Settings → Certificates → add the Cloudflare Origin certificate and key.
 4. Settings → Web Server → domain `deploy.<domain>`, HTTPS on, custom certificate.
 
 ## 4. Cloudflare Access for the Dokploy UI
+
 1. Zero Trust (free plan) → Access → Applications → Self-hosted → `deploy.<domain>`.
 2. Policy 1 "Owner": Allow, Include → Emails → your email.
 3. Access → Service Auth → Service Tokens → create `github-actions`; save Client ID and Secret.
@@ -1886,34 +2043,33 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 5. Check: opening `https://deploy.<domain>` asks for the Access login first.
 
 ## 5. Dokploy project and apps
+
 1. Project `shop`.
 2. Databases: Postgres (`postgres:18-alpine`), Redis (`redis:8-alpine`). Internal only (no external port).
 3. Applications, provider **Docker**, image `ghcr.io/<owner>/<repo>/<app>:latest`:
 
-| App | Image | Port | Domains (HTTPS, custom cert) |
-|---|---|---|---|
-| `shop-api` | `…/api:latest` | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
-| `shop-web` | `…/web:latest` | 3000 | `<domain>` path `/` |
-| `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/` |
+| App          | Image            | Port | Domains (HTTPS, custom cert)                                                  |
+| ------------ | ---------------- | ---- | ----------------------------------------------------------------------------- |
+| `shop-api`   | `…/api:latest`   | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
+| `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
+| `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
 
-   Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
-4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility).
-5. Settings → Profile → API → generate an API key.
-6. Copy each application's ID from its URL in the Dokploy UI.
+Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`. 4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility). 5. Settings → Profile → API → generate an API key. 6. Copy each application's ID from its URL in the Dokploy UI.
 
 ## 6. GitHub secrets (repo → Settings → Secrets and variables → Actions)
 
-| Secret | Value |
-|---|---|
-| `DOKPLOY_URL` | `https://deploy.<domain>` |
-| `DOKPLOY_API_KEY` | Dokploy API key |
-| `DOKPLOY_API_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs |
-| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` | Service token |
-| `PROD_URL` | `https://<domain>` |
+| Secret                                                               | Value                     |
+| -------------------------------------------------------------------- | ------------------------- |
+| `DOKPLOY_URL`                                                        | `https://deploy.<domain>` |
+| `DOKPLOY_API_KEY`                                                    | Dokploy API key           |
+| `DOKPLOY_API_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs           |
+| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`                    | Service token             |
+| `PROD_URL`                                                           | `https://<domain>`        |
 
 Create a GitHub environment `production` and move these secrets into it.
 
 ## 7. Verify
+
 ```bash
 curl -s https://<domain>/api/health     # {"status":"ok","version":"<commit sha>"}
 curl -s -o /dev/null -w '%{http_code}\n' https://<domain>/
@@ -1931,77 +2087,79 @@ Before adding the deploy job, confirm the Dokploy deploy endpoint and header aga
 - [ ] **Step 3: Add `publish` and `deploy` jobs to `.github/workflows/ci.yml`**
 
 Append under `jobs:`:
-```yaml
-  publish:
-    needs: [quality, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        app: [api, web, admin]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: image
-        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.app }}" >> "$GITHUB_OUTPUT"
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/${{ matrix.app }}/Dockerfile
-          push: true
-          build-args: APP_VERSION=${{ github.sha }}
-          tags: |
-            ${{ steps.image.outputs.name }}:latest
-            ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
-  deploy:
-    needs: publish
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Trigger Dokploy deploys
-        env:
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
-          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          APP_IDS: ${{ secrets.DOKPLOY_API_APP_ID }} ${{ secrets.DOKPLOY_WEB_APP_ID }} ${{ secrets.DOKPLOY_ADMIN_APP_ID }}
-        run: |
-          for id in $APP_IDS; do
-            curl --fail-with-body -sS -X POST "$DOKPLOY_URL/api/application.deploy" \
-              -H "x-api-key: $DOKPLOY_API_KEY" \
-              -H "CF-Access-Client-Id: $CF_ID" \
-              -H "CF-Access-Client-Secret: $CF_SECRET" \
-              -H 'Content-Type: application/json' \
-              -d "{\"applicationId\":\"$id\"}"
-          done
-      - name: Verify deployed version
-        env:
-          PROD_URL: ${{ secrets.PROD_URL }}
-        run: |
-          v=""
-          for i in $(seq 1 30); do
-            v=$(curl -fsS "$PROD_URL/api/health" | jq -r .version || true)
-            if [ "$v" = "$GITHUB_SHA" ]; then echo "prod runs $v"; exit 0; fi
-            sleep 10
-          done
-          echo "prod serves '$v', expected '$GITHUB_SHA'"
-          exit 1
+```yaml
+publish:
+  needs: [quality, e2e]
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+    packages: write
+  strategy:
+    matrix:
+      app: [api, web, admin]
+  steps:
+    - uses: actions/checkout@v5
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - id: image
+      run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.app }}" >> "$GITHUB_OUTPUT"
+    - uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: apps/${{ matrix.app }}/Dockerfile
+        push: true
+        build-args: APP_VERSION=${{ github.sha }}
+        tags: |
+          ${{ steps.image.outputs.name }}:latest
+          ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
+        cache-from: type=gha,scope=${{ matrix.app }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+deploy:
+  needs: publish
+  runs-on: ubuntu-latest
+  environment: production
+  steps:
+    - name: Trigger Dokploy deploys
+      env:
+        DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+        DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+        CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+        CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        APP_IDS: ${{ secrets.DOKPLOY_API_APP_ID }} ${{ secrets.DOKPLOY_WEB_APP_ID }} ${{ secrets.DOKPLOY_ADMIN_APP_ID }}
+      run: |
+        for id in $APP_IDS; do
+          curl --fail-with-body -sS -X POST "$DOKPLOY_URL/api/application.deploy" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -H "CF-Access-Client-Id: $CF_ID" \
+            -H "CF-Access-Client-Secret: $CF_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d "{\"applicationId\":\"$id\"}"
+        done
+    - name: Verify deployed version
+      env:
+        PROD_URL: ${{ secrets.PROD_URL }}
+      run: |
+        v=""
+        for i in $(seq 1 30); do
+          v=$(curl -fsS "$PROD_URL/api/health" | jq -r .version || true)
+          if [ "$v" = "$GITHUB_SHA" ]; then echo "prod runs $v"; exit 0; fi
+          sleep 10
+        done
+        echo "prod serves '$v', expected '$GITHUB_SHA'"
+        exit 1
 ```
 
 - [ ] **Step 4: ADR 0003**
 
 `docs/adr/0003-deployment-platform.md`:
+
 ```markdown
 # ADR 0003: Dokploy on a Hetzner VPS behind Cloudflare, images from GHCR
 
@@ -2009,20 +2167,24 @@ Append under `jobs:`:
 - Date: 2026-10-01
 
 ## Context
+
 Free or near-free hosting for a live demo with Postgres, Redis and three apps; push-to-deploy from GitHub; DDoS protection without paid plans.
 
 ## Decision
+
 - One Hetzner VPS (~€5/mo) running Dokploy (Traefik + Docker).
 - Cloudflare free plan proxies every hostname; the Hetzner firewall accepts 80/443 only from Cloudflare ranges, so the origin cannot be hit directly.
 - CI builds images to GHCR (free for public repos) and triggers Dokploy's API. The Dokploy UI is reachable only at `deploy.<domain>` behind Cloudflare Access; CI authenticates with an Access service token.
 - The deploy job fails unless `/api/health` reports the commit SHA that CI built.
 
 ## Consequences
+
 - Builds run on GitHub runners, not on the 4 GB VPS.
 - Single environment; no staging.
 - Rollback = redeploy a previous `sha-<sha>` tag in Dokploy.
 
 ## Alternatives rejected
+
 - Vercel/Render/Fly free tiers: split hosting for web vs api vs databases, sleep on idle, limits on background workers.
 - Coolify: comparable; Dokploy chosen for lighter footprint and simple API.
 - Dokploy building from the Git repo on the VPS: Next.js builds need more RAM than the VPS can spare.
@@ -2035,6 +2197,7 @@ git add .github/workflows/ci.yml docs/runbooks/deploy.md docs/adr/0003-deploymen
 git commit -m "ci: publish images to GHCR and deploy via Dokploy"
 git push
 ```
+
 Expected: `publish` pushes 3 images; make the packages public (runbook §5.4) if the first `deploy` fails on pull, then re-run the workflow. Final: `deploy` job green with `prod runs <sha>`, and every command in runbook §7 gives the expected output.
 
 ---
