@@ -51,6 +51,8 @@
     "servers": "Serwery",
     "prev": "Poprzedni serwer",
     "next": "Następny serwer",
+    "prevCategory": "Poprzednia kategoria",
+    "nextCategory": "Następna kategoria",
     "categories": "Kategorie",
     "all": "Wszystko",
     "ranks": "Rangi",

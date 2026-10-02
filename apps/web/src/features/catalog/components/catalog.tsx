@@ -1,14 +1,13 @@
 'use client'
 
-import {ScrollFade} from '@/components/scroll-fade'
+import {StepScroller} from '@/components/step-scroller'
 import {ProductCard} from '@/features/catalog/components/product-card'
 import {getPathname} from '@/i18n/navigation'
 import type {CategoryId} from '@/lib/catalog'
 import {categories, defaultServer, findServer, products, servers} from '@/lib/catalog'
-import {ChevronLeft, ChevronRight} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useState} from 'react'
 import type {CSSProperties} from 'react'
 
 type Filter = CategoryId | 'all'
@@ -20,7 +19,6 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const locale = useLocale()
   const [serverSlug, setServerSlug] = useState(initialServer)
   const [filter, setFilter] = useState<Filter>('all')
-  const switcherRef = useRef<HTMLDivElement>(null)
 
   const server = findServer(serverSlug) ?? defaultServer
   const index = servers.indexOf(server)
@@ -35,13 +33,6 @@ export function Catalog({initialServer}: {initialServer: string}) {
     root.setProperty('--on-accent', server.onAccent)
   }, [server])
 
-  // The row can scroll when the pills do not fit; keep the selected one visible (chevrons, deep link).
-  useEffect(() => {
-    switcherRef.current
-      ?.querySelector('[aria-pressed="true"]')
-      ?.scrollIntoView({block: 'nearest', inline: 'center'})
-  }, [server.slug])
-
   const selectServer = (slug: string) => {
     if (slug === server.slug) return
     setServerSlug(slug)
@@ -53,6 +44,13 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const step = (delta: number) => {
     const next = servers[(index + delta + servers.length) % servers.length]
     if (next) selectServer(next.slug)
+  }
+
+  const filters: Filter[] = ['all', ...categories]
+  const stepFilter = (delta: number) => {
+    const at = filters.indexOf(filter)
+    const next = filters[(at + delta + filters.length) % filters.length]
+    if (next) setFilter(next)
   }
 
   const fade = {
@@ -108,56 +106,54 @@ export function Catalog({initialServer}: {initialServer: string}) {
 
           {/* Server switcher + products */}
           <div className="relative min-w-0 lg:col-span-6">
-            <div
-              ref={switcherRef}
-              role="group"
-              aria-label={t('servers')}
-              className="relative flex items-center justify-start gap-2 lg:justify-center">
-              <button
-                type="button"
-                onClick={() => {
-                  step(-1)
-                }}
-                aria-label={t('prev')}
-                className="grid size-11 place-items-center rounded-full text-muted hover:bg-white/5 hover:text-fg">
-                <ChevronLeft className="size-5" />
-              </button>
-              <ScrollFade className="flex min-w-0 gap-2 scroll-smooth p-1 motion-reduce:scroll-auto">
-                {servers.map(s => {
-                  const active = s.slug === server.slug
-                  return (
-                    <button
-                      key={s.slug}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => {
-                        selectServer(s.slug)
-                      }}
-                      className={`h-11 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors ${
-                        active
-                          ? 'bg-accent text-on-accent'
-                          : 'border border-border text-fg hover:border-white/30'
-                      }`}>
-                      {s.name}
-                    </button>
-                  )
-                })}
-              </ScrollFade>
-              <button
-                type="button"
-                onClick={() => {
-                  step(1)
-                }}
-                aria-label={t('next')}
-                className="grid size-11 place-items-center rounded-full text-muted hover:bg-white/5 hover:text-fg">
-                <ChevronRight className="size-5" />
-              </button>
-            </div>
+            <StepScroller
+              label={t('servers')}
+              prevLabel={t('prev')}
+              nextLabel={t('next')}
+              onPrev={() => {
+                step(-1)
+              }}
+              onNext={() => {
+                step(1)
+              }}
+              activeKey={server.slug}
+              className="justify-start lg:justify-center">
+              {servers.map(s => {
+                const active = s.slug === server.slug
+                return (
+                  <button
+                    key={s.slug}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      selectServer(s.slug)
+                    }}
+                    className={`h-11 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors ${
+                      active
+                        ? 'bg-accent text-on-accent'
+                        : 'border border-border text-fg hover:border-white/30'
+                    }`}>
+                    {s.name}
+                  </button>
+                )
+              })}
+            </StepScroller>
 
             {/* Categories as chips below lg */}
-            <div className="relative -mx-[var(--gutter)] mt-6 overflow-x-auto px-[var(--gutter)] lg:hidden">
+            <StepScroller
+              label={t('categories')}
+              prevLabel={t('prevCategory')}
+              nextLabel={t('nextCategory')}
+              onPrev={() => {
+                stepFilter(-1)
+              }}
+              onNext={() => {
+                stepFilter(1)
+              }}
+              activeKey={filter}
+              className="mt-6 lg:hidden">
               <CategoryList filter={filter} onChange={setFilter} layout="row" />
-            </div>
+            </StepScroller>
 
             <div className="relative mt-10 lg:mt-16">
               <AnimatePresence mode="wait" initial={false}>

@@ -49,3 +49,18 @@ describe('Catalog server switcher', () => {
     expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole('button', {name: 'Anarchy'}))
   })
 })
+
+describe('Catalog category arrows', () => {
+  const pressed = (name: string) =>
+    screen.getAllByRole('button', {name}).every(b => b.getAttribute('aria-pressed') === 'true')
+
+  it('steps through the categories and wraps around', () => {
+    render(<Catalog initialServer="survival" />)
+    expect(pressed('all')).toBe(true)
+    fireEvent.click(screen.getByRole('button', {name: 'nextCategory'}))
+    expect(pressed('ranks')).toBe(true)
+    fireEvent.click(screen.getByRole('button', {name: 'prevCategory'}))
+    fireEvent.click(screen.getByRole('button', {name: 'prevCategory'}))
+    expect(pressed('all')).toBe(false)
+  })
+})
