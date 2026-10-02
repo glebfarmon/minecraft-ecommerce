@@ -2,13 +2,15 @@ import {renderHook} from '@testing-library/react'
 
 import {useDragScroll} from './use-drag-scroll'
 
+const MAX_SCROLL = 300
+
 function setup() {
   const el = document.createElement('div')
   let scrollLeft = 100
   Object.defineProperty(el, 'scrollLeft', {
     get: () => scrollLeft,
     set: (v: number) => {
-      scrollLeft = v
+      scrollLeft = Math.min(Math.max(v, 0), MAX_SCROLL)
     },
     configurable: true
   })
@@ -97,5 +99,83 @@ describe('useDragScroll', () => {
     fire('pointerdown', 200)
     fire('pointermove', 150)
     expect(scroll()).toBe(100)
+  })
+})
+
+describe('useDragScroll momentum', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+    document.body.innerHTML = ''
+  })
+
+  // Mouse moves left 20px every 16ms (a flick), then releases.
+  function flick(t: ReturnType<typeof setup>) {
+    t.fire('pointerdown', 250)
+    for (const x of [230, 210, 190]) {
+      jest.advanceTimersByTime(16)
+      t.fire('pointermove', x)
+    }
+    t.fire('pointerup', 190)
+  }
+
+  it('keeps scrolling after a fast release', () => {
+    const t = setup()
+    flick(t)
+    const atRelease = t.scroll()
+    jest.advanceTimersByTime(300)
+    expect(t.scroll()).toBeGreaterThan(atRelease)
+  })
+
+  it('does not coast after releasing a held, slow drag', () => {
+    const t = setup()
+    t.fire('pointerdown', 250)
+    jest.advanceTimersByTime(16)
+    t.fire('pointermove', 190)
+    jest.advanceTimersByTime(400) // held still before letting go
+    t.fire('pointerup', 190)
+    const atRelease = t.scroll()
+    jest.advanceTimersByTime(500)
+    expect(t.scroll()).toBe(atRelease)
+  })
+
+  it('slows to a stop and schedules no more frames', () => {
+    const t = setup()
+    flick(t)
+    jest.advanceTimersByTime(5000)
+    const settled = t.scroll()
+    jest.advanceTimersByTime(1000)
+    expect(t.scroll()).toBe(settled)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('stops at the end of the scroll range', () => {
+    const t = setup()
+    flick(t)
+    jest.advanceTimersByTime(5000)
+    expect(t.scroll()).toBeLessThanOrEqual(MAX_SCROLL)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('stops when the mouse is pressed again', () => {
+    const t = setup()
+    flick(t)
+    jest.advanceTimersByTime(48)
+    t.fire('pointerdown', 100)
+    const atPress = t.scroll()
+    jest.advanceTimersByTime(500)
+    expect(t.scroll()).toBe(atPress)
+  })
+
+  it('cancels the animation on unmount', () => {
+    const t = setup()
+    flick(t)
+    jest.advanceTimersByTime(32)
+    t.unmount()
+    const atUnmount = t.scroll()
+    jest.advanceTimersByTime(500)
+    expect(t.scroll()).toBe(atUnmount)
   })
 })
