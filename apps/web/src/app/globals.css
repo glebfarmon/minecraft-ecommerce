@@ -82,6 +82,48 @@ textarea {
   scrollbar-color: rgb(255 255 255 / 0.18) transparent;
 }
 
+/* Scroller with no visible scrollbar. The side that still has hidden content fades out (set by ScrollFade). */
+@property --fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  transition:
+    --fade-start 200ms ease-out,
+    --fade-end 200ms ease-out;
+}
+.scroll-fade-x::-webkit-scrollbar {
+  display: none;
+}
+.scroll-fade-x[data-fade-start='true'] {
+  --fade-start: 40px;
+}
+.scroll-fade-x[data-fade-end='true'] {
+  --fade-end: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade-x {
+    transition: none;
+  }
+}
+
 a {
   text-underline-offset: 0.2em;
 }
