@@ -13,6 +13,7 @@
     "language": "Język",
     "currency": "Waluta",
     "settings": "Język i waluta",
+    "closePanel": "Zamknij",
     "online": "{count} online"
   },
   "cart": {
