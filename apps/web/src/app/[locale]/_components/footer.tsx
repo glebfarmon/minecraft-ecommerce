@@ -27,7 +27,7 @@ export function Footer() {
   ]
 
   return (
-    <footer id="footer" className="scroll-mt-24 overflow-hidden">
+    <footer id="footer" className="overflow-hidden">
       <div className="mx-auto max-w-[1440px] px-[var(--gutter)]">
         <div className="border-b border-line py-10">
           <p

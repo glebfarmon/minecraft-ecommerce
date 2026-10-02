@@ -59,7 +59,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
         data-server={server.slug}
         aria-labelledby="shop-title"
         style={{'--accent': server.accent, '--on-accent': server.onAccent} as CSSProperties}
-        className="relative scroll-mt-24 overflow-x-clip border-b border-line">
+        className="relative overflow-x-clip border-b border-line">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-10 flex justify-center select-none lg:top-14">

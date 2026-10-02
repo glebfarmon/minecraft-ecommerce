@@ -6,7 +6,7 @@ const KEYS = ['1', '2', '3', '4'] as const
 export function Faq() {
   const t = useTranslations('faq')
   return (
-    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-24 border-b border-line">
+    <section id="faq" aria-labelledby="faq-title" className="border-b border-line">
       <div className="mx-auto grid max-w-[1440px] gap-10 px-[var(--gutter)] py-24 lg:grid-cols-12 lg:gap-6 lg:py-32">
         <h2
           id="faq-title"
