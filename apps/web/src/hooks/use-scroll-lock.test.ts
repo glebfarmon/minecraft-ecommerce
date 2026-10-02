@@ -30,17 +30,5 @@ describe('useScrollLock', () => {
     expect(root().style.overflow).toBe('hidden')
     outer.unmount()
     expect(root().style.overflow).toBe('')
-    expect(root().style.paddingRight).toBe('')
-  })
-
-  it('compensates for the scrollbar width so the page does not shift', () => {
-    Object.defineProperty(window, 'innerWidth', {configurable: true, value: 1015})
-    Object.defineProperty(root(), 'clientWidth', {configurable: true, value: 1000})
-    const {unmount} = renderHook(() => {
-      useScrollLock(true)
-    })
-    expect(root().style.paddingRight).toBe('15px')
-    unmount()
-    expect(root().style.paddingRight).toBe('')
   })
 })

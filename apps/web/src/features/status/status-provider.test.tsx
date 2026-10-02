@@ -84,4 +84,46 @@ describe('StatusProvider', () => {
     jest.advanceTimersByTime(180_000)
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it('stays unknown when the body has an unexpected shape', async () => {
+    fetchMock.mockReturnValue(reply({online: true, players: 'many'}))
+    setup()
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled()
+    })
+    expect(screen.getByText('unknown')).toBeInTheDocument()
+  })
+
+  describe('hidden tab', () => {
+    const setHidden = (hidden: boolean) => {
+      Object.defineProperty(document, 'hidden', {configurable: true, get: () => hidden})
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    afterEach(() => {
+      setHidden(false)
+    })
+
+    it('skips polls while hidden and refreshes when visible again', async () => {
+      jest.useFakeTimers()
+      fetchMock.mockReturnValue(reply({online: true, players: 1}))
+      setup()
+      await act(async () => {
+        await Promise.resolve()
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      act(() => {
+        setHidden(true)
+      })
+      await act(async () => {
+        jest.advanceTimersByTime(120_000)
+        await Promise.resolve()
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      await act(async () => {
+        setHidden(false)
+        await Promise.resolve()
+      })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+  })
 })

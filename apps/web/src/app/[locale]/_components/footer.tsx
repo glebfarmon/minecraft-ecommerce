@@ -54,7 +54,7 @@ export function Footer() {
           <FooterBlock className="py-10">
             <FooterWordmark plain="Block" accent="haus" />
           </FooterBlock>
-          <nav aria-label="Footer">
+          <nav aria-label={t('navLabel')}>
             <FooterBlock className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 md:grid-cols-4">
               {columns.map(col => (
                 <FooterItem key={col.title}>
@@ -62,22 +62,18 @@ export function Footer() {
                   <ul className="mt-4 flex flex-col gap-3">
                     {col.links.map(link => (
                       <li key={link.label}>
-                        {'href' in link && link.href ? (
-                          'file' in link || link.href.startsWith('https://') ? (
-                            <a
-                              href={link.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={LINK_CLASS}>
-                              {link.label}
-                            </a>
-                          ) : (
-                            <Link href={link.href} className={LINK_CLASS}>
-                              {link.label}
-                            </Link>
-                          )
+                        {'file' in link || link.href.startsWith('https://') ? (
+                          <a
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={LINK_CLASS}>
+                            {link.label}
+                          </a>
                         ) : (
-                          <span className="text-fg/40">{link.label}</span>
+                          <Link href={link.href} className={LINK_CLASS}>
+                            {link.label}
+                          </Link>
                         )}
                       </li>
                     ))}

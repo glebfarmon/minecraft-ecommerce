@@ -2,9 +2,9 @@ const DURATION = 720
 const STEPS = 32
 // Share of the timeline spent crouching before the jump.
 const CROUCH = 0.14
-// Share of the flight over which the card is swallowed by the cart.
 // Keep the card's centre at least this far below the top of the viewport at the apex.
 const EDGE_MARGIN = 32
+// Share of the flight over which the card is swallowed by the cart.
 const SWALLOW = 0.28
 const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 

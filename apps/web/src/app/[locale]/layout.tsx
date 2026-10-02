@@ -53,12 +53,18 @@ export default async function LocaleLayout({
 }) {
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
+  const t = await getTranslations({locale})
 
   return (
     <html
       lang={locale}
       className={`${interTight.variable} ${oswald.variable} ${jetbrainsMono.variable}`}>
       <body>
+        <a
+          href="#shop"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-5 focus:py-3 focus:font-semibold focus:text-on-accent">
+          {t('skip')}
+        </a>
         <NextIntlClientProvider>
           <StatusProvider>
             <ShopProvider>

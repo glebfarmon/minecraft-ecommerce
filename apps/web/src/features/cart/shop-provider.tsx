@@ -53,6 +53,18 @@ function loadSaved(): {currency?: unknown; cart?: unknown} {
   }
 }
 
+/** Saved data is untrusted (older versions, hand edits): keep well-formed lines only, quantity clamped to 1..MAX_QTY. */
+function parseCart(raw: unknown): CartLine[] {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((line: unknown) => {
+    if (typeof line !== 'object' || line === null) return []
+    const {server, slug, qty} = line as Record<string, unknown>
+    if (typeof server !== 'string' || typeof slug !== 'string') return []
+    if (typeof qty !== 'number' || !Number.isFinite(qty) || qty < 1) return []
+    return [{server, slug, qty: Math.min(Math.floor(qty), MAX_QTY)}]
+  })
+}
+
 export function ShopProvider({children}: {children: ReactNode}) {
   const [{currency, cart}, setState] = useState<{currency: Currency; cart: CartLine[]}>({
     currency: 'EUR',
@@ -60,17 +72,18 @@ export function ShopProvider({children}: {children: ReactNode}) {
   })
   const hydrated = useRef(false)
 
-  // Restore after mount so server and first client render match.
+  // Restore after mount so server and first client render match. Saving stays off until the restore has landed,
+  // otherwise the empty first state would overwrite what is stored.
   useEffect(() => {
     const saved = loadSaved()
-    hydrated.current = true
     const legacy = isCurrency(saved.currency) ? saved.currency : undefined
     const restoredCurrency = readCurrencyCookie() ?? legacy
     if (!readCurrencyCookie() && legacy) writeCurrencyCookie(legacy)
-    const restoredCart = Array.isArray(saved.cart) ? (saved.cart as CartLine[]) : []
-    if (!restoredCurrency && restoredCart.length === 0) return
+    const restoredCart = parseCart(saved.cart)
     queueMicrotask(() => {
-      setState({currency: restoredCurrency ?? 'EUR', cart: restoredCart})
+      hydrated.current = true
+      if (restoredCurrency || restoredCart.length > 0)
+        setState({currency: restoredCurrency ?? 'EUR', cart: restoredCart})
     })
   }, [])
 

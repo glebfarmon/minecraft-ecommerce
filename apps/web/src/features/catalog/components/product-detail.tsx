@@ -3,6 +3,7 @@
 import {useAddToCart} from '@/features/cart/components/add-to-cart'
 import {useCart, useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
+import type {Locale} from '@/i18n/routing'
 import type {Product, Server} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
@@ -41,9 +42,7 @@ export function ProductDetail({
           className="text-[clamp(2.25rem,4vw,3.25rem)] leading-[1] font-bold tracking-[-0.03em]">
           {product.name}
         </h2>
-        <p className="mt-4 leading-relaxed text-fg/80">
-          {product.description[locale === 'pl' ? 'pl' : 'en']}
-        </p>
+        <p className="mt-4 leading-relaxed text-fg/80">{product.description[locale as Locale]}</p>
 
         <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-line py-5 text-sm">
           <div>

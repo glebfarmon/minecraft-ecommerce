@@ -1,5 +1,6 @@
 // Demo catalog. Every value here is placeholder data until the catalog API
 // (sub-project 2) exists; the UI labels it as demo.
+import type {Locale} from '@/i18n/routing'
 
 export type Currency = 'EUR' | 'PLN'
 export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits' | 'cosmetics'
@@ -25,7 +26,7 @@ export type Product = {
   price: Record<Currency, number> // minor units
   durationDays?: number
   adult?: boolean
-  description: {en: string; pl: string}
+  description: Record<Locale, string>
 }
 
 export const SERVER_IP = 'mc.mineblaze.net'
