@@ -1,11 +1,10 @@
 'use client'
 
+import {EASE, REVEAL_VIEWPORT} from '@/config/motion'
 import {MotionConfig, motion, useReducedMotion} from 'motion/react'
 import type {Variants} from 'motion/react'
 import type {ReactNode} from 'react'
 
-const EASE = [0.16, 1, 0.3, 1] as const
-const VIEWPORT = {once: true, margin: '0px 0px -15% 0px'}
 // Side by side, the steps start half a second apart so the trace walks across; stacked on mobile each plays on its own scroll, with no gap.
 const STEP_GAP = 0.55
 
@@ -49,7 +48,7 @@ export function HowHeading({
       className={className}
       initial={{opacity: 0, y: 16}}
       whileInView={{opacity: 1, y: 0}}
-      viewport={VIEWPORT}
+      viewport={REVEAL_VIEWPORT}
       transition={{duration: 0.6, ease: EASE}}>
       {children}
     </motion.h2>
@@ -73,7 +72,7 @@ export function HowStep({
       variants={stepVariants}
       initial="hidden"
       whileInView="shown"
-      viewport={VIEWPORT}>
+      viewport={REVEAL_VIEWPORT}>
       <HowTrace />
       {children}
     </motion.li>

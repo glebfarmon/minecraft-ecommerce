@@ -1,5 +1,6 @@
-import type {Product} from '@/lib/catalog'
-import {findServer, products} from '@/lib/catalog'
+import type {Product} from '@/config/products'
+import {products} from '@/config/products'
+import {findServer} from '@/lib/catalog'
 import {fireEvent, render, screen} from '@testing-library/react'
 
 import {ProductDetail} from './product-detail'

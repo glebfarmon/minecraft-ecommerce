@@ -1,12 +1,11 @@
 'use client'
 
+import {EASE} from '@/config/motion'
 import {useScrollLock} from '@/hooks/use-scroll-lock'
 import {X} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion, useIsPresent} from 'motion/react'
 import type {CSSProperties, ReactNode} from 'react'
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
-
-const EASE = [0.16, 1, 0.3, 1] as const
 
 const BACKDROP = {hidden: {opacity: 0}, shown: {opacity: 1}}
 const PANEL = {

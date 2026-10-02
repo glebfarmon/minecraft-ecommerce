@@ -19,7 +19,7 @@ export function HowItWorks() {
   return (
     <section aria-labelledby="how-title" className="border-b border-line">
       <HowMotion>
-        <div className="mx-auto max-w-[1440px] px-[var(--gutter)] py-24 lg:py-32">
+        <div className="mx-auto max-w-page px-[var(--gutter)] py-24 lg:py-32">
           <HowHeading
             id="how-title"
             className="max-w-[18ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]">

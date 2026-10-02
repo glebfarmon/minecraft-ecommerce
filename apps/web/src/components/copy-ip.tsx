@@ -1,12 +1,13 @@
 'use client'
 
+import {COPIED_FLASH_MS} from '@/config/cart'
 import {useTransientFlag} from '@/hooks/use-transient-flag'
 import {Check, Copy} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 
 export function CopyIp({ip, className = ''}: {ip: string; className?: string}) {
   const t = useTranslations('ip')
-  const [copied, flash] = useTransientFlag(1500)
+  const [copied, flash] = useTransientFlag(COPIED_FLASH_MS)
 
   return (
     <button

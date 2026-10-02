@@ -83,7 +83,7 @@ export function LiveFeed({purchases = STUB_PURCHASES}: {purchases?: Purchase[]})
     <section aria-labelledby="feed-title" className="border-b border-line py-10">
       <h2
         id="feed-title"
-        className="mx-auto mb-6 flex max-w-[1440px] items-center gap-3 px-[var(--gutter)] text-sm font-semibold">
+        className="mx-auto mb-6 flex max-w-page items-center gap-3 px-[var(--gutter)] text-sm font-semibold">
         <OnlineDot online />
         {t('title')}
         <span className="rounded-full border border-border px-2 py-0.5 text-[11px] tracking-[0.14em] text-muted uppercase">
@@ -98,7 +98,7 @@ export function LiveFeed({purchases = STUB_PURCHASES}: {purchases?: Purchase[]})
           </div>
         </div>
       ) : (
-        <ul className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-x-12 gap-y-5 px-[var(--gutter)]">
+        <ul className="mx-auto flex max-w-page flex-wrap items-center gap-x-12 gap-y-5 px-[var(--gutter)]">
           {purchases.map(p => (
             <Item key={p.id} purchase={p} />
           ))}

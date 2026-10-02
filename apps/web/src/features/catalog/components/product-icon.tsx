@@ -1,4 +1,4 @@
-import type {ProductIcon as IconName} from '@/lib/catalog'
+import type {ProductIcon as IconName} from '@/config/products'
 import {Box, Coins, Crown, Pickaxe, Swords, Ticket} from 'lucide-react'
 import type {LucideProps} from 'lucide-react'
 

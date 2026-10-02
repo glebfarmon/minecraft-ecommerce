@@ -1,5 +1,5 @@
+import type {Product} from '@/config/products'
 import {ProductIcon} from '@/features/catalog/components/product-icon'
-import type {Product} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 
 /** Typographic stand-in for a product render until real artwork exists. */

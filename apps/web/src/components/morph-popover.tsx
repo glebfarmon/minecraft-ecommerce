@@ -1,5 +1,6 @@
 'use client'
 
+import {MORPH} from '@/config/motion'
 import {useDismiss} from '@/hooks/use-dismiss'
 import {X} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion} from 'motion/react'
@@ -8,7 +9,6 @@ import {useCallback, useEffect, useId, useRef, useState} from 'react'
 
 // Trigger and panel share one radius (half of the 44px trigger), so Motion never has to morph corners.
 const RADIUS = 22
-const MORPH = {type: 'spring', bounce: 0.1, duration: 0.45} as const
 
 const ANCHOR = {'top-end': 'top-0 right-0', 'bottom-end': 'right-0 bottom-0'} as const
 

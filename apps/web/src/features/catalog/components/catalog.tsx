@@ -1,11 +1,15 @@
 'use client'
 
 import {StepScroller} from '@/components/step-scroller'
+import {EASE} from '@/config/motion'
+import type {Product} from '@/config/products'
+import {products} from '@/config/products'
+import type {CategoryId} from '@/config/servers'
+import {defaultServer, servers} from '@/config/servers'
 import {ProductCard} from '@/features/catalog/components/product-card'
 import {ProductModal} from '@/features/catalog/components/product-modal'
 import {getPathname} from '@/i18n/navigation'
-import type {CategoryId, Product} from '@/lib/catalog'
-import {defaultServer, findServer, products, servers} from '@/lib/catalog'
+import {findServer} from '@/lib/catalog'
 import {AnimatePresence, MotionConfig, motion, useInView} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useEffect, useRef, useState} from 'react'
@@ -13,7 +17,6 @@ import type {CSSProperties} from 'react'
 
 type Filter = CategoryId | 'all'
 
-const EASE = [0.16, 1, 0.3, 1] as const
 const FADE = {
   initial: {opacity: 0, y: 12},
   animate: {opacity: 1, y: 0},
@@ -108,7 +111,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
             </motion.span>
           </AnimatePresence>
         </div>
-        <div className="relative mx-auto grid max-w-[1440px] gap-x-6 gap-y-10 px-[var(--gutter)] py-24 lg:grid-cols-12 lg:py-32">
+        <div className="relative mx-auto grid max-w-page gap-x-6 gap-y-10 px-[var(--gutter)] py-24 lg:grid-cols-12 lg:py-32">
           <h2 id="shop-title" className="sr-only">
             {t('title')}
           </h2>

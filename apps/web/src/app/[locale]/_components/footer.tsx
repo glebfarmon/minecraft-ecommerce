@@ -6,9 +6,10 @@ import {
   FooterWordmark
 } from '@/app/[locale]/_components/footer-motion'
 import {CopyIp} from '@/components/copy-ip'
+import {servers} from '@/config/servers'
+import {DISCORD_URL, LEGAL_DOCS, PAGES, SERVER_IP, SITE_NAME, legalPath} from '@/config/site'
 import {OnlineBadge} from '@/features/status/components/online-badge'
 import {Link} from '@/i18n/navigation'
-import {SERVER_IP, servers} from '@/lib/catalog'
 import {useLocale, useTranslations} from 'next-intl'
 
 const LINK_CLASS =
@@ -26,23 +27,18 @@ export function Footer() {
       title: t('help'),
       links: [
         {label: t('faq'), href: '#faq'},
-        {label: t('contact'), href: '/contacts'}
+        {label: t('contact'), href: PAGES.contacts}
       ]
     },
     {
       title: t('legal'),
-      links: [
-        {label: t('terms'), href: `/legal/terms.${locale}.pdf`, file: true},
-        {label: t('privacy'), href: `/legal/privacy.${locale}.pdf`, file: true},
-        {label: t('refunds'), href: `/legal/refunds.${locale}.pdf`, file: true},
-        {label: t('cookies'), href: `/legal/cookies.${locale}.pdf`, file: true}
-      ]
+      links: [...LEGAL_DOCS.map(doc => ({label: t(doc), href: legalPath(doc, locale), file: true}))]
     },
     {
       title: t('community'),
       links: [
-        {label: t('rules'), href: '/rules'},
-        {label: t('discord'), href: 'https://discord.com'}
+        {label: t('rules'), href: PAGES.rules},
+        {label: t('discord'), href: DISCORD_URL}
       ]
     }
   ]
@@ -50,9 +46,9 @@ export function Footer() {
   return (
     <footer id="footer" className="overflow-hidden">
       <FooterMotion>
-        <div className="mx-auto max-w-[1440px] px-[var(--gutter)]">
+        <div className="mx-auto max-w-page px-[var(--gutter)]">
           <FooterBlock className="py-10">
-            <FooterWordmark plain="Block" accent="haus" />
+            <FooterWordmark plain={SITE_NAME.plain} accent={SITE_NAME.accent} />
           </FooterBlock>
           <nav aria-label={t('navLabel')}>
             <FooterBlock className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 md:grid-cols-4">

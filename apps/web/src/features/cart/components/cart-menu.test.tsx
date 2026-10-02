@@ -1,6 +1,6 @@
+import type {Product} from '@/config/products'
+import {products} from '@/config/products'
 import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
-import type {Product} from '@/lib/catalog'
-import {products} from '@/lib/catalog'
 import {fireEvent, render, screen, waitFor} from '@testing-library/react'
 
 import {CartMenu} from './cart-menu'

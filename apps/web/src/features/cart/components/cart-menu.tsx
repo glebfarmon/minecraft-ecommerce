@@ -2,14 +2,13 @@
 
 import {CountUp} from '@/components/count-up'
 import {MorphPopover} from '@/components/morph-popover'
-import {MAX_QTY, useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
+import {MAX_QTY} from '@/config/cart'
+import {CART_TICK_S} from '@/config/motion'
+import {useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
 import {formatPrice} from '@/lib/catalog'
 import {Minus, Plus, ShoppingBag, X} from 'lucide-react'
 import {AnimatePresence, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
-
-// Cart numbers change by one step at a time, so they settle much faster than the online counter.
-const TICK = 0.45
 
 export function CartMenu() {
   const t = useTranslations('cart')
@@ -42,7 +41,7 @@ export function CartMenu() {
                 exit={{scale: 0, opacity: 0}}
                 transition={{type: 'spring', duration: 0.35, bounce: 0.45}}
                 className="tabular absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-on-accent">
-                <CountUp value={count} duration={TICK} />
+                <CountUp value={count} duration={CART_TICK_S} />
               </motion.span>
             )}
           </AnimatePresence>
@@ -78,7 +77,7 @@ export function CartMenu() {
                             data-testid="cart-qty"
                             aria-live="polite"
                             className="tabular min-w-6 text-center text-sm font-medium">
-                            <CountUp value={qty} duration={TICK} />
+                            <CountUp value={qty} duration={CART_TICK_S} />
                           </span>
                           <button
                             type="button"
@@ -97,7 +96,7 @@ export function CartMenu() {
                       <CountUp
                         key={currency}
                         value={product.price[currency] * qty}
-                        duration={TICK}
+                        duration={CART_TICK_S}
                         format={n => formatPrice(n, currency, locale)}
                       />
                     </span>
@@ -119,7 +118,7 @@ export function CartMenu() {
                   <CountUp
                     key={currency}
                     value={total}
-                    duration={TICK}
+                    duration={CART_TICK_S}
                     format={n => formatPrice(n, currency, locale)}
                   />
                 </span>

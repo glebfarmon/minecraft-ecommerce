@@ -1,8 +1,9 @@
 'use client'
 
 import {Modal} from '@/components/modal'
+import type {Product} from '@/config/products'
+import type {Server} from '@/config/servers'
 import {ProductDetail} from '@/features/catalog/components/product-detail'
-import type {Product, Server} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 import {useId} from 'react'
 import type {CSSProperties} from 'react'

@@ -1,11 +1,13 @@
-const DURATION = 720
-const STEPS = 32
-// Share of the timeline spent crouching before the jump.
-const CROUCH = 0.14
-// Keep the card's centre at least this far below the top of the viewport at the apex.
-const EDGE_MARGIN = 32
-// Share of the flight over which the card is swallowed by the cart.
-const SWALLOW = 0.28
+import {FLY_TO_CART} from '@/config/motion'
+
+const {
+  durationMs: DURATION,
+  steps: STEPS,
+  crouch: CROUCH,
+  swallow: SWALLOW,
+  edgeMarginPx: EDGE_MARGIN,
+  bumpMs
+} = FLY_TO_CART
 const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 const f = (n: number) => n.toFixed(2)
@@ -26,7 +28,7 @@ function bump(target: HTMLElement) {
       {transform: 'scale(0.94)', offset: 0.65},
       {transform: 'scale(1)'}
     ],
-    {duration: 380, easing: EASE_OUT}
+    {duration: bumpMs, easing: EASE_OUT}
   )
 }
 

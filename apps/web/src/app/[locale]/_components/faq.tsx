@@ -8,7 +8,7 @@ export function Faq() {
   return (
     <section id="faq" aria-labelledby="faq-title" className="border-b border-line">
       <FaqMotion>
-        <div className="mx-auto grid max-w-[1440px] gap-10 px-[var(--gutter)] py-24 lg:grid-cols-12 lg:gap-6 lg:py-32">
+        <div className="mx-auto grid max-w-page gap-10 px-[var(--gutter)] py-24 lg:grid-cols-12 lg:gap-6 lg:py-32">
           <FaqHeading
             id="faq-title"
             className="text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em] lg:col-span-4">

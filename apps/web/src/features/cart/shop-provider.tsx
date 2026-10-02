@@ -1,6 +1,9 @@
 'use client'
 
-import type {Currency, Product} from '@/lib/catalog'
+import {CART_STORAGE_KEY, CURRENCY_COOKIE, CURRENCY_COOKIE_MAX_AGE, MAX_QTY} from '@/config/cart'
+import type {Currency} from '@/config/currencies'
+import {DEFAULT_CURRENCY, isCurrency} from '@/config/currencies'
+import type {Product} from '@/config/products'
 import {findProduct} from '@/lib/catalog'
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import type {ReactNode} from 'react'
@@ -21,16 +24,6 @@ const CurrencyContext = createContext<CurrencyState | null>(null)
 const CartContext = createContext<CartLines | null>(null)
 const ActionsContext = createContext<CartActions | null>(null)
 
-/** Per-line quantity cap; `add` ignores anything past it. */
-export const MAX_QTY = 99
-
-const STORAGE_KEY = 'shop:v1'
-// A cookie rather than localStorage so the API receives the chosen currency with every request.
-const CURRENCY_COOKIE = 'currency'
-const YEAR_SECONDS = 365 * 24 * 60 * 60
-
-const isCurrency = (value: unknown): value is Currency => value === 'EUR' || value === 'PLN'
-
 function readCurrencyCookie() {
   const value = document.cookie
     .split('; ')
@@ -40,13 +33,13 @@ function readCurrencyCookie() {
 }
 
 function writeCurrencyCookie(currency: Currency) {
-  document.cookie = `${CURRENCY_COOKIE}=${currency}; path=/; max-age=${String(YEAR_SECONDS)}; SameSite=Lax`
+  document.cookie = `${CURRENCY_COOKIE}=${currency}; path=/; max-age=${String(CURRENCY_COOKIE_MAX_AGE)}; SameSite=Lax`
 }
 
 // The cart lives in localStorage; older versions also kept the currency there.
 function loadSaved(): {currency?: unknown; cart?: unknown} {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(CART_STORAGE_KEY)
     return raw ? (JSON.parse(raw) as {currency?: unknown; cart?: unknown}) : {}
   } catch {
     return {}
@@ -67,7 +60,7 @@ function parseCart(raw: unknown): CartLine[] {
 
 export function ShopProvider({children}: {children: ReactNode}) {
   const [{currency, cart}, setState] = useState<{currency: Currency; cart: CartLine[]}>({
-    currency: 'EUR',
+    currency: DEFAULT_CURRENCY,
     cart: []
   })
   const hydrated = useRef(false)
@@ -83,14 +76,14 @@ export function ShopProvider({children}: {children: ReactNode}) {
     queueMicrotask(() => {
       hydrated.current = true
       if (restoredCurrency || restoredCart.length > 0)
-        setState({currency: restoredCurrency ?? 'EUR', cart: restoredCart})
+        setState({currency: restoredCurrency ?? DEFAULT_CURRENCY, cart: restoredCart})
     })
   }, [])
 
   useEffect(() => {
     if (!hydrated.current) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({cart}))
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({cart}))
     } catch {
       // Storage unavailable (private mode); the cart just won't survive a reload.
     }

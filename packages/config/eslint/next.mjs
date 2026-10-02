@@ -9,7 +9,7 @@ export const next = defineConfig(
   base,
   nextVitals,
   {
-    files: ['src/components/**', 'src/hooks/**', 'src/lib/**', 'src/i18n/**'],
+    files: ['src/config/**', 'src/components/**', 'src/hooks/**', 'src/lib/**', 'src/i18n/**'],
     rules: {
       'no-restricted-imports': [
         'error',

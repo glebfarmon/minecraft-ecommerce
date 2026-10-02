@@ -1,7 +1,8 @@
 import {CopyIp} from '@/components/copy-ip'
 import {GridGuides} from '@/components/grid-guides'
+import {EASE} from '@/config/motion'
+import {SERVER_IP} from '@/config/site'
 import {OnlineCounter} from '@/features/status/components/online-counter'
-import {SERVER_IP} from '@/lib/catalog'
 import {ArrowDown, Plus} from 'lucide-react'
 import * as motion from 'motion/react-client'
 import {useTranslations} from 'next-intl'
@@ -12,8 +13,6 @@ import {HeroMotion, HeroSteve} from './hero-motion'
 
 const word =
   'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase'
-
-const EASE = [0.16, 1, 0.3, 1] as const
 
 // The copy fades in after the headline and Steve have landed.
 const rise = (delay: number) => ({
@@ -53,7 +52,7 @@ export function Hero() {
     <section id="top" className="relative isolate overflow-hidden border-b border-line">
       <GridGuides />
       <HeroMotion>
-        <div className="relative mx-auto grid max-w-[1440px] px-[var(--gutter)] pt-28 pb-10 md:block md:h-[max(100svh,760px)] md:pt-0 md:pb-0">
+        <div className="relative mx-auto grid max-w-page px-[var(--gutter)] pt-28 pb-10 md:block md:h-[max(100svh,760px)] md:pt-0 md:pb-0">
           <h1 className="md:contents">
             <span className="sr-only">{t('title')}</span>
             <span

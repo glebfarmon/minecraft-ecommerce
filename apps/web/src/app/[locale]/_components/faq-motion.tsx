@@ -1,13 +1,11 @@
 'use client'
 
+import {EASE, REVEAL_VIEWPORT} from '@/config/motion'
 import {Plus} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion, useReducedMotion} from 'motion/react'
 import type {Variants} from 'motion/react'
 import {useId, useState} from 'react'
 import type {ReactNode} from 'react'
-
-const EASE = [0.16, 1, 0.3, 1] as const
-const VIEWPORT = {once: true, margin: '0px 0px -15% 0px'}
 
 const listVariants: Variants = {
   hidden: {},
@@ -44,7 +42,7 @@ export function FaqHeading({
       className={className}
       initial={{opacity: 0, y: 16}}
       whileInView={{opacity: 1, y: 0}}
-      viewport={VIEWPORT}
+      viewport={REVEAL_VIEWPORT}
       transition={{duration: 0.6, ease: EASE}}>
       {children}
     </motion.h2>
@@ -59,7 +57,7 @@ export function FaqList({className, children}: {className: string; children: Rea
       variants={listVariants}
       initial="hidden"
       whileInView="shown"
-      viewport={VIEWPORT}>
+      viewport={REVEAL_VIEWPORT}>
       {children}
     </motion.div>
   )

@@ -1,5 +1,6 @@
 import {HomeView} from '@/app/[locale]/_components/home-view'
-import {findServer, servers} from '@/lib/catalog'
+import {servers} from '@/config/servers'
+import {findServer} from '@/lib/catalog'
 import {notFound} from 'next/navigation'
 
 export function generateStaticParams() {

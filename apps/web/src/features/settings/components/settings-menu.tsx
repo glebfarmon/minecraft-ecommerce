@@ -1,18 +1,13 @@
 'use client'
 
 import {MorphPopover} from '@/components/morph-popover'
+import {CURRENCIES} from '@/config/currencies'
+import {LANGUAGE_NAMES} from '@/config/locales'
 import {useCurrency} from '@/features/cart/shop-provider'
 import {usePathname, useRouter} from '@/i18n/navigation'
 import {routing} from '@/i18n/routing'
-import type {Currency} from '@/lib/catalog'
 import {Check, Globe} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
-
-const LANGUAGE_NAMES: Record<string, string> = {en: 'English', pl: 'Polski'}
-const CURRENCIES: {code: Currency; symbol: string}[] = [
-  {code: 'EUR', symbol: '€'},
-  {code: 'PLN', symbol: 'zł'}
-]
 
 export function SettingsMenu({anchor = 'top-end'}: {anchor?: 'top-end' | 'bottom-end'}) {
   const t = useTranslations('nav')
@@ -58,7 +53,7 @@ export function SettingsOptions({onDone}: {onDone: () => void}) {
           <Option
             key={code}
             code={code.toUpperCase()}
-            label={LANGUAGE_NAMES[code] ?? code}
+            label={LANGUAGE_NAMES[code]}
             selected={code === locale}
             onSelect={() => {
               onDone()

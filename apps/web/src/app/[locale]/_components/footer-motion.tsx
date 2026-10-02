@@ -1,10 +1,10 @@
 'use client'
 
+import {EASE} from '@/config/motion'
 import {MotionConfig, motion} from 'motion/react'
 import type {Variants} from 'motion/react'
 import type {ReactNode} from 'react'
 
-const EASE = [0.16, 1, 0.3, 1] as const
 // The footer sits at the very end of the page, so there is no inset: the last row must still count as in view at maximum scroll.
 const VIEWPORT = {once: true, amount: 0.2}
 

@@ -1,15 +1,16 @@
 'use client'
 
+import {ADDED_FLASH_MS} from '@/config/cart'
+import type {Product} from '@/config/products'
 import {useCartActions} from '@/features/cart/shop-provider'
 import {useTransientFlag} from '@/hooks/use-transient-flag'
-import type {Product} from '@/lib/catalog'
 import {flyToCart} from '@/lib/fly-to-cart'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 
 export function useAddToCart(product: Product) {
   const {add} = useCartActions()
-  const [added, flash] = useTransientFlag(1400)
+  const [added, flash] = useTransientFlag(ADDED_FLASH_MS)
   return {
     added,
     /** `source` is the element that visually jumps into the cart. */

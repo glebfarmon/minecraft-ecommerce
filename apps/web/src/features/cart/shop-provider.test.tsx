@@ -1,6 +1,6 @@
+import type {Product} from '@/config/products'
+import {products} from '@/config/products'
 import {ShopProvider, useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
-import type {Product} from '@/lib/catalog'
-import {products} from '@/lib/catalog'
 import {act, fireEvent, render, screen} from '@testing-library/react'
 import {StrictMode} from 'react'
 

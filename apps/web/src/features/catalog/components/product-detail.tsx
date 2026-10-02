@@ -1,10 +1,11 @@
 'use client'
 
+import type {Product} from '@/config/products'
+import type {Server} from '@/config/servers'
 import {useAddToCart} from '@/features/cart/components/add-to-cart'
 import {useCart, useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import type {Locale} from '@/i18n/routing'
-import type {Product, Server} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'

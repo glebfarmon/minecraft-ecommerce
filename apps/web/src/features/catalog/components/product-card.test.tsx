@@ -1,5 +1,5 @@
-import type {Product} from '@/lib/catalog'
-import {products} from '@/lib/catalog'
+import type {Product} from '@/config/products'
+import {products} from '@/config/products'
 import {fireEvent, render, screen} from '@testing-library/react'
 
 import {ProductCard} from './product-card'

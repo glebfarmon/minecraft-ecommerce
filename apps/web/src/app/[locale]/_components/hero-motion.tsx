@@ -1,5 +1,6 @@
 'use client'
 
+import {EASE} from '@/config/motion'
 import {
   MotionConfig,
   motion,
@@ -11,7 +12,6 @@ import {
 import {useEffect} from 'react'
 import type {ReactNode} from 'react'
 
-const EASE = [0.16, 1, 0.3, 1] as const
 const FOLLOW = {stiffness: 60, damping: 20, mass: 0.6}
 
 /** Client boundary for the hero's entrance; the copy inside stays server-rendered. Reduced motion keeps the fades and drops the movement. */

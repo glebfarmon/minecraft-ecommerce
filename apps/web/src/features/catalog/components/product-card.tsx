@@ -1,9 +1,9 @@
 'use client'
 
+import type {Product} from '@/config/products'
 import {AddToCartButton} from '@/features/cart/components/add-to-cart'
 import {useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
-import type {Product} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'
 import {useLocale, useTranslations} from 'next-intl'
 

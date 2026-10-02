@@ -2,6 +2,7 @@
 
 import {MobileMenu} from '@/app/[locale]/_components/mobile-menu'
 import {NavLinks} from '@/app/[locale]/_components/nav-links'
+import {PAGES, SITE_NAME} from '@/config/site'
 import {CartMenu} from '@/features/cart/components/cart-menu'
 import {SettingsMenu} from '@/features/settings/components/settings-menu'
 import {OnlineBadge} from '@/features/status/components/online-badge'
@@ -41,9 +42,10 @@ export function Navbar() {
 
   const links = [
     {href: homeHref, label: t('home')},
-    {href: '/cases', label: t('cases')},
-    {href: '/rules', label: t('rules')},
-    {href: '/contacts', label: t('contacts')}
+    ...(Object.keys(PAGES) as (keyof typeof PAGES)[]).map(key => ({
+      href: PAGES[key],
+      label: t(key)
+    }))
   ]
 
   return (
@@ -52,14 +54,15 @@ export function Navbar() {
         aria-label={t('main')}
         data-scrolled={scrolled || undefined}
         data-animate={animate || undefined}
-        className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 data-animate:transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] data-animate:duration-300 data-animate:ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md data-animate:motion-reduce:transition-[background-color,border-color,box-shadow] data-animate:motion-reduce:duration-200 xl:grid xl:grid-cols-[1fr_auto_1fr]">
+        className="mx-auto flex h-16 max-w-page items-center gap-6 rounded-full border border-transparent pr-2 pl-6 data-animate:transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] data-animate:duration-300 data-animate:ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md data-animate:motion-reduce:transition-[background-color,border-color,box-shadow] data-animate:motion-reduce:duration-200 xl:grid xl:grid-cols-[1fr_auto_1fr]">
         <Link
           href={homeHref}
           onClick={event => {
             scrollToTopIfCurrent(event, homeHref)
           }}
           className="justify-self-start font-display text-xl font-bold tracking-wide uppercase">
-          Block<span className="text-accent">haus</span>
+          {SITE_NAME.plain}
+          <span className="text-accent">{SITE_NAME.accent}</span>
         </Link>
 
         <NavLinks links={links} currentPath={pathname} onLinkClick={scrollToTopIfCurrent} />
