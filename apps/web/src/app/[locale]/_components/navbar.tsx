@@ -7,6 +7,7 @@ import {SettingsMenu} from '@/features/settings/components/settings-menu'
 import {OnlineBadge} from '@/features/status/components/online-badge'
 import {useScrolled} from '@/hooks/use-scrolled'
 import {Link, usePathname} from '@/i18n/navigation'
+import {findServer} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 import type {MouseEvent} from 'react'
 import {useEffect, useState} from 'react'
@@ -15,6 +16,9 @@ export function Navbar() {
   const t = useTranslations('nav')
   const scrolled = useScrolled()
   const pathname = usePathname()
+  // Home keeps the selected server (/anarchy, /anarchy/<product>), so the logo scrolls up instead of dropping it.
+  const serverSlug = pathname.split('/')[1] ?? ''
+  const homeHref = findServer(serverSlug) ? `/${serverSlug}` : '/'
 
   // Next.js skips navigation to the URL already shown, so links to the current page scroll up by hand.
   const scrollToTopIfCurrent = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -36,7 +40,7 @@ export function Navbar() {
   }, [])
 
   const links = [
-    {href: '/', label: t('home')},
+    {href: homeHref, label: t('home')},
     {href: '/cases', label: t('cases')},
     {href: '/rules', label: t('rules')},
     {href: '/contacts', label: t('contacts')}
@@ -50,9 +54,9 @@ export function Navbar() {
         data-animate={animate || undefined}
         className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 rounded-full border border-transparent pr-2 pl-6 data-animate:transition-[max-width,background-color,border-color,box-shadow,backdrop-filter] data-animate:duration-300 data-animate:ease-in-out data-scrolled:max-w-[1200px] data-scrolled:border-border data-scrolled:bg-surface/70 data-scrolled:shadow-[0_12px_32px_-16px_rgb(0_0_0/0.7)] data-scrolled:backdrop-blur-md data-animate:motion-reduce:transition-[background-color,border-color,box-shadow] data-animate:motion-reduce:duration-200 xl:grid xl:grid-cols-[1fr_auto_1fr]">
         <Link
-          href="/"
+          href={homeHref}
           onClick={event => {
-            scrollToTopIfCurrent(event, '/')
+            scrollToTopIfCurrent(event, homeHref)
           }}
           className="justify-self-start font-display text-xl font-bold tracking-wide uppercase">
           Block<span className="text-accent">haus</span>
