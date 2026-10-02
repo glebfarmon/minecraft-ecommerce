@@ -79,7 +79,9 @@ export function Hero() {
               src={steve}
               alt=""
               preload
-              sizes="(min-width: 768px) 42vw, 90vw"
+              fetchPriority="high"
+              quality={85}
+              sizes="(min-width: 768px) calc(0.69 * max(100svh, 760px)), min(55svh, 440px)"
               className="relative h-full w-auto object-contain object-bottom"
             />
           </HeroSteve>
