@@ -1,11 +1,10 @@
 import {CopyIp} from '@/components/copy-ip'
-import {OnlineDot} from '@/components/online-dot'
-import {SERVER_IP, networkOnline, servers} from '@/lib/catalog'
+import {OnlineBadge} from '@/features/status/components/online-badge'
+import {SERVER_IP, servers} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 
 export function Footer() {
   const t = useTranslations('footer')
-  const tNav = useTranslations('nav')
   const columns = [
     {
       title: t('shop'),
@@ -63,8 +62,7 @@ export function Footer() {
         </nav>
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line py-8">
           <span className="tabular flex items-center gap-2 text-sm text-muted">
-            <OnlineDot online />
-            {tNav('online', {count: networkOnline})}
+            <OnlineBadge />
           </span>
           <CopyIp ip={SERVER_IP} />
         </div>

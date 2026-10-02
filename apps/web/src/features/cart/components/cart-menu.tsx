@@ -78,7 +78,7 @@ export function CartMenu() {
             type="button"
             disabled
             title={t('checkoutSoon')}
-            className="mt-4 h-11 w-full rounded-full bg-accent font-semibold text-on-accent disabled:cursor-not-allowed disabled:opacity-40">
+            className="mt-4 h-11 w-full rounded-full bg-accent font-semibold text-on-accent disabled:opacity-40">
             {t('checkout')}
           </button>
           <p className="mt-2 text-center text-xs text-muted">{t('checkoutSoon')}</p>

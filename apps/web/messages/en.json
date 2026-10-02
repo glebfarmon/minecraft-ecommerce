@@ -14,6 +14,7 @@
     "currency": "Currency",
     "settings": "Language and currency",
     "closePanel": "Close",
+    "pages": "Pages",
     "online": "{count} online"
   },
   "cart": {
@@ -38,7 +39,8 @@
     "browse": "Browse shop",
     "playersOnline": "players online",
     "offline": "Offline",
-    "onlineLabel": "Server online, {count} players"
+    "onlineLabel": "Server online, {count} players",
+    "offlineLabel": "Server status unavailable"
   },
   "ip": {
     "copy": "Copy server address {ip}",
@@ -63,7 +65,6 @@
     "days": "{count} days",
     "forever": "Forever",
     "adult": "18+",
-    "online": "{count} online",
     "demo": "Demo catalog — prices and items are placeholders.",
     "descriptions": {
       "survival": "Classic survival with land claims, a player economy and seasonal events. No pay-to-win: ranks are comfort and cosmetics.",

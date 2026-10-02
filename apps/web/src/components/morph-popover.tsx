@@ -41,6 +41,8 @@ export function MorphPopover({
   const [open, setOpen] = useState(false)
   // Trigger content fades in only when it returns from the panel, not on first paint.
   const [everOpened, setEverOpened] = useState(false)
+  // While the panel grows it sweeps under a still cursor; the browser then keeps :hover on whatever passed by until the mouse moves.
+  const [settled, setSettled] = useState(false)
   const id = useId()
   const root = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -77,6 +79,7 @@ export function MorphPopover({
             style={{borderRadius: RADIUS}}
             onClick={() => {
               setEverOpened(true)
+              setSettled(false)
               setOpen(true)
             }}
             aria-haspopup="dialog"
@@ -111,7 +114,10 @@ export function MorphPopover({
                   transition: {delay: 0.12, duration: 0.25}
                 }}
                 exit={{opacity: 0, filter: 'blur(6px)', transition: {duration: 0.1}}}
-                className="relative p-4">
+                onAnimationComplete={() => {
+                  setSettled(true)
+                }}
+                className={`relative p-4 ${settled ? '' : 'pointer-events-none'}`}>
                 {children(close)}
                 <button
                   type="button"

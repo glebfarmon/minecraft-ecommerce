@@ -1,7 +1,7 @@
 import {CopyIp} from '@/components/copy-ip'
 import {GridGuides} from '@/components/grid-guides'
-import {OnlineDot} from '@/components/online-dot'
-import {SERVER_IP, networkOnline} from '@/lib/catalog'
+import {OnlineCounter} from '@/features/status/components/online-counter'
+import {SERVER_IP} from '@/lib/catalog'
 import {ArrowDown, Plus} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import Image from 'next/image'
@@ -70,20 +70,7 @@ export function Hero() {
         </span>
 
         <div className="relative z-20 mt-8 flex flex-col items-start gap-4 lg:absolute lg:right-[var(--gutter)] lg:bottom-10 lg:mt-0 lg:items-end">
-          <div
-            className="flex items-center gap-3"
-            role="status"
-            aria-label={t('onlineLabel', {count: networkOnline})}>
-            <span className="tabular text-[clamp(3rem,5vw,4.25rem)] leading-none font-bold tracking-[-0.04em]">
-              {networkOnline}
-            </span>
-            <span className="flex flex-col gap-1.5">
-              <OnlineDot online />
-              <span className="text-[13px] font-medium tracking-[0.02em] text-muted uppercase">
-                {t('playersOnline')}
-              </span>
-            </span>
-          </div>
+          <OnlineCounter />
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <CopyIp ip={SERVER_IP} />
             <a

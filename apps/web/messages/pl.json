@@ -14,6 +14,7 @@
     "currency": "Waluta",
     "settings": "Język i waluta",
     "closePanel": "Zamknij",
+    "pages": "Strony",
     "online": "{count} online"
   },
   "cart": {
@@ -38,7 +39,8 @@
     "browse": "Przejdź do sklepu",
     "playersOnline": "graczy online",
     "offline": "Offline",
-    "onlineLabel": "Serwer online, {count} graczy"
+    "onlineLabel": "Serwer online, {count} graczy",
+    "offlineLabel": "Status serwera niedostępny"
   },
   "ip": {
     "copy": "Skopiuj adres serwera {ip}",
@@ -63,7 +65,6 @@
     "days": "{count} dni",
     "forever": "Na zawsze",
     "adult": "18+",
-    "online": "{count} online",
     "demo": "Katalog demo — ceny i przedmioty są przykładowe.",
     "descriptions": {
       "survival": "Klasyczny survival z działkami, ekonomią graczy i sezonowymi eventami. Bez pay-to-win: rangi to wygoda i kosmetyka.",

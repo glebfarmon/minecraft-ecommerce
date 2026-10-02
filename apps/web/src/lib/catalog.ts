@@ -10,7 +10,6 @@ export type Server = {
   name: string
   accent: string
   onAccent: string
-  online: number | null
 }
 
 export type Product = {
@@ -27,20 +26,19 @@ export type Product = {
   description: {en: string; pl: string}
 }
 
-export const SERVER_IP = 'play.example.net'
+export const SERVER_IP = 'mc.mineblaze.net'
 
 export const servers: Server[] = [
-  {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10', online: 31},
-  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff', online: 14},
-  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff', online: 22}
+  {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10'},
+  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff'},
+  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff'}
 ]
 
 export const defaultServer: Server = servers[0] ?? {
   slug: 'survival',
   name: 'Survival',
   accent: '#ff6b1a',
-  onAccent: '#0e0e10',
-  online: null
+  onAccent: '#0e0e10'
 }
 
 export const categories: CategoryId[] = ['ranks', 'cases', 'currency', 'kits']
@@ -316,8 +314,6 @@ export const products: Product[] = [
     }
   }
 ]
-
-export const networkOnline = servers.reduce((sum, s) => sum + (s.online ?? 0), 0)
 
 export function findServer(slug: string) {
   return servers.find(s => s.slug === slug)

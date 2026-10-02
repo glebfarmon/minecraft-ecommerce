@@ -1,7 +1,7 @@
 'use client'
 
-import {OnlineDot} from '@/components/online-dot'
 import {ProductCard} from '@/features/catalog/components/product-card'
+import {getPathname} from '@/i18n/navigation'
 import type {CategoryId} from '@/lib/catalog'
 import {categories, defaultServer, findServer, products, servers} from '@/lib/catalog'
 import {ChevronLeft, ChevronRight} from 'lucide-react'
@@ -37,7 +37,8 @@ export function Catalog({initialServer}: {initialServer: string}) {
     if (slug === server.slug) return
     setServerSlug(slug)
     setFilter('all')
-    window.history.pushState(null, '', `/${locale}/${slug}`)
+    // The server is a route segment, so build the URL with the router's locale rules (no prefix for the default locale).
+    window.history.pushState(null, '', getPathname({locale, href: `/${slug}`}))
   }
 
   const step = (delta: number) => {
@@ -84,11 +85,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
             <div className="lg:sticky lg:top-28">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={server.slug} {...fade} transition={{duration: 0.4, ease: EASE}}>
-                  <p className="tabular flex items-center gap-2 text-sm text-muted">
-                    <OnlineDot online={server.online !== null} />
-                    {server.online !== null ? t('online', {count: server.online}) : '—'}
-                  </p>
-                  <p className="mt-4 text-[clamp(2.5rem,5vw,4rem)] leading-[0.95] font-bold tracking-[-0.03em]">
+                  <p className="text-[clamp(2.5rem,5vw,4rem)] leading-[0.95] font-bold tracking-[-0.03em]">
                     {server.name}
                   </p>
                   <p className="mt-5 max-w-[38ch] leading-relaxed text-fg/80">

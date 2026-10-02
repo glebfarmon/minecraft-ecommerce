@@ -1,5 +1,6 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
+import {StatusProvider} from '@/features/status/status-provider'
 import {routing} from '@/i18n/routing'
 import type {Metadata} from 'next'
 import {NextIntlClientProvider, hasLocale} from 'next-intl'
@@ -61,11 +62,13 @@ export default async function LocaleLayout({
       className={`${interTight.variable} ${oswald.variable} ${jetbrainsMono.variable}`}>
       <body>
         <NextIntlClientProvider>
-          <ShopProvider>
-            <Navbar />
-            {children}
-            {modal}
-          </ShopProvider>
+          <StatusProvider>
+            <ShopProvider>
+              <Navbar />
+              {children}
+              {modal}
+            </ShopProvider>
+          </StatusProvider>
         </NextIntlClientProvider>
       </body>
     </html>
