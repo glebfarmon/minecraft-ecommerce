@@ -39,7 +39,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
   useEffect(() => {
     switcherRef.current
       ?.querySelector('[aria-pressed="true"]')
-      ?.scrollIntoView({block: 'nearest', inline: 'nearest'})
+      ?.scrollIntoView({block: 'nearest', inline: 'center'})
   }, [server.slug])
 
   const selectServer = (slug: string) => {
@@ -107,7 +107,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
           </div>
 
           {/* Server switcher + products */}
-          <div className="relative lg:col-span-6">
+          <div className="relative min-w-0 lg:col-span-6">
             <div
               ref={switcherRef}
               role="group"
