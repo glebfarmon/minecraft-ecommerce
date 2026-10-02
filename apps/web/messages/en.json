@@ -15,7 +15,7 @@
     "settings": "Language and currency",
     "closePanel": "Close",
     "pages": "Pages",
-    "online": "{count} online"
+    "online": "<count>{count}</count> online"
   },
   "cart": {
     "label": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",

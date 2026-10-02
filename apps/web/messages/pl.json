@@ -15,7 +15,7 @@
     "settings": "Język i waluta",
     "closePanel": "Zamknij",
     "pages": "Strony",
-    "online": "{count} online"
+    "online": "<count>{count}</count> online"
   },
   "cart": {
     "label": "Koszyk, {count, plural, =0 {pusty} one {# przedmiot} few {# przedmioty} other {# przedmiotów}}",

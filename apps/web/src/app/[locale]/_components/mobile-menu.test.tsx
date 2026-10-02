@@ -3,7 +3,9 @@ import type {ComponentProps} from 'react'
 
 import {MobileMenu} from './mobile-menu'
 
-jest.mock('next-intl', () => ({useTranslations: () => (key: string) => key}))
+jest.mock('next-intl', () => ({
+  useTranslations: () => Object.assign((key: string) => key, {rich: (key: string) => key})
+}))
 jest.mock('@/i18n/navigation', () => ({
   Link: (props: ComponentProps<'a'>) => <a {...props} />
 }))

@@ -1,18 +1,24 @@
 'use client'
 
-import {motion, useReducedMotion, useSpring, useTransform} from 'motion/react'
+import {animate, motion, useMotionValue, useReducedMotion, useTransform} from 'motion/react'
 import {useEffect} from 'react'
 
-/** A whole number that eases to its new value instead of jumping; the digits update without re-rendering. */
+/** A whole number that eases to its new value, settling slowly at the end; the digits update without re-rendering. */
 export function CountUp({value}: {value: number}) {
   const reduce = useReducedMotion()
-  const spring = useSpring(value, {stiffness: 120, damping: 24, restDelta: 0.5})
-  const text = useTransform(spring, v => String(Math.round(v)))
+  const count = useMotionValue(value)
+  const text = useTransform(count, v => String(Math.round(v)))
 
   useEffect(() => {
-    if (reduce) spring.jump(value)
-    else spring.set(value)
-  }, [value, reduce, spring])
+    if (reduce) {
+      count.set(value)
+      return
+    }
+    const controls = animate(count, value, {duration: 2, ease: [0.22, 1, 0.36, 1]})
+    return () => {
+      controls.stop()
+    }
+  }, [value, reduce, count])
 
   return <motion.span>{text}</motion.span>
 }

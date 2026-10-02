@@ -1,5 +1,6 @@
 'use client'
 
+import {CountUp} from '@/components/count-up'
 import {OnlineDot} from '@/components/online-dot'
 import {useOnlinePlayers} from '@/features/status/status-provider'
 import {useTranslations} from 'next-intl'
@@ -11,7 +12,7 @@ export function OnlineBadge() {
   return (
     <>
       <OnlineDot online={players !== null} />
-      {t('online', {count: players ?? 0})}
+      {t.rich('online', {count: () => <CountUp value={players ?? 0} />})}
     </>
   )
 }
