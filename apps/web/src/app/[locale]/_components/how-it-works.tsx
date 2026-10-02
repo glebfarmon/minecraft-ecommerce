@@ -23,7 +23,7 @@ export function HowItWorks() {
           <HowHeading
             id="how-title"
             className="max-w-[18ch] text-[clamp(2rem,4vw,3.5rem)] leading-[1] font-bold tracking-[-0.03em]">
-            {t('title')}
+            {t.rich('title', {accent: chunks => <span className="text-accent">{chunks}</span>})}
           </HowHeading>
           <ol className="mt-14 grid gap-px overflow-hidden rounded-[var(--radius-card)] bg-line md:grid-cols-3">
             {steps.map((step, i) => (
