@@ -2,7 +2,7 @@
 // (sub-project 2) exists; the UI labels it as demo.
 
 export type Currency = 'EUR' | 'PLN'
-export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits'
+export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits' | 'cosmetics'
 export type ProductIcon = 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
 
 export type Server = {
@@ -10,6 +10,8 @@ export type Server = {
   name: string
   accent: string
   onAccent: string
+  /** Shop categories on this server, in display order. A category may have no products yet. */
+  categories: CategoryId[]
 }
 
 export type Product = {
@@ -32,18 +34,29 @@ const survival: Server = {
   slug: 'survival',
   name: 'Survival',
   accent: '#ff6b1a',
-  onAccent: '#0e0e10'
+  onAccent: '#0e0e10',
+  categories: ['ranks', 'cases', 'currency', 'kits']
 }
 
 export const servers: Server[] = [
   survival,
-  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff'},
-  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff'}
+  {
+    slug: 'anarchy',
+    name: 'Anarchy',
+    accent: '#7b3ff2',
+    onAccent: '#ffffff',
+    categories: ['kits', 'ranks', 'cases', 'currency']
+  },
+  {
+    slug: 'minigames',
+    name: 'Minigames',
+    accent: '#d92b52',
+    onAccent: '#ffffff',
+    categories: ['ranks', 'cases', 'currency', 'cosmetics']
+  }
 ]
 
 export const defaultServer = survival
-
-export const categories: CategoryId[] = ['ranks', 'cases', 'currency', 'kits']
 
 const p = (eur: number, pln: number) => ({EUR: eur, PLN: pln})
 

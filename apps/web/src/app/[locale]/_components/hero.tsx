@@ -60,7 +60,7 @@ export function Hero() {
               aria-hidden
               className="relative z-20 md:absolute md:top-[19%] md:left-[var(--gutter)]">
               <Line delay={0.12}>{t('left1')}</Line>
-              <Line delay={0.18} className="ml-[0.54em] text-accent">
+              <Line delay={0.18} className="ml-[0.54em] text-accent accent-ink">
                 {t('left2')}
               </Line>
             </span>
@@ -68,7 +68,7 @@ export function Hero() {
               aria-hidden
               className="relative z-20 mt-2 justify-self-end text-right md:absolute md:top-[27%] md:right-[var(--gutter)] md:mt-0">
               <Line delay={0.26}>{t('right1')}</Line>
-              <Line delay={0.32} className="text-accent">
+              <Line delay={0.32} className="text-accent accent-ink">
                 {t('right2')}
               </Line>
             </span>

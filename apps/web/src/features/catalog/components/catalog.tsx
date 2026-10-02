@@ -5,21 +5,26 @@ import {ProductCard} from '@/features/catalog/components/product-card'
 import {ProductModal} from '@/features/catalog/components/product-modal'
 import {getPathname} from '@/i18n/navigation'
 import type {CategoryId, Product} from '@/lib/catalog'
-import {categories, defaultServer, findServer, products, servers} from '@/lib/catalog'
-import {AnimatePresence, MotionConfig, motion} from 'motion/react'
+import {defaultServer, findServer, products, servers} from '@/lib/catalog'
+import {AnimatePresence, MotionConfig, motion, useInView} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import type {CSSProperties} from 'react'
 
 type Filter = CategoryId | 'all'
 
 const EASE = [0.16, 1, 0.3, 1] as const
-const FILTERS: Filter[] = ['all', ...categories]
 const FADE = {
   initial: {opacity: 0, y: 12},
   animate: {opacity: 1, y: 0},
   exit: {opacity: 0, y: -8}
 }
+
+// Poses before the first reveal.
+const HIDDEN_WORD = {opacity: 0, y: 80}
+const HIDDEN_PILL = {opacity: 0, x: -12}
+const HIDDEN_ROW = {opacity: 0, y: 8}
+const HIDDEN_CARD = {opacity: 0, y: 24, rotate: -2}
 
 /** The item `delta` places from `current`, wrapping around the ends. */
 function cycle<T>(list: readonly T[], current: T, delta: number) {
@@ -35,8 +40,15 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const modalServer = selected ? findServer(selected.server) : undefined
   const [serverSlug, setServerSlug] = useState(initialServer)
   const [filter, setFilter] = useState<Filter>('all')
+  // The entrance plays once, when the section first scrolls into view; until then everything holds its hidden pose.
+  const sectionRef = useRef<HTMLElement>(null)
+  const revealed = useInView(sectionRef, {once: true, margin: '0px 0px -20% 0px'})
+  // Entrance delays stagger the first reveal only; once the player interacts, changes are immediate.
+  const [interacted, setInteracted] = useState(false)
+  const intro = (delay: number) => (interacted ? 0 : delay)
 
   const server = findServer(serverSlug) ?? defaultServer
+  const filters: Filter[] = ['all', ...server.categories]
   const items = products.filter(
     p => p.server === server.slug && (filter === 'all' || p.category === filter)
   )
@@ -51,6 +63,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
 
   const selectServer = (slug: string) => {
     if (slug === server.slug) return
+    setInteracted(true)
     setServerSlug(slug)
     setFilter('all')
     // The server is a route segment, so build the URL with the router's locale rules (no prefix for the default locale).
@@ -61,15 +74,20 @@ export function Catalog({initialServer}: {initialServer: string}) {
     const next = cycle(servers, server, delta)
     if (next) selectServer(next.slug)
   }
+  const changeFilter = (next: Filter) => {
+    setInteracted(true)
+    setFilter(next)
+  }
   const stepFilter = (delta: number) => {
-    const next = cycle(FILTERS, filter, delta)
-    if (next) setFilter(next)
+    const next = cycle(filters, filter, delta)
+    if (next) changeFilter(next)
   }
 
   return (
     <MotionConfig reducedMotion="user">
       <style>{`:root{--accent:${server.accent};--on-accent:${server.onAccent}}`}</style>
       <section
+        ref={sectionRef}
         id="shop"
         data-server={server.slug}
         aria-labelledby="shop-title"
@@ -81,9 +99,9 @@ export function Catalog({initialServer}: {initialServer: string}) {
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={server.slug}
-              initial={{opacity: 0, y: 80}}
-              animate={{opacity: 1, y: 0}}
-              exit={{opacity: 0, y: 80}}
+              initial={HIDDEN_WORD}
+              animate={revealed ? {opacity: 1, y: 0} : HIDDEN_WORD}
+              exit={HIDDEN_WORD}
               transition={{duration: 0.6, ease: EASE, delay: 0.15}}
               className="font-display text-[clamp(4.5rem,15vw,15rem)] leading-[0.85] font-bold whitespace-nowrap text-accent/[0.12] uppercase">
               {server.name}
@@ -99,7 +117,11 @@ export function Catalog({initialServer}: {initialServer: string}) {
           <div className="lg:col-span-3">
             <div className="lg:sticky lg:top-28">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={server.slug} {...FADE} transition={{duration: 0.4, ease: EASE}}>
+                <motion.div
+                  key={server.slug}
+                  {...FADE}
+                  animate={revealed ? FADE.animate : FADE.initial}
+                  transition={{duration: 0.4, ease: EASE, delay: intro(0.1)}}>
                   <p className="text-[clamp(2.5rem,5vw,4rem)] leading-[0.95] font-bold tracking-[-0.03em]">
                     {server.name}
                   </p>
@@ -126,23 +148,26 @@ export function Catalog({initialServer}: {initialServer: string}) {
               }}
               activeKey={server.slug}
               className="justify-start lg:justify-center">
-              {servers.map(s => {
+              {servers.map((s, i) => {
                 const active = s.slug === server.slug
                 return (
-                  <button
+                  <motion.button
                     key={s.slug}
                     type="button"
                     aria-pressed={active}
                     onClick={() => {
                       selectServer(s.slug)
                     }}
+                    initial={HIDDEN_PILL}
+                    animate={revealed ? {opacity: 1, x: 0} : HIDDEN_PILL}
+                    transition={{duration: 0.4, ease: EASE, delay: 0.15 + i * 0.04}}
                     className={`h-11 shrink-0 rounded-full border px-5 text-sm font-semibold transition-colors ${
                       active
                         ? 'border-transparent bg-accent text-on-accent'
                         : 'border-border text-fg hover:border-white/30'
                     }`}>
                     {s.name}
-                  </button>
+                  </motion.button>
                 )
               })}
             </StepScroller>
@@ -160,7 +185,14 @@ export function Catalog({initialServer}: {initialServer: string}) {
               }}
               activeKey={filter}
               className="mt-6 lg:hidden">
-              <CategoryList filter={filter} onChange={setFilter} layout="row" />
+              <CategoryList
+                key={server.slug}
+                filters={filters}
+                filter={filter}
+                onChange={changeFilter}
+                revealed={revealed}
+                layout="row"
+              />
             </StepScroller>
 
             <div className="relative mt-10 lg:mt-16">
@@ -173,12 +205,12 @@ export function Catalog({initialServer}: {initialServer: string}) {
                   {items.map((product, i) => (
                     <motion.li
                       key={product.slug}
-                      initial={{opacity: 0, y: 24, rotate: -2}}
-                      animate={{opacity: 1, y: 0, rotate: 0}}
+                      initial={HIDDEN_CARD}
+                      animate={revealed ? {opacity: 1, y: 0, rotate: 0} : HIDDEN_CARD}
                       transition={{
                         duration: 0.5,
                         ease: EASE,
-                        delay: 0.05 + i * 0.04
+                        delay: intro(0.3) + 0.05 + i * 0.04
                       }}>
                       <ProductCard
                         product={product}
@@ -197,7 +229,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
                   <button
                     type="button"
                     onClick={() => {
-                      setFilter('all')
+                      changeFilter('all')
                     }}
                     className="mt-4 h-11 rounded-full border border-border px-5 text-sm font-semibold hover:border-white/30">
                     {t('showAll')}
@@ -211,7 +243,21 @@ export function Catalog({initialServer}: {initialServer: string}) {
           <div className="hidden lg:col-span-3 lg:block">
             <div className="sticky top-28">
               <p className="mb-4 eyebrow">{`//${t('categories')}`}</p>
-              <CategoryList filter={filter} onChange={setFilter} layout="column" />
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={server.slug}
+                  {...FADE}
+                  animate={revealed ? FADE.animate : FADE.initial}
+                  transition={{duration: 0.3, ease: EASE, delay: intro(0.25)}}>
+                  <CategoryList
+                    filters={filters}
+                    filter={filter}
+                    onChange={changeFilter}
+                    revealed={revealed}
+                    layout="column"
+                  />
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -231,21 +277,29 @@ export function Catalog({initialServer}: {initialServer: string}) {
 }
 
 function CategoryList({
+  filters,
   filter,
   onChange,
+  revealed,
   layout
 }: {
+  filters: Filter[]
   filter: Filter
   onChange: (f: Filter) => void
+  revealed: boolean
   layout: 'row' | 'column'
 }) {
   const t = useTranslations('catalog')
   return (
-    <ul
+    <motion.ul
       role="list"
       aria-label={t('categories')}
+      // The column is faded by its parent; the row sits in a scroller, so it fades itself in when the server changes.
+      initial={layout === 'row' ? HIDDEN_ROW : false}
+      animate={revealed ? {opacity: 1, y: 0} : HIDDEN_ROW}
+      transition={{duration: 0.3, ease: EASE, delay: layout === 'row' ? 0.25 : 0}}
       className={layout === 'row' ? 'flex gap-2' : 'flex flex-col gap-2'}>
-      {FILTERS.map(option => {
+      {filters.map(option => {
         const active = option === filter
         return (
           <li key={option}>
@@ -269,6 +323,6 @@ function CategoryList({
           </li>
         )
       })}
-    </ul>
+    </motion.ul>
   )
 }

@@ -1,4 +1,4 @@
-import {fireEvent, render, screen} from '@testing-library/react'
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {renderToString} from 'react-dom/server'
 
 import {Catalog} from './catalog'
@@ -72,5 +72,65 @@ describe('Catalog server accent', () => {
   it('ships the page-wide accent in the server HTML so it does not flash after hydration', () => {
     const html = renderToString(<Catalog initialServer="anarchy" />)
     expect(html).toContain(':root{--accent:#7b3ff2;--on-accent:#ffffff}')
+  })
+})
+
+describe('Catalog per-server categories', () => {
+  it('shows each server its own categories', async () => {
+    render(<Catalog initialServer="survival" />)
+    expect(screen.queryAllByRole('button', {name: 'cosmetics'})).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', {name: 'Minigames'}))
+    // The old column animates out before the new one mounts.
+    await waitFor(() => {
+      expect(screen.queryAllByRole('button', {name: 'kits'})).toHaveLength(0)
+    })
+    expect(screen.getAllByRole('button', {name: 'cosmetics'}).length).toBeGreaterThan(0)
+  })
+
+  it('keeps the empty state for a category without products', () => {
+    render(<Catalog initialServer="minigames" />)
+    const [chip] = screen.getAllByRole('button', {name: 'cosmetics'})
+    if (!chip) throw new Error('no cosmetics chip')
+    fireEvent.click(chip)
+    expect(screen.getByText('empty')).toBeTruthy()
+  })
+})
+
+describe('Catalog first-view entrance', () => {
+  const originalObserver = window.IntersectionObserver
+  let intersect: () => void
+
+  beforeEach(() => {
+    window.IntersectionObserver = class {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+      observe(target: Element) {
+        intersect = () => {
+          this.callback(
+            [{target, isIntersecting: true, intersectionRatio: 1} as IntersectionObserverEntry],
+            this as unknown as IntersectionObserver
+          )
+        }
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof IntersectionObserver
+  })
+  afterEach(() => {
+    window.IntersectionObserver = originalObserver
+  })
+
+  it('holds the section back until it scrolls into view, then reveals it once', async () => {
+    render(<Catalog initialServer="survival" />)
+    const pill = screen.getByRole('button', {name: 'Anarchy'})
+    expect(pill.style.opacity).toBe('0')
+    act(() => {
+      intersect()
+    })
+    await waitFor(
+      () => {
+        expect(pill.style.opacity).toBe('1')
+      },
+      {timeout: 3000}
+    )
   })
 })

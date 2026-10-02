@@ -21,6 +21,15 @@ if (typeof window !== 'undefined') {
     unobserve() {}
     disconnect() {}
   }
+  // Never intersects; tests that need a reveal install their own.
+  window.IntersectionObserver = class IntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return []
+    }
+  } as unknown as typeof window.IntersectionObserver
   Element.prototype.scrollBy = jest.fn()
   Element.prototype.setPointerCapture = jest.fn()
   Element.prototype.releasePointerCapture = jest.fn()

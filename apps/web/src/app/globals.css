@@ -153,3 +153,27 @@ a {
     transition: none;
   }
 }
+
+/* Hero entrance: the column guides draw down from the top, and the accent words start as plain ink and take the server colour once their line has landed. */
+@keyframes guide-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes ink {
+  from {
+    color: var(--color-fg);
+  }
+}
+.guide-line {
+  transform-origin: top;
+  animation: guide-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.accent-ink {
+  animation: ink 0.5s ease-out 0.6s backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-line {
+    animation: none;
+  }
+}
