@@ -112,7 +112,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
               ref={switcherRef}
               role="group"
               aria-label={t('servers')}
-              className="relative flex items-center justify-center gap-2">
+              className="relative flex items-center justify-start gap-2 lg:justify-center">
               <button
                 type="button"
                 onClick={() => {
