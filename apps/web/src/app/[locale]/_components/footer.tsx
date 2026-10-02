@@ -7,11 +7,16 @@ import {
 } from '@/app/[locale]/_components/footer-motion'
 import {CopyIp} from '@/components/copy-ip'
 import {OnlineBadge} from '@/features/status/components/online-badge'
+import {Link} from '@/i18n/navigation'
 import {SERVER_IP, servers} from '@/lib/catalog'
-import {useTranslations} from 'next-intl'
+import {useLocale, useTranslations} from 'next-intl'
+
+const LINK_CLASS =
+  'bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-bottom-left bg-no-repeat pb-0.5 text-fg/85 transition-[background-size,color] duration-500 ease-out-expo hover:bg-[length:100%_1px] hover:text-fg'
 
 export function Footer() {
   const t = useTranslations('footer')
+  const locale = useLocale()
   const columns = [
     {
       title: t('shop'),
@@ -19,18 +24,27 @@ export function Footer() {
     },
     {
       title: t('help'),
-      links: [{label: t('faq'), href: '#faq'}, {label: t('contact')}]
+      links: [
+        {label: t('faq'), href: '#faq'},
+        {label: t('contact'), href: '/contacts'}
+      ]
     },
     {
       title: t('legal'),
       links: [
-        {label: t('terms')},
-        {label: t('privacy')},
-        {label: t('refunds')},
-        {label: t('cookies')}
+        {label: t('terms'), href: `/legal/terms.${locale}.pdf`, file: true},
+        {label: t('privacy'), href: `/legal/privacy.${locale}.pdf`, file: true},
+        {label: t('refunds'), href: `/legal/refunds.${locale}.pdf`, file: true},
+        {label: t('cookies'), href: `/legal/cookies.${locale}.pdf`, file: true}
       ]
     },
-    {title: t('community'), links: [{label: t('rules')}, {label: t('discord')}]}
+    {
+      title: t('community'),
+      links: [
+        {label: t('rules'), href: '/rules'},
+        {label: t('discord'), href: 'https://discord.com'}
+      ]
+    }
   ]
 
   return (
@@ -49,11 +63,19 @@ export function Footer() {
                     {col.links.map(link => (
                       <li key={link.label}>
                         {'href' in link && link.href ? (
-                          <a
-                            href={link.href}
-                            className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-bottom-left bg-no-repeat pb-0.5 text-fg/85 transition-[background-size,color] duration-500 ease-out-expo hover:bg-[length:100%_1px] hover:text-fg">
-                            {link.label}
-                          </a>
+                          'file' in link || link.href.startsWith('https://') ? (
+                            <a
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={LINK_CLASS}>
+                              {link.label}
+                            </a>
+                          ) : (
+                            <Link href={link.href} className={LINK_CLASS}>
+                              {link.label}
+                            </Link>
+                          )
                         ) : (
                           <span className="text-fg/40">{link.label}</span>
                         )}
