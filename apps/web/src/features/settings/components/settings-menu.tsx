@@ -1,7 +1,7 @@
 'use client'
 
 import {MorphPopover} from '@/components/morph-popover'
-import {useShop} from '@/features/cart/shop-provider'
+import {useCurrency} from '@/features/cart/shop-provider'
 import {usePathname, useRouter} from '@/i18n/navigation'
 import {routing} from '@/i18n/routing'
 import type {Currency} from '@/lib/catalog'
@@ -17,7 +17,7 @@ const CURRENCIES: {code: Currency; symbol: string}[] = [
 export function SettingsMenu({anchor = 'top-end'}: {anchor?: 'top-end' | 'bottom-end'}) {
   const t = useTranslations('nav')
   const locale = useLocale()
-  const {currency} = useShop()
+  const {currency} = useCurrency()
 
   const symbol = CURRENCIES.find(c => c.code === currency)?.symbol
 
@@ -48,13 +48,11 @@ export function SettingsOptions({onDone}: {onDone: () => void}) {
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
-  const {currency, setCurrency} = useShop()
+  const {currency, setCurrency} = useCurrency()
 
   return (
     <>
-      <p className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-        {t('language')}
-      </p>
+      <p className="px-3 pt-2 pb-1 eyebrow-sm">{t('language')}</p>
       <div role="radiogroup" className="flex flex-col gap-0.5" aria-label={t('language')}>
         {routing.locales.map(code => (
           <Option
@@ -70,9 +68,7 @@ export function SettingsOptions({onDone}: {onDone: () => void}) {
         ))}
       </div>
       <div className="mx-3 my-2 h-px bg-line" />
-      <p className="px-3 pt-1 pb-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-        {t('currency')}
-      </p>
+      <p className="px-3 pt-1 pb-1 eyebrow-sm">{t('currency')}</p>
       <div role="radiogroup" className="flex flex-col gap-0.5" aria-label={t('currency')}>
         {CURRENCIES.map(c => (
           <Option

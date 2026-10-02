@@ -32,9 +32,7 @@ export function MobileMenu({
         trigger={<Menu className="size-5" />}>
         {close => (
           <>
-            <p className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
-              {t('pages')}
-            </p>
+            <p className="px-3 pt-2 pb-1 eyebrow-sm">{t('pages')}</p>
             <ul className="flex flex-col gap-0.5">
               {links.map(link => (
                 <li key={link.href}>

@@ -1,4 +1,5 @@
 import {fireEvent, render, screen} from '@testing-library/react'
+import {renderToString} from 'react-dom/server'
 
 import {Catalog} from './catalog'
 
@@ -39,14 +40,16 @@ describe('Catalog server switcher', () => {
     expect(pushState).toHaveBeenCalledWith(null, '', '/pl/anarchy')
   })
 
-  it('scrolls the selected server into view', () => {
+  it('scrolls the server row to the selected server', () => {
     mockLocale = 'en'
-    const scrollIntoView = jest.spyOn(Element.prototype, 'scrollIntoView')
+    const scrollBy = jest.spyOn(Element.prototype, 'scrollBy')
     render(<Catalog initialServer="survival" />)
-    scrollIntoView.mockClear() // ignore the initial mount
+    scrollBy.mockClear() // ignore the initial mount
     fireEvent.click(screen.getByRole('button', {name: 'next'}))
-    expect(scrollIntoView).toHaveBeenCalledTimes(1)
-    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole('button', {name: 'Anarchy'}))
+    expect(scrollBy).toHaveBeenCalledTimes(1)
+    expect(scrollBy.mock.contexts[0]).toBe(
+      screen.getByRole('button', {name: 'Anarchy'}).parentElement
+    )
   })
 })
 
@@ -62,5 +65,12 @@ describe('Catalog category arrows', () => {
     fireEvent.click(screen.getByRole('button', {name: 'prevCategory'}))
     fireEvent.click(screen.getByRole('button', {name: 'prevCategory'}))
     expect(pressed('all')).toBe(false)
+  })
+})
+
+describe('Catalog server accent', () => {
+  it('ships the page-wide accent in the server HTML so it does not flash after hydration', () => {
+    const html = renderToString(<Catalog initialServer="anarchy" />)
+    expect(html).toContain(':root{--accent:#7b3ff2;--on-accent:#ffffff}')
   })
 })

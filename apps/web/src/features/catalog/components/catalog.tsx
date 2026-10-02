@@ -13,6 +13,17 @@ import type {CSSProperties} from 'react'
 type Filter = CategoryId | 'all'
 
 const EASE = [0.16, 1, 0.3, 1] as const
+const FILTERS: Filter[] = ['all', ...categories]
+const FADE = {
+  initial: {opacity: 0, y: 12},
+  animate: {opacity: 1, y: 0},
+  exit: {opacity: 0, y: -8}
+}
+
+/** The item `delta` places from `current`, wrapping around the ends. */
+function cycle<T>(list: readonly T[], current: T, delta: number) {
+  return list[(list.indexOf(current) + delta + list.length) % list.length]
+}
 
 export function Catalog({initialServer}: {initialServer: string}) {
   const t = useTranslations('catalog')
@@ -21,12 +32,12 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const [filter, setFilter] = useState<Filter>('all')
 
   const server = findServer(serverSlug) ?? defaultServer
-  const index = servers.indexOf(server)
   const items = products.filter(
     p => p.server === server.slug && (filter === 'all' || p.category === filter)
   )
 
-  // Keep the navbar (outside this section) on the same accent.
+  // The navbar sits outside this section, so the page-wide accent is also set on :root.
+  // The <style> below does it in the server HTML (no flash before hydration); the effect covers client-side switches.
   useEffect(() => {
     const root = document.documentElement.style
     root.setProperty('--accent', server.accent)
@@ -42,25 +53,17 @@ export function Catalog({initialServer}: {initialServer: string}) {
   }
 
   const step = (delta: number) => {
-    const next = servers[(index + delta + servers.length) % servers.length]
+    const next = cycle(servers, server, delta)
     if (next) selectServer(next.slug)
   }
-
-  const filters: Filter[] = ['all', ...categories]
   const stepFilter = (delta: number) => {
-    const at = filters.indexOf(filter)
-    const next = filters[(at + delta + filters.length) % filters.length]
+    const next = cycle(FILTERS, filter, delta)
     if (next) setFilter(next)
-  }
-
-  const fade = {
-    initial: {opacity: 0, y: 12},
-    animate: {opacity: 1, y: 0},
-    exit: {opacity: 0, y: -8}
   }
 
   return (
     <MotionConfig reducedMotion="user">
+      <style>{`:root{--accent:${server.accent};--on-accent:${server.onAccent}}`}</style>
       <section
         id="shop"
         data-server={server.slug}
@@ -91,7 +94,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
           <div className="lg:col-span-3">
             <div className="lg:sticky lg:top-28">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={server.slug} {...fade} transition={{duration: 0.4, ease: EASE}}>
+                <motion.div key={server.slug} {...FADE} transition={{duration: 0.4, ease: EASE}}>
                   <p className="text-[clamp(2.5rem,5vw,4rem)] leading-[0.95] font-bold tracking-[-0.03em]">
                     {server.name}
                   </p>
@@ -196,9 +199,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
           {/* Categories column */}
           <div className="hidden lg:col-span-3 lg:block">
             <div className="sticky top-28">
-              <p className="mb-4 text-[13px] font-medium tracking-[0.02em] text-muted uppercase">
-                {`//${t('categories')}`}
-              </p>
+              <p className="mb-4 eyebrow">{`//${t('categories')}`}</p>
               <CategoryList filter={filter} onChange={setFilter} layout="column" />
             </div>
           </div>
@@ -218,13 +219,12 @@ function CategoryList({
   layout: 'row' | 'column'
 }) {
   const t = useTranslations('catalog')
-  const options: Filter[] = ['all', ...categories]
   return (
     <ul
       role="list"
       aria-label={t('categories')}
       className={layout === 'row' ? 'flex gap-2' : 'flex flex-col gap-2'}>
-      {options.map(option => {
+      {FILTERS.map(option => {
         const active = option === filter
         return (
           <li key={option}>

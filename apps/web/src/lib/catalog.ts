@@ -28,18 +28,20 @@ export type Product = {
 
 export const SERVER_IP = 'mc.mineblaze.net'
 
-export const servers: Server[] = [
-  {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10'},
-  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff'},
-  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff'}
-]
-
-export const defaultServer: Server = servers[0] ?? {
+const survival: Server = {
   slug: 'survival',
   name: 'Survival',
   accent: '#ff6b1a',
   onAccent: '#0e0e10'
 }
+
+export const servers: Server[] = [
+  survival,
+  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff'},
+  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff'}
+]
+
+export const defaultServer = survival
 
 export const categories: CategoryId[] = ['ranks', 'cases', 'currency', 'kits']
 
@@ -323,8 +325,23 @@ export function findProduct(server: string, slug: string) {
   return products.find(p => p.server === server && p.slug === slug)
 }
 
+const priceFormats = new Map<string, Intl.NumberFormat>()
+
+/** Amount first, currency after (`4.99 €`, `21.99 PLN`), whatever the locale's own order is. */
 export function formatPrice(minor: number, currency: Currency, locale: string) {
-  return new Intl.NumberFormat(locale, {style: 'currency', currency}).format(minor / 100)
+  const key = `${locale}:${currency}`
+  let format = priceFormats.get(key)
+  if (!format) {
+    format = new Intl.NumberFormat(locale, {style: 'currency', currency})
+    priceFormats.set(key, format)
+  }
+  const parts = format.formatToParts(minor / 100)
+  const symbol = parts.find(part => part.type === 'currency')?.value ?? currency
+  const amount = parts
+    .filter(part => part.type !== 'currency' && part.type !== 'literal')
+    .map(part => part.value)
+    .join('')
+  return `${amount}\u00a0${symbol}`
 }
 
 /** Prize table of the demo case shown in the fairness section (weights, not percents). */

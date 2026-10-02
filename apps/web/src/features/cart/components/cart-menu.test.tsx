@@ -1,4 +1,4 @@
-import {ShopProvider, useShop} from '@/features/cart/shop-provider'
+import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
 import type {Product} from '@/lib/catalog'
 import {products} from '@/lib/catalog'
 import {fireEvent, render, screen, waitFor} from '@testing-library/react'
@@ -20,7 +20,7 @@ if (!first) throw new Error('catalog is empty')
 const product: Product = first
 
 function AddProduct() {
-  const {add} = useShop()
+  const {add} = useCartActions()
   return (
     <button
       type="button"

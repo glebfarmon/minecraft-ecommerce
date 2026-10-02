@@ -14,14 +14,14 @@ if (typeof window !== 'undefined' && typeof window.PointerEvent === 'undefined')
   window.PointerEvent = PointerEvent as typeof window.PointerEvent
 }
 
-// jsdom has no layout engine: ResizeObserver never fires and scrollIntoView does not exist.
+// jsdom has no layout engine: ResizeObserver never fires and elements cannot scroll.
 if (typeof window !== 'undefined') {
   window.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}
   }
-  Element.prototype.scrollIntoView = jest.fn()
+  Element.prototype.scrollBy = jest.fn()
   Element.prototype.setPointerCapture = jest.fn()
   Element.prototype.releasePointerCapture = jest.fn()
 }

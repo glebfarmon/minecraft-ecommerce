@@ -1,7 +1,7 @@
 'use client'
 
 import {useAddToCart} from '@/features/cart/components/add-to-cart'
-import {useShop} from '@/features/cart/shop-provider'
+import {useCart, useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import type {Product, Server} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'
@@ -20,7 +20,8 @@ export function ProductDetail({
   const t = useTranslations('product')
   const tc = useTranslations('catalog')
   const locale = useLocale()
-  const {currency, lines} = useShop()
+  const {currency} = useCurrency()
+  const {lines} = useCart()
   const {added, addToCart} = useAddToCart(product)
   const inCart = lines.some(l => l.product === product)
 

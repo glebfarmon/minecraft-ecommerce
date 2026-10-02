@@ -41,9 +41,7 @@ export function Footer() {
           className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-line py-12 md:grid-cols-4">
           {columns.map(col => (
             <div key={col.title}>
-              <p className="text-[13px] font-medium tracking-[0.02em] text-muted uppercase">
-                {col.title}
-              </p>
+              <p className="eyebrow">{col.title}</p>
               <ul className="mt-4 flex flex-col gap-3">
                 {col.links.map(link => (
                   <li key={link.label}>

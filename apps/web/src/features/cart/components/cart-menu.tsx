@@ -1,7 +1,7 @@
 'use client'
 
 import {MorphPopover} from '@/components/morph-popover'
-import {useShop} from '@/features/cart/shop-provider'
+import {useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
 import {formatPrice} from '@/lib/catalog'
 import {ShoppingBag, X} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
@@ -10,7 +10,9 @@ export function CartMenu() {
   const t = useTranslations('cart')
   const tNav = useTranslations('nav')
   const locale = useLocale()
-  const {lines, count, currency, remove} = useShop()
+  const {lines, count} = useCart()
+  const {currency} = useCurrency()
+  const {remove} = useCartActions()
 
   const total = lines.reduce((sum, l) => sum + l.product.price[currency] * l.qty, 0)
 

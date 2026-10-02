@@ -33,11 +33,15 @@ export function StepScroller({
 }) {
   const ref = useRef<HTMLDivElement>(null)
 
-  // Arrows, clicks and deep links can select something that is scrolled out of view.
+  // Arrows, clicks and deep links can select something that is scrolled out of view. Only the row scrolls:
+  // scrollIntoView would also move the page whenever the row sits below the fold, e.g. on every load.
   useEffect(() => {
-    ref.current
-      ?.querySelector('[aria-pressed="true"]')
-      ?.scrollIntoView({block: 'nearest', inline: 'center'})
+    const row = ref.current?.querySelector('.scroll-fade-x')
+    const pill = row?.querySelector('[aria-pressed="true"]')
+    if (!row || !pill) return
+    const p = pill.getBoundingClientRect()
+    const r = row.getBoundingClientRect()
+    row.scrollBy({left: p.left + p.width / 2 - (r.left + r.width / 2)})
   }, [activeKey])
 
   return (

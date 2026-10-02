@@ -1,28 +1,19 @@
 'use client'
 
-import {useShop} from '@/features/cart/shop-provider'
+import {useCartActions} from '@/features/cart/shop-provider'
+import {useTransientFlag} from '@/hooks/use-transient-flag'
 import type {Product} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useTranslations} from 'next-intl'
-import {useEffect, useState} from 'react'
 
 export function useAddToCart(product: Product) {
-  const {add} = useShop()
-  const [added, setAdded] = useState(false)
-  useEffect(() => {
-    if (!added) return
-    const id = setTimeout(() => {
-      setAdded(false)
-    }, 1400)
-    return () => {
-      clearTimeout(id)
-    }
-  }, [added])
+  const {add} = useCartActions()
+  const [added, flash] = useTransientFlag(1400)
   return {
     added,
     addToCart: () => {
       add(product)
-      setAdded(true)
+      flash()
     }
   }
 }

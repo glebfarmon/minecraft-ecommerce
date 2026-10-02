@@ -1,7 +1,7 @@
 'use client'
 
 import {AddToCartIconButton} from '@/features/cart/components/add-to-cart'
-import {useShop} from '@/features/cart/shop-provider'
+import {useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import {Link} from '@/i18n/navigation'
 import type {Product} from '@/lib/catalog'
@@ -11,7 +11,7 @@ import {useLocale, useTranslations} from 'next-intl'
 export function ProductCard({product}: {product: Product}) {
   const t = useTranslations('catalog')
   const locale = useLocale()
-  const {currency} = useShop()
+  const {currency} = useCurrency()
 
   return (
     <article className="group relative flex h-full flex-col rounded-[var(--radius-card)] bg-card p-2 transition-colors hover:bg-[#2a2a2e]">

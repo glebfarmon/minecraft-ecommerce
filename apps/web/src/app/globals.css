@@ -42,6 +42,14 @@
   color-scheme: dark;
 }
 
+/* Small uppercase labels: section kickers (eyebrow) and menu group titles (eyebrow-sm). */
+@utility eyebrow {
+  @apply text-[13px] font-medium tracking-[0.02em] text-muted uppercase;
+}
+@utility eyebrow-sm {
+  @apply text-[11px] font-semibold tracking-[0.14em] text-muted uppercase;
+}
+
 /* Only the shop section animates its accent; the page-wide accent on :root switches at once. */
 [data-server] {
   transition: --accent 700ms var(--ease-out-expo);

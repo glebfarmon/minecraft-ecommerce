@@ -1,22 +1,12 @@
 'use client'
 
+import {useTransientFlag} from '@/hooks/use-transient-flag'
 import {Check, Copy} from 'lucide-react'
 import {useTranslations} from 'next-intl'
-import {useEffect, useState} from 'react'
 
 export function CopyIp({ip, className = ''}: {ip: string; className?: string}) {
   const t = useTranslations('ip')
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!copied) return
-    const id = setTimeout(() => {
-      setCopied(false)
-    }, 1500)
-    return () => {
-      clearTimeout(id)
-    }
-  }, [copied])
+  const [copied, flash] = useTransientFlag(1500)
 
   return (
     <button
@@ -24,7 +14,7 @@ export function CopyIp({ip, className = ''}: {ip: string; className?: string}) {
       onClick={() => {
         navigator.clipboard.writeText(ip).then(
           () => {
-            setCopied(true)
+            flash()
           },
           () => {
             // Clipboard blocked: the address stays visible for manual copying.
