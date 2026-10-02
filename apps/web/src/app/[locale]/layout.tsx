@@ -1,5 +1,6 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
+import {StatusProvider} from '@/features/status/status-provider'
 import {routing} from '@/i18n/routing'
 import type {Metadata} from 'next'
 import {NextIntlClientProvider, hasLocale} from 'next-intl'
@@ -12,22 +13,22 @@ import '../globals.css'
 
 const interTight = Inter_Tight({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '700', '800'],
   variable: '--font-inter-tight',
   display: 'swap'
 })
 const oswald = Oswald({
   subsets: ['latin', 'latin-ext'],
-  weight: ['600', '700'],
   variable: '--font-oswald',
   display: 'swap'
 })
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin', 'latin-ext'],
-  weight: ['500'],
   variable: '--font-jetbrains-mono',
   display: 'swap'
 })
+
+// Daily regeneration keeps the footer year current on otherwise static pages.
+export const revalidate = 86_400
 
 export function generateStaticParams() {
   return routing.locales.map(locale => ({locale}))
@@ -45,11 +46,9 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  modal,
   params
 }: {
   children: ReactNode
-  modal: ReactNode
   params: Promise<{locale: string}>
 }) {
   const {locale} = await params
@@ -61,11 +60,12 @@ export default async function LocaleLayout({
       className={`${interTight.variable} ${oswald.variable} ${jetbrainsMono.variable}`}>
       <body>
         <NextIntlClientProvider>
-          <ShopProvider>
-            <Navbar />
-            {children}
-            {modal}
-          </ShopProvider>
+          <StatusProvider>
+            <ShopProvider>
+              <Navbar />
+              {children}
+            </ShopProvider>
+          </StatusProvider>
         </NextIntlClientProvider>
       </body>
     </html>

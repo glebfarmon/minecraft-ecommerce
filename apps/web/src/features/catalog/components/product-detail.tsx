@@ -1,32 +1,40 @@
 'use client'
 
 import {useAddToCart} from '@/features/cart/components/add-to-cart'
-import {useShop} from '@/features/cart/shop-provider'
+import {useCart, useCurrency} from '@/features/cart/shop-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import type {Product, Server} from '@/lib/catalog'
 import {formatPrice} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
+import {useRef} from 'react'
 
 export function ProductDetail({
   product,
   server,
-  titleId
+  titleId,
+  onAdded
 }: {
   product: Product
   server: Server
   titleId: string
+  /** Called right after the product lands in the cart. */
+  onAdded: () => void
 }) {
   const t = useTranslations('product')
   const tc = useTranslations('catalog')
   const locale = useLocale()
-  const {currency, lines} = useShop()
+  const {currency} = useCurrency()
+  const {lines} = useCart()
   const {added, addToCart} = useAddToCart(product)
+  const plate = useRef<HTMLDivElement>(null)
   const inCart = lines.some(l => l.product === product)
 
   return (
     <div className="grid gap-6 md:grid-cols-2 md:gap-8">
-      <ProductPlate product={product} size="large" />
+      <div ref={plate}>
+        <ProductPlate product={product} size="large" />
+      </div>
       <div className="flex flex-col">
         <h2
           id={titleId}
@@ -68,7 +76,10 @@ export function ProductDetail({
 
         <button
           type="button"
-          onClick={addToCart}
+          onClick={() => {
+            addToCart(plate.current)
+            onAdded()
+          }}
           className="mt-auto flex h-14 items-center justify-center gap-2 rounded-full bg-accent px-6 font-semibold text-on-accent transition-[filter] hover:brightness-110 max-md:mt-6">
           {added ? <Check className="size-5" /> : <ShoppingBag className="size-5" />}
           {inCart ? t('inCart') : t('addToCart')}

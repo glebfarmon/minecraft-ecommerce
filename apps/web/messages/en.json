@@ -13,7 +13,9 @@
     "language": "Language",
     "currency": "Currency",
     "settings": "Language and currency",
-    "online": "{count} online"
+    "closePanel": "Close",
+    "pages": "Pages",
+    "online": "<count>{count}</count> online"
   },
   "cart": {
     "label": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
@@ -22,7 +24,9 @@
     "total": "Total",
     "checkout": "Checkout",
     "checkoutSoon": "Checkout arrives with payments",
-    "remove": "Remove {name}"
+    "remove": "Remove {name}",
+    "decrease": "Decrease quantity of {name}",
+    "increase": "Increase quantity of {name}"
   },
   "hero": {
     "left1": "your",
@@ -37,7 +41,8 @@
     "browse": "Browse shop",
     "playersOnline": "players online",
     "offline": "Offline",
-    "onlineLabel": "Server online, {count} players"
+    "onlineLabel": "Server online, {count} players",
+    "offlineLabel": "Server status unavailable"
   },
   "ip": {
     "copy": "Copy server address {ip}",
@@ -48,21 +53,24 @@
     "servers": "Servers",
     "prev": "Previous server",
     "next": "Next server",
+    "prevCategory": "Previous category",
+    "nextCategory": "Next category",
     "categories": "Categories",
     "all": "All",
     "ranks": "Ranks",
     "cases": "Cases",
     "currency": "Currency",
     "kits": "Kits",
+    "cosmetics": "Cosmetics",
     "more": "Show more categories",
     "empty": "No items in this category on {server} yet.",
     "showAll": "Show all items",
     "add": "Add {name} to cart",
     "added": "{name} added to cart",
+    "addShort": "Add",
     "days": "{count} days",
     "forever": "Forever",
     "adult": "18+",
-    "online": "{count} online",
     "demo": "Demo catalog — prices and items are placeholders.",
     "descriptions": {
       "survival": "Classic survival with land claims, a player economy and seasonal events. No pay-to-win: ranks are comfort and cosmetics.",
@@ -72,7 +80,6 @@
   },
   "product": {
     "close": "Close",
-    "back": "Back to shop",
     "server": "Server",
     "category": "Category",
     "duration": "Duration",
@@ -83,7 +90,7 @@
     "fairNote": "Odds are published and every opening can be verified."
   },
   "how": {
-    "title": "From the shop to your game in three steps",
+    "title": "From the shop to your game in <accent>three steps</accent>",
     "step1Title": "Pick",
     "step1": "Choose a server and add items. One cart can hold items for several servers.",
     "step2Title": "Pay",
@@ -131,7 +138,6 @@
     "cases": "Cases",
     "faq": "FAQ",
     "contact": "Contact",
-    "orderStatus": "Order status",
     "terms": "Terms",
     "privacy": "Privacy",
     "refunds": "Refunds",

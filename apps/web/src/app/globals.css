@@ -42,6 +42,14 @@
   color-scheme: dark;
 }
 
+/* Small uppercase labels: section kickers (eyebrow) and menu group titles (eyebrow-sm). */
+@utility eyebrow {
+  @apply text-[13px] font-medium tracking-[0.02em] text-muted uppercase;
+}
+@utility eyebrow-sm {
+  @apply text-[11px] font-semibold tracking-[0.14em] text-muted uppercase;
+}
+
 /* Only the shop section animates its accent; the page-wide accent on :root switches at once. */
 [data-server] {
   transition: --accent 700ms var(--ease-out-expo);
@@ -49,7 +57,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 96px;
+  scroll-padding-top: 0;
 }
 
 body {
@@ -82,6 +90,53 @@ textarea {
   scrollbar-color: rgb(255 255 255 / 0.18) transparent;
 }
 
+/* Scroller with no visible scrollbar. The side that still has hidden content fades out (set by ScrollFade). */
+@property --fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  transition:
+    --fade-start 200ms ease-out,
+    --fade-end 200ms ease-out;
+}
+.scroll-fade-x::-webkit-scrollbar {
+  display: none;
+}
+.scroll-fade-x[data-dragging='true'],
+.scroll-fade-x[data-dragging='true'] * {
+  cursor: grabbing;
+  user-select: none;
+}
+.scroll-fade-x[data-fade-start='true'] {
+  --fade-start: 40px;
+}
+.scroll-fade-x[data-fade-end='true'] {
+  --fade-end: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade-x {
+    transition: none;
+  }
+}
+
 a {
   text-underline-offset: 0.2em;
 }
@@ -97,4 +152,38 @@ a {
   [data-server] {
     transition: none;
   }
+}
+
+/* Hero entrance: the column guides draw down from the top, and the accent words start as plain ink and take the server colour once their line has landed. */
+@keyframes guide-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes ink {
+  from {
+    color: var(--color-fg);
+  }
+}
+.guide-line {
+  transform-origin: top;
+  animation: guide-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.accent-ink {
+  animation: ink 0.5s ease-out 0.6s backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-line {
+    animation: none;
+  }
+}
+
+/* Purchase feed: the track holds two identical rows, so -50% loops seamlessly. Edges fade out. */
+@keyframes feed-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.feed-marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
 }

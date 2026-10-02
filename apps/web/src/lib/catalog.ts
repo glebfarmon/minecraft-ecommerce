@@ -2,7 +2,7 @@
 // (sub-project 2) exists; the UI labels it as demo.
 
 export type Currency = 'EUR' | 'PLN'
-export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits'
+export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits' | 'cosmetics'
 export type ProductIcon = 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
 
 export type Server = {
@@ -10,7 +10,8 @@ export type Server = {
   name: string
   accent: string
   onAccent: string
-  online: number | null
+  /** Shop categories on this server, in display order. A category may have no products yet. */
+  categories: CategoryId[]
 }
 
 export type Product = {
@@ -27,23 +28,35 @@ export type Product = {
   description: {en: string; pl: string}
 }
 
-export const SERVER_IP = 'play.example.net'
+export const SERVER_IP = 'mc.mineblaze.net'
 
-export const servers: Server[] = [
-  {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10', online: 31},
-  {slug: 'anarchy', name: 'Anarchy', accent: '#7b3ff2', onAccent: '#ffffff', online: 14},
-  {slug: 'minigames', name: 'Minigames', accent: '#d92b52', onAccent: '#ffffff', online: 22}
-]
-
-export const defaultServer: Server = servers[0] ?? {
+const survival: Server = {
   slug: 'survival',
   name: 'Survival',
   accent: '#ff6b1a',
   onAccent: '#0e0e10',
-  online: null
+  categories: ['ranks', 'cases', 'currency', 'kits']
 }
 
-export const categories: CategoryId[] = ['ranks', 'cases', 'currency', 'kits']
+export const servers: Server[] = [
+  survival,
+  {
+    slug: 'anarchy',
+    name: 'Anarchy',
+    accent: '#7b3ff2',
+    onAccent: '#ffffff',
+    categories: ['kits', 'ranks', 'cases', 'currency']
+  },
+  {
+    slug: 'minigames',
+    name: 'Minigames',
+    accent: '#d92b52',
+    onAccent: '#ffffff',
+    categories: ['ranks', 'cases', 'currency', 'cosmetics']
+  }
+]
+
+export const defaultServer = survival
 
 const p = (eur: number, pln: number) => ({EUR: eur, PLN: pln})
 
@@ -317,8 +330,6 @@ export const products: Product[] = [
   }
 ]
 
-export const networkOnline = servers.reduce((sum, s) => sum + (s.online ?? 0), 0)
-
 export function findServer(slug: string) {
   return servers.find(s => s.slug === slug)
 }
@@ -327,8 +338,23 @@ export function findProduct(server: string, slug: string) {
   return products.find(p => p.server === server && p.slug === slug)
 }
 
+const priceFormats = new Map<string, Intl.NumberFormat>()
+
+/** Amount first, currency after (`4.99 €`, `21.99 PLN`), whatever the locale's own order is. */
 export function formatPrice(minor: number, currency: Currency, locale: string) {
-  return new Intl.NumberFormat(locale, {style: 'currency', currency}).format(minor / 100)
+  const key = `${locale}:${currency}`
+  let format = priceFormats.get(key)
+  if (!format) {
+    format = new Intl.NumberFormat(locale, {style: 'currency', currency})
+    priceFormats.set(key, format)
+  }
+  const parts = format.formatToParts(minor / 100)
+  const symbol = parts.find(part => part.type === 'currency')?.value ?? currency
+  const amount = parts
+    .filter(part => part.type !== 'currency' && part.type !== 'literal')
+    .map(part => part.value)
+    .join('')
+  return `${amount}\u00a0${symbol}`
 }
 
 /** Prize table of the demo case shown in the fairness section (weights, not percents). */

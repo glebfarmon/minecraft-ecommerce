@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: repoRoot,
   turbopack: {root: repoRoot},
   transpilePackages: ['@shop/ui'],
+  images: {formats: ['image/avif', 'image/webp'], qualities: [85]},
   // CLAUDE.md at the repo root is the agent guide; don't generate per-app copies.
   agentRules: false
 }

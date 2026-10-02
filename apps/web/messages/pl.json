@@ -13,7 +13,9 @@
     "language": "Język",
     "currency": "Waluta",
     "settings": "Język i waluta",
-    "online": "{count} online"
+    "closePanel": "Zamknij",
+    "pages": "Strony",
+    "online": "<count>{count}</count> online"
   },
   "cart": {
     "label": "Koszyk, {count, plural, =0 {pusty} one {# przedmiot} few {# przedmioty} other {# przedmiotów}}",
@@ -22,7 +24,9 @@
     "total": "Razem",
     "checkout": "Do kasy",
     "checkoutSoon": "Kasa pojawi się razem z płatnościami",
-    "remove": "Usuń {name}"
+    "remove": "Usuń {name}",
+    "decrease": "Zmniejsz ilość: {name}",
+    "increase": "Zwiększ ilość: {name}"
   },
   "hero": {
     "left1": "twój",
@@ -37,7 +41,8 @@
     "browse": "Przejdź do sklepu",
     "playersOnline": "graczy online",
     "offline": "Offline",
-    "onlineLabel": "Serwer online, {count} graczy"
+    "onlineLabel": "Serwer online, {count} graczy",
+    "offlineLabel": "Status serwera niedostępny"
   },
   "ip": {
     "copy": "Skopiuj adres serwera {ip}",
@@ -48,21 +53,24 @@
     "servers": "Serwery",
     "prev": "Poprzedni serwer",
     "next": "Następny serwer",
+    "prevCategory": "Poprzednia kategoria",
+    "nextCategory": "Następna kategoria",
     "categories": "Kategorie",
     "all": "Wszystko",
     "ranks": "Rangi",
     "cases": "Skrzynki",
     "currency": "Waluta",
     "kits": "Zestawy",
+    "cosmetics": "Kosmetyki",
     "more": "Pokaż więcej kategorii",
     "empty": "Na serwerze {server} nie ma jeszcze nic w tej kategorii.",
     "showAll": "Pokaż wszystko",
     "add": "Dodaj {name} do koszyka",
     "added": "Dodano {name} do koszyka",
+    "addShort": "Dodaj",
     "days": "{count} dni",
     "forever": "Na zawsze",
     "adult": "18+",
-    "online": "{count} online",
     "demo": "Katalog demo — ceny i przedmioty są przykładowe.",
     "descriptions": {
       "survival": "Klasyczny survival z działkami, ekonomią graczy i sezonowymi eventami. Bez pay-to-win: rangi to wygoda i kosmetyka.",
@@ -72,7 +80,6 @@
   },
   "product": {
     "close": "Zamknij",
-    "back": "Wróć do sklepu",
     "server": "Serwer",
     "category": "Kategoria",
     "duration": "Czas trwania",
@@ -83,7 +90,7 @@
     "fairNote": "Szanse są jawne, a każde otwarcie można sprawdzić."
   },
   "how": {
-    "title": "Ze sklepu do gry w trzech krokach",
+    "title": "Ze sklepu do gry w <accent>trzech krokach</accent>",
     "step1Title": "Wybierz",
     "step1": "Wybierz serwer i dodaj przedmioty. Jeden koszyk może zawierać rzeczy z kilku serwerów.",
     "step2Title": "Zapłać",
@@ -131,7 +138,6 @@
     "cases": "Skrzynki",
     "faq": "FAQ",
     "contact": "Kontakt",
-    "orderStatus": "Status zamówienia",
     "terms": "Regulamin",
     "privacy": "Prywatność",
     "refunds": "Zwroty",
