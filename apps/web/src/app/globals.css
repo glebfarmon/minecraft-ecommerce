@@ -21,11 +21,13 @@
   --color-muted: #8e8e93;
   --color-ink: #0e0e10;
   --color-online: #3ddc84;
+  --color-danger: #ff8a80;
 
   --container-page: 1440px;
 
   --radius-card: 28px;
   --radius-inner: 20px;
+  --radius-field: 12px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -89,9 +91,44 @@ textarea {
   caret-color: var(--accent);
 }
 
+/* The global focus ring above is a pill; a text field keeps its own corners. */
+input:focus-visible,
+textarea:focus-visible {
+  border-radius: var(--radius-field);
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+
+/* Thin scrollbar tinted with the active server accent. Firefox gets the standard properties; engines with
+   ::-webkit-scrollbar get a 4px thumb in a 10px track (the transparent border is the breathing room). */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--accent) 55%, transparent) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  .scroll-thin {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 10px;
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--accent) 45%, transparent);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    transition: background-color 200ms;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent);
+  }
 }
 
 /* Scroller with no visible scrollbar. The side that still has hidden content fades out (set by ScrollFade). */
@@ -190,4 +227,24 @@ a {
 }
 .feed-marquee {
   mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* Vertical scroller that keeps its (themed) scrollbar; the edge with hidden content fades. Set by useScrollEdges(ref, 'y'). */
+.scroll-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  transition:
+    --fade-start 200ms ease-out,
+    --fade-end 200ms ease-out;
+}
+.scroll-fade-y[data-fade-start='true'] {
+  --fade-start: 28px;
+}
+.scroll-fade-y[data-fade-end='true'] {
+  --fade-end: 28px;
 }

@@ -9,7 +9,8 @@ import {defaultServer, servers} from '@/config/servers'
 import {ProductCard} from '@/features/catalog/components/product-card'
 import {ProductModal} from '@/features/catalog/components/product-modal'
 import {getPathname} from '@/i18n/navigation'
-import {findServer} from '@/lib/catalog'
+import {findServer, productLayoutId} from '@/lib/catalog'
+import {flyToCart} from '@/lib/fly-to-cart'
 import {AnimatePresence, MotionConfig, motion, useInView} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useEffect, useRef, useState} from 'react'
@@ -40,6 +41,8 @@ export function Catalog({initialServer}: {initialServer: string}) {
   // `selected` outlives `modalOpen` so the modal keeps its content while it animates out.
   const [selected, setSelected] = useState<Product | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  // Added from the modal: the card flies into the cart once the modal has become the card again, not while the two are still morphing.
+  const flyWhenClosed = useRef(false)
   const modalServer = selected ? findServer(selected.server) : undefined
   const [serverSlug, setServerSlug] = useState(initialServer)
   const [filter, setFilter] = useState<Filter>('all')
@@ -217,7 +220,9 @@ export function Catalog({initialServer}: {initialServer: string}) {
                       }}>
                       <ProductCard
                         product={product}
+                        open={modalOpen && selected === product}
                         onOpen={p => {
+                          flyWhenClosed.current = false
                           setSelected(p)
                           setModalOpen(true)
                         }}
@@ -272,6 +277,15 @@ export function Catalog({initialServer}: {initialServer: string}) {
           open={modalOpen}
           onClose={() => {
             setModalOpen(false)
+          }}
+          onAdded={() => {
+            flyWhenClosed.current = true
+            setModalOpen(false)
+          }}
+          onClosed={() => {
+            if (!flyWhenClosed.current) return
+            flyWhenClosed.current = false
+            flyToCart(document.querySelector(`[data-product="${productLayoutId(selected)}"]`))
           }}
         />
       )}

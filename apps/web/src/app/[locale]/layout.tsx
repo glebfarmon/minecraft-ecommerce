@@ -1,5 +1,6 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
+import {CookieBanner} from '@/features/consent/components/cookie-banner'
 import {StatusProvider} from '@/features/status/status-provider'
 import {pickClientMessages} from '@/i18n/client-messages'
 import {routing} from '@/i18n/routing'
@@ -72,6 +73,7 @@ export default async function LocaleLayout({
             <ShopProvider>
               <Navbar />
               {children}
+              <CookieBanner />
             </ShopProvider>
           </StatusProvider>
         </NextIntlClientProvider>

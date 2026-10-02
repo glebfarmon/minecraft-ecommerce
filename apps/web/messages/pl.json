@@ -24,10 +24,40 @@
     "empty": "Na razie pusto. Wybierz serwer i coś dodaj.",
     "total": "Razem",
     "checkout": "Do kasy",
-    "checkoutSoon": "Kasa pojawi się razem z płatnościami",
     "remove": "Usuń {name}",
     "decrease": "Zmniejsz ilość: {name}",
     "increase": "Zwiększ ilość: {name}"
+  },
+  "checkout": {
+    "title": "Zamówienie",
+    "back": "Wróć do koszyka",
+    "close": "Zamknij zamówienie",
+    "nick": {
+      "label": "Nick w Minecrafcie",
+      "hint": "3–16 znaków: litery, cyfry, podkreślnik. Na ten nick dostarczymy zakupy."
+    },
+    "email": {
+      "label": "E-mail",
+      "hint": "Wyślemy tu potwierdzenie i link do otwierania skrzyń."
+    },
+    "promo": {
+      "toggle": "Masz kod promocyjny?",
+      "label": "Kod promocyjny (opcjonalnie)",
+      "hint": "Sprawdzimy go przy płatności."
+    },
+    "delivery": "Chcę natychmiastowej dostawy i wiem, że po jej wykonaniu tracę prawo do odstąpienia od zakupu.",
+    "terms": "Akceptuję <terms>Regulamin</terms> i <privacy>Politykę prywatności</privacy>.",
+    "summary": "Podsumowanie zamówienia",
+    "deliveringTo": "Dostawa dla",
+    "total": "Razem",
+    "pay": "Zapłać {total}",
+    "payHint": "Sklep demonstracyjny: płatności nie są jeszcze podłączone.",
+    "errors": {
+      "nick": "Użyj 3–16 liter, cyfr lub podkreślników.",
+      "email": "Podaj poprawny adres e-mail.",
+      "delivery": "Potwierdź natychmiastową dostawę, aby kontynuować.",
+      "terms": "Zaakceptuj Regulamin i Politykę prywatności, aby kontynuować."
+    }
   },
   "hero": {
     "left1": "twój",
@@ -85,6 +115,10 @@
     "category": "Kategoria",
     "duration": "Czas trwania",
     "price": "Cena",
+    "description": "Opis",
+    "copyCommand": "Kopiuj {cmd}",
+    "copied": "Skopiowano",
+    "details": "Szczegóły",
     "addToCart": "Dodaj do koszyka",
     "inCart": "W koszyku · dodaj kolejny",
     "adultNote": "Skrzynki są dla graczy 18+. Wiek potwierdzasz przed pierwszym otwarciem.",
@@ -148,6 +182,15 @@
     "demo": "Sklep demo · tryb testowy Stripe · niepowiązany z Mojang ani Microsoft",
     "copyright": "© {year} Blockhaus",
     "navLabel": "Stopka"
+  },
+  "consent": {
+    "label": "Pliki cookie",
+    "text": "Używamy plików cookie, aby sklep działał. Analityka jest opcjonalna.",
+    "policy": "Polityka cookies",
+    "necessary": "Niezbędne (zawsze włączone)",
+    "analytics": "Analityka (opcjonalna)",
+    "save": "Zapisz wybór",
+    "acceptAll": "Akceptuj wszystko"
   },
   "skip": "Przejdź do sklepu"
 }

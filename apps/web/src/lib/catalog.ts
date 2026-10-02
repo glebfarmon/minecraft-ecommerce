@@ -1,4 +1,5 @@
 import type {Currency} from '@/config/currencies'
+import type {Product} from '@/config/products'
 import {products} from '@/config/products'
 import {servers} from '@/config/servers'
 
@@ -8,6 +9,16 @@ export function findServer(slug: string) {
 
 export function findProduct(server: string, slug: string) {
   return products.find(p => p.server === server && p.slug === slug)
+}
+
+/** The id a product card and its modal share, so Motion morphs one into the other. */
+export function productLayoutId(product: Product) {
+  return `product:${product.server}/${product.slug}`
+}
+
+/** The plate inside the card and inside the modal is a shared element of its own. */
+export function productPlateLayoutId(product: Product) {
+  return `${productLayoutId(product)}:plate`
 }
 
 const priceFormats = new Map<string, Intl.NumberFormat>()

@@ -6,6 +6,10 @@ export const EASE = [0.16, 1, 0.3, 1] as const
 export const REVEAL_VIEWPORT = {once: true, margin: '0px 0px -15% 0px'} as const
 /** Container-transform spring of `MorphPopover`. */
 export const MORPH = {type: 'spring', bounce: 0.1, duration: 0.45} as const
+/** Corner radius (px) of every box that morphs into a modal; equal to `--radius-card`. A px number in `style` lets Motion keep the corners round while the box scales. */
+export const CARD_RADIUS = 28
+/** Same for the plate inside a card (`--radius-inner`). */
+export const INNER_RADIUS = 20
 /** Cart numbers change by one step at a time, so they settle much faster than the online counter. */
 export const CART_TICK_S = 0.45
 

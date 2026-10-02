@@ -44,3 +44,35 @@ describe('ProductCard opening', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })
+
+// The card's background layer is the box that morphs into the product modal and back.
+describe('ProductCard morph surface', () => {
+  it('wears the surface while its modal is closed', () => {
+    render(<ProductCard product={product} onOpen={jest.fn()} />)
+    expect(screen.getByTestId('product-card-surface')).toBeInTheDocument()
+  })
+
+  it('gives the surface to the modal while open, but keeps its content so the grid does not reflow', () => {
+    render(<ProductCard product={product} open onOpen={jest.fn()} />)
+    expect(screen.queryByTestId('product-card-surface')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', {name: product.name})).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'add'})).toBeInTheDocument()
+  })
+
+  it('takes the surface back when the modal closes', () => {
+    const {rerender} = render(<ProductCard product={product} open onOpen={jest.fn()} />)
+    rerender(<ProductCard product={product} onOpen={jest.fn()} />)
+    expect(screen.getByTestId('product-card-surface')).toBeInTheDocument()
+  })
+
+  it('shows its plate normally while closed', () => {
+    render(<ProductCard product={product} onOpen={jest.fn()} />)
+    expect(screen.getByTestId('product-plate').closest('.invisible')).toBeNull()
+  })
+
+  // The plate travels to the modal as its own shared element; an invisible copy holds the slot meanwhile.
+  it('keeps an invisible plate in its slot while open', () => {
+    render(<ProductCard product={product} open onOpen={jest.fn()} />)
+    expect(screen.getByTestId('product-plate').closest('.invisible')).not.toBeNull()
+  })
+})

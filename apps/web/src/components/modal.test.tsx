@@ -21,6 +21,46 @@ function Basic({onClose = jest.fn(), open = true}: {onClose?: () => void; open?:
   )
 }
 
+describe('Modal onClosed', () => {
+  it('fires once, after the exit animation, never while open', async () => {
+    const onClosed = jest.fn()
+    const ui = (open: boolean) => (
+      <Modal open={open} onClose={jest.fn()} onClosed={onClosed} closeLabel="Close" label="Outer">
+        <button type="button">inside</button>
+      </Modal>
+    )
+    const {rerender} = render(ui(true))
+    expect(onClosed).not.toHaveBeenCalled()
+    rerender(ui(false))
+    await waitFor(() => {
+      expect(onClosed).toHaveBeenCalledTimes(1)
+    })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Modal with a layoutId', () => {
+  it('opens and closes like any modal, so a container transform needs no special handling by callers', async () => {
+    const onClose = jest.fn()
+    const {rerender} = render(
+      <Modal open onClose={onClose} closeLabel="Close" label="Morphing" layoutId="cart">
+        <button type="button">inside</button>
+      </Modal>
+    )
+    expect(screen.getByRole('dialog', {name: 'Morphing'})).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('modal-backdrop'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    rerender(
+      <Modal open={false} onClose={onClose} closeLabel="Close" label="Morphing" layoutId="cart">
+        <button type="button">inside</button>
+      </Modal>
+    )
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+})
+
 describe('Modal', () => {
   it('renders an open dialog only while open', async () => {
     const {rerender} = render(<Basic open={false} />)

@@ -11,12 +11,17 @@ import {useTranslations} from 'next-intl'
 export function useAddToCart(product: Product) {
   const {add} = useCartActions()
   const [added, flash] = useTransientFlag(ADDED_FLASH_MS)
+  const addAndFlash = () => {
+    add(product)
+    flash()
+  }
   return {
     added,
+    /** Adds without the flight, for callers that start it later (the product modal waits until it is a card again). */
+    addAndFlash,
     /** `source` is the element that visually jumps into the cart. */
     addToCart: (source?: Element | null) => {
-      add(product)
-      flash()
+      addAndFlash()
       flyToCart(source ?? null)
     }
   }

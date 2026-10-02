@@ -5,7 +5,7 @@ import {useDismiss} from '@/hooks/use-dismiss'
 import {X} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion} from 'motion/react'
 import type {ReactNode} from 'react'
-import {useCallback, useEffect, useId, useRef, useState} from 'react'
+import {useEffect, useId, useRef, useState} from 'react'
 
 // Trigger and panel share one radius (half of the 44px trigger), so Motion never has to morph corners.
 const RADIUS = 22
@@ -22,6 +22,17 @@ type Props = {
   anchor?: keyof typeof ANCHOR
   /** Marks the popover as the landing spot for `flyToCart`. */
   flyTarget?: boolean
+  /** Controlled mode: the owner decides when the popover is open. Leave both out for the usual self-contained popover. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Share the container-transform id with a surface the popover hands over to (see `handoff`). */
+  layoutId?: string
+  /**
+   * Another surface (a modal) has taken over the `layoutId` and the panel is gone, but the popover
+   * still counts as open: its trigger stays a ghost so the id does not bounce back to it, and
+   * dismissal belongs to the surface on top.
+   */
+  handoff?: boolean
   children: (close: () => void) => ReactNode
 }
 
@@ -39,28 +50,39 @@ export function MorphPopover({
   panelClassName = '',
   anchor = 'top-end',
   flyTarget = false,
+  open: controlledOpen,
+  onOpenChange,
+  layoutId,
+  handoff = false,
   children
 }: Props) {
-  const [open, setOpen] = useState(false)
+  const [ownOpen, setOwnOpen] = useState(false)
+  const open = controlledOpen ?? ownOpen
+  const setOpen = (next: boolean) => {
+    if (controlledOpen === undefined) setOwnOpen(next)
+    onOpenChange?.(next)
+  }
   // Trigger content fades in only when it returns from the panel, not on first paint.
   const [everOpened, setEverOpened] = useState(false)
   // While the panel grows it sweeps under a still cursor; the browser then keeps :hover on whatever passed by until the mouse moves.
   const [settled, setSettled] = useState(false)
-  const id = useId()
+  const ownId = useId()
+  const id = layoutId ?? ownId
   const root = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const wasOpen = useRef(false)
-  const close = useCallback(() => {
+  const close = () => {
     setOpen(false)
-  }, [])
-  useDismiss(root, open, close)
+  }
+  useDismiss(root, open && !handoff, close)
 
+  const panelShown = open && !handoff
   useEffect(() => {
-    if (open) panelRef.current?.focus()
-    else if (wasOpen.current) triggerRef.current?.focus()
+    if (panelShown) panelRef.current?.focus()
+    else if (!open && wasOpen.current) triggerRef.current?.focus()
     wasOpen.current = open
-  }, [open])
+  }, [open, panelShown])
 
   return (
     <MotionConfig reducedMotion="user">
@@ -99,7 +121,7 @@ export function MorphPopover({
         )}
 
         <AnimatePresence>
-          {open && (
+          {panelShown && (
             <motion.div
               ref={panelRef}
               role="dialog"
@@ -117,6 +139,10 @@ export function MorphPopover({
                   transition: {delay: 0.12, duration: 0.25}
                 }}
                 exit={{opacity: 0, filter: 'blur(6px)', transition: {duration: 0.1}}}
+                // Also fires when the panel returns from a handoff, where the click handler never ran.
+                onAnimationStart={() => {
+                  setSettled(false)
+                }}
                 onAnimationComplete={() => {
                   setSettled(true)
                 }}

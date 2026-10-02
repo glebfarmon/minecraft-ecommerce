@@ -1,6 +1,6 @@
 'use client'
 
-import {EASE} from '@/config/motion'
+import {CARD_RADIUS, EASE, MORPH} from '@/config/motion'
 import {useScrollLock} from '@/hooks/use-scroll-lock'
 import {X} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion, useIsPresent} from 'motion/react'
@@ -10,6 +10,11 @@ import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'r
 const BACKDROP = {hidden: {opacity: 0}, shown: {opacity: 1}}
 const PANEL = {
   hidden: {opacity: 0, y: 24, scale: 0.98},
+  shown: {opacity: 1, y: 0, scale: 1}
+}
+/** The card itself travels between layouts, so the layer around it must not also fade or slide. */
+const PANEL_MORPH = {
+  hidden: {opacity: 1, y: 0, scale: 1},
   shown: {opacity: 1, y: 0, scale: 1}
 }
 
@@ -25,6 +30,13 @@ type Props = {
   label?: string
   className?: string
   style?: CSSProperties
+  /**
+   * Container transform: the card shares this id with the element it opens from (and returns to),
+   * so Motion grows one box from that element's rect to the centre of the screen and back.
+   */
+  layoutId?: string
+  /** After the exit animation has finished and the dialog is gone. */
+  onClosed?: () => void
   children: ReactNode
 }
 
@@ -34,10 +46,12 @@ type Props = {
  * the backdrop and panel are our own so they can animate in and out. A Modal inside another
  * Modal's children is a child layer; it lightens its backdrop and marks the parent as covered.
  */
-export function Modal({open, ...props}: Props) {
+export function Modal({open, onClosed, ...props}: Props) {
   return (
     <MotionConfig reducedMotion="user">
-      <AnimatePresence>{open && <ModalDialog key="dialog" {...props} />}</AnimatePresence>
+      <AnimatePresence onExitComplete={onClosed}>
+        {open && <ModalDialog key="dialog" {...props} />}
+      </AnimatePresence>
     </MotionConfig>
   )
 }
@@ -49,6 +63,7 @@ function ModalDialog({
   label,
   className = '',
   style,
+  layoutId,
   children
 }: Omit<Props, 'open'>) {
   const parent = useContext(LayerContext)
@@ -113,7 +128,7 @@ function ModalDialog({
           className={`absolute inset-0 ${depth === 0 ? 'bg-black/70 backdrop-blur-sm' : 'bg-black/40'}`}
         />
         <motion.div
-          variants={PANEL}
+          variants={layoutId ? PANEL_MORPH : PANEL}
           data-testid="modal-layer"
           // The layer spans the whole width, so the empty sides beside the panel land here, not on the backdrop.
           onClick={e => {
@@ -122,14 +137,16 @@ function ModalDialog({
           className="relative z-10 flex max-h-full w-full justify-center">
           <motion.div
             data-covered={covered}
+            layoutId={layoutId}
+            style={layoutId ? {borderRadius: CARD_RADIUS} : undefined}
             initial={false}
             animate={
               covered
                 ? {scale: 0.97, filter: 'brightness(0.6)'}
                 : {scale: 1, filter: 'brightness(1)'}
             }
-            transition={{duration: 0.25, ease: EASE}}
-            className={`relative max-h-full w-full overflow-y-auto rounded-[var(--radius-card)] border border-border bg-surface ${className}`}>
+            transition={layoutId ? MORPH : {duration: 0.25, ease: EASE}}
+            className={`relative flex max-h-[calc(100dvh-var(--gutter)*2)] w-full flex-col overflow-y-auto rounded-[var(--radius-card)] border border-border bg-surface ${className}`}>
             <button
               type="button"
               onClick={onClose}

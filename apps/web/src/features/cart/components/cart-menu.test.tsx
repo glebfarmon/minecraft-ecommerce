@@ -2,18 +2,30 @@ import type {Product} from '@/config/products'
 import {products} from '@/config/products'
 import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
 import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {MotionGlobalConfig} from 'motion/react'
 
 import {CartMenu} from './cart-menu'
 
+// Checkout keys carry their namespace so they never collide with the cart's own ("title", "checkout").
 jest.mock('next-intl', () => ({
   useLocale: () => 'en',
-  useTranslations: () => (key: string) => key
+  useTranslations: (namespace?: string) => {
+    const name = (key: string) => (namespace === 'checkout' ? `checkout.${key}` : key)
+    return Object.assign((key: string) => name(key), {rich: (key: string) => name(key)})
+  }
 }))
 // jsdom never finishes the shared-layout exit; unmount at once.
 jest.mock('motion/react', () => ({
   ...jest.requireActual<object>('motion/react'),
   AnimatePresence: ({children}: {children: React.ReactNode}) => children
 }))
+
+beforeAll(() => {
+  MotionGlobalConfig.skipAnimations = true
+})
+afterAll(() => {
+  MotionGlobalConfig.skipAnimations = false
+})
 
 const [first] = products
 if (!first) throw new Error('catalog is empty')
@@ -115,5 +127,58 @@ describe('CartMenu', () => {
       expect(screen.getByTestId('cart-qty')).toHaveTextContent('98')
     })
     expect(screen.getByRole('button', {name: 'increase'})).toBeEnabled()
+  })
+
+  describe('checkout', () => {
+    const cartPanel = () => screen.getByRole('dialog', {name: 'title'})
+    const checkoutDialog = () => screen.getByRole('dialog', {name: 'checkout.title'})
+    const goToCheckout = () => {
+      fireEvent.click(screen.getByText('add-product'))
+      open()
+      fireEvent.click(screen.getByRole('button', {name: 'checkout'}))
+    }
+
+    it('enables the checkout button once there is something to buy', () => {
+      setup()
+      fireEvent.click(screen.getByText('add-product'))
+      open()
+      expect(screen.getByRole('button', {name: 'checkout'})).toBeEnabled()
+    })
+
+    it('swaps the cart panel for the checkout modal', async () => {
+      setup()
+      goToCheckout()
+      expect(checkoutDialog()).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog', {name: 'title'})).toBeNull()
+      })
+    })
+
+    it('goes back from checkout to the cart panel', async () => {
+      setup()
+      goToCheckout()
+      fireEvent.click(screen.getByRole('button', {name: 'checkout.back'}))
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog', {name: 'checkout.title'})).toBeNull()
+      })
+      expect(cartPanel()).toBeInTheDocument()
+    })
+
+    it('closes everything from the checkout X button and gives the cart trigger back', async () => {
+      setup()
+      goToCheckout()
+      fireEvent.click(screen.getByRole('button', {name: 'checkout.close'}))
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull()
+      })
+      expect(screen.getByRole('button', {name: 'label'})).toBeInTheDocument()
+    })
+
+    it('does not treat a click inside the checkout modal as an outside click on the cart', () => {
+      setup()
+      goToCheckout()
+      fireEvent.pointerDown(screen.getByLabelText('checkout.nick.label'))
+      expect(checkoutDialog()).toBeInTheDocument()
+    })
   })
 })

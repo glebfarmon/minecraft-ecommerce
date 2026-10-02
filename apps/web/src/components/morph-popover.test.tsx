@@ -1,4 +1,5 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {useState} from 'react'
 
 import {MorphPopover} from './morph-popover'
 
@@ -106,5 +107,65 @@ describe('MorphPopover', () => {
     expect(panel('First panel')).toBeInTheDocument()
     expect(screen.queryByRole('dialog', {name: 'Second panel'})).toBeNull()
     expect(trigger('Second')).toBeInTheDocument()
+  })
+})
+
+describe('MorphPopover, controlled', () => {
+  function Controlled({initial = false, handoff = false}: {initial?: boolean; handoff?: boolean}) {
+    const [open, setOpen] = useState(initial)
+    return (
+      <>
+        <p data-testid="state">{open ? 'open' : 'closed'}</p>
+        <MorphPopover
+          open={open}
+          onOpenChange={setOpen}
+          handoff={handoff}
+          layoutId="shared"
+          triggerLabel="Open settings"
+          panelLabel="Open settings panel"
+          closeLabel="Close"
+          trigger={<span>Open</span>}>
+          {() => <button type="button">Inside</button>}
+        </MorphPopover>
+      </>
+    )
+  }
+
+  it('reports open and close through onOpenChange', async () => {
+    render(<Controlled />)
+    fireEvent.click(trigger())
+    expect(screen.getByTestId('state')).toHaveTextContent('open')
+    expect(panel()).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', {name: 'Close'}))
+    expect(screen.getByTestId('state')).toHaveTextContent('closed')
+    await gone()
+  })
+
+  it('can start open', () => {
+    render(<Controlled initial />)
+    expect(panel()).toBeInTheDocument()
+  })
+
+  // Another surface (the checkout modal) took the shared layoutId: no panel, but the trigger keeps its ghost.
+  describe('during a handoff', () => {
+    it('renders no panel and no live trigger', () => {
+      render(<Controlled initial handoff />)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(screen.queryByRole('button', {name: 'Open settings'})).toBeNull()
+    })
+
+    it('ignores outside pointer-downs and Escape, so the surface on top owns dismissal', () => {
+      render(<Controlled initial handoff />)
+      fireEvent.pointerDown(document.body)
+      fireEvent.keyDown(document, {key: 'Escape'})
+      expect(screen.getByTestId('state')).toHaveTextContent('open')
+    })
+
+    it('focuses the panel again when the handoff ends', () => {
+      const {rerender} = render(<Controlled initial handoff />)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      rerender(<Controlled initial />)
+      expect(panel()).toHaveFocus()
+    })
   })
 })

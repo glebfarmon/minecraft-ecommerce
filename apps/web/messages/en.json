@@ -24,10 +24,40 @@
     "empty": "Nothing here yet. Pick a server and add something.",
     "total": "Total",
     "checkout": "Checkout",
-    "checkoutSoon": "Checkout arrives with payments",
     "remove": "Remove {name}",
     "decrease": "Decrease quantity of {name}",
     "increase": "Increase quantity of {name}"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "back": "Back to cart",
+    "close": "Close checkout",
+    "nick": {
+      "label": "Minecraft nickname",
+      "hint": "3–16 characters: letters, digits, underscore. Your items are delivered to this name."
+    },
+    "email": {
+      "label": "Email",
+      "hint": "Your receipt goes here, and the link to open cases."
+    },
+    "promo": {
+      "toggle": "Have a promo code?",
+      "label": "Promo code (optional)",
+      "hint": "We check it when you pay."
+    },
+    "delivery": "I agree to immediate delivery and understand that I lose my right of withdrawal once the items are delivered.",
+    "terms": "I accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>.",
+    "summary": "Order summary",
+    "deliveringTo": "Delivering to",
+    "total": "Total",
+    "pay": "Pay {total}",
+    "payHint": "Demo shop: payment is not connected yet.",
+    "errors": {
+      "nick": "Use 3–16 letters, digits or underscores.",
+      "email": "Enter a valid email address.",
+      "delivery": "Confirm immediate delivery to continue.",
+      "terms": "Accept the Terms and Privacy Policy to continue."
+    }
   },
   "hero": {
     "left1": "your",
@@ -85,6 +115,10 @@
     "category": "Category",
     "duration": "Duration",
     "price": "Price",
+    "description": "Description",
+    "copyCommand": "Copy {cmd}",
+    "copied": "Copied",
+    "details": "Details",
     "addToCart": "Add to cart",
     "inCart": "In cart · add another",
     "adultNote": "Cases are for players 18+. You confirm your age before the first opening.",
@@ -148,6 +182,15 @@
     "demo": "Demo shop · Stripe test mode · not affiliated with Mojang or Microsoft",
     "copyright": "© {year} Blockhaus",
     "navLabel": "Footer"
+  },
+  "consent": {
+    "label": "Cookies",
+    "text": "We use cookies to keep the shop working. Analytics is optional.",
+    "policy": "Cookie policy",
+    "necessary": "Necessary (always on)",
+    "analytics": "Analytics (optional)",
+    "save": "Save choice",
+    "acceptAll": "Accept all"
   },
   "skip": "Skip to shop"
 }
