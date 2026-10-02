@@ -128,10 +128,10 @@ export function Catalog({initialServer}: {initialServer: string}) {
                     onClick={() => {
                       selectServer(s.slug)
                     }}
-                    className={`h-11 shrink-0 rounded-full px-5 text-sm font-semibold transition-colors ${
+                    className={`h-11 shrink-0 rounded-full border px-5 text-sm font-semibold transition-colors ${
                       active
-                        ? 'bg-accent text-on-accent'
-                        : 'border border-border text-fg hover:border-white/30'
+                        ? 'border-transparent bg-accent text-on-accent'
+                        : 'border-border text-fg hover:border-white/30'
                     }`}>
                     {s.name}
                   </button>
@@ -234,9 +234,9 @@ function CategoryList({
               onClick={() => {
                 onChange(option)
               }}
-              className={`flex h-12 items-center gap-3 rounded-full px-5 text-[15px] font-medium transition-colors ${
+              className={`flex h-12 items-center gap-3 rounded-full border px-5 text-[15px] font-medium transition-colors ${
                 layout === 'column' ? 'w-full' : 'shrink-0 whitespace-nowrap'
-              } ${active ? 'bg-accent-soft text-fg' : 'border border-border text-fg/80 hover:border-white/30 hover:text-fg'}`}>
+              } ${active ? 'border-transparent bg-accent-soft text-fg' : 'border-border text-fg/80 hover:border-white/30 hover:text-fg'}`}>
               <span
                 aria-hidden
                 className={`size-1.5 rounded-full ${active ? 'bg-accent' : 'bg-transparent'} ${
