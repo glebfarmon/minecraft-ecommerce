@@ -1,5 +1,6 @@
 'use client'
 
+import {ScrollFade} from '@/components/scroll-fade'
 import {ProductCard} from '@/features/catalog/components/product-card'
 import {getPathname} from '@/i18n/navigation'
 import type {CategoryId} from '@/lib/catalog'
@@ -7,7 +8,7 @@ import {categories, defaultServer, findServer, products, servers} from '@/lib/ca
 import {ChevronLeft, ChevronRight} from 'lucide-react'
 import {AnimatePresence, MotionConfig, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import type {CSSProperties} from 'react'
 
 type Filter = CategoryId | 'all'
@@ -19,6 +20,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const locale = useLocale()
   const [serverSlug, setServerSlug] = useState(initialServer)
   const [filter, setFilter] = useState<Filter>('all')
+  const switcherRef = useRef<HTMLDivElement>(null)
 
   const server = findServer(serverSlug) ?? defaultServer
   const index = servers.indexOf(server)
@@ -32,6 +34,13 @@ export function Catalog({initialServer}: {initialServer: string}) {
     root.setProperty('--accent', server.accent)
     root.setProperty('--on-accent', server.onAccent)
   }, [server])
+
+  // The row can scroll when the pills do not fit; keep the selected one visible (chevrons, deep link).
+  useEffect(() => {
+    switcherRef.current
+      ?.querySelector('[aria-pressed="true"]')
+      ?.scrollIntoView({block: 'nearest', inline: 'nearest'})
+  }, [server.slug])
 
   const selectServer = (slug: string) => {
     if (slug === server.slug) return
@@ -100,6 +109,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
           {/* Server switcher + products */}
           <div className="relative lg:col-span-6">
             <div
+              ref={switcherRef}
               role="group"
               aria-label={t('servers')}
               className="relative flex items-center justify-center gap-2">
@@ -112,7 +122,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
                 className="grid size-11 place-items-center rounded-full text-muted hover:bg-white/5 hover:text-fg">
                 <ChevronLeft className="size-5" />
               </button>
-              <div className="flex gap-2 overflow-x-auto p-1">
+              <ScrollFade className="flex min-w-0 gap-2 scroll-smooth p-1 motion-reduce:scroll-auto">
                 {servers.map(s => {
                   const active = s.slug === server.slug
                   return (
@@ -132,7 +142,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
                     </button>
                   )
                 })}
-              </div>
+              </ScrollFade>
               <button
                 type="button"
                 onClick={() => {

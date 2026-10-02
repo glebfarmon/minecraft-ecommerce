@@ -52,7 +52,7 @@ describe('useScrollEdges', () => {
       observe = observe
       unobserve() {}
       disconnect() {}
-    }
+    } as unknown as typeof ResizeObserver
     const {el, set} = makeScroller({scrollWidth: 200, clientWidth: 200, scrollLeft: 0})
     el.appendChild(document.createElement('button'))
     const {result} = renderHook(() => useScrollEdges({current: el}))

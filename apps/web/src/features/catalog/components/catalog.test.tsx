@@ -38,4 +38,14 @@ describe('Catalog server switcher', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Anarchy'}))
     expect(pushState).toHaveBeenCalledWith(null, '', '/pl/anarchy')
   })
+
+  it('scrolls the selected server into view', () => {
+    mockLocale = 'en'
+    const scrollIntoView = jest.spyOn(Element.prototype, 'scrollIntoView')
+    render(<Catalog initialServer="survival" />)
+    scrollIntoView.mockClear() // ignore the initial mount
+    fireEvent.click(screen.getByRole('button', {name: 'next'}))
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole('button', {name: 'Anarchy'}))
+  })
 })
