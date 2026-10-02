@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   images: {formats: ['image/avif', 'image/webp'], qualities: [85]},
   // CLAUDE.md at the repo root is the agent guide; don't generate per-app copies.
   agentRules: false,
+  // Automatic memoisation: a state change in Catalog or Navbar no longer re-renders every child.
+  reactCompiler: true,
   // In production a reverse proxy serves /api (see proxy.ts); in dev the API runs on its own port, so forward it.
   rewrites: () =>
     Promise.resolve(

@@ -1,10 +1,11 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
 import {StatusProvider} from '@/features/status/status-provider'
+import {pickClientMessages} from '@/i18n/client-messages'
 import {routing} from '@/i18n/routing'
 import type {Metadata} from 'next'
 import {NextIntlClientProvider, hasLocale} from 'next-intl'
-import {getTranslations} from 'next-intl/server'
+import {getMessages, getTranslations} from 'next-intl/server'
 import {Inter_Tight, JetBrains_Mono, Oswald} from 'next/font/google'
 import {notFound} from 'next/navigation'
 import type {ReactNode} from 'react'
@@ -54,6 +55,7 @@ export default async function LocaleLayout({
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
   const t = await getTranslations({locale})
+  const messages = await getMessages()
 
   return (
     <html
@@ -65,7 +67,7 @@ export default async function LocaleLayout({
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-full focus:bg-accent focus:px-5 focus:py-3 focus:font-semibold focus:text-on-accent">
           {t('skip')}
         </a>
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <StatusProvider>
             <ShopProvider>
               <Navbar />
