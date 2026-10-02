@@ -8,10 +8,18 @@ export function ProductPlate({
   size = 'card'
 }: {
   product: Product
-  size?: 'card' | 'large'
+  size?: 'card' | 'large' | 'thumb'
 }) {
   const t = useTranslations('catalog')
   const large = size === 'large'
+  if (size === 'thumb') {
+    return (
+      <div className="relative grid size-full place-items-center overflow-hidden rounded-[inherit] bg-plate text-ink">
+        <ProductIcon name={product.icon} className="size-6" strokeWidth={2.25} />
+        <span aria-hidden className="absolute inset-x-2.5 bottom-1.5 h-1 rounded-full bg-accent" />
+      </div>
+    )
+  }
   return (
     <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[var(--radius-inner)] bg-plate text-ink">
       <ProductIcon

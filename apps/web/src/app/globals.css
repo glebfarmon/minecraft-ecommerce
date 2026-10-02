@@ -177,3 +177,13 @@ a {
     animation: none;
   }
 }
+
+/* Purchase feed: the track holds two identical rows, so -50% loops seamlessly. Edges fade out. */
+@keyframes feed-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.feed-marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
