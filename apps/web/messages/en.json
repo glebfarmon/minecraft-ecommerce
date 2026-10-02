@@ -24,7 +24,9 @@
     "total": "Total",
     "checkout": "Checkout",
     "checkoutSoon": "Checkout arrives with payments",
-    "remove": "Remove {name}"
+    "remove": "Remove {name}",
+    "decrease": "Decrease quantity of {name}",
+    "increase": "Increase quantity of {name}"
   },
   "hero": {
     "left1": "your",
@@ -64,6 +66,7 @@
     "showAll": "Show all items",
     "add": "Add {name} to cart",
     "added": "{name} added to cart",
+    "addShort": "Add",
     "days": "{count} days",
     "forever": "Forever",
     "adult": "18+",
@@ -76,7 +79,6 @@
   },
   "product": {
     "close": "Close",
-    "back": "Back to shop",
     "server": "Server",
     "category": "Category",
     "duration": "Duration",

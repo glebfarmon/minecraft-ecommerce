@@ -30,4 +30,12 @@ describe('CountUp', () => {
     rerender(<CountUp value={67} />)
     expect(await screen.findByText('67', undefined, {timeout: 200})).toBeInTheDocument()
   })
+
+  it('formats the shown number and honors a custom duration', async () => {
+    const format = (n: number) => `${String(n)} PLN`
+    const {rerender} = render(<CountUp value={0} format={format} duration={0.2} />)
+    expect(screen.getByText('0 PLN')).toBeInTheDocument()
+    rerender(<CountUp value={5} format={format} duration={0.2} />)
+    expect(await screen.findByText('5 PLN', undefined, {timeout: 1000})).toBeInTheDocument()
+  })
 })

@@ -18,6 +18,7 @@ Rules for AI agents working in this repository.
 - Frontend layout (web, admin): `app/` + `_components`, `features/<name>/`, `components/`, `hooks/`, `lib/`; imports flow shared → features → app; no barrels; see `docs/adr/0004-frontend-structure.md`.
 
 - Anything that expands from a button into a panel (menus, cart, pickers) uses `MorphPopover` (`apps/web/src/components/morph-popover.tsx`): trigger and panel share one Motion `layoutId` (container transform). Do not hand-roll `useState` + absolute dropdowns. Domain content goes in `features/<name>/components/` and is passed as `children`; see `settings-menu.tsx` and `cart-menu.tsx`. Plan: `docs/superpowers/plans/2026-10-02-morph-popover.md`.
+- Centered blocking dialogs use `Modal` (`apps/web/src/components/modal.tsx`): controlled `open`/`onClose`, animated, stackable (a `Modal` inside another `Modal`'s children is a child layer; Escape and backdrop close only the top one). Do not hand-roll `<dialog>`. The product modal opens from client state, with no URL change and no Next intercepting route. Plan: `docs/superpowers/plans/2026-10-02-modal-stack.md`.
 
 ## Workflow
 

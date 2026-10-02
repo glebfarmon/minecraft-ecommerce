@@ -20,6 +20,8 @@ type Props = {
   triggerClassName?: string
   panelClassName?: string
   anchor?: keyof typeof ANCHOR
+  /** Marks the popover as the landing spot for `flyToCart`. */
+  flyTarget?: boolean
   children: (close: () => void) => ReactNode
 }
 
@@ -36,6 +38,7 @@ export function MorphPopover({
   triggerClassName = '',
   panelClassName = '',
   anchor = 'top-end',
+  flyTarget = false,
   children
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -61,7 +64,7 @@ export function MorphPopover({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div ref={root} className="relative">
+      <div ref={root} className="relative" data-cart-target={flyTarget ? '' : undefined}>
         {open ? (
           <div
             aria-hidden="true"

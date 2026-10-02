@@ -24,7 +24,9 @@
     "total": "Razem",
     "checkout": "Do kasy",
     "checkoutSoon": "Kasa pojawi się razem z płatnościami",
-    "remove": "Usuń {name}"
+    "remove": "Usuń {name}",
+    "decrease": "Zmniejsz ilość: {name}",
+    "increase": "Zwiększ ilość: {name}"
   },
   "hero": {
     "left1": "twój",
@@ -64,6 +66,7 @@
     "showAll": "Pokaż wszystko",
     "add": "Dodaj {name} do koszyka",
     "added": "Dodano {name} do koszyka",
+    "addShort": "Dodaj",
     "days": "{count} dni",
     "forever": "Na zawsze",
     "adult": "18+",
@@ -76,7 +79,6 @@
   },
   "product": {
     "close": "Zamknij",
-    "back": "Wróć do sklepu",
     "server": "Serwer",
     "category": "Kategoria",
     "duration": "Czas trwania",

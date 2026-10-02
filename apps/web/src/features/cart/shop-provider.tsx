@@ -8,13 +8,21 @@ import type {ReactNode} from 'react'
 type CartLine = {server: string; slug: string; qty: number}
 
 type CartLines = {lines: {product: Product; qty: number}[]; count: number}
-type CartActions = {add: (product: Product) => void; remove: (product: Product) => void}
+type CartActions = {
+  add: (product: Product) => void
+  /** One less, never below 1; removing a line is `remove`. */
+  decrement: (product: Product) => void
+  remove: (product: Product) => void
+}
 type CurrencyState = {currency: Currency; setCurrency: (currency: Currency) => void}
 
 // Three contexts so a cart change does not re-render what only reads the currency or the (stable) actions, e.g. every product card.
 const CurrencyContext = createContext<CurrencyState | null>(null)
 const CartContext = createContext<CartLines | null>(null)
 const ActionsContext = createContext<CartActions | null>(null)
+
+/** Per-line quantity cap; `add` ignores anything past it. */
+export const MAX_QTY = 99
 
 const STORAGE_KEY = 'shop:v1'
 // A cookie rather than localStorage so the API receives the chosen currency with every request.
@@ -88,9 +96,25 @@ export function ShopProvider({children}: {children: ReactNode}) {
     (product: Product) => {
       setCart(lines => {
         const hit = lines.find(l => l.server === product.server && l.slug === product.slug)
-        if (hit) return lines.map(l => (l === hit ? {...l, qty: l.qty + 1} : l))
+        if (hit)
+          return hit.qty >= MAX_QTY
+            ? lines
+            : lines.map(l => (l === hit ? {...l, qty: l.qty + 1} : l))
         return [...lines, {server: product.server, slug: product.slug, qty: 1}]
       })
+    },
+    [setCart]
+  )
+
+  const decrement = useCallback(
+    (product: Product) => {
+      setCart(lines =>
+        lines.map(l =>
+          l.server === product.server && l.slug === product.slug && l.qty > 1
+            ? {...l, qty: l.qty - 1}
+            : l
+        )
+      )
     },
     [setCart]
   )
@@ -103,7 +127,7 @@ export function ShopProvider({children}: {children: ReactNode}) {
   )
 
   const currencyValue = useMemo(() => ({currency, setCurrency}), [currency, setCurrency])
-  const actions = useMemo(() => ({add, remove}), [add, remove])
+  const actions = useMemo(() => ({add, decrement, remove}), [add, decrement, remove])
   const cartValue = useMemo<CartLines>(() => {
     const lines = cart.flatMap(l => {
       const product = findProduct(l.server, l.slug)

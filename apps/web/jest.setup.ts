@@ -25,3 +25,17 @@ if (typeof window !== 'undefined') {
   Element.prototype.setPointerCapture = jest.fn()
   Element.prototype.releasePointerCapture = jest.fn()
 }
+
+// jsdom does not implement modal dialogs; model just the `open` attribute and the `close` event.
+if (typeof HTMLDialogElement !== 'undefined') {
+  const dialog: Partial<HTMLDialogElement> = HTMLDialogElement.prototype
+  if (!dialog.showModal) {
+    dialog.showModal = function showModal(this: HTMLDialogElement) {
+      this.setAttribute('open', '')
+    }
+    dialog.close = function close(this: HTMLDialogElement) {
+      this.removeAttribute('open')
+      this.dispatchEvent(new Event('close'))
+    }
+  }
+}

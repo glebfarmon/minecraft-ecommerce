@@ -55,6 +55,11 @@ describe('CartMenu', () => {
     expect(screen.getByRole('button', {name: 'checkout'})).toBeDisabled()
   })
 
+  it('has no badge while the cart is empty', () => {
+    setup()
+    expect(screen.getByRole('button', {name: 'label'})).not.toHaveTextContent(/\d/)
+  })
+
   it('shows the item count badge on the trigger', () => {
     setup()
     fireEvent.click(screen.getByText('add-product'))
@@ -70,5 +75,45 @@ describe('CartMenu', () => {
     await waitFor(() => {
       expect(screen.getByText('empty')).toBeInTheDocument()
     })
+  })
+
+  it('shows no quantity stepper for a single item', () => {
+    setup()
+    fireEvent.click(screen.getByText('add-product'))
+    open()
+    expect(screen.queryByRole('button', {name: 'increase'})).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', {name: 'decrease'})).not.toBeInTheDocument()
+  })
+
+  it('shows a stepper once the quantity is above 1 and changes it', async () => {
+    setup()
+    fireEvent.click(screen.getByText('add-product'))
+    fireEvent.click(screen.getByText('add-product'))
+    open()
+    expect(screen.getByTestId('cart-qty')).toHaveTextContent('2')
+    fireEvent.click(screen.getByRole('button', {name: 'increase'}))
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-qty')).toHaveTextContent('3')
+    })
+    fireEvent.click(screen.getByRole('button', {name: 'decrease'}))
+    fireEvent.click(screen.getByRole('button', {name: 'decrease'}))
+    // Back at 1: the stepper is gone, removing stays on the X button.
+    expect(screen.queryByTestId('cart-qty')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'remove'})).toBeInTheDocument()
+  })
+
+  it('stops at 99: the plus button is disabled and further adds change nothing', async () => {
+    setup()
+    for (let i = 0; i < 100; i++) fireEvent.click(screen.getByText('add-product'))
+    open()
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-qty')).toHaveTextContent('99')
+    })
+    expect(screen.getByRole('button', {name: 'increase'})).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', {name: 'decrease'}))
+    await waitFor(() => {
+      expect(screen.getByTestId('cart-qty')).toHaveTextContent('98')
+    })
+    expect(screen.getByRole('button', {name: 'increase'})).toBeEnabled()
   })
 })

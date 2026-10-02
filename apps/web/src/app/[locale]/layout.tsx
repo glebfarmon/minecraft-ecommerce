@@ -46,11 +46,9 @@ export async function generateMetadata({
 
 export default async function LocaleLayout({
   children,
-  modal,
   params
 }: {
   children: ReactNode
-  modal: ReactNode
   params: Promise<{locale: string}>
 }) {
   const {locale} = await params
@@ -66,7 +64,6 @@ export default async function LocaleLayout({
             <ShopProvider>
               <Navbar />
               {children}
-              {modal}
             </ShopProvider>
           </StatusProvider>
         </NextIntlClientProvider>

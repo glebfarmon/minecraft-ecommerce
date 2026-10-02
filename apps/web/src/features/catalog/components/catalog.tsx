@@ -2,8 +2,9 @@
 
 import {StepScroller} from '@/components/step-scroller'
 import {ProductCard} from '@/features/catalog/components/product-card'
+import {ProductModal} from '@/features/catalog/components/product-modal'
 import {getPathname} from '@/i18n/navigation'
-import type {CategoryId} from '@/lib/catalog'
+import type {CategoryId, Product} from '@/lib/catalog'
 import {categories, defaultServer, findServer, products, servers} from '@/lib/catalog'
 import {AnimatePresence, MotionConfig, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
@@ -28,6 +29,10 @@ function cycle<T>(list: readonly T[], current: T, delta: number) {
 export function Catalog({initialServer}: {initialServer: string}) {
   const t = useTranslations('catalog')
   const locale = useLocale()
+  // `selected` outlives `modalOpen` so the modal keeps its content while it animates out.
+  const [selected, setSelected] = useState<Product | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const modalServer = selected ? findServer(selected.server) : undefined
   const [serverSlug, setServerSlug] = useState(initialServer)
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -162,7 +167,7 @@ export function Catalog({initialServer}: {initialServer: string}) {
               <AnimatePresence mode="wait" initial={false}>
                 <motion.ul
                   key={`${server.slug}:${filter}`}
-                  className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 xl:grid-cols-3"
+                  className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3"
                   exit={{opacity: 0, y: -40}}
                   transition={{duration: 0.25, ease: EASE}}>
                   {items.map((product, i) => (
@@ -175,7 +180,13 @@ export function Catalog({initialServer}: {initialServer: string}) {
                         ease: EASE,
                         delay: 0.05 + i * 0.04
                       }}>
-                      <ProductCard product={product} />
+                      <ProductCard
+                        product={product}
+                        onOpen={p => {
+                          setSelected(p)
+                          setModalOpen(true)
+                        }}
+                      />
                     </motion.li>
                   ))}
                 </motion.ul>
@@ -205,6 +216,16 @@ export function Catalog({initialServer}: {initialServer: string}) {
           </div>
         </div>
       </section>
+      {selected && modalServer && (
+        <ProductModal
+          product={selected}
+          server={modalServer}
+          open={modalOpen}
+          onClose={() => {
+            setModalOpen(false)
+          }}
+        />
+      )}
     </MotionConfig>
   )
 }

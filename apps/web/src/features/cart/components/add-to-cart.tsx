@@ -3,6 +3,7 @@
 import {useCartActions} from '@/features/cart/shop-provider'
 import {useTransientFlag} from '@/hooks/use-transient-flag'
 import type {Product} from '@/lib/catalog'
+import {flyToCart} from '@/lib/fly-to-cart'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 
@@ -11,25 +12,30 @@ export function useAddToCart(product: Product) {
   const [added, flash] = useTransientFlag(1400)
   return {
     added,
-    addToCart: () => {
+    /** `source` is the element that visually jumps into the cart. */
+    addToCart: (source?: Element | null) => {
       add(product)
       flash()
+      flyToCart(source ?? null)
     }
   }
 }
 
-export function AddToCartIconButton({product}: {product: Product}) {
+export function AddToCartButton({product}: {product: Product}) {
   const t = useTranslations('catalog')
   const {added, addToCart} = useAddToCart(product)
   return (
     <button
       type="button"
-      onClick={addToCart}
+      onClick={e => {
+        addToCart(e.currentTarget.closest('article'))
+      }}
       aria-label={t('add', {name: product.name})}
-      className={`relative z-10 grid size-14 shrink-0 place-items-center rounded-[var(--radius-inner)] transition-[background-color,color,transform] duration-200 active:scale-95 ${
-        added ? 'bg-accent text-on-accent' : 'bg-fg text-ink hover:bg-accent hover:text-on-accent'
+      className={`relative z-10 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-inner)] text-sm font-semibold transition-[background-color,color,transform] duration-200 active:scale-[0.98] ${
+        added ? 'bg-accent text-on-accent' : 'bg-fg/10 text-fg hover:bg-accent hover:text-on-accent'
       }`}>
-      {added ? <Check className="size-5" strokeWidth={2.5} /> : <ShoppingBag className="size-5" />}
+      {added ? <Check className="size-4" strokeWidth={2.5} /> : <ShoppingBag className="size-4" />}
+      {t('addShort')}
       <span aria-live="polite" className="sr-only">
         {added ? t('added', {name: product.name}) : ''}
       </span>
