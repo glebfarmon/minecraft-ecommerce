@@ -4,9 +4,11 @@ import '@testing-library/jest-dom'
 if (typeof window !== 'undefined' && typeof window.PointerEvent === 'undefined') {
   class PointerEvent extends MouseEvent {
     readonly pointerType: string
+    readonly pointerId: number
     constructor(type: string, init: PointerEventInit = {}) {
       super(type, init)
       this.pointerType = init.pointerType ?? ''
+      this.pointerId = init.pointerId ?? 0
     }
   }
   window.PointerEvent = PointerEvent as typeof window.PointerEvent
@@ -20,4 +22,6 @@ if (typeof window !== 'undefined') {
     disconnect() {}
   }
   Element.prototype.scrollIntoView = jest.fn()
+  Element.prototype.setPointerCapture = jest.fn()
+  Element.prototype.releasePointerCapture = jest.fn()
 }

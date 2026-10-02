@@ -111,6 +111,11 @@ textarea {
 .scroll-fade-x::-webkit-scrollbar {
   display: none;
 }
+.scroll-fade-x[data-dragging='true'],
+.scroll-fade-x[data-dragging='true'] * {
+  cursor: grabbing;
+  user-select: none;
+}
 .scroll-fade-x[data-fade-start='true'] {
   --fade-start: 40px;
 }
