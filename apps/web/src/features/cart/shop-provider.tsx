@@ -3,10 +3,11 @@
 import {CART_STORAGE_KEY, CURRENCY_COOKIE, CURRENCY_COOKIE_MAX_AGE, MAX_QTY} from '@/config/cart'
 import type {Currency} from '@/config/currencies'
 import {DEFAULT_CURRENCY, isCurrency} from '@/config/currencies'
-import type {Product} from '@/config/products'
-import {findProduct} from '@/lib/catalog'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import type {ReactNode} from 'react'
+
+import type {CatalogProduct as Product} from '@shop/shared/catalog'
 
 type CartLine = {server: string; slug: string; qty: number}
 
@@ -59,6 +60,7 @@ function parseCart(raw: unknown): CartLine[] {
 }
 
 export function ShopProvider({children}: {children: ReactNode}) {
+  const {findProduct} = useCatalog()
   const [{currency, cart}, setState] = useState<{currency: Currency; cart: CartLine[]}>({
     currency: DEFAULT_CURRENCY,
     cart: []
@@ -140,7 +142,7 @@ export function ShopProvider({children}: {children: ReactNode}) {
       return product ? [{product, qty: l.qty}] : []
     })
     return {lines, count: lines.reduce((sum, l) => sum + l.qty, 0)}
-  }, [cart])
+  }, [cart, findProduct])
 
   return (
     <CurrencyContext value={currencyValue}>

@@ -1,8 +1,9 @@
 import {INNER_RADIUS, MORPH} from '@/config/motion'
-import type {ProductIcon as IconName} from '@/config/products'
 import {ProductIcon} from '@/features/catalog/components/product-icon'
 import {motion} from 'motion/react'
 import {useTranslations} from 'next-intl'
+
+import type {CatalogProduct} from '@shop/shared/catalog'
 
 /** Typographic stand-in for a product render until real artwork exists. */
 export function ProductPlate({
@@ -10,8 +11,8 @@ export function ProductPlate({
   size = 'card',
   layoutId
 }: {
-  /** Only the fields drawn on the plate, so both the demo `Product` and the API `CatalogProduct` fit. */
-  product: {icon: IconName; mark: string; adult?: boolean}
+  /** Only the fields drawn on the plate. */
+  product: Pick<CatalogProduct, 'icon' | 'mark' | 'kind'>
   size?: 'card' | 'large' | 'thumb'
   /** Share the box with the same plate in the card or the modal, so Motion carries it between the two. */
   layoutId?: string
@@ -41,7 +42,7 @@ export function ProductPlate({
         className={`absolute text-accent ${large ? 'top-6 left-6 size-8' : 'top-4 left-4 size-5'}`}
         strokeWidth={2.25}
       />
-      {product.adult && (
+      {product.kind === 'CASE' && (
         <span
           className={`absolute rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold text-fg ${large ? 'bottom-10 left-6' : 'top-3 right-3'}`}>
           {t('adult')}

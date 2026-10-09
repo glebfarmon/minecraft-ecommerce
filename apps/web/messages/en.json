@@ -88,11 +88,6 @@
     "nextCategory": "Next category",
     "categories": "Categories",
     "all": "All",
-    "ranks": "Ranks",
-    "cases": "Cases",
-    "currency": "Currency",
-    "kits": "Kits",
-    "cosmetics": "Cosmetics",
     "more": "Show more categories",
     "empty": "No items in this category on {server} yet.",
     "showAll": "Show all items",
@@ -107,7 +102,8 @@
       "survival": "Classic survival with land claims, a player economy and seasonal events. No pay-to-win: ranks are comfort and cosmetics.",
       "anarchy": "No rules, no claims, no resets. Everything you build can be raided, and everything they build can be yours.",
       "minigames": "Bed Wars, Sky Wars and parkour in one lobby. Short rounds, ranked seasons, new maps every month."
-    }
+    },
+    "unavailable": "The shop is temporarily unavailable. Please try again in a minute."
   },
   "product": {
     "close": "Close",

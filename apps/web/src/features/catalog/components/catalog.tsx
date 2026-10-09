@@ -2,21 +2,21 @@
 
 import {StepScroller} from '@/components/step-scroller'
 import {EASE} from '@/config/motion'
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
-import type {CategoryId} from '@/config/servers'
-import {defaultServer, servers} from '@/config/servers'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {ProductCard} from '@/features/catalog/components/product-card'
 import {ProductModal} from '@/features/catalog/components/product-modal'
 import {getPathname} from '@/i18n/navigation'
-import {findServer, productLayoutId} from '@/lib/catalog'
+import {productLayoutId} from '@/lib/catalog'
 import {flyToCart} from '@/lib/fly-to-cart'
 import {AnimatePresence, MotionConfig, motion, useInView} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useEffect, useRef, useState} from 'react'
 import type {CSSProperties} from 'react'
 
-type Filter = CategoryId | 'all'
+import type {CatalogProduct} from '@shop/shared/catalog'
+
+/** A category slug, or `'all'`. */
+type Filter = string
 
 const FADE = {
   initial: {opacity: 0, y: 12},
@@ -36,10 +36,11 @@ function cycle<T>(list: readonly T[], current: T, delta: number) {
 }
 
 export function Catalog({initialServer}: {initialServer: string}) {
+  const {available, servers, products, findServer} = useCatalog()
   const t = useTranslations('catalog')
   const locale = useLocale()
   // `selected` outlives `modalOpen` so the modal keeps its content while it animates out.
-  const [selected, setSelected] = useState<Product | null>(null)
+  const [selected, setSelected] = useState<CatalogProduct | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   // Added from the modal: the card flies into the cart once the modal has become the card again, not while the two are still morphing.
   const flyWhenClosed = useRef(false)
@@ -53,19 +54,30 @@ export function Catalog({initialServer}: {initialServer: string}) {
   const [interacted, setInteracted] = useState(false)
   const intro = (delay: number) => (interacted ? 0 : delay)
 
-  const server = findServer(serverSlug) ?? defaultServer
-  const filters: Filter[] = ['all', ...server.categories]
-  const items = products.filter(
-    p => p.server === server.slug && (filter === 'all' || p.category === filter)
-  )
+  const server = findServer(serverSlug) ?? servers[0]
+  const filters: Filter[] = ['all', ...(server?.categories.map(c => c.slug) ?? [])]
 
   // The navbar sits outside this section, so the page-wide accent is also set on :root.
   // The <style> below does it in the server HTML (no flash before hydration); the effect covers client-side switches.
   useEffect(() => {
+    if (!server) return
     const root = document.documentElement.style
     root.setProperty('--accent', server.accent)
     root.setProperty('--on-accent', server.onAccent)
   }, [server])
+
+  if (!available || !server)
+    return (
+      <section id="shop" className="mx-auto max-w-page px-[var(--gutter)] py-24">
+        <p role="status" className="text-muted">
+          {t('unavailable')}
+        </p>
+      </section>
+    )
+
+  const items = products.filter(
+    p => p.server === server.slug && (filter === 'all' || p.category === filter)
+  )
 
   const selectServer = (slug: string) => {
     if (slug === server.slug) return
@@ -307,6 +319,7 @@ function CategoryList({
   layout: 'row' | 'column'
 }) {
   const t = useTranslations('catalog')
+  const {categoryName} = useCatalog()
   return (
     <motion.ul
       role="list"
@@ -335,7 +348,7 @@ function CategoryList({
                   layout === 'row' ? 'hidden' : ''
                 }`}
               />
-              {t(option)}
+              {option === 'all' ? t('all') : categoryName(option)}
             </button>
           </li>
         )

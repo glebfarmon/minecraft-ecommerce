@@ -1,13 +1,13 @@
 'use client'
 
 import {Modal} from '@/components/modal'
-import type {Product} from '@/config/products'
-import type {Server} from '@/config/servers'
 import {ProductDetail} from '@/features/catalog/components/product-detail'
 import {productLayoutId} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 import {useId} from 'react'
 import type {CSSProperties} from 'react'
+
+import type {CatalogProduct, CatalogServer} from '@shop/shared/catalog'
 
 export function ProductModal({
   product,
@@ -17,8 +17,8 @@ export function ProductModal({
   onAdded,
   onClosed
 }: {
-  product: Product
-  server: Server
+  product: CatalogProduct
+  server: CatalogServer
   open: boolean
   onClose: () => void
   /** The player added the product; the owner decides how the modal goes away. */

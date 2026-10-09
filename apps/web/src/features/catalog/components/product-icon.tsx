@@ -1,6 +1,7 @@
-import type {ProductIcon as IconName} from '@/config/products'
 import {Box, Coins, Crown, Pickaxe, Swords, Ticket} from 'lucide-react'
 import type {LucideProps} from 'lucide-react'
+
+import type {ProductIcon as IconName} from '@shop/shared/catalog'
 
 const ICONS = {
   crown: Crown,

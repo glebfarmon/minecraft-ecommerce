@@ -1,12 +1,13 @@
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
 import {ShopProvider, useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
-import {act, fireEvent, render, screen} from '@testing-library/react'
+import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {act, fireEvent, screen} from '@testing-library/react'
 import {StrictMode} from 'react'
 
-const [first] = products
+import type {CatalogProduct} from '@shop/shared/catalog'
+
+const [first] = TEST_CATALOG.products
 if (!first) throw new Error('catalog is empty')
-const product: Product = first
+const product: CatalogProduct = first
 
 let cardRenders = 0
 // Stands in for a ProductCard: reads the currency and the stable actions only.
@@ -32,7 +33,7 @@ describe('ShopProvider contexts', () => {
   })
 
   it('does not re-render currency/actions consumers when the cart changes', () => {
-    render(
+    renderWithCatalog(
       <ShopProvider>
         <Card />
       </ShopProvider>
@@ -60,7 +61,7 @@ describe('ShopProvider contexts', () => {
       )
     }
     const mount = () =>
-      render(
+      renderWithCatalog(
         <ShopProvider>
           <Switch />
         </ShopProvider>
@@ -107,7 +108,7 @@ describe('ShopProvider contexts', () => {
           <Count />
         </ShopProvider>
       )
-      return render(strict ? <StrictMode>{tree}</StrictMode> : tree)
+      return renderWithCatalog(strict ? <StrictMode>{tree}</StrictMode> : tree)
     }
     const save = (cart: unknown) => {
       localStorage.setItem('shop:v1', JSON.stringify({cart}))
@@ -151,6 +152,17 @@ describe('ShopProvider contexts', () => {
       mount()
       await act(async () => {})
       expect(screen.getByTestId('count')).toHaveTextContent('0')
+    })
+
+    it('drops saved lines whose product is no longer in the catalog', async () => {
+      save([
+        {server: 'survival', slug: 'vip', qty: 1},
+        {server: 'survival', slug: 'removed-rank', qty: 2},
+        {server: 'anarchy', slug: 'vip', qty: 1}
+      ])
+      mount()
+      await act(async () => {})
+      expect(screen.getByTestId('count')).toHaveTextContent('1')
     })
   })
 })

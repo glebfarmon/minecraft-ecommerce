@@ -25,7 +25,7 @@ export function CartMenu() {
   const [stage, setStage] = useState<Stage>('closed')
   const layoutId = useId()
 
-  const total = lines.reduce((sum, l) => sum + l.product.price[currency] * l.qty, 0)
+  const total = lines.reduce((sum, l) => sum + l.product.prices[currency] * l.qty, 0)
 
   return (
     <>
@@ -109,7 +109,7 @@ export function CartMenu() {
                       <span className="tabular text-sm">
                         <CountUp
                           key={currency}
-                          value={product.price[currency] * qty}
+                          value={product.prices[currency] * qty}
                           duration={CART_TICK_S}
                           format={n => formatPrice(n, currency, locale)}
                         />

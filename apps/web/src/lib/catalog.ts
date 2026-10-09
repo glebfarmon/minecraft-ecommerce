@@ -1,23 +1,14 @@
 import type {Currency} from '@/config/currencies'
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
-import {servers} from '@/config/servers'
 
-export function findServer(slug: string) {
-  return servers.find(s => s.slug === slug)
-}
-
-export function findProduct(server: string, slug: string) {
-  return products.find(p => p.server === server && p.slug === slug)
-}
+import type {CatalogProduct} from '@shop/shared/catalog'
 
 /** The id a product card and its modal share, so Motion morphs one into the other. */
-export function productLayoutId(product: Product) {
+export function productLayoutId(product: CatalogProduct) {
   return `product:${product.server}/${product.slug}`
 }
 
 /** The plate inside the card and inside the modal is a shared element of its own. */
-export function productPlateLayoutId(product: Product) {
+export function productPlateLayoutId(product: CatalogProduct) {
   return `${productLayoutId(product)}:plate`
 }
 

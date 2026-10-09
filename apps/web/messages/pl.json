@@ -88,11 +88,6 @@
     "nextCategory": "Następna kategoria",
     "categories": "Kategorie",
     "all": "Wszystko",
-    "ranks": "Rangi",
-    "cases": "Skrzynki",
-    "currency": "Waluta",
-    "kits": "Zestawy",
-    "cosmetics": "Kosmetyki",
     "more": "Pokaż więcej kategorii",
     "empty": "Na serwerze {server} nie ma jeszcze nic w tej kategorii.",
     "showAll": "Pokaż wszystko",
@@ -107,7 +102,8 @@
       "survival": "Klasyczny survival z działkami, ekonomią graczy i sezonowymi eventami. Bez pay-to-win: rangi to wygoda i kosmetyka.",
       "anarchy": "Bez zasad, bez działek, bez resetów. Wszystko, co zbudujesz, można zrajdować, a wszystko, co zbudują inni, może być Twoje.",
       "minigames": "Bed Wars, Sky Wars i parkour w jednym lobby. Krótkie rundy, rankingowe sezony, nowe mapy co miesiąc."
-    }
+    },
+    "unavailable": "Sklep jest chwilowo niedostępny. Spróbuj ponownie za minutę."
   },
   "product": {
     "close": "Zamknij",

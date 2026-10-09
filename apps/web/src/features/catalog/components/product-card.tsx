@@ -1,27 +1,30 @@
 'use client'
 
 import {CARD_RADIUS, MORPH} from '@/config/motion'
-import type {Product} from '@/config/products'
 import {AddToCartButton} from '@/features/cart/components/add-to-cart'
 import {useCurrency} from '@/features/cart/shop-provider'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import {formatPrice, productLayoutId, productPlateLayoutId} from '@/lib/catalog'
 import {motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
+
+import type {CatalogProduct} from '@shop/shared/catalog'
 
 export function ProductCard({
   product,
   open = false,
   onOpen
 }: {
-  product: Product
+  product: CatalogProduct
   /** This product's modal is open: it owns the card's surface, and the content steps aside. */
   open?: boolean
-  onOpen: (product: Product) => void
+  onOpen: (product: CatalogProduct) => void
 }) {
   const t = useTranslations('catalog')
   const locale = useLocale()
   const {currency} = useCurrency()
+  const {categoryName} = useCatalog()
 
   return (
     <article data-product={productLayoutId(product)} className="group relative h-full">
@@ -60,12 +63,12 @@ export function ProductCard({
             </button>
           </h3>
           <p className="mt-1 text-sm text-muted">
-            {t(product.category)}
+            {categoryName(product.category)}
             {product.durationDays ? ` · ${t('days', {count: product.durationDays})}` : ''}
           </p>
           <div className="mt-auto flex flex-col gap-4 pt-6">
             <span className="tabular font-display text-2xl leading-none font-semibold whitespace-nowrap">
-              {formatPrice(product.price[currency], currency, locale)}
+              {formatPrice(product.prices[currency], currency, locale)}
             </span>
             <AddToCartButton product={product} />
           </div>

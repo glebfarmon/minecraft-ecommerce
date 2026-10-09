@@ -1,9 +1,11 @@
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
 import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {CatalogProvider} from '@/features/catalog/catalog-provider'
+import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
 import type {ReactNode} from 'react'
+
+import type {CatalogProduct} from '@shop/shared/catalog'
 
 import {CheckoutModal} from './checkout-modal'
 
@@ -25,9 +27,9 @@ afterAll(() => {
   MotionGlobalConfig.skipAnimations = false
 })
 
-const [first] = products
+const [first] = TEST_CATALOG.products
 if (!first) throw new Error('catalog is empty')
-const product: Product = first
+const product: CatalogProduct = first
 
 function Fill() {
   const {add} = useCartActions()
@@ -50,13 +52,14 @@ function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
       <CheckoutModal open={isOpen} layoutId="cart" onBack={onBack} onClose={onClose} />
     </ShopProvider>
   )
-  const view = render(ui(open))
+  const view = renderWithCatalog(ui(open))
   return {
     ...view,
     onBack,
     onClose,
     rerenderWith: (isOpen: boolean) => {
-      view.rerender(ui(isOpen))
+      // rerender replaces the whole tree, provider included.
+      view.rerender(<CatalogProvider catalog={TEST_CATALOG}>{ui(isOpen)}</CatalogProvider>)
     }
   }
 }
