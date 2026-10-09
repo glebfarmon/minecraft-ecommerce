@@ -51,6 +51,15 @@ describe('SettingsMenu', () => {
     expect(screen.getByRole('radio', {name: /EUR/})).toBeChecked()
   })
 
+  it('keeps the hash when switching the locale', () => {
+    window.location.hash = '#r-2-3'
+    setup()
+    open()
+    fireEvent.click(screen.getByRole('radio', {name: /Polski/}))
+    expect(mockReplace).toHaveBeenCalledWith('/cases#r-2-3', {locale: 'pl', scroll: false})
+    window.location.hash = ''
+  })
+
   it('switches the locale in place and closes', async () => {
     setup()
     open()

@@ -79,3 +79,11 @@ test.describe('phone', () => {
     await expect(page).toHaveURL(/\/pl\/rules#s-4$/)
   })
 })
+
+test('switching language keeps the rule anchor', async ({page}) => {
+  await page.goto(`${WEB}/rules#r-2-3`)
+  await expect(page.getByRole('navigation', {name: 'Main'})).toHaveAttribute('data-animate')
+  await page.getByRole('button', {name: 'Language and currency'}).click()
+  await page.getByRole('radio', {name: /Polski/}).click()
+  await expect(page).toHaveURL(/\/pl\/rules#r-2-3$/)
+})

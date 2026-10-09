@@ -57,7 +57,8 @@ export function SettingsOptions({onDone}: {onDone: () => void}) {
             selected={code === locale}
             onSelect={() => {
               onDone()
-              router.replace(pathname, {locale: code, scroll: false})
+              // Keep the anchor: /rules#r-2-3 in EN is the same rule as /pl/rules#r-2-3.
+              router.replace(`${pathname}${window.location.hash}`, {locale: code, scroll: false})
             }}
           />
         ))}
