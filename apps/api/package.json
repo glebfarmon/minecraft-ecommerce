@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "files": [
-    "dist"
+    "dist",
+    "prisma",
+    "prisma.config.ts",
+    "src/prisma/database-url.ts"
   ],
   "scripts": {
     "build": "nest build",
@@ -11,7 +14,9 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "generate": "prisma generate",
+    "test:int": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --testRegex '.*\\.int-spec\\.ts$' --runInBand"
   },
   "jest": {
     "rootDir": ".",
@@ -22,6 +27,9 @@
     "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
     "transform": {
       "^.+\\.ts$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "moduleFileExtensions": [
       "ts",
@@ -34,13 +42,19 @@
     "@nestjs/common": "^11.2.7",
     "@nestjs/core": "^11.2.7",
     "@nestjs/platform-express": "^11.2.7",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@shop/shared": "workspace:*",
+    "prisma": "^7.10.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.2.7",
     "@shop/config": "workspace:*",
+    "@testcontainers/postgresql": "^12.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.3",
     "@types/supertest": "^7.2.1",
@@ -48,6 +62,7 @@
     "jest": "^30.5.2",
     "supertest": "^7.3.0",
     "ts-jest": "^29.4.14",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3"
   }
 }

@@ -7,3 +7,9 @@ allowBuilds:
   unrs-resolver: false
   '@parcel/watcher': false
   '@swc/core': false
+  '@prisma/engines': true
+  prisma: true
+  cpu-features: false
+  esbuild: false
+  protobufjs: false
+  ssh2: false

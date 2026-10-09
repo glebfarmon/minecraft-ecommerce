@@ -1,0 +1,128 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Locale {
+  en
+  pl
+}
+
+enum Currency {
+  EUR
+  PLN
+}
+
+enum ProductKind {
+  PERMANENT
+  TIMED
+  CASE
+}
+
+enum ProductIcon {
+  crown
+  box
+  coins
+  swords
+  pickaxe
+  ticket
+}
+
+model Server {
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            String
+  accent          String
+  onAccent        String
+  rconHost        String?
+  rconPort        Int?
+  rconPasswordEnc String?
+  isActive        Boolean          @default(true)
+  sort            Int              @default(0)
+  categories      ServerCategory[]
+  products        Product[]
+
+  @@map("servers")
+}
+
+model Category {
+  id           String                @id @default(cuid())
+  slug         String                @unique
+  translations CategoryTranslation[]
+  servers      ServerCategory[]
+  products     Product[]
+
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  categoryId String
+  locale     Locale
+  name       String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, locale])
+  @@map("category_translations")
+}
+
+model ServerCategory {
+  serverId   String
+  categoryId String
+  sort       Int
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([serverId, categoryId])
+  @@index([categoryId])
+  @@map("server_categories")
+}
+
+model Product {
+  id             String               @id @default(cuid())
+  serverId       String
+  categoryId     String
+  slug           String
+  kind           ProductKind
+  durationDays   Int?
+  mark           String
+  icon           ProductIcon
+  grantCommands  String[]
+  revokeCommands String[]
+  isActive       Boolean              @default(true)
+  sort           Int                  @default(0)
+  server         Server               @relation(fields: [serverId], references: [id], onDelete: Restrict)
+  category       Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  translations   ProductTranslation[]
+  prices         Price[]
+
+  @@unique([serverId, slug])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductTranslation {
+  productId   String
+  locale      Locale
+  name        String
+  description String
+  sections    Json
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, locale])
+  @@map("product_translations")
+}
+
+model Price {
+  productId   String
+  currency    Currency
+  amountMinor Int
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, currency])
+  @@map("prices")
+}

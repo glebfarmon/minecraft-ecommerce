@@ -11,6 +11,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
+    "test:int": "turbo run test:int",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
