@@ -194,15 +194,16 @@ type CatalogResponse = {
 
 ## 7. Testing
 
-| Layer                 | What                                                                                                                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (`@shop/shared`) | schemas accept the seed data, reject bad locale/currency/sections                                                                                                                                         |
-| Unit (api)            | `ValibotPipe` 400 shape; catalog mapper: locale fallback, ordering, product without a price omitted, secret fields absent                                                                                 |
-| Integration (api)     | Testcontainers Postgres: migrations apply to an empty DB; seed runs twice without duplicates; `GET /api/catalog?locale=pl` returns seeded data; `400` on bad locale                                       |
-| Unit/component (web)  | `getCatalog` parse + error; `CatalogProvider` lookups; existing component tests rewired to a test catalog fixture                                                                                         |
-| E2E (Playwright)      | home and `/anarchy` show seeded products; product modal opens; cart survives reload and drops a product that is no longer in the catalog; `/pl` shows PL names                                            |
-| Note                  | Integration tests that query Postgres are `*.int-spec.ts`, run by `pnpm test:int` (Jest with `NODE_OPTIONS=--experimental-vm-modules`, required by the Prisma 7 client); plain `pnpm test` stays DB-free. |
-| CI                    | `openapi.json` diff check; `prisma migrate diff` check; `pnpm build` of web with no API                                                                                                                   |
+| Layer                 | What                                                                                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (`@shop/shared`) | schemas accept the seed data, reject bad locale/currency/sections                                                                                                   |
+| Unit (api)            | `ValibotPipe` 400 shape; catalog mapper: locale fallback, ordering, product without a price omitted, secret fields absent                                           |
+| Integration (api)     | Testcontainers Postgres: migrations apply to an empty DB; seed runs twice without duplicates; `GET /api/catalog?locale=pl` returns seeded data; `400` on bad locale |
+| Unit/component (web)  | `getCatalog` parse + error; `CatalogProvider` lookups; existing component tests rewired to a test catalog fixture                                                   |
+| E2E (Playwright)      | home and `/anarchy` show seeded products; product modal opens; cart survives reload and drops a product that is no longer in the catalog; `/pl` shows PL names      |
+| CI                    | `openapi.json` diff check; `prisma migrate diff` check; `pnpm build` of web with no API                                                                             |
+
+Integration tests that query Postgres are `*.int-spec.ts`, run by `pnpm test:int` (Jest with `NODE_OPTIONS=--experimental-vm-modules`, required by the Prisma 7 client); plain `pnpm test` stays DB-free.
 
 ## 8. Out of scope
 

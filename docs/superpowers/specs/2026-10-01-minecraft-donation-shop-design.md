@@ -112,18 +112,18 @@ infra/
 
 ### 3.3 Backend modules (NestJS)
 
-| Module     | Owns                                                                        |
-| ---------- | --------------------------------------------------------------------------- |
-| `catalog`  | servers, categories, products, offerings, prices, translations; Redis cache |
-| `orders`   | cart pricing, promo codes, order lifecycle, public order status             |
-| `payments` | `PaymentsGateway` interface; Stripe implementation; webhooks                |
-| `delivery` | outbox, RCON client, retries, grants, expiry scheduler, revoke flow         |
-| `cases`    | case definitions, keys, provably fair opening, scratch grid                 |
-| `auth`     | Better Auth integration, sessions, invites, 2FA                             |
-| `admin`    | roles/permissions, audit log, dashboard queries, uploads (R2)               |
-| `feed`     | Redis pub/sub → SSE live purchase feed                                      |
-| `mail`     | `Mailer` interface, Resend implementation                                   |
-| `health`   | `@nestjs/terminus` checks (Postgres, Redis)                                 |
+| Module     | Owns                                                                      |
+| ---------- | ------------------------------------------------------------------------- |
+| `catalog`  | servers, categories, products (owned by one server), prices, translations |
+| `orders`   | cart pricing, promo codes, order lifecycle, public order status           |
+| `payments` | `PaymentsGateway` interface; Stripe implementation; webhooks              |
+| `delivery` | outbox, RCON client, retries, grants, expiry scheduler, revoke flow       |
+| `cases`    | case definitions, keys, provably fair opening, scratch grid               |
+| `auth`     | Better Auth integration, sessions, invites, 2FA                           |
+| `admin`    | roles/permissions, audit log, dashboard queries, uploads (R2)             |
+| `feed`     | Redis pub/sub → SSE live purchase feed                                    |
+| `mail`     | `Mailer` interface, Resend implementation                                 |
+| `health`   | `@nestjs/terminus` checks (Postgres, Redis)                               |
 
 Module boundaries are enforced by importing only a module's public service, never its repositories. ADR documents when a module (e.g. `delivery`) would be extracted into a service and why a broker would then be added.
 
@@ -238,7 +238,7 @@ Module boundaries are enforced by importing only a module's public service, neve
 - Admin tables use keyset pagination (`WHERE createdAt < :cursor LIMIT 50`).
 - Aggregations (KPIs, case stats) run in SQL (`groupBy` / typed `$queryRaw`).
 - `pg_stat_statements` enabled; Prisma logs queries > 200 ms as `warn`; investigate with `EXPLAIN ANALYZE`.
-- Catalog responses cached in Redis (§8).
+- Catalog responses are cached by the web data cache (§8, ADR 0007).
 
 ### 6.5 Migrations
 
@@ -313,7 +313,7 @@ No RabbitMQ/Kafka: one codebase, low volume, BullMQ covers retries, delays and s
 
 ### 9.1 Checkout
 
-1. Player picks a server, adds offerings; the cart (Redux slice persisted in `localStorage`) may contain items from several servers, grouped by server.
+1. Player picks a server, adds products; the cart (Redux slice persisted in `localStorage`) may contain items from several servers, grouped by server.
 2. Player enters nick (+ confirmation), email, optional promo, ticks immediate-delivery consent; Turnstile runs.
 3. `POST /api/orders`: prices recomputed from DB; promo reserved atomically (`usedCount + 1 WHERE usedCount < maxUses`), discount applied to eligible items across servers; order `PENDING`.
 4. Stripe Checkout Session (hosted page): line items in the chosen currency, `metadata.orderId`, customer email, 30-min expiry; card, BLIK, P24 via automatic payment methods. Site shows a demo banner with the test card.
@@ -375,7 +375,7 @@ The prize table (product IDs + weights) is copied into each `case_key` at paymen
 2. Atomic claim `UPDATE case_keys SET openedAt = now() WHERE id = :keyId AND openedAt IS NULL AND voidedAt IS NULL`.
 3. Compute prize, create `GRANT` delivery on the key's server in the same transaction; respond `{ prize, nonce, serverSeedHash }` (+ `serverSeed` for the last key).
 4. Animation starts after the response and lands on the known prize; the reel content is decorative.
-5. Admin cannot save a case whose prize products lack an offering on a server where the case is sold.
+5. Admin cannot save a case whose prize products belong to a different server than the case product.
 
 ### 10.5 Scratch cards
 
@@ -439,17 +439,17 @@ Same outcome algorithm; subsequent HMAC bytes deterministically build a 3×3 gri
 
 **Admin (`admin`, EN)**
 
-| Page                       | Function                                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| `/login`                   | Email OTP, Google, (Apple), 2FA setup/verify                                                      |
-| `/` Dashboard              | KPI cards, delivery health (queue size, FAILED, NEEDS_REVIEW, RCON status per server), case stats |
-| `/orders`, `/orders/[id]`  | Search by nick/email/publicId, details, deliveries log, retry/mark done, refund                   |
-| `/servers`                 | CRUD, RCON credentials, "test connection"                                                         |
-| `/categories`, `/products` | CRUD, translations (missing-PL report), offerings per server, commands, prices, images            |
-| `/cases`                   | CRUD, prizes and weights, preview of odds                                                         |
-| `/promo-codes`             | CRUD, usage                                                                                       |
-| `/team`                    | Admins, invites, roles and permission matrix                                                      |
-| `/audit`                   | Audit log with filters                                                                            |
+| Page                       | Function                                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/login`                   | Email OTP, Google, (Apple), 2FA setup/verify                                                                         |
+| `/` Dashboard              | KPI cards, delivery health (queue size, FAILED, NEEDS_REVIEW, RCON status per server), case stats                    |
+| `/orders`, `/orders/[id]`  | Search by nick/email/publicId, details, deliveries log, retry/mark done, refund                                      |
+| `/servers`                 | CRUD, RCON credentials, "test connection"                                                                            |
+| `/categories`, `/products` | CRUD, translations (missing-PL report), the product's server and per-server category order, commands, prices, images |
+| `/cases`                   | CRUD, prizes and weights, preview of odds                                                                            |
+| `/promo-codes`             | CRUD, usage                                                                                                          |
+| `/team`                    | Admins, invites, roles and permission matrix                                                                         |
+| `/audit`                   | Audit log with filters                                                                                               |
 
 ---
 
