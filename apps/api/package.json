@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "generate": "prisma generate",
+    "seed": "tsx src/seed/main.ts",
     "test:int": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --testRegex '.*\\.int-spec\\.ts$' --runInBand"
   },
   "jest": {
