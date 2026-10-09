@@ -3,16 +3,36 @@ services:
     volumes: !override
       - ./infra/traefik/e2e.yml:/etc/traefik/dynamic.yml:ro
 
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args: {APP_VERSION: e2e}
+    command: ['sh', '-c', 'node_modules/.bin/prisma migrate deploy && node dist/seed/main.js']
+    environment:
+      DATABASE_URL: postgresql://shop:shop@postgres:5432/shop
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck: {disable: true}
+
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
       args: {APP_VERSION: e2e}
+    environment:
+      DATABASE_URL: postgresql://shop:shop@postgres:5432/shop
+    depends_on:
+      migrate: {condition: service_completed_successfully}
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+    environment:
+      API_ORIGIN: http://api:4000
+    depends_on:
+      api: {condition: service_healthy}
 
   admin:
     build:
