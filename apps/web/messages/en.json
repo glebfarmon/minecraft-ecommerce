@@ -164,6 +164,28 @@
     "q4": "Is this a real shop?",
     "a4": "This is a demo. Payments run in Stripe test mode and no real money is charged."
   },
+  "rules": {
+    "title": "Server <accent>rules</accent>",
+    "lead": "By playing on our servers you agree to all of the rules below.",
+    "metaTitle": "Server rules — Blockhaus",
+    "metaDescription": "The rules of the Blockhaus Minecraft servers: chat, accounts, gameplay, cheat checks and paid services.",
+    "edition": "Current edition: {date}",
+    "contents": "Contents",
+    "openContents": "Show contents",
+    "closeContents": "Close contents",
+    "searchLabel": "Search the rules",
+    "searchPlaceholder": "Search the rules…",
+    "searchShortcut": "Press / to search",
+    "clearSearch": "Clear search",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "noResults": "No rules match “{query}”",
+    "unavailable": "The rules are temporarily unavailable. Please try again in a minute.",
+    "copyText": "Copy rule {number}",
+    "copyLink": "Copy link to rule {number}",
+    "copied": "Rule copied",
+    "linkCopied": "Link copied",
+    "copyFailed": "Couldn't copy"
+  },
   "footer": {
     "shop": "//SHOP",
     "help": "//HELP",

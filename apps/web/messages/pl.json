@@ -164,6 +164,28 @@
     "q4": "Czy to prawdziwy sklep?",
     "a4": "To wersja demo. Płatności działają w trybie testowym Stripe i nie są pobierane prawdziwe pieniądze."
   },
+  "rules": {
+    "title": "Zasady <accent>serwera</accent>",
+    "lead": "Grając na naszych serwerach, akceptujesz wszystkie poniższe zasady.",
+    "metaTitle": "Zasady serwera — Blockhaus",
+    "metaDescription": "Zasady serwerów Minecraft Blockhaus: czat, konta, rozgrywka, sprawdzanie na cheaty i usługi płatne.",
+    "edition": "Obowiązująca wersja z {date}",
+    "contents": "Spis treści",
+    "openContents": "Pokaż spis treści",
+    "closeContents": "Zamknij spis treści",
+    "searchLabel": "Szukaj w zasadach",
+    "searchPlaceholder": "Szukaj w zasadach…",
+    "searchShortcut": "Naciśnij /, aby wyszukać",
+    "clearSearch": "Wyczyść wyszukiwanie",
+    "itemCount": "{count, plural, one {# punkt} few {# punkty} many {# punktów} other {# punktu}}",
+    "noResults": "Brak zasad pasujących do „{query}”",
+    "unavailable": "Zasady są chwilowo niedostępne. Spróbuj ponownie za minutę.",
+    "copyText": "Kopiuj zasadę {number}",
+    "copyLink": "Kopiuj link do zasady {number}",
+    "copied": "Skopiowano zasadę",
+    "linkCopied": "Skopiowano link",
+    "copyFailed": "Nie udało się skopiować"
+  },
   "footer": {
     "shop": "//SKLEP",
     "help": "//POMOC",
