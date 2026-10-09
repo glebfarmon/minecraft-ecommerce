@@ -1,0 +1,182 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Shop API",
+    "version": "1"
+  },
+  "paths": {
+    "/api/catalog": {
+      "get": {
+        "summary": "Public catalog: servers with ordered categories, products with prices",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": ["en", "pl"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog in the requested locale (missing texts fall back to en)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "accent": {
+                            "type": "string"
+                          },
+                          "onAccent": {
+                            "type": "string"
+                          },
+                          "categories": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "slug": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["slug", "name"]
+                            }
+                          }
+                        },
+                        "required": ["slug", "name", "accent", "onAccent", "categories"]
+                      }
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "server": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "enum": ["PERMANENT", "TIMED", "CASE"],
+                            "type": "string"
+                          },
+                          "durationDays": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "mark": {
+                            "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "sections": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "type": "string"
+                                },
+                                "entries": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "cmd": {
+                                        "type": "string"
+                                      },
+                                      "text": {
+                                        "type": "string"
+                                      },
+                                      "cooldown": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": []
+                                  }
+                                }
+                              },
+                              "required": ["title", "entries"]
+                            }
+                          },
+                          "prices": {
+                            "type": "object",
+                            "properties": {
+                              "EUR": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "PLN": {
+                                "type": "integer",
+                                "minimum": 1
+                              }
+                            },
+                            "required": ["EUR", "PLN"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "server",
+                          "category",
+                          "slug",
+                          "kind",
+                          "durationDays",
+                          "mark",
+                          "icon",
+                          "name",
+                          "description",
+                          "sections",
+                          "prices"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["servers", "products"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unsupported locale"
+          }
+        }
+      }
+    }
+  }
+}

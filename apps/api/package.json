@@ -17,6 +17,7 @@
     "test": "jest",
     "generate": "prisma generate",
     "seed": "tsx src/seed/main.ts",
+    "openapi": "tsx src/openapi/write-openapi.ts",
     "test:int": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --testRegex '.*\\.int-spec\\.ts$' --runInBand"
   },
   "jest": {
@@ -43,9 +44,11 @@
     "@nestjs/common": "^11.2.7",
     "@nestjs/core": "^11.2.7",
     "@nestjs/platform-express": "^11.2.7",
+    "@nestjs/swagger": "^11.4.7",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@shop/shared": "workspace:*",
+    "@valibot/to-json-schema": "^1.8.0",
     "prisma": "^7.10.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",

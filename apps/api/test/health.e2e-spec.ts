@@ -34,4 +34,9 @@ describe('health', () => {
     expect(res.type).toBe('application/json')
     expect(res.body).toMatchObject({statusCode: 404})
   })
+
+  it('serves Swagger UI at /api/docs', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs').expect(200)
+    expect(res.text).toContain('swagger-ui')
+  })
 })
