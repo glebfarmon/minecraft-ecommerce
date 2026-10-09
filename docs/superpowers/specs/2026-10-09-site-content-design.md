@@ -101,7 +101,7 @@ type RulesDocument = {
 }
 ```
 
-Why JSON instead of `*_translations` tables (parent spec §5): rules are a document edited and published as a whole, never queried by field, and ~100 items. A JSON snapshot per version gives draft/publish and history with two tables and no row-level diffing. Recorded in ADR 0007.
+Why JSON instead of `*_translations` tables (parent spec §5): rules are a document edited and published as a whole, never queried by field, and ~100 items. A JSON snapshot per version gives draft/publish and history with two tables and no row-level diffing. Recorded in ADR 0008.
 
 Numbering is positional and computed on read (`1`, `1.1`, ...); admins never type numbers. Missing `pl` text falls back to `en` (parent spec rule).
 
@@ -272,7 +272,7 @@ Phase 1 ships a finished `/rules` page; phase 2 changes only function bodies on 
 4. `content` module: public endpoints, admin endpoints, validation, permission, audit.
 5. `web`: real bodies for `getRules`, `getSiteSettings`, `getMessageOverrides`; overrides merge; fallbacks.
 6. `admin`: settings page, texts page, rules editor with preview, publish and versions.
-7. ADR 0007 and parent spec updates (sub-project 9 in the roadmap, ISR wording in §11 replaced by `'use cache'`).
+7. ADR 0008 and parent spec updates (sub-project 9 in the roadmap, ISR wording in §11 replaced by `'use cache'`).
 
 ## 10. Testing
 
@@ -297,4 +297,4 @@ Phase 1 ships a finished `/rules` page; phase 2 changes only function bodies on 
 
 ## 12. ADR to write
 
-**ADR 0007: Site content in the database.** Brand values move from `config/site.ts` (ADR 0005) to the DB with `DEFAULT_SITE_SETTINGS` as fallback; rules as versioned JSON documents; UI texts as allowlisted overrides on top of next-intl files; caching via `'use cache'` + `cacheLife('content')` without on-demand revalidation. ADR 0005 stays valid for everything else in `config/`.
+**ADR 0008: Site content in the database.** Brand values move from `config/site.ts` (ADR 0005) to the DB with `DEFAULT_SITE_SETTINGS` as fallback; rules as versioned JSON documents; UI texts as allowlisted overrides on top of next-intl files; caching via `'use cache'` + `cacheLife('content')` without on-demand revalidation. ADR 0005 stays valid for everything else in `config/`.

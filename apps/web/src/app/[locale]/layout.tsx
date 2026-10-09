@@ -10,6 +10,7 @@ import {NextIntlClientProvider, hasLocale} from 'next-intl'
 import {getMessages, getTranslations} from 'next-intl/server'
 import {Inter_Tight, JetBrains_Mono, Oswald} from 'next/font/google'
 import {notFound} from 'next/navigation'
+import {connection} from 'next/server'
 import type {ReactNode} from 'react'
 
 import '../globals.css'
@@ -30,13 +31,6 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap'
 })
 
-// Daily regeneration keeps the footer year current on otherwise static pages.
-export const revalidate = 86_400
-
-export function generateStaticParams() {
-  return routing.locales.map(locale => ({locale}))
-}
-
 export async function generateMetadata({
   params
 }: {
@@ -54,6 +48,9 @@ export default async function LocaleLayout({
   children: ReactNode
   params: Promise<{locale: string}>
 }) {
+  // Catalog and content come from the API, which is not reachable during `next build`:
+  // render per request and let the data cache (60 s) keep it cheap. See ADR 0007.
+  await connection()
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
   const t = await getTranslations({locale})
