@@ -109,11 +109,11 @@ Numbering is positional and computed on read (`1`, `1.1`, ...); admins never typ
 
 Public, no auth, `Cache-Control: no-store` (web does the caching):
 
-| Endpoint                            | Returns                                                                                                                                    |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /api/content/rules?locale=`    | Latest published version, localized with fallback: `{publishedAt, sections: [{id, title, items: [{id, text}]}]}`; `404` if never published |
-| `GET /api/content/messages?locale=` | `{[key]: value}` overrides for that locale (flat keys)                                                                                     |
-| `GET /api/content/settings`         | Settings row                                                                                                                               |
+| Endpoint                            | Returns                                                                                                                                                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/content/rules?locale=`    | Latest published version, localized with fallback: `{publishedAt, sections: [{id, title, items: [{id, text}]}]}`, where `title` and `text` are `{value, lang}` (`lang` is `en` when PL fell back); `404` if never published |
+| `GET /api/content/messages?locale=` | `{[key]: value}` overrides for that locale (flat keys)                                                                                                                                                                      |
+| `GET /api/content/settings`         | Settings row                                                                                                                                                                                                                |
 
 Admin, `@RequirePermission('content.write')`, every write goes to the audit log:
 
@@ -146,12 +146,26 @@ Matches `rules.png`, in the site's visual language:
 - Header: "Server rules" with the second word in the accent colour, lead text, badge "Current edition: <publishedAt>" (localized date).
 - Left column: search input (`/` focuses it), table of contents with section number, title and item count; the section in view is highlighted (IntersectionObserver).
 - Right column: one card per section, header with number, title and "N items", items as `1.1 text`.
-- Anchors: `#s-<n>` per section, `#r-<n>-<m>` per item, so a moderator can link "rule 2.3".
-- Search filters client-side over the already loaded text (case-insensitive, both title and items), shows matches with the term highlighted, and shows an empty state when nothing matches. Data is small; no server search.
+- Anchors: `#s-<n>` per section, `#r-<n>-<m>` per item, so a moderator can link "rule 2.3". Anchors follow the displayed number on purpose (players cite rules by number); after a reorder an old link points to whatever is now 2.3. Opening a URL with an anchor clears any search, scrolls the item into view (`scroll-margin-top` clears the navbar) and highlights it for 2 s.
+- Search filters client-side over the already loaded text (both titles and items), shows matches with the term highlighted, and shows an empty state with a "clear search" button when nothing matches. Data is small; no server search. Matching rules are in §6.5.
 - Mobile: contents collapse into a `MorphPopover` trigger above the list (CLAUDE.md rule for expanding panels).
-- Texts of the page chrome (title, lead, search placeholder, "items", empty state) are next-intl keys in a `rules` namespace; `rules.title` and `rules.lead` are on the allowlist.
+- All texts of the page chrome are next-intl keys in a `rules` namespace (§6.5); `rules.title` and `rules.lead` are on the allowlist.
 
-Structure (ADR 0004): `features/rules/` with `api/get-rules.ts`, `components/rules-toc.tsx`, `components/rules-section.tsx`, `components/rules-search.tsx`, `lib/number-rules.ts`, `lib/filter-rules.ts`; route in `app/[locale]/rules/page.tsx`.
+#### Rule actions: copy text, copy link
+
+Each item has two icon buttons on its right edge:
+
+| Button    | Copies                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------- |
+| Copy text | `2.3. <item text as plain text>` in the current locale (markdown stripped, link text kept, URL dropped) |
+| Copy link | Absolute URL in the current locale: `<origin>/<locale>/rules#r-2-3`                                     |
+
+- Visibility: hidden until the item is hovered or anything inside it has keyboard focus (`group-hover`, `group-focus-within`); always visible, muted, on devices without hover (`@media (hover: none)`). Buttons stay in the tab order, so keyboard users reach them without hovering.
+- Feedback: the clicked icon turns into a check for 2 s and a visually hidden `aria-live="polite"` region announces "Copied" / "Link copied". If `navigator.clipboard.writeText` rejects or is missing, the region announces "Couldn't copy" and the icon shows an error state; nothing else on the page changes.
+- Labels: `aria-label` and tooltip "Copy rule 2.3" / "Copy link to rule 2.3", localized with the number as an ICU argument.
+- Copying does not change the URL or scroll position.
+
+Structure (ADR 0004): `features/rules/` with `api/get-rules.ts`, `components/rules-toc.tsx`, `components/rules-section.tsx`, `components/rule-item.tsx`, `components/rule-actions.tsx`, `components/rules-search.tsx`, `hooks/use-copy.ts`, `lib/number-rules.ts`, `lib/filter-rules.ts`, `lib/normalize-search.ts`, `lib/rule-plain-text.ts`, `lib/rule-anchor.ts`; route in `app/[locale]/rules/page.tsx`.
 
 ### 6.2 Cached reads
 
@@ -188,6 +202,20 @@ return {locale, messages: applyOverrides(file, overrides)}
 ### 6.4 Settings consumers
 
 `SITE_NAME`, `SERVER_IP`, `DISCORD_URL` imports in components are replaced by `getSiteSettings()` in Server Components, passed down as props where a Client Component needs them (IP copy button). `config/site.ts` keeps `PAGES`, `LEGAL_DOCS`, `legalPath` and `DEFAULT_SITE_SETTINGS`.
+
+### 6.5 Languages (EN, PL)
+
+Every feature of the rules page works the same in both locales; nothing is English-only on the public side.
+
+- **Routes and SEO:** `/en/rules` and `/pl/rules`; `generateMetadata` uses localized `rules.metaTitle` / `rules.metaDescription`; `hreflang` alternates for both plus `x-default` → `en`; `/rules` added to `app/sitemap.ts` for both locales.
+- **Content:** demo rules exist in both languages (phase 1 data files, phase 2 seed). Admin edits EN and PL per field. A PL field left empty falls back to EN; the public API then returns that field as `{value, lang: 'en'}` and `web` puts `lang="en"` on that element so screen readers switch voice. Fields in the requested locale carry `lang` equal to it.
+- **Chrome strings** (`rules` namespace, EN/PL, covered by the existing key-parity check): `title`, `lead`, `metaTitle`, `metaDescription`, `edition` (`Current edition: {date}`), `contents`, `openContents`, `searchPlaceholder`, `searchShortcut`, `itemCount`, `noResults` (`No rules match "{query}"`), `clearSearch`, `unavailable`, `copyText` (`Copy rule {number}`), `copyLink` (`Copy link to rule {number}`), `copied`, `linkCopied`, `copyFailed`.
+- **Plurals:** `itemCount` is ICU plural. EN `one/other`; PL `one/few/many/other` (1 punkt, 2–4 punkty, 5+ punktów, 22 punkty).
+- **Dates:** the edition badge formats `publishedAt` with next-intl `format.dateTime(date, {dateStyle: 'long'})` in the page locale (EN "28 May 2026", PL "28 maja 2026").
+- **Search:** case-folding with `toLocaleLowerCase(locale)` and diacritic-insensitive matching: each character is normalized on its own (NFD, combining marks removed, `ł`→`l`), keeping a map back to original indices so highlighting marks the original text. "zolw" finds "żółw"; "Zolw" finds "Żółw".
+- **Copy:** copy text uses the displayed locale's text (including the EN fallback if that is what is shown); copy link includes the current locale segment.
+- **Language switch:** switching locale on `/rules` keeps the hash, so the reader stays on the same rule (anchors are numbers, identical in both languages).
+- **Keyboard:** the `/` shortcut checks `event.key === '/'`, so it works on EN and PL layouts, and is ignored while focus is in an input or textarea.
 
 ## 7. Admin (phase 2, EN)
 
@@ -229,8 +257,10 @@ Excluded on purpose: `hero.left1..right2` (layout-cut words of the decorative he
 1. `features/rules` data types and `number-rules`, `filter-rules` with unit tests.
 2. Local data `features/rules/data/rules.en.ts` and `rules.pl.ts` (demo rules in the shape of the public API response, with a fixed `publishedAt`); `getRules(locale)` returns it.
 3. `RichText` mini-markdown renderer in `@shop/ui` with tests (bold, italic, safe links, no HTML).
-4. Rules page UI: header, TOC with scroll highlight, sections, anchors, search, mobile `MorphPopover`, `rules` messages EN/PL.
-5. `getSiteSettings()` returning `DEFAULT_SITE_SETTINGS`; components switch from constants to it.
+4. Rules page UI: header, TOC with scroll highlight, sections, anchors with highlight on open, search (locale-aware, diacritic-insensitive), mobile `MorphPopover`.
+5. Rule actions: copy text and copy link with feedback and live region.
+6. Languages: `rules` messages EN/PL (plurals, date, labels), `lang` on fallback fields, metadata + hreflang + sitemap, hash kept on locale switch.
+7. `getSiteSettings()` returning `DEFAULT_SITE_SETTINGS`; components switch from constants to it.
 
 Phase 1 ships a finished `/rules` page; phase 2 changes only function bodies on the web side.
 
@@ -246,13 +276,15 @@ Phase 1 ships a finished `/rules` page; phase 2 changes only function bodies on 
 
 ## 10. Testing
 
-| Layer             | What                                                                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit (web, Jest)  | numbering, search filter, `applyOverrides` (deep set, orphans ignored), `RichText` (no HTML, `javascript:` links dropped)                                     |
-| Unit (api, Jest)  | rules schema limits, ICU placeholder equality, allowlist matching (`ns.*`), settings validation                                                               |
-| Integration (api) | Testcontainers Postgres: draft `409` on stale revision, publish creates version, restore, public endpoint fallback `pl → en`, audit rows written              |
-| E2E (Playwright)  | admin edits a rule and publishes → `/rules` shows it (test env sets `revalidate` to 1 s via env-driven profile); admin overrides `hero.title` → home shows it |
-| Build check (CI)  | `next build` of `web` with no api reachable succeeds                                                                                                          |
+| Layer                     | What                                                                                                                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit (web, Jest)          | numbering, search filter, `normalize-search` (PL diacritics, `ł`, index map for highlight), `rule-plain-text`, `rule-anchor`, `applyOverrides` (deep set, orphans ignored), `RichText` (no HTML, `javascript:` links dropped) |
+| Component (web)           | rule actions: copy text/link call the clipboard with the expected strings in EN and PL, check icon + live region on success, error announcement on rejection; `itemCount` plural forms for PL 1/2/5/22                        |
+| Unit (api, Jest)          | rules schema limits, ICU placeholder equality, allowlist matching (`ns.*`), settings validation                                                                                                                               |
+| Integration (api)         | Testcontainers Postgres: draft `409` on stale revision, publish creates version, restore, public endpoint fallback `pl → en`, audit rows written                                                                              |
+| E2E (Playwright, phase 1) | `/pl/rules#r-2-3` scrolls to and highlights 2.3; search "zolw" in PL finds the item; copy link on `/pl/rules` yields `/pl/rules#r-…`; switching to EN keeps the hash                                                          |
+| E2E (Playwright)          | admin edits a rule and publishes → `/rules` shows it (test env sets `revalidate` to 1 s via env-driven profile); admin overrides `hero.title` → home shows it                                                                 |
+| Build check (CI)          | `next build` of `web` with no api reachable succeeds                                                                                                                                                                          |
 
 ## 11. Out of scope
 
