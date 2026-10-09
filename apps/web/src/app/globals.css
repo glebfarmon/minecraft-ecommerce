@@ -21,9 +21,14 @@
   --color-muted: #8e8e93;
   --color-ink: #0e0e10;
   --color-online: #3ddc84;
+  --color-danger: #ff8a80;
+  --animate-rule-flash: rule-flash 2s ease-out;
+
+  --container-page: 1440px;
 
   --radius-card: 28px;
   --radius-inner: 20px;
+  --radius-field: 12px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -42,14 +47,24 @@
   color-scheme: dark;
 }
 
+/* Small uppercase labels: section kickers (eyebrow) and menu group titles (eyebrow-sm). */
+@utility eyebrow {
+  @apply text-[13px] font-medium tracking-[0.02em] text-muted uppercase;
+}
+@utility eyebrow-sm {
+  @apply text-[11px] font-semibold tracking-[0.14em] text-muted uppercase;
+}
+
 /* Only the shop section animates its accent; the page-wide accent on :root switches at once. */
 [data-server] {
   transition: --accent 700ms var(--ease-out-expo);
 }
 
 html {
+  /* Reserves the scrollbar's width, so a scroll lock (modal) does not shift the page or the fixed navbar. */
+  scrollbar-gutter: stable;
   scroll-behavior: smooth;
-  scroll-padding-top: 96px;
+  scroll-padding-top: 0;
 }
 
 body {
@@ -77,9 +92,91 @@ textarea {
   caret-color: var(--accent);
 }
 
+/* The global focus ring above is a pill; a text field keeps its own corners. */
+input:focus-visible,
+textarea:focus-visible {
+  border-radius: var(--radius-field);
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+
+/* Thin scrollbar tinted with the active server accent. Firefox gets the standard properties; engines with
+   ::-webkit-scrollbar get a 4px thumb in a 10px track (the transparent border is the breathing room). */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--accent) 55%, transparent) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  .scroll-thin {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 10px;
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--accent) 45%, transparent);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    transition: background-color 200ms;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent);
+  }
+}
+
+/* Scroller with no visible scrollbar. The side that still has hidden content fades out (set by ScrollFade). */
+@property --fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.scroll-fade-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  transition:
+    --fade-start 200ms ease-out,
+    --fade-end 200ms ease-out;
+}
+.scroll-fade-x::-webkit-scrollbar {
+  display: none;
+}
+.scroll-fade-x[data-dragging='true'],
+.scroll-fade-x[data-dragging='true'] * {
+  cursor: grabbing;
+  user-select: none;
+}
+.scroll-fade-x[data-fade-start='true'] {
+  --fade-start: 40px;
+}
+.scroll-fade-x[data-fade-end='true'] {
+  --fade-end: 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade-x {
+    transition: none;
+  }
 }
 
 a {
@@ -96,5 +193,69 @@ a {
   }
   [data-server] {
     transition: none;
+  }
+}
+
+/* Hero entrance: the column guides draw down from the top, and the accent words start as plain ink and take the server colour once their line has landed. */
+@keyframes guide-draw {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes ink {
+  from {
+    color: var(--color-fg);
+  }
+}
+.guide-line {
+  transform-origin: top;
+  animation: guide-draw 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.accent-ink {
+  animation: ink 0.5s ease-out 0.6s backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-line {
+    animation: none;
+  }
+}
+
+/* Purchase feed: the track holds two identical rows, so -50% loops seamlessly. Edges fade out. */
+@keyframes feed-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.feed-marquee {
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* Vertical scroller that keeps its (themed) scrollbar; the edge with hidden content fades. Set by useScrollEdges(ref, 'y'). */
+.scroll-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+  transition:
+    --fade-start 200ms ease-out,
+    --fade-end 200ms ease-out;
+}
+.scroll-fade-y[data-fade-start='true'] {
+  --fade-start: 28px;
+}
+.scroll-fade-y[data-fade-end='true'] {
+  --fade-end: 28px;
+}
+
+/* The rule a shared link points to (#r-2-3) glows once, then settles. */
+@keyframes rule-flash {
+  from {
+    background-color: var(--color-accent-soft);
+  }
+  to {
+    background-color: transparent;
   }
 }
