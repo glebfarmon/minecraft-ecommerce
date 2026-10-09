@@ -1,6 +1,7 @@
 import {Footer} from '@/app/[locale]/_components/footer'
 import {getRules} from '@/features/rules/api/get-rules'
 import {RulesView} from '@/features/rules/components/rules-view'
+import {formatEdition} from '@/features/rules/lib/format-edition'
 import {numberRules} from '@/features/rules/lib/number-rules'
 import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {getPathname} from '@/i18n/navigation'
@@ -8,7 +9,7 @@ import {type Locale, routing} from '@/i18n/routing'
 import {CalendarDays} from 'lucide-react'
 import type {Metadata} from 'next'
 import {hasLocale} from 'next-intl'
-import {getFormatter, getTranslations} from 'next-intl/server'
+import {getTranslations} from 'next-intl/server'
 import {notFound} from 'next/navigation'
 
 // EN has no prefix (`localePrefix: 'as-needed'`): /rules and /pl/rules.
@@ -38,10 +39,9 @@ export async function generateMetadata({
 export default async function RulesPage({params}: {params: Promise<{locale: string}>}) {
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
-  const [rules, t, format, settings] = await Promise.all([
+  const [rules, t, settings] = await Promise.all([
     getRules(locale),
     getTranslations({locale, namespace: 'rules'}),
-    getFormatter({locale}),
     getSiteSettings()
   ])
 
@@ -56,13 +56,7 @@ export default async function RulesPage({params}: {params: Promise<{locale: stri
           {rules && (
             <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-muted">
               <CalendarDays aria-hidden className="size-4 text-accent" />
-              {t('edition', {
-                // UTC: the edition is a calendar date, it must not move with the server's time zone.
-                date: format.dateTime(new Date(rules.publishedAt), {
-                  dateStyle: 'long',
-                  timeZone: 'UTC'
-                })
-              })}
+              {t('edition', {date: formatEdition(rules.publishedAt, locale)})}
             </p>
           )}
         </header>

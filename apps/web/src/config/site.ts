@@ -9,6 +9,9 @@ export type SiteSettings = {
   supportEmail: string
 }
 
+/** Dates of editions are calendar dates where the servers run, not in the visitor's or server's zone. */
+export const CONTENT_TIME_ZONE = 'Europe/Warsaw'
+
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteName: {plain: 'Block', accent: 'haus'},
   serverIp: 'mc.mineblaze.net',

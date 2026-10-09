@@ -32,7 +32,7 @@ export function RulesSection({
           <span className="text-accent">{section.number}.</span>{' '}
           <span
             lang={section.title.lang === locale ? undefined : section.title.lang}
-            className="break-words">
+            className="min-w-0 break-words">
             <Highlight text={section.title.value} query={query} locale={locale} />
           </span>
         </h2>

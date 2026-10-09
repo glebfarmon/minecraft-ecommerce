@@ -65,6 +65,17 @@ test.describe('copy link', () => {
 test.describe('phone', () => {
   test.use({viewport: {width: 375, height: 800}})
 
+  test('a long section title wraps inside its card', async ({page}) => {
+    await page.goto(`${WEB}/pl/rules`)
+    const fits = await page.locator('#s-1').evaluate(section => {
+      const title = section.querySelector('h2 > span:last-child')
+      if (!title) return false
+      title.textContent = 'Bardzodlugietytulowesłowo'.repeat(3)
+      return title.getBoundingClientRect().right <= section.getBoundingClientRect().right
+    })
+    expect(fits).toBe(true)
+  })
+
   test('no horizontal scroll and contents open from a popover', async ({page}) => {
     await page.goto(`${WEB}/pl/rules`)
     const overflow = await page.evaluate(
