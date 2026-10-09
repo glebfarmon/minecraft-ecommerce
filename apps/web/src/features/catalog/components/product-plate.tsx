@@ -1,5 +1,5 @@
 import {INNER_RADIUS, MORPH} from '@/config/motion'
-import type {Product} from '@/config/products'
+import type {ProductIcon as IconName} from '@/config/products'
 import {ProductIcon} from '@/features/catalog/components/product-icon'
 import {motion} from 'motion/react'
 import {useTranslations} from 'next-intl'
@@ -10,7 +10,8 @@ export function ProductPlate({
   size = 'card',
   layoutId
 }: {
-  product: Product
+  /** Only the fields drawn on the plate, so both the demo `Product` and the API `CatalogProduct` fit. */
+  product: {icon: IconName; mark: string; adult?: boolean}
   size?: 'card' | 'large' | 'thumb'
   /** Share the box with the same plate in the card or the modal, so Motion carries it between the two. */
   layoutId?: string

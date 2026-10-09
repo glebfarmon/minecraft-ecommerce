@@ -1,5 +1,7 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
+import {loadCatalog} from '@/features/catalog/api/get-catalog'
+import {CatalogProvider} from '@/features/catalog/catalog-provider'
 import {CookieBanner} from '@/features/consent/components/cookie-banner'
 import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {StatusProvider} from '@/features/status/status-provider'
@@ -55,7 +57,7 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound()
   const t = await getTranslations({locale})
   const messages = await getMessages()
-  const settings = await getSiteSettings()
+  const [settings, catalog] = await Promise.all([getSiteSettings(), loadCatalog(locale)])
 
   return (
     <html
@@ -68,13 +70,15 @@ export default async function LocaleLayout({
           {t('skip')}
         </a>
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
-          <StatusProvider>
-            <ShopProvider>
-              <Navbar siteName={settings.siteName} />
-              {children}
-              <CookieBanner />
-            </ShopProvider>
-          </StatusProvider>
+          <CatalogProvider catalog={catalog}>
+            <StatusProvider>
+              <ShopProvider>
+                <Navbar siteName={settings.siteName} />
+                {children}
+                <CookieBanner />
+              </ShopProvider>
+            </StatusProvider>
+          </CatalogProvider>
         </NextIntlClientProvider>
       </body>
     </html>

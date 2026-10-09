@@ -1,6 +1,7 @@
+import {TEST_CATALOG} from '@/features/catalog/test-catalog'
 import {render, screen} from '@testing-library/react'
 
-import {LiveFeed, STUB_PURCHASES} from './live-feed'
+import {LiveFeed} from './live-feed'
 
 jest.mock('next-intl', () => ({
   useLocale: () => 'en',
@@ -10,21 +11,22 @@ jest.mock('next-intl', () => ({
 const marquee = () => document.querySelector('.feed-marquee')
 
 describe('LiveFeed', () => {
-  it('shows only the empty message when there are no purchases', () => {
-    render(<LiveFeed purchases={[]} />)
+  it('shows only purchases whose product is still in the catalog', () => {
+    render(<LiveFeed catalog={TEST_CATALOG} />)
+    // Of the stub purchases, only vip, legend, mythic-case and pvp-kit exist in the fixture.
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.queryByText(/champion/i)).toBeNull()
+    expect(marquee()).toBeNull()
+  })
+
+  it('shows the empty message when no stub product is in the catalog', () => {
+    render(<LiveFeed catalog={{...TEST_CATALOG, products: []}} />)
     expect(screen.getByText('empty')).toBeInTheDocument()
     expect(marquee()).toBeNull()
   })
 
-  it('keeps a short feed still', () => {
-    render(<LiveFeed purchases={STUB_PURCHASES.slice(0, 2)} />)
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
-    expect(marquee()).toBeNull()
-  })
-
-  it('runs a full feed as a marquee with the loop copy hidden from assistive tech', () => {
-    render(<LiveFeed purchases={STUB_PURCHASES} />)
-    expect(marquee()).not.toBeNull()
-    expect(screen.getAllByRole('listitem')).toHaveLength(STUB_PURCHASES.length)
+  it('renders nothing without a catalog', () => {
+    const {container} = render(<LiveFeed catalog={null} />)
+    expect(container).toBeEmptyDOMElement()
   })
 })

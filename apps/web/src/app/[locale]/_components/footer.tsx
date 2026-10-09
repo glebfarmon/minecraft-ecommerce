@@ -6,16 +6,17 @@ import {
   FooterWordmark
 } from '@/app/[locale]/_components/footer-motion'
 import {CopyIp} from '@/components/copy-ip'
-import {servers} from '@/config/servers'
 import {LEGAL_DOCS, PAGES, type SiteSettings, legalPath} from '@/config/site'
 import {OnlineBadge} from '@/features/status/components/online-badge'
 import {Link} from '@/i18n/navigation'
 import {useLocale, useTranslations} from 'next-intl'
 
+import type {CatalogServer} from '@shop/shared/catalog'
+
 const LINK_CLASS =
   'bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-bottom-left bg-no-repeat pb-0.5 text-fg/85 transition-[background-size,color] duration-500 ease-out-expo hover:bg-[length:100%_1px] hover:text-fg'
 
-export function Footer({settings}: {settings: SiteSettings}) {
+export function Footer({settings, servers}: {settings: SiteSettings; servers: CatalogServer[]}) {
   const t = useTranslations('footer')
   const locale = useLocale()
   const columns = [
