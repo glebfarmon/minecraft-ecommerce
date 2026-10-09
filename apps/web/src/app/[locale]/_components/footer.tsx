@@ -7,7 +7,7 @@ import {
 } from '@/app/[locale]/_components/footer-motion'
 import {CopyIp} from '@/components/copy-ip'
 import {servers} from '@/config/servers'
-import {DISCORD_URL, LEGAL_DOCS, PAGES, SERVER_IP, SITE_NAME, legalPath} from '@/config/site'
+import {LEGAL_DOCS, PAGES, type SiteSettings, legalPath} from '@/config/site'
 import {OnlineBadge} from '@/features/status/components/online-badge'
 import {Link} from '@/i18n/navigation'
 import {useLocale, useTranslations} from 'next-intl'
@@ -15,7 +15,7 @@ import {useLocale, useTranslations} from 'next-intl'
 const LINK_CLASS =
   'bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-bottom-left bg-no-repeat pb-0.5 text-fg/85 transition-[background-size,color] duration-500 ease-out-expo hover:bg-[length:100%_1px] hover:text-fg'
 
-export function Footer() {
+export function Footer({settings}: {settings: SiteSettings}) {
   const t = useTranslations('footer')
   const locale = useLocale()
   const columns = [
@@ -38,7 +38,7 @@ export function Footer() {
       title: t('community'),
       links: [
         {label: t('rules'), href: PAGES.rules},
-        {label: t('discord'), href: DISCORD_URL}
+        {label: t('discord'), href: settings.discordUrl}
       ]
     }
   ]
@@ -48,7 +48,7 @@ export function Footer() {
       <FooterMotion>
         <div className="mx-auto max-w-page px-[var(--gutter)]">
           <FooterBlock className="py-10">
-            <FooterWordmark plain={SITE_NAME.plain} accent={SITE_NAME.accent} />
+            <FooterWordmark plain={settings.siteName.plain} accent={settings.siteName.accent} />
           </FooterBlock>
           <nav aria-label={t('navLabel')}>
             <FooterBlock className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 md:grid-cols-4">
@@ -83,7 +83,7 @@ export function Footer() {
               <OnlineBadge />
             </FooterSpan>
             <FooterItem>
-              <CopyIp ip={SERVER_IP} />
+              <CopyIp ip={settings.serverIp} />
             </FooterItem>
           </FooterBlock>
           <FooterBlock

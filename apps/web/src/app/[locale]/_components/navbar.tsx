@@ -2,7 +2,7 @@
 
 import {MobileMenu} from '@/app/[locale]/_components/mobile-menu'
 import {NavLinks} from '@/app/[locale]/_components/nav-links'
-import {PAGES, SITE_NAME} from '@/config/site'
+import {PAGES, type SiteSettings} from '@/config/site'
 import {CartMenu} from '@/features/cart/components/cart-menu'
 import {SettingsMenu} from '@/features/settings/components/settings-menu'
 import {OnlineBadge} from '@/features/status/components/online-badge'
@@ -13,7 +13,7 @@ import {useTranslations} from 'next-intl'
 import type {MouseEvent} from 'react'
 import {useEffect, useState} from 'react'
 
-export function Navbar() {
+export function Navbar({siteName}: {siteName: SiteSettings['siteName']}) {
   const t = useTranslations('nav')
   const scrolled = useScrolled()
   const pathname = usePathname()
@@ -61,8 +61,8 @@ export function Navbar() {
             scrollToTopIfCurrent(event, homeHref)
           }}
           className="justify-self-start font-display text-xl font-bold tracking-wide uppercase">
-          {SITE_NAME.plain}
-          <span className="text-accent">{SITE_NAME.accent}</span>
+          {siteName.plain}
+          <span className="text-accent">{siteName.accent}</span>
         </Link>
 
         <NavLinks links={links} currentPath={pathname} onLinkClick={scrollToTopIfCurrent} />

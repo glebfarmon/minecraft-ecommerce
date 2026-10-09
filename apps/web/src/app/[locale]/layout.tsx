@@ -1,6 +1,7 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {ShopProvider} from '@/features/cart/shop-provider'
 import {CookieBanner} from '@/features/consent/components/cookie-banner'
+import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {StatusProvider} from '@/features/status/status-provider'
 import {pickClientMessages} from '@/i18n/client-messages'
 import {routing} from '@/i18n/routing'
@@ -57,6 +58,7 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound()
   const t = await getTranslations({locale})
   const messages = await getMessages()
+  const settings = await getSiteSettings()
 
   return (
     <html
@@ -71,7 +73,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <StatusProvider>
             <ShopProvider>
-              <Navbar />
+              <Navbar siteName={settings.siteName} />
               {children}
               <CookieBanner />
             </ShopProvider>

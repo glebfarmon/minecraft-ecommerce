@@ -1,7 +1,6 @@
 import {CopyIp} from '@/components/copy-ip'
 import {GridGuides} from '@/components/grid-guides'
 import {EASE} from '@/config/motion'
-import {SERVER_IP} from '@/config/site'
 import {OnlineCounter} from '@/features/status/components/online-counter'
 import {ArrowDown, Plus} from 'lucide-react'
 import * as motion from 'motion/react-client'
@@ -45,7 +44,7 @@ function Line({
   )
 }
 
-export function Hero() {
+export function Hero({serverIp}: {serverIp: string}) {
   const t = useTranslations('hero')
 
   return (
@@ -123,7 +122,7 @@ export function Hero() {
             className="relative z-20 mt-8 flex flex-col items-start gap-4 md:absolute md:right-[var(--gutter)] md:bottom-10 md:mt-0 md:items-end">
             <OnlineCounter />
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <CopyIp ip={SERVER_IP} />
+              <CopyIp ip={serverIp} />
               <a
                 href="#shop"
                 className="flex h-12 items-center gap-2 rounded-full bg-accent pr-5 pl-6 font-semibold text-on-accent shadow-[0_8px_24px_var(--color-accent-soft)] transition-[filter] hover:brightness-110">

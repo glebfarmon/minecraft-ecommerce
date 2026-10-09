@@ -2,6 +2,7 @@ import {Footer} from '@/app/[locale]/_components/footer'
 import {getRules} from '@/features/rules/api/get-rules'
 import {RulesView} from '@/features/rules/components/rules-view'
 import {numberRules} from '@/features/rules/lib/number-rules'
+import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {getPathname} from '@/i18n/navigation'
 import {type Locale, routing} from '@/i18n/routing'
 import {CalendarDays} from 'lucide-react'
@@ -37,10 +38,11 @@ export async function generateMetadata({
 export default async function RulesPage({params}: {params: Promise<{locale: string}>}) {
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
-  const [rules, t, format] = await Promise.all([
+  const [rules, t, format, settings] = await Promise.all([
     getRules(locale),
     getTranslations({locale, namespace: 'rules'}),
-    getFormatter({locale})
+    getFormatter({locale}),
+    getSiteSettings()
   ])
 
   return (
@@ -74,7 +76,7 @@ export default async function RulesPage({params}: {params: Promise<{locale: stri
           )}
         </div>
       </main>
-      <Footer />
+      <Footer settings={settings} />
     </>
   )
 }
