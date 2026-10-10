@@ -172,3 +172,7 @@ jobs:
           done
           echo "prod serves '$v', expected '$GITHUB_SHA'"
           exit 1
+      - name: Verify database readiness
+        env:
+          PROD_URL: ${{ secrets.PROD_URL }}
+        run: curl -fsS --retry 6 --retry-delay 10 --retry-all-errors --max-time 10 "$PROD_URL/api/health/ready"

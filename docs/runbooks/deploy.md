@@ -47,7 +47,28 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 
 Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
 
-The Foundation apps read only `PORT`, `APP_VERSION` and `HOSTNAME`, which the images set. No database or Redis env vars and no migrations are needed yet. Later sub-projects add their env vars and migration step to this runbook.
+The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the following.
+
+**Environment**
+
+- `shop-api`: `DATABASE_URL` = the Postgres connection string (internal Dokploy host), e.g. `postgresql://<user>:<password>@<postgres-service>:5432/<db>`. Without it the API falls back to `localhost:5432` and `/api/catalog` returns 500.
+- `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
+
+**Migrations (every deploy).** Before updating `shop-api`, run once against the new image, in the API container or a one-off Dokploy command with the same `DATABASE_URL`:
+
+```bash
+node_modules/.bin/prisma migrate deploy
+```
+
+**Seed (once only).** On the first deploy, with an empty database, run:
+
+```bash
+node dist/seed/main.js
+```
+
+Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
+
+CI verifies `/api/health/ready` (database reachable) after the version check, so a missing or wrong `DATABASE_URL` fails the deploy job.
 
 4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility).
 5. Settings → Profile → API → generate an API key.
