@@ -15,7 +15,8 @@ describe('getCatalog', () => {
     const fetchMock = respond(200, TEST_CATALOG)
     await expect(getCatalog('pl')).resolves.toEqual(TEST_CATALOG)
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:4000/api/catalog?locale=pl', {
-      next: {revalidate: 60, tags: ['catalog']}
+      next: {revalidate: 60, tags: ['catalog']},
+      signal: expect.any(AbortSignal)
     })
   })
 
