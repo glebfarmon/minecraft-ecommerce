@@ -69,4 +69,16 @@ describe('database', () => {
       client.price.create({data: {productId: id, currency: 'EUR', amountMinor: 0}})
     ).rejects.toThrow(/prices_amount_positive/)
   })
+
+  // The web cart cookie stores `server:slug:qty` and only accepts this slug format.
+  it('rejects a product slug outside a-z, 0-9 and "-", or longer than 40', async () => {
+    await expect(product('Bad_Slug', 'PERMANENT')).rejects.toThrow(/products_slug_format/)
+    await expect(product('a'.repeat(41), 'PERMANENT')).rejects.toThrow(/products_slug_format/)
+  })
+
+  it('rejects a server slug outside the cookie format', async () => {
+    await expect(
+      client.server.create({data: {slug: 'Nether', name: 'N', accent: '#000', onAccent: '#fff'}})
+    ).rejects.toThrow(/servers_slug_format/)
+  })
 })
