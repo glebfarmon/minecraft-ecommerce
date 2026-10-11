@@ -15,7 +15,7 @@ Rules for AI agents working in this repository.
 - Shared code goes in `packages/*` and is imported as `@shop/<name>`.
 - Money is `amountMinor: Int` + `currency`. Never floats.
 - Do not bump ESLint (9) or TypeScript (6) majors; see `docs/adr/0002-monorepo-tooling.md`.
-- Catalog data comes from `GET /api/catalog` (contract in `@shop/shared`); web reads it with `getCatalog`/`useCatalog()`, never from `config/`. Locale routes render at request time (ADR 0007).
+- Catalog data comes from `GET /api/catalog` (contract in `@shop/shared`); web reads it with `getCatalog` on the server, never from `config/`. The layout gives `CatalogProvider` servers only; catalog pages pass products to `<Catalog>` as a prop. The cart lives in the `cart` cookie and is resolved on the server (`loadCart`). Locale routes render at request time (ADR 0007).
 - Frontend layout (web, admin): `app/` + `_components`, `features/<name>/`, `components/`, `hooks/`, `lib/`; tweakable constants in `config/` (lowest layer, ADR 0005); imports flow shared → features → app; no barrels; see `docs/adr/0004-frontend-structure.md`.
 
 - Anything that expands from a button into a panel (menus, cart, pickers) uses `MorphPopover` (`apps/web/src/components/morph-popover.tsx`): trigger and panel share one Motion `layoutId` (container transform). Do not hand-roll `useState` + absolute dropdowns. Domain content goes in `features/<name>/components/` and is passed as `children`; see `settings-menu.tsx` and `cart-menu.tsx`. Plan: `docs/superpowers/plans/2026-10-02-morph-popover.md`.
