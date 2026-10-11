@@ -59,7 +59,7 @@ function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
     onClose,
     rerenderWith: (isOpen: boolean) => {
       // rerender replaces the whole tree, provider included.
-      view.rerender(<CatalogProvider catalog={TEST_CATALOG}>{ui(isOpen)}</CatalogProvider>)
+      view.rerender(<CatalogProvider servers={TEST_CATALOG.servers}>{ui(isOpen)}</CatalogProvider>)
     }
   }
 }

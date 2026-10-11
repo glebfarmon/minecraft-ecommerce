@@ -67,7 +67,7 @@ describe('Catalog: add to cart from the product modal', () => {
   it('flies the card into the cart only after the modal has closed back into it', async () => {
     renderWithCatalog(
       <ShopProvider>
-        <Catalog initialServer="survival" />
+        <Catalog initialServer="survival" products={TEST_CATALOG.products} />
       </ShopProvider>
     )
     openModal()
@@ -84,7 +84,7 @@ describe('Catalog: add to cart from the product modal', () => {
   it('does not fly when the modal is just closed', async () => {
     renderWithCatalog(
       <ShopProvider>
-        <Catalog initialServer="survival" />
+        <Catalog initialServer="survival" products={TEST_CATALOG.products} />
       </ShopProvider>
     )
     openModal()

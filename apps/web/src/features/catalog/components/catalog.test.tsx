@@ -30,14 +30,14 @@ describe('Catalog server switcher', () => {
 
   it('leaves the default locale unprefixed', () => {
     mockLocale = 'en'
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     fireEvent.click(screen.getByRole('button', {name: 'Anarchy'}))
     expect(pushState).toHaveBeenCalledWith(null, '', '/anarchy')
   })
 
   it('prefixes other locales', () => {
     mockLocale = 'pl'
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     fireEvent.click(screen.getByRole('button', {name: 'Anarchy'}))
     expect(pushState).toHaveBeenCalledWith(null, '', '/pl/anarchy')
   })
@@ -45,7 +45,7 @@ describe('Catalog server switcher', () => {
   it('scrolls the server row to the selected server', () => {
     mockLocale = 'en'
     const scrollBy = jest.spyOn(Element.prototype, 'scrollBy')
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     scrollBy.mockClear() // ignore the initial mount
     fireEvent.click(screen.getByRole('button', {name: 'next'}))
     expect(scrollBy).toHaveBeenCalledTimes(1)
@@ -60,7 +60,7 @@ describe('Catalog category arrows', () => {
     screen.getAllByRole('button', {name}).every(b => b.getAttribute('aria-pressed') === 'true')
 
   it('steps through the categories and wraps around', () => {
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     expect(pressed('all')).toBe(true)
     fireEvent.click(screen.getByRole('button', {name: 'nextCategory'}))
     expect(pressed('Ranks')).toBe(true)
@@ -73,8 +73,8 @@ describe('Catalog category arrows', () => {
 describe('Catalog server accent', () => {
   it('ships the page-wide accent in the server HTML so it does not flash after hydration', () => {
     const html = renderToString(
-      <CatalogProvider catalog={TEST_CATALOG}>
-        <Catalog initialServer="anarchy" />
+      <CatalogProvider servers={TEST_CATALOG.servers}>
+        <Catalog initialServer="anarchy" products={TEST_CATALOG.products} />
       </CatalogProvider>
     )
     expect(html).toContain(':root{--accent:#7b3ff2;--on-accent:#ffffff}')
@@ -83,7 +83,7 @@ describe('Catalog server accent', () => {
 
 describe('Catalog per-server categories', () => {
   it('shows each server its own categories', async () => {
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     expect(screen.queryAllByRole('button', {name: 'Cosmetics'})).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', {name: 'Minigames'}))
     // The old column animates out before the new one mounts.
@@ -94,7 +94,7 @@ describe('Catalog per-server categories', () => {
   })
 
   it('keeps the empty state for a category without products', () => {
-    renderWithCatalog(<Catalog initialServer="minigames" />)
+    renderWithCatalog(<Catalog initialServer="minigames" products={TEST_CATALOG.products} />)
     const [chip] = screen.getAllByRole('button', {name: 'Cosmetics'})
     if (!chip) throw new Error('no cosmetics chip')
     fireEvent.click(chip)
@@ -126,7 +126,7 @@ describe('Catalog first-view entrance', () => {
   })
 
   it('holds the section back until it scrolls into view, then reveals it once', async () => {
-    renderWithCatalog(<Catalog initialServer="survival" />)
+    renderWithCatalog(<Catalog initialServer="survival" products={TEST_CATALOG.products} />)
     const pill = screen.getByRole('button', {name: 'Anarchy'})
     expect(pill.style.opacity).toBe('0')
     act(() => {
@@ -143,12 +143,12 @@ describe('Catalog first-view entrance', () => {
 
 describe('Catalog data from the API', () => {
   it('shows the unavailable state without a catalog', () => {
-    renderWithCatalog(<Catalog initialServer="survival" />, null)
+    renderWithCatalog(<Catalog initialServer="survival" products={[]} />, null)
     expect(screen.getByText('unavailable')).toBeInTheDocument()
   })
 
   it('labels category filters with names from the API', () => {
-    renderWithCatalog(<Catalog initialServer="minigames" />)
+    renderWithCatalog(<Catalog initialServer="minigames" products={TEST_CATALOG.products} />)
     expect(screen.getAllByText('Cosmetics').length).toBeGreaterThan(0)
   })
 })

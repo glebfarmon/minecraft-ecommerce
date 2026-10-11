@@ -21,7 +21,7 @@ export function HomeView({
     <>
       <main>
         <Hero serverIp={settings.serverIp} />
-        <Catalog initialServer={server} />
+        <Catalog initialServer={server} products={catalog?.products ?? []} />
         <HowItWorks />
         <LiveFeed catalog={catalog} />
         <Faq />

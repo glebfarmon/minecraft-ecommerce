@@ -35,8 +35,14 @@ function cycle<T>(list: readonly T[], current: T, delta: number) {
   return list[(list.indexOf(current) + delta + list.length) % list.length]
 }
 
-export function Catalog({initialServer}: {initialServer: string}) {
-  const {available, servers, products, findServer} = useCatalog()
+export function Catalog({
+  initialServer,
+  products
+}: {
+  initialServer: string
+  products: CatalogProduct[]
+}) {
+  const {available, servers, findServer} = useCatalog()
   const t = useTranslations('catalog')
   const locale = useLocale()
   // `selected` outlives `modalOpen` so the modal keeps its content while it animates out.

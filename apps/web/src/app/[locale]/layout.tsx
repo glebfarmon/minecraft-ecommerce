@@ -72,7 +72,7 @@ export default async function LocaleLayout({
           {t('skip')}
         </a>
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
-          <CatalogProvider catalog={catalog}>
+          <CatalogProvider servers={catalog?.servers ?? null}>
             <StatusProvider>
               {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
               <ShopProvider key={locale} initialLines={cart.lines} initialCurrency={cart.currency}>

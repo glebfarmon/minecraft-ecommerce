@@ -64,7 +64,7 @@ describe('ProductCard morph surface', () => {
   it('takes the surface back when the modal closes', () => {
     const {rerender} = renderWithCatalog(<ProductCard product={product} open onOpen={jest.fn()} />)
     rerender(
-      <CatalogProvider catalog={TEST_CATALOG}>
+      <CatalogProvider servers={TEST_CATALOG.servers}>
         <ProductCard product={product} onOpen={jest.fn()} />
       </CatalogProvider>
     )

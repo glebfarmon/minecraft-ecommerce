@@ -120,4 +120,4 @@ export const TEST_CATALOG: CatalogResponse = {
 export const renderWithCatalog = (
   ui: ReactElement,
   catalog: CatalogResponse | null = TEST_CATALOG
-) => render(<CatalogProvider catalog={catalog}>{ui}</CatalogProvider>)
+) => render(<CatalogProvider servers={catalog?.servers ?? null}>{ui}</CatalogProvider>)
