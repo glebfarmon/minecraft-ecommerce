@@ -2,7 +2,7 @@
 
 import {CURRENCY_COOKIE, CURRENCY_COOKIE_MAX_AGE, MAX_LINES, MAX_QTY} from '@/config/cart'
 import {type Currency, DEFAULT_CURRENCY} from '@/config/currencies'
-import {writeCartCookie} from '@/features/cart/lib/cart-cookie'
+import {toCartLine, writeCartCookie} from '@/features/cart/lib/cart-cookie'
 import type {CartItem} from '@/features/cart/types'
 import {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import type {ReactNode} from 'react'
@@ -27,6 +27,8 @@ function writeCurrencyCookie(currency: Currency) {
   document.cookie = `${CURRENCY_COOKIE}=${currency}; path=/; max-age=${String(CURRENCY_COOKIE_MAX_AGE)}; SameSite=Lax`
 }
 
+const NO_LINES: CartItem[] = []
+
 const isLine = (line: CartItem, product: Product) =>
   line.product.server === product.server && line.product.slug === product.slug
 
@@ -35,7 +37,7 @@ const isLine = (line: CartItem, product: Product) =>
  * render already matches; each line keeps its product, so no catalog lookup is needed on the client.
  */
 export function ShopProvider({
-  initialLines = [],
+  initialLines = NO_LINES,
   initialCurrency = DEFAULT_CURRENCY,
   children
 }: {
@@ -45,13 +47,20 @@ export function ShopProvider({
 }) {
   const [currency, setCurrencyState] = useState(initialCurrency)
   const [lines, setLines] = useState(initialLines)
+  // A layout re-render (router.refresh after another tab changed the cart, see CartTabSync) brings
+  // the server's lines: adopt them.
+  const [seed, setSeed] = useState(initialLines)
+  if (seed !== initialLines) {
+    setSeed(initialLines)
+    setLines(initialLines)
+  }
   // Write the cookie only after the player changed the cart: a render with the API down starts
   // empty and must not wipe the stored cart.
   const changed = useRef(false)
 
   useEffect(() => {
     if (!changed.current) return
-    writeCartCookie(lines.map(l => ({server: l.product.server, slug: l.product.slug, qty: l.qty})))
+    writeCartCookie(lines.map(toCartLine))
   }, [lines])
 
   const setCurrency = useCallback((next: Currency) => {

@@ -1,5 +1,5 @@
 import {CART_COOKIE, CART_COOKIE_MAX_AGE, MAX_LINES, MAX_QTY} from '@/config/cart'
-import type {CartLine} from '@/features/cart/types'
+import type {CartItem, CartLine} from '@/features/cart/types'
 
 const SLUG = /^[a-z0-9-]+$/
 const QTY = /^\d+$/
@@ -31,4 +31,21 @@ export function serializeCart(lines: readonly CartLine[]): string {
 
 export function writeCartCookie(lines: readonly CartLine[]): void {
   document.cookie = `${CART_COOKIE}=${serializeCart(lines)}; path=/; max-age=${String(CART_COOKIE_MAX_AGE)}; SameSite=Lax`
+}
+
+export const toCartLine = (item: CartItem): CartLine => ({
+  server: item.product.server,
+  slug: item.product.slug,
+  qty: item.qty
+})
+
+/** The `cart` cookie in this browser as written by `writeCartCookie`; '' when absent. */
+export function readCartCookie(): string {
+  const prefix = `${CART_COOKIE}=`
+  return (
+    document.cookie
+      .split('; ')
+      .find(part => part.startsWith(prefix))
+      ?.slice(prefix.length) ?? ''
+  )
 }

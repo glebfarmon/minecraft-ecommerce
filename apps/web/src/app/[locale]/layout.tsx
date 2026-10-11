@@ -1,5 +1,6 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
 import {loadCart} from '@/features/cart/api/load-cart'
+import {CartTabSync} from '@/features/cart/components/cart-tab-sync'
 import {ShopProvider} from '@/features/cart/shop-provider'
 import {loadCatalog} from '@/features/catalog/api/get-catalog'
 import {CatalogProvider} from '@/features/catalog/catalog-provider'
@@ -76,6 +77,7 @@ export default async function LocaleLayout({
             <StatusProvider>
               {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
               <ShopProvider key={locale} initialLines={cart.lines} initialCurrency={cart.currency}>
+                <CartTabSync />
                 <Navbar siteName={settings.siteName} />
                 {children}
                 <CookieBanner />

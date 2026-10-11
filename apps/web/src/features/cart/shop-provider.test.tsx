@@ -170,4 +170,18 @@ describe('ShopProvider cart', () => {
     fireEvent.click(screen.getByRole('button', {name: 'add'}))
     expect(screen.getByTestId('count')).toHaveTextContent(String(MAX_LINES))
   })
+
+  it('adopts the lines the server sends when the layout re-renders (e.g. after router.refresh)', () => {
+    const {rerender} = render(
+      <ShopProvider initialLines={[{product, qty: 1}]}>
+        <Cart />
+      </ShopProvider>
+    )
+    rerender(
+      <ShopProvider initialLines={[{product, qty: 3}]}>
+        <Cart />
+      </ShopProvider>
+    )
+    expect(screen.getByTestId('count')).toHaveTextContent('3')
+  })
 })
