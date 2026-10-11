@@ -72,10 +72,6 @@ const blur = (label: string) => {
 }
 
 describe('CheckoutModal', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('is a labelled dialog with the form fields, both consents and a disabled pay button', () => {
     setup()
     expect(screen.getByRole('dialog', {name: 'title'})).toBeInTheDocument()

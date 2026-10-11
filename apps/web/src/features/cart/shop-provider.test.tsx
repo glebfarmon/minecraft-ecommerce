@@ -1,13 +1,22 @@
+import {MAX_LINES} from '@/config/cart'
 import {ShopProvider, useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
-import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
-import {act, fireEvent, screen} from '@testing-library/react'
+import {TEST_CATALOG} from '@/features/catalog/test-catalog'
+import {act, fireEvent, render, screen} from '@testing-library/react'
 import {StrictMode} from 'react'
+import {renderToString} from 'react-dom/server'
 
 import type {CatalogProduct} from '@shop/shared/catalog'
 
 const [first] = TEST_CATALOG.products
 if (!first) throw new Error('catalog is empty')
 const product: CatalogProduct = first
+
+const clearCookies = () => {
+  document.cookie = 'cart=; path=/; max-age=0'
+  document.cookie = 'currency=; path=/; max-age=0'
+}
+beforeEach(clearCookies)
+afterEach(clearCookies)
 
 let cardRenders = 0
 // Stands in for a ProductCard: reads the currency and the stable actions only.
@@ -26,14 +35,37 @@ function Card() {
   )
 }
 
+function Cart() {
+  const {count} = useCart()
+  const {add, remove} = useCartActions()
+  return (
+    <>
+      <p data-testid="count">{count}</p>
+      <button
+        type="button"
+        onClick={() => {
+          add(product)
+        }}>
+        add
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          remove(product)
+        }}>
+        remove
+      </button>
+    </>
+  )
+}
+
 describe('ShopProvider contexts', () => {
   beforeEach(() => {
-    localStorage.clear()
     cardRenders = 0
   })
 
   it('does not re-render currency/actions consumers when the cart changes', () => {
-    renderWithCatalog(
+    render(
       <ShopProvider>
         <Card />
       </ShopProvider>
@@ -43,126 +75,99 @@ describe('ShopProvider contexts', () => {
     fireEvent.click(screen.getByRole('button'))
     expect(cardRenders).toBe(before)
   })
+})
 
-  describe('currency cookie', () => {
-    const clearCookie = () => {
-      document.cookie = 'currency=; path=/; max-age=0'
-    }
-    function Switch() {
-      const {currency, setCurrency} = useCurrency()
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            setCurrency('PLN')
-          }}>
-          {currency}
-        </button>
-      )
-    }
-    const mount = () =>
-      renderWithCatalog(
-        <ShopProvider>
-          <Switch />
-        </ShopProvider>
-      )
+describe('ShopProvider currency', () => {
+  function Switch() {
+    const {currency, setCurrency} = useCurrency()
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setCurrency('PLN')
+        }}>
+        {currency}
+      </button>
+    )
+  }
 
-    beforeEach(clearCookie)
-    afterEach(clearCookie)
-
-    it('stores the choice in a cookie the API can read', () => {
-      mount()
-      fireEvent.click(screen.getByRole('button'))
-      expect(document.cookie).toContain('currency=PLN')
-    })
-
-    it('restores the choice from the cookie on mount', async () => {
-      document.cookie = 'currency=PLN; path=/'
-      mount()
-      expect(await screen.findByRole('button', {name: 'PLN'})).toBeInTheDocument()
-    })
-
-    it('migrates a currency left in localStorage by an older version', async () => {
-      localStorage.setItem('shop:v1', JSON.stringify({currency: 'PLN', cart: []}))
-      mount()
-      expect(await screen.findByRole('button', {name: 'PLN'})).toBeInTheDocument()
-      expect(document.cookie).toContain('currency=PLN')
-    })
-
-    it('ignores a cookie with an unknown currency', async () => {
-      document.cookie = 'currency=XXX; path=/'
-      mount()
-      await act(async () => {})
-      expect(screen.getByRole('button', {name: 'EUR'})).toBeInTheDocument()
-    })
+  it('starts with the currency the server read from the cookie', () => {
+    const html = renderToString(
+      <ShopProvider initialCurrency="PLN">
+        <Switch />
+      </ShopProvider>
+    )
+    expect(html).toContain('PLN')
   })
 
-  describe('saved cart', () => {
-    function Count() {
-      const {count} = useCart()
-      return <p data-testid="count">{count}</p>
-    }
-    const mount = (strict = false) => {
-      const tree = (
-        <ShopProvider>
-          <Count />
+  it('stores the choice in a cookie the API can read', () => {
+    render(
+      <ShopProvider>
+        <Switch />
+      </ShopProvider>
+    )
+    fireEvent.click(screen.getByRole('button'))
+    expect(document.cookie).toContain('currency=PLN')
+  })
+})
+
+describe('ShopProvider cart', () => {
+  it('renders the lines the server resolved, in the server HTML', () => {
+    const html = renderToString(
+      <ShopProvider initialLines={[{product, qty: 2}]}>
+        <Cart />
+      </ShopProvider>
+    )
+    expect(html).toContain('data-testid="count">2<')
+  })
+
+  it('does not write the cookie on mount, even under Strict Mode', async () => {
+    render(
+      <StrictMode>
+        <ShopProvider initialLines={[]}>
+          <Cart />
         </ShopProvider>
-      )
-      return renderWithCatalog(strict ? <StrictMode>{tree}</StrictMode> : tree)
-    }
-    const save = (cart: unknown) => {
-      localStorage.setItem('shop:v1', JSON.stringify({cart}))
-    }
+      </StrictMode>
+    )
+    await act(async () => {})
+    expect(document.cookie).not.toContain('cart=')
+  })
 
-    it('restores the cart', async () => {
-      save([{server: product.server, slug: product.slug, qty: 2}])
-      mount()
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('2')
-    })
+  it('writes the cookie when the cart changes', async () => {
+    render(
+      <ShopProvider>
+        <Cart />
+      </ShopProvider>
+    )
+    fireEvent.click(screen.getByRole('button', {name: 'add'}))
+    fireEvent.click(screen.getByRole('button', {name: 'add'}))
+    await act(async () => {})
+    expect(document.cookie).toContain(`cart=${product.server}:${product.slug}:2`)
+  })
 
-    it('restores the cart under Strict Mode (effects run twice)', async () => {
-      document.cookie = 'currency=PLN; path=/'
-      save([{server: product.server, slug: product.slug, qty: 2}])
-      mount(true)
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('2')
-      document.cookie = 'currency=; path=/; max-age=0'
-    })
+  it('empties the cookie when the last line is removed', async () => {
+    render(
+      <ShopProvider initialLines={[{product, qty: 1}]}>
+        <Cart />
+      </ShopProvider>
+    )
+    fireEvent.click(screen.getByRole('button', {name: 'remove'}))
+    await act(async () => {})
+    expect(screen.getByTestId('count')).toHaveTextContent('0')
+    expect(document.cookie).not.toMatch(/cart=[^;]/)
+  })
 
-    it('survives malformed saved lines', async () => {
-      save([null, 7, 'x', {server: product.server, slug: product.slug, qty: 1}])
-      mount()
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('1')
-    })
-
-    it('clamps a saved quantity into 1..MAX_QTY', async () => {
-      save([{server: product.server, slug: product.slug, qty: 5000}])
-      mount()
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('99')
-    })
-
-    it('drops lines with a non-numeric or non-positive quantity', async () => {
-      save([
-        {server: product.server, slug: product.slug, qty: 'many'},
-        {server: product.server, slug: product.slug, qty: 0}
-      ])
-      mount()
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('0')
-    })
-
-    it('drops saved lines whose product is no longer in the catalog', async () => {
-      save([
-        {server: 'survival', slug: 'vip', qty: 1},
-        {server: 'survival', slug: 'removed-rank', qty: 2},
-        {server: 'anarchy', slug: 'vip', qty: 1}
-      ])
-      mount()
-      await act(async () => {})
-      expect(screen.getByTestId('count')).toHaveTextContent('1')
-    })
+  it(`ignores a new product once the cart holds ${String(MAX_LINES)} lines`, () => {
+    const full = Array.from({length: MAX_LINES}, (_, i) => ({
+      product: {...product, slug: `p${String(i)}`},
+      qty: 1
+    }))
+    render(
+      <ShopProvider initialLines={full}>
+        <Cart />
+      </ShopProvider>
+    )
+    fireEvent.click(screen.getByRole('button', {name: 'add'}))
+    expect(screen.getByTestId('count')).toHaveTextContent(String(MAX_LINES))
   })
 })

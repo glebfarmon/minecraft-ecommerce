@@ -57,10 +57,6 @@ const open = () => {
 }
 
 describe('CartMenu', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('shows the empty state and a disabled checkout', () => {
     setup()
     open()

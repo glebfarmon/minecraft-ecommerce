@@ -1,4 +1,5 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
+import {loadCart} from '@/features/cart/api/load-cart'
 import {ShopProvider} from '@/features/cart/shop-provider'
 import {loadCatalog} from '@/features/catalog/api/get-catalog'
 import {CatalogProvider} from '@/features/catalog/catalog-provider'
@@ -58,6 +59,7 @@ export default async function LocaleLayout({
   const t = await getTranslations({locale})
   const messages = await getMessages()
   const [settings, catalog] = await Promise.all([getSiteSettings(), loadCatalog(locale)])
+  const cart = await loadCart(catalog)
 
   return (
     <html
@@ -72,7 +74,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <CatalogProvider catalog={catalog}>
             <StatusProvider>
-              <ShopProvider>
+              {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
+              <ShopProvider key={locale} initialLines={cart.lines} initialCurrency={cart.currency}>
                 <Navbar siteName={settings.siteName} />
                 {children}
                 <CookieBanner />

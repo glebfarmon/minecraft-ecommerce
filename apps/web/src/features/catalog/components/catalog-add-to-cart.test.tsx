@@ -49,7 +49,6 @@ afterAll(() => {
   MotionGlobalConfig.skipAnimations = false
 })
 beforeEach(() => {
-  localStorage.clear()
   flyToCart.mockClear()
   dialogOpenAtFlight = undefined
 })

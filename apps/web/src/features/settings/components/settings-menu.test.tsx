@@ -35,7 +35,6 @@ const open = () => {
 describe('SettingsMenu', () => {
   beforeEach(() => {
     mockReplace.mockClear()
-    localStorage.clear()
   })
 
   it('shows the current language and currency symbol on the trigger', () => {

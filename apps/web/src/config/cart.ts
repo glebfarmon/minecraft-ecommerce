@@ -1,8 +1,6 @@
 /** Per-line quantity cap; `add` ignores anything past it. */
 export const MAX_QTY = 99
 
-export const CART_STORAGE_KEY = 'shop:v1'
-
 /** Distinct products in one cart; keeps the `cart` cookie well under 4 KB. */
 export const MAX_LINES = 30
 
