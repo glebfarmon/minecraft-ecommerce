@@ -22,6 +22,9 @@ services:
       args: {APP_VERSION: e2e}
     environment:
       DATABASE_URL: postgresql://shop:shop@postgres:5432/shop
+      # Test values: the image runs with NODE_ENV=production, which refuses auth fallbacks.
+      BETTER_AUTH_SECRET: e2e-secret-at-least-32-characters-long
+      BETTER_AUTH_URL: http://admin.shop.localhost
     depends_on:
       migrate: {condition: service_completed_successfully}
 
