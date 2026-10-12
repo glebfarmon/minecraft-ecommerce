@@ -5,8 +5,7 @@ import {emailOTP, twoFactor} from 'better-auth/plugins'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
-
-const DEFAULT_URL = 'http://admin.shop.localhost'
+import {authEnv} from './auth-env'
 
 function socialProviders() {
   const providers: NonNullable<Parameters<typeof betterAuth>[0]['socialProviders']> = {}
@@ -35,13 +34,14 @@ export const authPrisma = (() => {
 })()
 
 export function createAuth(options: {baseURL?: string} = {}) {
-  const baseURL = options.baseURL ?? process.env.BETTER_AUTH_URL ?? DEFAULT_URL
+  const env = authEnv(process.env)
+  const baseURL = options.baseURL ?? env.baseURL
   const prisma = authPrisma.get()
   return betterAuth({
     appName: 'Shop Admin',
     baseURL,
     basePath: '/api/auth',
-    secret: process.env.BETTER_AUTH_SECRET ?? 'dev-only-secret-change-me-at-least-32-chars',
+    secret: env.secret,
     trustedOrigins: [baseURL],
     database: prismaAdapter(prisma, {provider: 'postgresql'}),
     session: {expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24},
