@@ -89,7 +89,16 @@ describe('admin session', () => {
     expect(blocked.body).toEqual({statusCode: 403, message: '2fa_required'})
 
     const enabled = await agent.post('/api/auth/two-factor/enable').send({}).expect(200)
-    secret = new URL((enabled.body as {totpURI: string}).totpURI).searchParams.get('secret') ?? ''
+    const body = enabled.body as {totpURI: string; backupCodes: string[]}
+    secret = new URL(body.totpURI).searchParams.get('secret') ?? ''
+    // Enrollment hands out backup codes before any authenticator is proven: they must not open the admin.
+    const [enrollmentBackupCode] = body.backupCodes
+    const refused = await agent
+      .post('/api/auth/two-factor/verify-backup-code')
+      .send({code: enrollmentBackupCode})
+      .expect(403)
+    expect((refused.body as {message?: string}).message).toBe('2fa_required')
+    expect((await currentSession(agent)).twoFactorVerifiedAt).toBeNull()
     // Enabling alone does not verify the session (nor turn 2FA on for the user).
     await agent.get('/api/admin/me').expect(403)
     const user = await prisma.user.findUniqueOrThrow({where: {email: 'ann@example.com'}})
