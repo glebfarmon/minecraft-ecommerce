@@ -79,6 +79,6 @@ Success:
 
 ## 8. Out of scope / deferred
 
-- Slug length is not constrained in the database or the API schema. Long slugs could push 30 lines past 4 KB. Constrain slugs (e.g. ≤ 40 chars, `^[a-z0-9-]+$`) when the admin starts creating products (sub-project 3).
-- Cross-tab sync of the cart (not done today either).
+- ~~Slug format~~ Done after review: CHECK constraints `servers_slug_format` and `products_slug_format` (`^[a-z0-9-]{1,40}$`), migration `20261012120000_slug_format`.
+- ~~Cross-tab sync~~ Done after review: `CartTabSync` refreshes the layout when a tab becomes visible (or is restored from the back/forward cache) and the `cart` cookie differs; `ShopProvider` adopts the new server lines. Two tabs changing the cart at the same moment still resolve as last writer wins.
 - Server-side checkout and price recomputation (orders sub-project).
