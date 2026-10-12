@@ -44,4 +44,21 @@ describe('RulesToc', () => {
     fireEvent.click(screen.getByRole('link', {name: /Chat/}))
     expect(onNavigate).toHaveBeenCalled()
   })
+
+  it('draws one sliding indicator, inside the active link', () => {
+    const {rerender} = render(<RulesToc sections={sections} active="s-1" />)
+    expect(screen.getAllByTestId('toc-indicator')).toHaveLength(1)
+    expect(screen.getByRole('link', {name: /General/})).toContainElement(
+      screen.getByTestId('toc-indicator')
+    )
+    rerender(<RulesToc sections={sections} active="s-2" />)
+    expect(screen.getByRole('link', {name: /Chat/})).toContainElement(
+      screen.getByTestId('toc-indicator')
+    )
+  })
+
+  it('draws no indicator when no section is active', () => {
+    render(<RulesToc sections={sections} active={undefined} />)
+    expect(screen.queryByTestId('toc-indicator')).not.toBeInTheDocument()
+  })
 })
