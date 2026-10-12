@@ -145,14 +145,39 @@ describe('admin session', () => {
     await agent.get('/api/admin/me').expect(200)
   })
 
-  it('stamps the session after a backup code', async () => {
+  it('keeps an unverified session of an enrolled admin away from the 2FA settings', async () => {
     const agent = request.agent(app.getHttpServer())
     await signIn(agent, 'ann@example.com')
-    const codes = await agent
+    // Each of these would let a mailbox-only session mint its own second factor.
+    const paths = ['generate-backup-codes', 'get-totp-uri', 'disable', 'enable']
+    const results: {path: string; status: number; message?: string}[] = []
+    for (const path of paths) {
+      const res = await agent.post(`/api/auth/two-factor/${path}`).send({})
+      results.push({path, status: res.status, message: (res.body as {message?: string}).message})
+    }
+    expect(results).toEqual(paths.map(path => ({path, status: 403, message: '2fa_required'})))
+    const twoFactor = await prisma.twoFactor.findFirstOrThrow({
+      where: {user: {email: 'ann@example.com'}}
+    })
+    expect(twoFactor.verified).toBe(true)
+    await agent.get('/api/admin/me').expect(403)
+  })
+
+  it('stamps a new session after a backup code issued to a verified session', async () => {
+    const verified = request.agent(app.getHttpServer())
+    await signIn(verified, 'ann@example.com')
+    await verified
+      .post('/api/auth/two-factor/verify-totp')
+      .send({code: generateSync({secret})})
+      .expect(200)
+    const codes = await verified
       .post('/api/auth/two-factor/generate-backup-codes')
       .send({})
       .expect(200)
     const [backupCode] = (codes.body as {backupCodes: string[]}).backupCodes
+
+    const agent = request.agent(app.getHttpServer())
+    await signIn(agent, 'ann@example.com')
     await agent.get('/api/admin/me').expect(403)
     await agent.post('/api/auth/two-factor/verify-backup-code').send({code: backupCode}).expect(200)
     expect((await currentSession(agent)).twoFactorVerifiedAt).not.toBeNull()

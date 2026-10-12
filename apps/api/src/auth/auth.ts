@@ -1,6 +1,6 @@
 import {betterAuth} from 'better-auth'
 import {prismaAdapter} from 'better-auth/adapters/prisma'
-import {APIError, createAuthMiddleware, isAPIError} from 'better-auth/api'
+import {APIError, createAuthMiddleware, getSessionFromCtx, isAPIError} from 'better-auth/api'
 import {emailOTP, twoFactor} from 'better-auth/plugins'
 
 import {getMailer} from '../mailer/create-mailer'
@@ -26,6 +26,19 @@ function socialProviders() {
 
 /** The only routes that mark a session as having passed the second factor (spec decision #5). */
 const SECOND_FACTOR_PATHS = new Set(['/two-factor/verify-totp', '/two-factor/verify-backup-code'])
+
+/**
+ * 2FA settings that would let a session mint or replace its own second factor (backup codes, the
+ * TOTP secret, disabling and re-enrolling). Once a user has a verified TOTP, only a session that
+ * passed it may call them; during first enrollment they stay open. (`view-backup-codes` is
+ * server-only in Better Auth 1.7, so it has no HTTP route to guard.)
+ */
+const SECOND_FACTOR_SETTINGS_PATHS = new Set([
+  '/two-factor/enable',
+  '/two-factor/disable',
+  '/two-factor/get-totp-uri',
+  '/two-factor/generate-backup-codes'
+])
 
 /** Better Auth's own Prisma client: the instance lives outside Nest DI, so it cannot use PrismaService's provider. */
 export const authPrisma = (() => {
@@ -58,6 +71,19 @@ export function createAuth(options: {baseURL?: string} = {}) {
       additionalFields: {twoFactorVerifiedAt: {type: 'date', required: false, input: false}}
     },
     hooks: {
+      before: createAuthMiddleware(async ctx => {
+        if (!SECOND_FACTOR_SETTINGS_PATHS.has(ctx.path)) return
+        const current = await getSessionFromCtx<
+          {twoFactorEnabled?: boolean | null},
+          {twoFactorVerifiedAt?: Date | null}
+        >(ctx)
+        // No session: the endpoint answers 401 itself.
+        if (!current || current.session.twoFactorVerifiedAt) return
+        const enrolled =
+          current.user.twoFactorEnabled ||
+          (await prisma.twoFactor.count({where: {userId: current.user.id, verified: true}})) > 0
+        if (enrolled) throw new APIError('FORBIDDEN', {message: '2fa_required'})
+      }),
       after: createAuthMiddleware(async ctx => {
         // After-hooks also run for failed calls (a wrong code returns an APIError): never stamp those.
         if (!SECOND_FACTOR_PATHS.has(ctx.path) || isAPIError(ctx.context.returned)) return
