@@ -14,7 +14,7 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest",
     "generate": "prisma generate",
     "seed": "tsx src/seed/main.ts",
     "openapi": "tsx src/openapi/write-openapi.ts",
@@ -26,15 +26,16 @@
       "<rootDir>/src",
       "<rootDir>/test"
     ],
-    "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+    "testRegex": ".*\\.(spec|e2e-spec)\\.tsx?$",
     "transform": {
-      "^.+\\.ts$": "ts-jest"
+      "^.+\\.tsx?$": "ts-jest"
     },
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "moduleFileExtensions": [
       "ts",
+      "tsx",
       "js",
       "json"
     ],
@@ -47,10 +48,16 @@
     "@nestjs/swagger": "^11.4.7",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
     "@shop/shared": "workspace:*",
     "@valibot/to-json-schema": "^1.8.0",
+    "nodemailer": "^10.1.0",
     "prisma": "^7.10.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.32.1",
     "rxjs": "^7.8.2",
     "valibot": "^1.5.0"
   },
@@ -61,6 +68,8 @@
     "@testcontainers/postgresql": "^12.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/supertest": "^7.2.1",
     "eslint": "^9.39.5",
     "jest": "^30.5.2",
