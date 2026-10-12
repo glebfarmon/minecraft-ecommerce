@@ -2,6 +2,7 @@ import {CopyIp} from '@/components/copy-ip'
 import {GridGuides} from '@/components/grid-guides'
 import {EASE} from '@/config/motion'
 import {OnlineCounter} from '@/features/status/components/online-counter'
+import {rise} from '@/lib/rise'
 import {ArrowDown, Plus} from 'lucide-react'
 import * as motion from 'motion/react-client'
 import {useTranslations} from 'next-intl'
@@ -12,13 +13,6 @@ import {HeroMotion, HeroSteve} from './hero-motion'
 
 const word =
   'block font-bold leading-[0.86] tracking-[-0.045em] text-[clamp(3.75rem,10.5vw,9.75rem)] lowercase'
-
-// The copy fades in after the headline and Steve have landed.
-const rise = (delay: number) => ({
-  initial: {opacity: 0, y: 12},
-  animate: {opacity: 1, y: 0},
-  transition: {duration: 0.6, ease: EASE, delay}
-})
 
 /** One headline line sliding up from under a mask. The mask carries the type size, so its padding (in em) is large enough that tight line-height and tracking do not clip glyphs. */
 function Line({

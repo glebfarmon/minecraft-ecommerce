@@ -2,6 +2,7 @@ import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import type {RuleSection} from '@/features/rules/types'
 import {act, fireEvent, render, screen, within} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
+import {renderToString} from 'react-dom/server'
 
 import {RulesView} from './rules-view'
 
@@ -125,5 +126,10 @@ describe('RulesView', () => {
       settle()
       expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(1)
     })
+  })
+
+  it('ships the sections in their entrance pose, like the home hero', () => {
+    const html = renderToString(<RulesView sections={sections} rulesPath="/pl/rules" />)
+    expect(html).toMatch(/opacity:0;transform:translateY\(12px\)[^>]*><section id="s-1"/)
   })
 })
