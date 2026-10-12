@@ -1,10 +1,12 @@
 import {Controller, Get, Header, Query} from '@nestjs/common'
+import {AllowAnonymous} from '@thallesp/nestjs-better-auth'
 
 import {type CatalogQuery, CatalogQuerySchema, type CatalogResponse} from '@shop/shared/catalog'
 
 import {ValibotPipe} from '../common/valibot.pipe'
 import {CatalogService} from './catalog.service'
 
+@AllowAnonymous()
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}

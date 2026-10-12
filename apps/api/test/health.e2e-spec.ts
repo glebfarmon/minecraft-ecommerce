@@ -1,18 +1,14 @@
 import {INestApplication} from '@nestjs/common'
-import {Test} from '@nestjs/testing'
 import request from 'supertest'
 
-import {AppModule} from '../src/app.module'
-import {configureApp} from '../src/configure-app'
+import {createApp} from '../src/create-app'
 
 describe('health', () => {
   let app: INestApplication
 
   beforeAll(async () => {
     process.env.APP_VERSION = 'test-sha'
-    const moduleRef = await Test.createTestingModule({imports: [AppModule]}).compile()
-    app = moduleRef.createNestApplication()
-    configureApp(app)
+    app = await createApp()
     await app.init()
   })
 

@@ -1,9 +1,7 @@
 import {INestApplication} from '@nestjs/common'
-import {Test} from '@nestjs/testing'
 import request from 'supertest'
 
-import {AppModule} from '../src/app.module'
-import {configureApp} from '../src/configure-app'
+import {createApp} from '../src/create-app'
 
 describe('status', () => {
   let app: INestApplication
@@ -13,9 +11,7 @@ describe('status', () => {
       ok: true,
       json: () => Promise.resolve({online: true, players: {online: 42}})
     } as Response)
-    const moduleRef = await Test.createTestingModule({imports: [AppModule]}).compile()
-    app = moduleRef.createNestApplication()
-    configureApp(app)
+    app = await createApp()
     await app.init()
   })
 
