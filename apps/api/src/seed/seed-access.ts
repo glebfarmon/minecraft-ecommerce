@@ -36,6 +36,11 @@ export async function seedAccess(
     data: {email, roleId: owner.id, tokenHash, expiresAt: new Date(Date.now() + INVITE_TTL_MS)}
   })
   const ownerInviteUrl = `${adminUrl}/invite/${token}`
-  await mailer.send({to: email, ...(await inviteMail(ownerInviteUrl, 'OWNER'))})
+  // The link is printed by the seed, so a mail failure must not lose it (rerun sees an open invite).
+  try {
+    await mailer.send({to: email, ...(await inviteMail(ownerInviteUrl, 'OWNER'))})
+  } catch (error) {
+    console.error('seed: owner invite mail failed; use the printed link', error)
+  }
   return {ownerInviteUrl}
 }

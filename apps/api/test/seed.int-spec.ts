@@ -1,3 +1,4 @@
+import type {Mailer} from '../src/mailer/mailer'
 import {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {seedAccess} from '../src/seed/seed-access'
@@ -63,5 +64,21 @@ describe('seedCatalog', () => {
     expect(owner.isSystem).toBe(true)
     expect(await client.invite.count({where: {email: 'owner@example.com'}})).toBe(1)
     expect(mailer.lastTo('owner@example.com')).toBeDefined()
+  })
+
+  it('still returns the owner invite url when the invite mail fails', async () => {
+    await client.invite.deleteMany({where: {email: 'owner2@example.com'}})
+    const failing: Mailer = {send: () => Promise.reject(new Error('smtp down'))}
+    process.env.ADMIN_OWNER_EMAIL = 'owner2@example.com'
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      const res = await seedAccess(client, failing, 'http://admin.test')
+      expect(res.ownerInviteUrl).toMatch(/^http:\/\/admin\.test\/invite\/[\w-]{43}$/)
+      expect(spy.mock.calls.flat().join(' ')).not.toContain(res.ownerInviteUrl?.split('/').pop())
+    } finally {
+      spy.mockRestore()
+      delete process.env.ADMIN_OWNER_EMAIL
+    }
+    expect(await client.invite.count({where: {email: 'owner2@example.com'}})).toBe(1)
   })
 })
