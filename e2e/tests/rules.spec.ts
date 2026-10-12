@@ -148,3 +148,11 @@ test('switching language keeps the rule anchor', async ({page}) => {
   await page.getByRole('radio', {name: /Polski/}).click()
   await expect(page).toHaveURL(/\/pl\/rules#r-2-3$/)
 })
+
+test('FAQ in the footer leads to the home page section', async ({page}) => {
+  await page.goto(`${WEB}/pl/rules`)
+  await page.getByRole('navigation', {name: 'Stopka'}).getByRole('link', {name: 'FAQ'}).click()
+  // A client navigation to the home page, which renders the catalog on the server.
+  await expect(page).toHaveURL(/\/pl#faq$/, {timeout: 15_000})
+  await expect(page.locator('#faq')).toBeInViewport()
+})
