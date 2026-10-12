@@ -251,6 +251,13 @@ a {
   --fade-end: 28px;
 }
 
+/* Opening a rule or section link: skip the rules page entrance, so the cited rule is on screen
+   while its sweep plays. `:target` is known before any script runs, so this also covers the server HTML. */
+.rules-page:has(:target) [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 /* The rule a shared link points to (#r-2-3) is "cited": an accent sweep draws across it, then fades. */
 .rule-pin {
   position: relative;

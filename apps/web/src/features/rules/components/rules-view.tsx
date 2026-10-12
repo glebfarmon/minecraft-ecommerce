@@ -61,7 +61,7 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
     <MotionConfig reducedMotion="user">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-16">
         <aside className="lg:sticky lg:top-28 lg:self-start">
-          <motion.div {...rise(RULES_REVEAL.sidebar)} className="flex flex-col gap-8">
+          <motion.div {...rise(RULES_REVEAL.sidebar)} data-reveal className="flex flex-col gap-8">
             <RulesSearch query={query} onQueryChange={changeQuery} />
             <div className="hidden lg:block">
               <RulesToc sections={visible} active={active} />
@@ -95,6 +95,7 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
               visible.map((section, index) => (
                 <motion.div
                   key={section.id}
+                  data-reveal
                   layout={jump ? false : 'position'}
                   initial={intro ? {opacity: 0, y: 12} : {opacity: 0}}
                   animate={{opacity: 1, y: 0}}

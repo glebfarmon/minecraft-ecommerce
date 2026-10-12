@@ -12,6 +12,20 @@ test('a PL rule link scrolls to and marks the rule', async ({page}) => {
   expect(await rule.evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('rule-pin')
 })
 
+test('a rule link skips the page entrance, so the cited rule shows while it is marked', async ({
+  page
+}) => {
+  await page.goto(`${WEB}/rules#r-2-1`, {waitUntil: 'commit'})
+  const section = page.locator('#s-2')
+  await expect(section).toBeAttached()
+  await page.waitForTimeout(150)
+  const opacity = await section.evaluate(
+    el => getComputedStyle(el.parentElement as Element).opacity
+  )
+  expect(opacity).toBe('1')
+  await expect(page.locator('#r-2-1')).toBeInViewport()
+})
+
 test('a rule link followed during a search lands on the rule', async ({page}) => {
   await page.goto(`${WEB}/pl/rules`)
   await page.getByRole('searchbox', {name: 'Szukaj w zasadach'}).fill('zlosliwe')

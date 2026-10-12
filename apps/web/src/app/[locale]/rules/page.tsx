@@ -49,7 +49,7 @@ export default async function RulesPage({params}: {params: Promise<{locale: stri
 
   return (
     <>
-      <main id="shop" className="mx-auto max-w-page px-[var(--gutter)] pt-36 pb-24">
+      <main id="shop" className="rules-page mx-auto max-w-page px-[var(--gutter)] pt-36 pb-24">
         <RulesHeader
           title={t.raw('title') as string}
           lead={t('lead')}
