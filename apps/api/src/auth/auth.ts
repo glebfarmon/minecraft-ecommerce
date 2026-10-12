@@ -3,6 +3,7 @@ import {prismaAdapter} from 'better-auth/adapters/prisma'
 import {APIError, createAuthMiddleware, getSessionFromCtx, isAPIError} from 'better-auth/api'
 import {emailOTP, twoFactor} from 'better-auth/plugins'
 
+import {AuditService} from '../audit/audit.service'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
@@ -40,6 +41,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
   const env = authEnv(process.env)
   const baseURL = options.baseURL ?? env.baseURL
   const prisma = authPrisma.get()
+  const audit = new AuditService(prisma)
   const isEnrolled = async (userId: string) =>
     (await prisma.twoFactor.count({where: {userId, verified: true}})) > 0
   return betterAuth({
@@ -72,8 +74,21 @@ export function createAuth(options: {baseURL?: string} = {}) {
         if (decision === '2fa_required') throw new APIError('FORBIDDEN', {message: '2fa_required'})
       }),
       after: createAuthMiddleware(async ctx => {
-        // After-hooks also run for failed calls (a wrong code returns an APIError): never stamp those.
-        if (isAPIError(ctx.context.returned)) return
+        const failed = isAPIError(ctx.context.returned)
+        const ip = ctx.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
+        // After-hooks also run for failed calls (a wrong code returns an APIError).
+        if (ctx.path === '/sign-in/email-otp' || ctx.path.startsWith('/callback/')) {
+          const userId = failed ? null : (ctx.context.newSession?.user.id ?? null)
+          const body = ctx.body as {email?: unknown} | undefined
+          await audit.record({
+            actorId: userId,
+            action: userId ? 'auth.sign_in' : 'auth.sign_in_failed',
+            after: {email: typeof body?.email === 'string' ? body.email : null, method: ctx.path},
+            ip
+          })
+        }
+        // ...and never stamp those.
+        if (failed) return
         // The first TOTP check replaces the session (BA sets newSession and deletes the old one);
         // later checks keep the current session (ctx.context.session).
         const current = ctx.context.newSession ?? ctx.context.session
@@ -82,6 +97,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
           where: {id: current.session.id},
           data: {twoFactorVerifiedAt: new Date()}
         })
+        await audit.record({actorId: current.user.id, action: 'auth.2fa_verified', ip})
       })
     },
     databaseHooks: {

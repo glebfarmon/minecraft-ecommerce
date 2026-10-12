@@ -1,6 +1,7 @@
 import {Module} from '@nestjs/common'
 
 import {AccessModule} from './access/access.module'
+import {AuditModule} from './audit/audit.module'
 import {AuthModule} from './auth/auth.module'
 import {CatalogModule} from './catalog/catalog.module'
 import {HealthModule} from './health/health.module'
@@ -17,6 +18,7 @@ import {TeamModule} from './team/team.module'
     MailerModule,
     AuthModule,
     AccessModule,
+    AuditModule,
     HealthModule,
     StatusModule,
     CatalogModule,
