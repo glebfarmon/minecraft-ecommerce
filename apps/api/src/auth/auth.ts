@@ -1,6 +1,6 @@
 import {betterAuth} from 'better-auth'
 import {prismaAdapter} from 'better-auth/adapters/prisma'
-import {APIError} from 'better-auth/api'
+import {APIError, createAuthMiddleware, isAPIError} from 'better-auth/api'
 import {emailOTP, twoFactor} from 'better-auth/plugins'
 
 import {getMailer} from '../mailer/create-mailer'
@@ -24,6 +24,9 @@ function socialProviders() {
   return providers
 }
 
+/** The only routes that mark a session as having passed the second factor (spec decision #5). */
+const SECOND_FACTOR_PATHS = new Set(['/two-factor/verify-totp', '/two-factor/verify-backup-code'])
+
 /** Better Auth's own Prisma client: the instance lives outside Nest DI, so it cannot use PrismaService's provider. */
 export const authPrisma = (() => {
   let client: PrismaService | undefined
@@ -46,9 +49,28 @@ export function createAuth(options: {baseURL?: string} = {}) {
     secret: env.secret,
     trustedOrigins: [baseURL],
     database: prismaAdapter(prisma, {provider: 'postgresql'}),
-    session: {expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24},
     socialProviders: socialProviders(),
     user: {additionalFields: {roleId: {type: 'string', required: false, input: false}}},
+    // Exposed so getSession() returns it to AdminSessionGuard; only the hook below writes it.
+    session: {
+      expiresIn: 60 * 60 * 24 * 7,
+      updateAge: 60 * 60 * 24,
+      additionalFields: {twoFactorVerifiedAt: {type: 'date', required: false, input: false}}
+    },
+    hooks: {
+      after: createAuthMiddleware(async ctx => {
+        // After-hooks also run for failed calls (a wrong code returns an APIError): never stamp those.
+        if (!SECOND_FACTOR_PATHS.has(ctx.path) || isAPIError(ctx.context.returned)) return
+        // The first TOTP check replaces the session (BA sets newSession and deletes the old one);
+        // later checks keep the current session (ctx.context.session).
+        const sessionId = ctx.context.newSession?.session.id ?? ctx.context.session?.session.id
+        if (sessionId)
+          await prisma.session.update({
+            where: {id: sessionId},
+            data: {twoFactorVerifiedAt: new Date()}
+          })
+      })
+    },
     databaseHooks: {
       user: {
         create: {
