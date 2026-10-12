@@ -8,6 +8,7 @@ import {createApp} from '../src/create-app'
 import {getMailer} from '../src/mailer/create-mailer'
 import type {Mail} from '../src/mailer/mailer'
 import type {MemoryMailer} from '../src/mailer/memory-mailer'
+import {PrismaService} from '../src/prisma/prisma.service'
 import {startDatabase} from './support/database'
 
 jest.setTimeout(120_000)
@@ -43,14 +44,17 @@ async function mailTo(email: string): Promise<Mail> {
 describe('auth in NestJS', () => {
   let db: Awaited<ReturnType<typeof startDatabase>>
   let app: INestApplication<Server>
+  let prisma: PrismaService
 
   beforeAll(async () => {
     db = await startDatabase()
+    prisma = new PrismaService()
     app = await createApp(ProbeAppModule)
     await app.init()
   })
   afterAll(async () => {
     await app.close()
+    await prisma.$disconnect()
     await db.stop()
   })
 
@@ -91,6 +95,19 @@ describe('auth in NestJS', () => {
 
   it('signs in with the code and sets the session cookie that opens guarded routes', async () => {
     const email = 'otp-user@example.com'
+    const role = await prisma.role.upsert({
+      where: {name: 'SUPPORT'},
+      update: {},
+      create: {name: 'SUPPORT', permissions: [], isSystem: true}
+    })
+    await prisma.invite.create({
+      data: {
+        email,
+        roleId: role.id,
+        tokenHash: 'auth-spec',
+        expiresAt: new Date(Date.now() + 60_000)
+      }
+    })
     await request(app.getHttpServer())
       .post('/api/auth/email-otp/send-verification-otp')
       .send({email, type: 'sign-in'})

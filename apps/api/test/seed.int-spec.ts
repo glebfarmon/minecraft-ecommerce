@@ -1,4 +1,6 @@
+import {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
+import {seedAccess} from '../src/seed/seed-access'
 import {seedCatalog} from '../src/seed/seed-catalog'
 import {startDatabase} from './support/database'
 
@@ -44,5 +46,22 @@ describe('seedCatalog', () => {
     const mythic = await client.product.findFirstOrThrow({where: {slug: 'mythic-case'}})
     expect([vip.kind, vip.durationDays]).toEqual(['TIMED', 30])
     expect([mythic.kind, mythic.durationDays]).toEqual(['CASE', null])
+  })
+
+  it('seeds the system roles and an owner invite once', async () => {
+    const mailer = new MemoryMailer()
+    process.env.ADMIN_OWNER_EMAIL = 'owner@example.com'
+    try {
+      const first = await seedAccess(client, mailer, 'http://admin.test')
+      const second = await seedAccess(client, mailer, 'http://admin.test')
+      expect(first.ownerInviteUrl).toMatch(/^http:\/\/admin\.test\/invite\/[\w-]{43}$/)
+      expect(second.ownerInviteUrl).toBeNull() // an open owner invite already exists
+    } finally {
+      delete process.env.ADMIN_OWNER_EMAIL
+    }
+    const owner = await client.role.findUniqueOrThrow({where: {name: 'OWNER'}})
+    expect(owner.isSystem).toBe(true)
+    expect(await client.invite.count({where: {email: 'owner@example.com'}})).toBe(1)
+    expect(mailer.lastTo('owner@example.com')).toBeDefined()
   })
 })

@@ -1,11 +1,13 @@
 import {betterAuth} from 'better-auth'
 import {prismaAdapter} from 'better-auth/adapters/prisma'
+import {APIError} from 'better-auth/api'
 import {emailOTP, twoFactor} from 'better-auth/plugins'
 
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
 import {authEnv} from './auth-env'
+import {acceptInvite, inviteGate} from './invite-gate'
 
 function socialProviders() {
   const providers: NonNullable<Parameters<typeof betterAuth>[0]['socialProviders']> = {}
@@ -46,6 +48,23 @@ export function createAuth(options: {baseURL?: string} = {}) {
     database: prismaAdapter(prisma, {provider: 'postgresql'}),
     session: {expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24},
     socialProviders: socialProviders(),
+    user: {additionalFields: {roleId: {type: 'string', required: false, input: false}}},
+    databaseHooks: {
+      user: {
+        create: {
+          // Invite-only: returning false would make the email-code route fail with a 500, so throw.
+          before: async user => {
+            const allowed = await inviteGate(prisma)(user)
+            if (!allowed)
+              throw new APIError('FORBIDDEN', {message: 'Sign-up is by invitation only'})
+            return allowed
+          },
+          after: async user => {
+            await acceptInvite(prisma)(user)
+          }
+        }
+      }
+    },
     plugins: [
       emailOTP({
         otpLength: 6,
