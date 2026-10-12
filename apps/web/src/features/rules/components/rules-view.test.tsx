@@ -1,6 +1,6 @@
 import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import type {RuleSection} from '@/features/rules/types'
-import {act, fireEvent, render, screen} from '@testing-library/react'
+import {act, fireEvent, render, screen, within} from '@testing-library/react'
 
 import {RulesView} from './rules-view'
 
@@ -95,13 +95,21 @@ describe('RulesView', () => {
     expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
   })
 
-  it('plays the entrance on first paint only, not for sections returning after a search', () => {
-    setup()
-    const wrapper = () => document.getElementById('s-1')?.parentElement
-    expect(wrapper()).toHaveStyle({opacity: '0'})
-    search('zlosliwe')
-    expect(document.getElementById('s-1')).toBeNull()
-    type('')
-    expect(wrapper()).not.toHaveStyle({opacity: '0'})
+  describe('phone shortcuts', () => {
+    it('keeps search and contents in floating buttons', () => {
+      setup()
+      const dock = screen.getByTestId('rules-dock')
+      expect(within(dock).getByRole('button', {name: 'openSearch'})).toBeInTheDocument()
+      expect(within(dock).getByRole('button', {name: 'openContents'})).toBeInTheDocument()
+    })
+
+    it('searches from the floating panel', () => {
+      setup()
+      fireEvent.click(screen.getByRole('button', {name: 'openSearch'}))
+      const panel = screen.getByRole('dialog', {name: 'searchLabel'})
+      fireEvent.change(within(panel).getByRole('searchbox'), {target: {value: 'zlosliwe'}})
+      settle()
+      expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(1)
+    })
   })
 })

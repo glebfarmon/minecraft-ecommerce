@@ -169,6 +169,8 @@
     "contents": "Spis treści",
     "openContents": "Pokaż spis treści",
     "closeContents": "Zamknij spis treści",
+    "openSearch": "Otwórz wyszukiwanie",
+    "closeSearch": "Zamknij wyszukiwanie",
     "searchLabel": "Szukaj w zasadach",
     "searchPlaceholder": "Szukaj w zasadach…",
     "searchShortcut": "Naciśnij /, aby wyszukać",

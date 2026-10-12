@@ -34,6 +34,8 @@ export function CookieBanner() {
         <motion.section
           role="region"
           aria-label={t('label')}
+          // Lets other fixed bottom UI (the rules page's phone buttons) step aside while it is open.
+          data-cookie-banner
           initial={{opacity: 0, y: 24}}
           animate={{opacity: 1, y: 0}}
           exit={{opacity: 0, y: 24}}

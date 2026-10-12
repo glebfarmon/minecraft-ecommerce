@@ -65,6 +65,15 @@ test.describe('copy link', () => {
 test.describe('phone', () => {
   test.use({viewport: {width: 375, height: 800}})
 
+  test('the floating buttons wait until the cookie banner is answered', async ({page}) => {
+    await page.goto(`${WEB}/pl/rules`)
+    const banner = page.getByRole('region', {name: 'Pliki cookie'})
+    await expect(banner).toBeVisible()
+    await expect(page.getByRole('button', {name: 'Otwórz wyszukiwanie'})).toBeHidden()
+    await banner.getByRole('button').first().click()
+    await expect(page.getByRole('button', {name: 'Otwórz wyszukiwanie'})).toBeVisible()
+  })
+
   test('a long section title wraps inside its card', async ({page}) => {
     await page.goto(`${WEB}/pl/rules`)
     const fits = await page.locator('#s-1').evaluate(section => {
@@ -76,7 +85,23 @@ test.describe('phone', () => {
     expect(fits).toBe(true)
   })
 
-  test('no horizontal scroll and contents open from a popover', async ({page}) => {
+  test('search opens from the floating button', async ({context, page}) => {
+    await context.addCookies([{name: 'cookie_consent', value: 'necessary', url: WEB}])
+    await page.goto(`${WEB}/pl/rules`)
+    const box = page.getByRole('dialog', {name: 'Szukaj w zasadach'}).getByRole('searchbox')
+    // Retried until hydration has attached the handler.
+    await expect(async () => {
+      await page.getByRole('button', {name: 'Otwórz wyszukiwanie'}).click()
+      await expect(box).toBeVisible({timeout: 1000})
+    }).toPass()
+    await expect(box).toBeFocused()
+    await box.fill('zlosliwe')
+    await expect(page.locator('mark', {hasText: 'Złośliwe'}).first()).toBeVisible()
+    await expect(page.locator('#r-1-1')).toHaveCount(0)
+  })
+
+  test('no horizontal scroll and contents open from a popover', async ({context, page}) => {
+    await context.addCookies([{name: 'cookie_consent', value: 'necessary', url: WEB}])
     await page.goto(`${WEB}/pl/rules`)
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
