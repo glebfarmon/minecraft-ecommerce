@@ -1,12 +1,14 @@
 'use client'
 
 import {MorphPopover} from '@/components/morph-popover'
+import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import {RulesSearch} from '@/features/rules/components/rules-search'
 import {RulesSection} from '@/features/rules/components/rules-section'
 import {RulesToc} from '@/features/rules/components/rules-toc'
 import {useActiveSection} from '@/features/rules/hooks/use-active-section'
 import {filterRules} from '@/features/rules/lib/filter-rules'
 import type {RuleSection} from '@/features/rules/types'
+import {useDebouncedValue} from '@/hooks/use-debounced-value'
 import {List} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useEffect, useState} from 'react'
@@ -15,7 +17,10 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
   const t = useTranslations('rules')
   const locale = useLocale()
   const [query, setQuery] = useState('')
-  const visible = filterRules(sections, query, locale)
+  // Filter once the reader pauses; an empty box shows everything at once.
+  const debounced = useDebouncedValue(query, RULES_SEARCH_DELAY_MS)
+  const applied = query === '' ? '' : debounced
+  const visible = filterRules(sections, applied, locale)
   const active = useActiveSection(visible.map(section => section.anchor))
 
   // A rule link (#r-2-3) must not land on an item the search has hidden: clear it, then scroll
@@ -61,7 +66,7 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
       <div className="flex min-w-0 flex-col gap-6">
         {visible.length === 0 ? (
           <div role="status" className="rounded-2xl border border-border p-10 text-center">
-            <p className="text-fg/85">{t('noResults', {query: query.trim()})}</p>
+            <p className="text-fg/85">{t('noResults', {query: applied.trim()})}</p>
             <button
               type="button"
               onClick={() => {
@@ -76,7 +81,7 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
             <RulesSection
               key={section.id}
               section={section}
-              query={query}
+              query={applied}
               locale={locale}
               rulesPath={rulesPath}
             />

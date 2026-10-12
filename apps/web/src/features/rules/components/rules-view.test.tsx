@@ -1,3 +1,4 @@
+import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import type {RuleSection} from '@/features/rules/types'
 import {act, fireEvent, render, screen} from '@testing-library/react'
 
@@ -29,11 +30,42 @@ const sections: RuleSection[] = [
 ]
 
 const setup = () => render(<RulesView sections={sections} rulesPath="/pl/rules" />)
-const search = (value: string) => {
+const type = (value: string) => {
   fireEvent.change(screen.getByRole('searchbox', {name: 'searchLabel'}), {target: {value}})
+}
+const settle = () => {
+  act(() => {
+    jest.advanceTimersByTime(RULES_SEARCH_DELAY_MS)
+  })
+}
+const search = (value: string) => {
+  type(value)
+  settle()
 }
 
 describe('RulesView', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('waits for the reader to stop typing before filtering', () => {
+    setup()
+    type('zlosliwe')
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
+    settle()
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(1)
+  })
+
+  it('shows every section again at once when the search is cleared', () => {
+    setup()
+    search('zlosliwe')
+    type('')
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
+  })
+
   it('shows every section', () => {
     setup()
     expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
