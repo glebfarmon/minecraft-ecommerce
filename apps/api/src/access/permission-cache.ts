@@ -30,7 +30,7 @@ function parseStored(raw: string | null): StoredRole | undefined {
   }
 }
 
-function resolve(role: StoredRole): CachedRole {
+export function resolveRole(role: StoredRole): CachedRole {
   return {
     name: role.name,
     isSystem: role.isSystem,
@@ -52,7 +52,7 @@ export class PermissionCache {
 
   async get(roleId: string): Promise<CachedRole> {
     const cached = parseStored(await this.redis.get(key(roleId)).catch(() => null))
-    if (cached) return resolve(cached)
+    if (cached) return resolveRole(cached)
     const row = await this.prisma.role.findUniqueOrThrow({where: {id: roleId}})
     const stored: StoredRole = {
       name: row.name,
@@ -60,7 +60,7 @@ export class PermissionCache {
       permissions: row.permissions
     }
     await this.redis.set(key(roleId), JSON.stringify(stored), 'EX', TTL_S).catch(() => undefined)
-    return resolve(stored)
+    return resolveRole(stored)
   }
 
   async invalidate(roleId: string): Promise<void> {

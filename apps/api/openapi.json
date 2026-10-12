@@ -177,6 +177,1186 @@
           }
         }
       }
+    },
+    "/api/invite-lookup/{token}": {
+      "get": {
+        "summary": "Anonymous: email and status of an invite link (never the role)",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["valid", "expired", "used", "revoked"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["email", "status"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown token"
+          }
+        }
+      }
+    },
+    "/api/admin/me": {
+      "get": {
+        "summary": "The signed-in admin with their role and permissions",
+        "responses": {
+          "200": {
+            "description": "Current admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isSystem": {
+                          "type": "boolean"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "enum": ["admin.invite", "role.write", "audit.read"],
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": ["id", "name", "isSystem", "permissions"]
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["id", "email", "name", "role", "permissions"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        }
+      }
+    },
+    "/api/admin/admins": {
+      "get": {
+        "summary": "Team members (needs admin.invite)",
+        "responses": {
+          "200": {
+            "description": "Admins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      },
+                      "twoFactorEnabled": {
+                        "type": "boolean"
+                      },
+                      "disabledAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["id", "email", "name", "role", "twoFactorEnabled", "disabledAt"]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        }
+      }
+    },
+    "/api/admin/admins/{id}": {
+      "delete": {
+        "summary": "Disable an admin and end their sessions (needs admin.invite)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The disabled admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "twoFactorEnabled": {
+                      "type": "boolean"
+                    },
+                    "disabledAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "name", "role", "twoFactorEnabled", "disabledAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`owner_protected`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        }
+      }
+    },
+    "/api/admin/admins/{id}/role": {
+      "patch": {
+        "summary": "Change an admin’s role and end their sessions (needs role.write)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "roleId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["roleId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "twoFactorEnabled": {
+                      "type": "boolean"
+                    },
+                    "disabledAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "name", "role", "twoFactorEnabled", "disabledAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, unknown role, or `owner_protected`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        }
+      }
+    },
+    "/api/admin/admins/{id}/reset-2fa": {
+      "post": {
+        "summary": "Remove an admin’s second factor, end their sessions and mail them (needs admin.invite)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The admin, now without 2FA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "twoFactorEnabled": {
+                      "type": "boolean"
+                    },
+                    "disabledAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "name", "role", "twoFactorEnabled", "disabledAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`owner_protected` (only the owner may reset their own)"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        }
+      }
+    },
+    "/api/admin/invites": {
+      "get": {
+        "summary": "Invites, open ones first (needs admin.invite)",
+        "responses": {
+          "200": {
+            "description": "Invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      },
+                      "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "acceptedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "revokedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["id", "email", "role", "expiresAt", "acceptedAt", "revokedAt"]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        }
+      },
+      "post": {
+        "summary": "Invite an email with a role and mail the link (needs admin.invite)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "roleId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["email", "roleId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The invite (the link goes only to the email)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "acceptedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "revokedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "role", "expiresAt", "acceptedAt", "revokedAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, unknown role, or `owner_protected`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`user_exists`"
+          },
+          "503": {
+            "description": "`mail_failed`: the invite exists; resend it"
+          }
+        }
+      }
+    },
+    "/api/admin/invites/{id}": {
+      "delete": {
+        "summary": "Revoke an open invite (needs admin.invite)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The revoked invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "acceptedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "revokedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "role", "expiresAt", "acceptedAt", "revokedAt"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`invite_closed`: already accepted or revoked"
+          }
+        }
+      }
+    },
+    "/api/admin/invites/{id}/resend": {
+      "post": {
+        "summary": "Mail an open invite again with a fresh link and expiry (needs admin.invite)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name"]
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "acceptedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "revokedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "email", "role", "expiresAt", "acceptedAt", "revokedAt"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`invite_closed`: already accepted or revoked"
+          },
+          "503": {
+            "description": "`mail_failed`"
+          }
+        }
+      }
+    },
+    "/api/admin/roles": {
+      "get": {
+        "summary": "Roles with their permissions",
+        "responses": {
+          "200": {
+            "description": "Roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "isSystem": {
+                        "type": "boolean"
+                      },
+                      "permissions": {
+                        "type": "array",
+                        "items": {
+                          "enum": ["admin.invite", "role.write", "audit.read"],
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": ["id", "name", "isSystem", "permissions"]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a role (needs role.write)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["name", "permissions"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "isSystem": {
+                      "type": "boolean"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["id", "name", "isSystem", "permissions"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`role_name_taken`"
+          }
+        }
+      }
+    },
+    "/api/admin/roles/{id}": {
+      "patch": {
+        "summary": "Edit a role; ends the sessions of its users (needs role.write; system roles are fixed)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  },
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["name", "permissions"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "isSystem": {
+                      "type": "boolean"
+                    },
+                    "permissions": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["id", "name", "isSystem", "permissions"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `owner_protected` for a system role"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`role_name_taken`"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an unused role (needs role.write; system roles are fixed)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "`owner_protected` for a system role"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`role_in_use`: users or open invites hold it"
+          }
+        }
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "summary": "Audit log, newest first, 50 per page (needs audit.read)",
+        "parameters": [
+          {
+            "name": "actorId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "actor": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["id", "email"]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "entityType": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "entityId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "before": {},
+                          "after": {},
+                          "ip": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "actor",
+                          "action",
+                          "entityType",
+                          "entityId",
+                          "before",
+                          "after",
+                          "ip",
+                          "createdAt"
+                        ]
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["entries", "nextCursor"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        }
+      }
     }
   }
 }

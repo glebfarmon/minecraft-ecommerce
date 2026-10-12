@@ -17,7 +17,7 @@
     "test": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest",
     "generate": "prisma generate",
     "seed": "tsx src/seed/main.ts",
-    "openapi": "tsx src/openapi/write-openapi.ts",
+    "openapi": "tsx src/openapi/write-openapi.ts && prettier --write openapi.json",
     "test:int": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --testRegex '.*\\.int-spec\\.ts$' --runInBand"
   },
   "jest": {
