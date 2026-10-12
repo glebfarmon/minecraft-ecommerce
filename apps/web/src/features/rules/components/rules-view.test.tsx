@@ -1,6 +1,7 @@
 import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import type {RuleSection} from '@/features/rules/types'
 import {act, fireEvent, render, screen, within} from '@testing-library/react'
+import {MotionGlobalConfig} from 'motion/react'
 
 import {RulesView} from './rules-view'
 
@@ -8,6 +9,12 @@ jest.mock('next-intl', () => ({
   useLocale: () => 'pl',
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key} ${Object.values(values).join(',')}` : key
+}))
+
+// jsdom never finishes an exit animation; sections leaving the list unmount at once.
+jest.mock('motion/react', () => ({
+  ...jest.requireActual<object>('motion/react'),
+  AnimatePresence: ({children}: {children: React.ReactNode}) => children
 }))
 
 const pl = (value: string) => ({value, lang: 'pl' as const})
@@ -42,6 +49,13 @@ const search = (value: string) => {
   type(value)
   settle()
 }
+
+beforeAll(() => {
+  MotionGlobalConfig.skipAnimations = true
+})
+afterAll(() => {
+  MotionGlobalConfig.skipAnimations = false
+})
 
 describe('RulesView', () => {
   beforeEach(() => {

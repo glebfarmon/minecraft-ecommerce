@@ -4,11 +4,22 @@ const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
 
 test.use({viewport: {width: 1600, height: 900}})
 
-test('a PL rule link scrolls to and flashes the rule', async ({page}) => {
+test('a PL rule link scrolls to and marks the rule', async ({page}) => {
   await page.goto(`${WEB}/pl/rules#r-2-3`)
   const rule = page.locator('#r-2-3')
   await expect(rule).toBeInViewport()
-  await expect(rule).toHaveCSS('animation-name', 'rule-flash')
+  // The accent sweep lives on ::before.
+  expect(await rule.evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('rule-pin')
+})
+
+test('a rule link followed during a search lands on the rule', async ({page}) => {
+  await page.goto(`${WEB}/pl/rules`)
+  await page.getByRole('searchbox', {name: 'Szukaj w zasadach'}).fill('zlosliwe')
+  await expect(page.locator('#r-1-1')).toHaveCount(0)
+  await page.evaluate(() => {
+    window.location.hash = '#r-1-1'
+  })
+  await expect(page.locator('#r-1-1')).toBeInViewport()
 })
 
 test('PL search ignores diacritics and highlights the original word', async ({page}) => {

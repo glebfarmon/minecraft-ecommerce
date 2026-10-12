@@ -9,7 +9,10 @@ export function Highlight({text, query, locale}: {text: string; query: string; l
   matches.forEach(([start, end], i) => {
     if (start > last) parts.push(text.slice(last, start))
     parts.push(
-      <mark key={i} className="rounded-sm bg-accent-soft text-fg">
+      // Keyed by query: a new search draws new marks, so the sweep plays for each search.
+      <mark
+        key={`${query}:${String(i)}`}
+        className="rule-mark animate-mark-in rounded-sm text-fg motion-reduce:animate-none">
         {text.slice(start, end)}
       </mark>
     )

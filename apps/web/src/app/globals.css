@@ -22,7 +22,8 @@
   --color-ink: #0e0e10;
   --color-online: #3ddc84;
   --color-danger: #ff8a80;
-  --animate-rule-flash: rule-flash 2s ease-out;
+  --animate-mark-in: mark-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-icon-pop: icon-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 
   --container-page: 1440px;
 
@@ -250,12 +251,66 @@ a {
   --fade-end: 28px;
 }
 
-/* The rule a shared link points to (#r-2-3) glows once, then settles. */
-@keyframes rule-flash {
+/* The rule a shared link points to (#r-2-3) is "cited": an accent sweep draws across it, then fades. */
+.rule-pin {
+  position: relative;
+  isolation: isolate;
+}
+.rule-pin:target::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--color-accent-soft);
+  animation: rule-pin 2.4s both;
+}
+@keyframes rule-pin {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  25% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    animation-timing-function: ease-out;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 0;
+  }
+}
+@keyframes rule-pin-fade {
   from {
-    background-color: var(--color-accent-soft);
+    opacity: 1;
   }
   to {
-    background-color: transparent;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rule-pin:target::before {
+    animation-name: rule-pin-fade;
+  }
+}
+
+/* Search matches: the highlight sweeps in under the letters (the resting state is fully highlighted). */
+.rule-mark {
+  background: linear-gradient(var(--color-accent-soft), var(--color-accent-soft)) no-repeat 0 0 /
+    100% 100%;
+  box-decoration-break: clone;
+}
+@keyframes mark-in {
+  from {
+    background-size: 0% 100%;
+  }
+}
+
+/* Copy confirmation: the check snaps in. */
+@keyframes icon-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
   }
 }
