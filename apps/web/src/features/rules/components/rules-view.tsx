@@ -1,12 +1,14 @@
 'use client'
 
 import {MorphPopover} from '@/components/morph-popover'
-import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
+import {RULES_REVEAL, RULES_SEARCH_DELAY_MS} from '@/config/rules'
+import {RulesReveal} from '@/features/rules/components/rules-reveal'
 import {RulesSearch} from '@/features/rules/components/rules-search'
 import {RulesSection} from '@/features/rules/components/rules-section'
 import {RulesToc} from '@/features/rules/components/rules-toc'
 import {useActiveSection} from '@/features/rules/hooks/use-active-section'
 import {filterRules} from '@/features/rules/lib/filter-rules'
+import {revealDelay} from '@/features/rules/lib/reveal-delay'
 import type {RuleSection} from '@/features/rules/types'
 import {useDebouncedValue} from '@/hooks/use-debounced-value'
 import {List} from 'lucide-react'
@@ -17,6 +19,12 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
   const t = useTranslations('rules')
   const locale = useLocale()
   const [query, setQuery] = useState('')
+  // The entrance plays on first paint only; sections that come back after a search appear in place.
+  const [intro, setIntro] = useState(true)
+  const changeQuery = (next: string) => {
+    setIntro(false)
+    setQuery(next)
+  }
   // Filter once the reader pauses; an empty box shows everything at once.
   const debounced = useDebouncedValue(query, RULES_SEARCH_DELAY_MS)
   const applied = query === '' ? '' : debounced
@@ -27,6 +35,7 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
   // again because the list above the target just grew.
   useEffect(() => {
     const onHash = () => {
+      setIntro(false)
       setQuery('')
       requestAnimationFrame(() => {
         document.getElementById(window.location.hash.slice(1))?.scrollIntoView()
@@ -40,27 +49,29 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-16">
-      <aside className="flex flex-col gap-8 lg:sticky lg:top-28 lg:self-start">
-        <RulesSearch query={query} onQueryChange={setQuery} />
-        <div className="hidden lg:block">
-          <RulesToc sections={visible} active={active} />
-        </div>
-        <div className="flex justify-end lg:hidden">
-          <MorphPopover
-            triggerLabel={t('openContents')}
-            panelLabel={t('contents')}
-            closeLabel={t('closeContents')}
-            triggerClassName="h-11 border border-border px-4 text-sm font-medium hover:border-white/25"
-            panelClassName="w-[min(20rem,calc(100vw-2*var(--gutter)))] p-4"
-            trigger={
-              <>
-                <List aria-hidden className="size-4 text-muted" />
-                <span>{t('contents')}</span>
-              </>
-            }>
-            {close => <RulesToc sections={visible} active={active} onNavigate={close} />}
-          </MorphPopover>
-        </div>
+      <aside className="lg:sticky lg:top-28 lg:self-start">
+        <RulesReveal delay={RULES_REVEAL.sidebar} className="flex flex-col gap-8">
+          <RulesSearch query={query} onQueryChange={changeQuery} />
+          <div className="hidden lg:block">
+            <RulesToc sections={visible} active={active} />
+          </div>
+          <div className="flex justify-end lg:hidden">
+            <MorphPopover
+              triggerLabel={t('openContents')}
+              panelLabel={t('contents')}
+              closeLabel={t('closeContents')}
+              triggerClassName="h-11 border border-border px-4 text-sm font-medium hover:border-white/25"
+              panelClassName="w-[min(20rem,calc(100vw-2*var(--gutter)))] p-4"
+              trigger={
+                <>
+                  <List aria-hidden className="size-4 text-muted" />
+                  <span>{t('contents')}</span>
+                </>
+              }>
+              {close => <RulesToc sections={visible} active={active} onNavigate={close} />}
+            </MorphPopover>
+          </div>
+        </RulesReveal>
       </aside>
 
       <div className="flex min-w-0 flex-col gap-6">
@@ -70,21 +81,22 @@ export function RulesView({sections, rulesPath}: {sections: RuleSection[]; rules
             <button
               type="button"
               onClick={() => {
-                setQuery('')
+                changeQuery('')
               }}
               className="mt-4 rounded-full border border-border px-5 py-2 text-sm hover:border-white/30">
               {t('clearSearch')}
             </button>
           </div>
         ) : (
-          visible.map(section => (
-            <RulesSection
-              key={section.id}
-              section={section}
-              query={applied}
-              locale={locale}
-              rulesPath={rulesPath}
-            />
+          visible.map((section, index) => (
+            <RulesReveal key={section.id} delay={revealDelay(index)} intro={intro}>
+              <RulesSection
+                section={section}
+                query={applied}
+                locale={locale}
+                rulesPath={rulesPath}
+              />
+            </RulesReveal>
           ))
         )}
       </div>

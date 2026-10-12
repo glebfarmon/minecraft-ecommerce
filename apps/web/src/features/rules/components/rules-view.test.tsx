@@ -94,4 +94,14 @@ describe('RulesView', () => {
     })
     expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
   })
+
+  it('plays the entrance on first paint only, not for sections returning after a search', () => {
+    setup()
+    const wrapper = () => document.getElementById('s-1')?.parentElement
+    expect(wrapper()).toHaveStyle({opacity: '0'})
+    search('zlosliwe')
+    expect(document.getElementById('s-1')).toBeNull()
+    type('')
+    expect(wrapper()).not.toHaveStyle({opacity: '0'})
+  })
 })
