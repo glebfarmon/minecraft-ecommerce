@@ -33,7 +33,19 @@ export function SignInForm({
   const sendCode = emailForm.handleSubmit(async ({email: value}) => {
     setError(null)
     // The API answers the same for every email (no enumeration); invite-only is enforced on sign-in.
-    await authClient.emailOtp.sendVerificationOtp({email: value, type: 'sign-in'})
+    try {
+      const {error: failed} = await authClient.emailOtp.sendVerificationOtp({
+        email: value,
+        type: 'sign-in'
+      })
+      if (failed) {
+        setError(codeErrorMessage(failed, 'Could not send the code. Try again.'))
+        return
+      }
+    } catch {
+      setError('Could not send the code. Try again.')
+      return
+    }
     setEmail(value)
   })
 
@@ -64,10 +76,19 @@ export function SignInForm({
             type="email"
             autoComplete="email"
             readOnly={Boolean(invited)}
+            aria-invalid={Boolean(emailErrors.email)}
+            aria-describedby={emailErrors.email ? 'email-error' : undefined}
             {...emailForm.register('email')}
           />
           {emailErrors.email && (
-            <p className="text-destructive text-sm">{emailErrors.email.message}</p>
+            <p id="email-error" role="alert" className="text-destructive text-sm">
+              {emailErrors.email.message}
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
+            </p>
           )}
           <Button type="submit">Send code</Button>
         </form>
@@ -81,9 +102,15 @@ export function SignInForm({
             id="code"
             inputMode="numeric"
             autoComplete="one-time-code"
+            aria-invalid={Boolean(codeErrors.code)}
+            aria-describedby={codeErrors.code ? 'code-error' : undefined}
             {...codeForm.register('code')}
           />
-          {codeErrors.code && <p className="text-destructive text-sm">{codeErrors.code.message}</p>}
+          {codeErrors.code && (
+            <p id="code-error" role="alert" className="text-destructive text-sm">
+              {codeErrors.code.message}
+            </p>
+          )}
           {error && (
             <p role="alert" className="text-destructive text-sm">
               {error}

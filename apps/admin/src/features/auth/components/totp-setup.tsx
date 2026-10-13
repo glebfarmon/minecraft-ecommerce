@@ -104,9 +104,15 @@ export function TotpSetup() {
         id="code"
         inputMode="numeric"
         autoComplete="one-time-code"
+        aria-invalid={Boolean(errors.code)}
+        aria-describedby={errors.code ? 'code-error' : undefined}
         {...form.register('code')}
       />
-      {errors.code && <p className="text-destructive text-sm">{errors.code.message}</p>}
+      {errors.code && (
+        <p id="code-error" role="alert" className="text-destructive text-sm">
+          {errors.code.message}
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}

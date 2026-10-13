@@ -49,3 +49,15 @@ describe('TotpChallenge', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Too many attempts')
   })
 })
+
+describe('TotpChallenge accessibility', () => {
+  it('links the code error to the input', async () => {
+    render(<TotpChallenge />)
+    fireEvent.change(screen.getByLabelText('Code from the app'), {target: {value: '12'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Verify'}))
+    const alert = await screen.findByRole('alert')
+    const input = screen.getByLabelText('Code from the app')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAttribute('aria-describedby', alert.id)
+  })
+})

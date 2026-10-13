@@ -55,3 +55,16 @@ describe('TotpSetup', () => {
     expect(screen.queryByText('aaaa-1111')).not.toBeInTheDocument()
   })
 })
+
+describe('TotpSetup accessibility', () => {
+  it('links the code error to the input', async () => {
+    render(<TotpSetup />)
+    await screen.findByRole('img', {name: 'QR code for your authenticator app'})
+    fireEvent.change(screen.getByLabelText('Code from the app'), {target: {value: '12'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Confirm'}))
+    const alert = await screen.findByRole('alert')
+    const input = screen.getByLabelText('Code from the app')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAttribute('aria-describedby', alert.id)
+  })
+})
