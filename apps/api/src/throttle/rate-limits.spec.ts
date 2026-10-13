@@ -7,6 +7,7 @@ describe('rateLimits', () => {
       otpPerIp: 10,
       secondFactor: 5,
       admin: 300,
+      adminIp: 600,
       default: 100
     })
     expect(rateLimits({})).toEqual(RATE_LIMIT_DEFAULTS)
@@ -19,9 +20,17 @@ describe('rateLimits', () => {
         RATE_LIMIT_OTP_IP: '60',
         RATE_LIMIT_SECOND_FACTOR: '70',
         RATE_LIMIT_ADMIN: '80',
+        RATE_LIMIT_ADMIN_IP: '85',
         RATE_LIMIT_DEFAULT: '90'
       })
-    ).toEqual({otpPerEmail: 50, otpPerIp: 60, secondFactor: 70, admin: 80, default: 90})
+    ).toEqual({
+      otpPerEmail: 50,
+      otpPerIp: 60,
+      secondFactor: 70,
+      admin: 80,
+      adminIp: 85,
+      default: 90
+    })
   })
 
   it('treats an empty value as unset', () => {

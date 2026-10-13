@@ -2,12 +2,33 @@ import type Redis from 'ioredis'
 
 import {RATE_LIMIT_DEFAULTS, type RateLimits} from '../throttle/rate-limits'
 
-type Counter = Pick<Redis, 'incr' | 'expire'>
+type Counter = Pick<Redis, 'eval'>
+
+/**
+ * INCR and the expiry in one atomic script. It also gives a key without TTL one (left behind by a
+ * crash or an older build): since the limiters fail closed, a counter that never expires would lock
+ * that email, IP or user out for good.
+ */
+const HIT_SCRIPT = `local n = redis.call('INCR', KEYS[1])
+local ttl = redis.call('TTL', KEYS[1])
+if ttl < 0 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+  ttl = tonumber(ARGV[1])
+end
+return {n, ttl}`
+
+/** One hit on a fixed-window counter: the count so far and the seconds left in the window. */
+export async function hit(
+  redis: Counter,
+  key: string,
+  ttlS: number
+): Promise<{count: number; ttlS: number}> {
+  const [count, left] = (await redis.eval(HIT_SCRIPT, 1, key, ttlS)) as [number, number]
+  return {count, ttlS: left}
+}
 
 async function under(redis: Counter, key: string, max: number, ttlS: number) {
-  const n = await redis.incr(key)
-  if (n === 1) await redis.expire(key, ttlS)
-  return n <= max
+  return (await hit(redis, key, ttlS)).count <= max
 }
 
 /** Send-OTP limits from parent spec §7.5 (per email / 10 min, per IP / hour). Fails closed: no Redis, no code. */

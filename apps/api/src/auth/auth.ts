@@ -7,13 +7,14 @@ import {emailOTP, twoFactor} from 'better-auth/plugins'
 import Redis from 'ioredis'
 
 import {AuditService} from '../audit/audit.service'
+import {CLIENT_IP_HEADER, requestIp} from '../common/client-ip'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
 import {rateLimits} from '../throttle/rate-limits'
 import {authEnv} from './auth-env'
 import {acceptInvite, inviteGate} from './invite-gate'
-import {otpAllowed, secondFactorAllowed} from './otp-limit'
+import {hit, otpAllowed, secondFactorAllowed} from './otp-limit'
 import {type GateSession, secondFactorGate, shouldStamp} from './second-factor'
 
 function socialProviders() {
@@ -57,16 +58,6 @@ export const authRedis = (() => {
   }
 })()
 
-/**
- * The client address for per-IP limits: the LAST hop of X-Forwarded-For. Traefik is our only entry
- * point and appends the real peer to whatever the client sent, so earlier hops are client-controlled
- * (rotating a fake first hop would dodge every limit). Better Auth only hands us a web `Request`
- * without the socket, so with no header (direct access, never behind Traefik) all callers share the
- * `unknown` bucket: stricter, not looser.
- */
-export const clientIp = (headers: Headers | undefined) =>
-  headers?.get('x-forwarded-for')?.split(',').at(-1)?.trim() || 'unknown'
-
 const sha = (value: string) => createHash('sha256').update(value).digest('hex')
 const cookieValue = (headers: Headers | undefined, name: string) =>
   new RegExp(`(?:^|;\\s*)(?:__Secure-)?${name}=([^;]+)`).exec(headers?.get('cookie') ?? '')?.[1]
@@ -90,6 +81,9 @@ export function createAuth(options: {baseURL?: string} = {}) {
     trustedOrigins: [baseURL],
     database: prismaAdapter(prisma, {provider: 'postgresql'}),
     socialProviders: socialProviders(),
+    // Better Auth's limiter keys on the address `stampClientIp` (auth.module.ts) wrote with the shared
+    // rule (common/client-ip.ts); its own X-Forwarded-For parsing never sees the raw header.
+    advanced: {ipAddress: {ipAddressHeaders: [CLIENT_IP_HEADER]}},
     user: {additionalFields: {roleId: {type: 'string', required: false, input: false}}},
     // Exposed so getSession() returns it to AdminSessionGuard; only the hook below writes it.
     session: {
@@ -106,12 +100,10 @@ export function createAuth(options: {baseURL?: string} = {}) {
       customStorage: {
         consume: async (key, rule) => {
           try {
-            const redisKey = `ba:${key}`
-            const n = await redis.incr(redisKey)
-            if (n === 1) await redis.expire(redisKey, rule.window)
-            return n <= rule.max
+            const {count, ttlS} = await hit(redis, `ba:${key}`, rule.window)
+            return count <= rule.max
               ? {allowed: true, retryAfter: null}
-              : {allowed: false, retryAfter: Math.max(await redis.ttl(redisKey), 1)}
+              : {allowed: false, retryAfter: Math.max(ttlS, 1)}
           } catch {
             return {allowed: false, retryAfter: rule.window}
           }
@@ -141,7 +133,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
             ? `user:${current.user.id}`
             : pending
               ? `pending:${sha(pending)}`
-              : `ip:${clientIp(ctx.request?.headers)}`
+              : `ip:${requestIp(ctx.request?.headers)}`
           if (!(await secondFactorAllowed(redis, subject, limits.secondFactor)))
             throw new APIError('TOO_MANY_REQUESTS', {message: 'Too many attempts, try again later'})
         }
@@ -159,7 +151,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
       }),
       after: createAuthMiddleware(async ctx => {
         const failed = isAPIError(ctx.context.returned)
-        const ip = ctx.request ? clientIp(ctx.request.headers) : ''
+        const ip = ctx.request ? requestIp(ctx.request.headers) : ''
         // After-hooks also run for failed calls (a wrong code returns an APIError).
         if (ctx.path === '/sign-in/email-otp' || ctx.path.startsWith('/callback/')) {
           const userId = failed ? null : (ctx.context.newSession?.user.id ?? null)
@@ -209,7 +201,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
         // Do not await: the response time must not reveal whether the email exists (spec §7.6).
         sendVerificationOTP: async ({email, otp}, ctx) => {
           // Over the limit (or Redis down): answer as usual, send nothing (no enumeration).
-          if (!(await otpAllowed(redis, email, clientIp(ctx?.request?.headers), limits))) return
+          if (!(await otpAllowed(redis, email, requestIp(ctx?.request?.headers), limits))) return
           void signInCodeMail(otp)
             .then(mail => getMailer().send({to: email, ...mail}))
             .catch((error: unknown) => {

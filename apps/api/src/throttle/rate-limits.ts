@@ -8,6 +8,8 @@ export type RateLimits = {
   secondFactor: number
   /** Admin API requests per session per minute. */
   admin: number
+  /** Admin API requests per client IP per minute (bounds made-up session cookies). */
+  adminIp: number
   /** Every other throttled request per IP per minute. */
   default: number
 }
@@ -18,6 +20,7 @@ export const RATE_LIMIT_DEFAULTS: Readonly<RateLimits> = Object.freeze({
   otpPerIp: 10,
   secondFactor: 5,
   admin: 300,
+  adminIp: 600,
   default: 100
 })
 
@@ -26,6 +29,7 @@ const ENV_NAMES = {
   otpPerIp: 'RATE_LIMIT_OTP_IP',
   secondFactor: 'RATE_LIMIT_SECOND_FACTOR',
   admin: 'RATE_LIMIT_ADMIN',
+  adminIp: 'RATE_LIMIT_ADMIN_IP',
   default: 'RATE_LIMIT_DEFAULT'
 } as const satisfies Record<keyof RateLimits, string>
 

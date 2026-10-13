@@ -1,13 +1,16 @@
-import {otpAllowed, secondFactorAllowed} from './otp-limit'
+import {hit, otpAllowed, secondFactorAllowed} from './otp-limit'
 
+/** Mirrors the counter script: INCR, then give the key a TTL whenever it has none. */
 function fakeRedis() {
   const counts = new Map<string, number>()
+  const ttls = new Map<string, number>()
   return {
-    incr: jest.fn((k: string) => {
-      counts.set(k, (counts.get(k) ?? 0) + 1)
-      return Promise.resolve(counts.get(k))
-    }),
-    expire: jest.fn(() => Promise.resolve(1))
+    ttls,
+    eval: jest.fn((_script: string, _keys: number, key: string, ttlS: number) => {
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+      if (!ttls.has(key)) ttls.set(key, ttlS)
+      return Promise.resolve([counts.get(key), ttls.get(key)])
+    })
   }
 }
 
@@ -17,7 +20,7 @@ describe('otpAllowed', () => {
     const results = []
     for (let i = 0; i < 4; i++) results.push(await otpAllowed(redis as never, 'a@x.io', '1.1.1.1'))
     expect(results).toEqual([true, true, true, false])
-    expect(redis.expire).toHaveBeenCalledWith('otp:email:a@x.io', 600)
+    expect(redis.ttls.get('otp:email:a@x.io')).toBe(600)
   })
 
   it('allows 10 per IP per hour across emails', async () => {
@@ -30,7 +33,7 @@ describe('otpAllowed', () => {
   })
 
   it('fails closed when Redis is down', async () => {
-    const down = {incr: () => Promise.reject(new Error('down')), expire: () => Promise.resolve(0)}
+    const down = {eval: () => Promise.reject(new Error('down'))}
     expect(await otpAllowed(down as never, 'a@x.io', '1.1.1.1')).toBe(false)
   })
 })
@@ -41,12 +44,12 @@ describe('secondFactorAllowed', () => {
     const results = []
     for (let i = 0; i < 6; i++) results.push(await secondFactorAllowed(redis as never, 'user:u1'))
     expect(results).toEqual([true, true, true, true, true, false])
-    expect(redis.expire).toHaveBeenCalledWith('2fa:user:u1', 60)
+    expect(redis.ttls.get('2fa:user:u1')).toBe(60)
     expect(await secondFactorAllowed(redis as never, 'user:u2')).toBe(true)
   })
 
   it('fails closed when Redis is down', async () => {
-    const down = {incr: () => Promise.reject(new Error('down')), expire: () => Promise.resolve(0)}
+    const down = {eval: () => Promise.reject(new Error('down'))}
     expect(await secondFactorAllowed(down as never, 'user:u1')).toBe(false)
   })
 })
@@ -59,5 +62,17 @@ describe('configurable budgets', () => {
     expect(await otpAllowed(redis as never, 'b@x.io', '3.3.3.3', limits)).toBe(false)
     expect(await secondFactorAllowed(redis as never, 'user:u3', 1)).toBe(true)
     expect(await secondFactorAllowed(redis as never, 'user:u3', 1)).toBe(false)
+  })
+})
+
+describe('hit', () => {
+  it('counts and sets the TTL in one atomic script that also repairs a key without TTL', async () => {
+    const redis = fakeRedis()
+    expect(await hit(redis as never, 'k', 600)).toEqual({count: 1, ttlS: 600})
+    const [script, keys, key, ttl] = redis.eval.mock.calls[0] ?? []
+    expect([keys, key, ttl]).toEqual([1, 'k', 600])
+    expect(script).toMatch(/INCR/)
+    expect(script).toMatch(/TTL/)
+    expect(script).toMatch(/EXPIRE/)
   })
 })

@@ -11,20 +11,36 @@ import {
 } from '@nestjs/throttler'
 import type Redis from 'ioredis'
 
+import {clientIp} from '../common/client-ip'
 import {REDIS} from '../redis/redis.module'
 import {rateLimits} from './rate-limits'
 
 type ThrottledRequest = {
   ip?: string
+  socket?: {remoteAddress?: string}
   originalUrl?: string
   url?: string
-  headers: {cookie?: string}
+  headers: Record<string, string | string[] | undefined> & {cookie?: string}
 }
 
 const SESSION_COOKIE = /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]+)/
 
-const isAdminPath = (req: ThrottledRequest) =>
-  (req.originalUrl ?? req.url ?? '').startsWith('/api/admin')
+const ADMIN_PATH = /^\/api\/admin(?:[/?#]|$)/i
+
+/** Express routes case-insensitively, so `/API/Admin/...` reaches admin handlers too. */
+export const isAdminPath = (req: ThrottledRequest): boolean =>
+  ADMIN_PATH.test(req.originalUrl ?? req.url ?? '')
+
+/** Per-IP tracker with the API-wide client-address rule (common/client-ip.ts). */
+export const ipTracker = (req: ThrottledRequest): string =>
+  `ip:${clientIp(req.headers, req.socket?.remoteAddress ?? req.ip)}`
+
+/**
+ * One counter per throttler and tracker. The library default also hashes the controller and
+ * handler names in, which would make every limit per route instead of per session / per IP.
+ */
+export const throttleKey = (name: string, tracker: string): string =>
+  createHash('sha256').update(`${name}-${tracker}`).digest('hex')
 
 /**
  * Admin API budget is per session: the Better Auth session cookie (plain or `__Secure-` on https),
@@ -32,9 +48,7 @@ const isAdminPath = (req: ThrottledRequest) =>
  */
 export function adminTracker(req: ThrottledRequest): string {
   const token = SESSION_COOKIE.exec(req.headers.cookie ?? '')?.[1]
-  return token
-    ? `session:${createHash('sha256').update(token).digest('hex')}`
-    : `ip:${req.ip ?? 'unknown'}`
+  return token ? `session:${createHash('sha256').update(token).digest('hex')}` : ipTracker(req)
 }
 
 /**
@@ -70,22 +84,32 @@ const adminRequest = (ctx: ExecutionContext) => ctx.switchToHttp().getRequest<Th
         const limits = rateLimits()
         return {
           throttlers: [
-            // Everything outside the admin API: 100/min per IP.
+            // Everything outside the admin API: per IP.
             {
               name: 'default',
               ttl: 60_000,
               limit: limits.default,
               skipIf: ctx => isAdminPath(adminRequest(ctx))
             },
-            // Admin API: 300/min per session.
+            // Admin API: per session cookie (hashed).
             {
               name: 'admin',
               ttl: 60_000,
               limit: limits.admin,
               skipIf: ctx => !isAdminPath(adminRequest(ctx)),
               getTracker: req => adminTracker(req as ThrottledRequest)
+            },
+            // Admin API per IP as well: the throttler runs before AdminSessionGuard, so a client
+            // inventing a new cookie per request would otherwise never be limited.
+            {
+              name: 'adminIp',
+              ttl: 60_000,
+              limit: limits.adminIp,
+              skipIf: ctx => !isAdminPath(adminRequest(ctx))
             }
           ],
+          getTracker: req => ipTracker(req as ThrottledRequest),
+          generateKey: (_ctx, tracker, name) => throttleKey(name, tracker),
           storage: new FailOpenDefaultStorage(new ThrottlerStorageRedisService(redis))
         }
       }
