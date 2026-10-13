@@ -9,6 +9,7 @@ import {PrismaService} from '../src/prisma/prisma.service'
 import {seedAccess} from '../src/seed/seed-access'
 import {signInAdmin} from './support/admin'
 import {startDatabase} from './support/database'
+import {relaxRateLimits} from './support/rate-limits'
 import {startRedis} from './support/redis'
 
 jest.setTimeout(120_000)
@@ -23,6 +24,7 @@ describe('audit log', () => {
     ;[db, redis] = await Promise.all([startDatabase(), startRedis()])
     prisma = new PrismaService()
     await seedAccess(prisma, getMailer(), 'http://admin.test')
+    relaxRateLimits()
     app = await createApp()
     await app.init()
   })

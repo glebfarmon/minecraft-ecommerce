@@ -19,6 +19,8 @@ export async function emailedCode(email: string, previous?: string): Promise<str
   throw new Error(`no mail to ${email}`)
 }
 
+let ipCounter = 1
+
 /** Invite → emailed code → TOTP: returns an agent whose session passed 2FA, plus the TOTP secret. */
 export async function signInAdmin(
   app: INestApplication<Server>,
@@ -35,7 +37,10 @@ export async function signInAdmin(
       expiresAt: new Date(Date.now() + 60_000)
     }
   })
-  const agent = request.agent(app.getHttpServer())
+  // A distinct proxy-appended address per person, so the per-IP code budget is not shared in tests.
+  const agent = request
+    .agent(app.getHttpServer())
+    .set('x-forwarded-for', `192.0.2.${String(ipCounter++ % 250)}`)
   await agent
     .post('/api/auth/email-otp/send-verification-otp')
     .send({email, type: 'sign-in'})

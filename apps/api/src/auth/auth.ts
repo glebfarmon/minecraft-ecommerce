@@ -1,14 +1,19 @@
+import {createHash} from 'node:crypto'
+
 import {betterAuth} from 'better-auth'
 import {prismaAdapter} from 'better-auth/adapters/prisma'
 import {APIError, createAuthMiddleware, getSessionFromCtx, isAPIError} from 'better-auth/api'
 import {emailOTP, twoFactor} from 'better-auth/plugins'
+import Redis from 'ioredis'
 
 import {AuditService} from '../audit/audit.service'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
+import {rateLimits} from '../throttle/rate-limits'
 import {authEnv} from './auth-env'
 import {acceptInvite, inviteGate} from './invite-gate'
+import {otpAllowed, secondFactorAllowed} from './otp-limit'
 import {type GateSession, secondFactorGate, shouldStamp} from './second-factor'
 
 function socialProviders() {
@@ -37,10 +42,43 @@ export const authPrisma = (() => {
   }
 })()
 
+/** Better Auth's own Redis client (same reason as `authPrisma`): rate-limit counters and OTP budgets. */
+export const authRedis = (() => {
+  let client: Redis | undefined
+  return {
+    get: (): Redis =>
+      (client ??= new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+        lazyConnect: true,
+        maxRetriesPerRequest: 1
+      })),
+    disconnect: (): void => {
+      client?.disconnect()
+    }
+  }
+})()
+
+/**
+ * The client address for per-IP limits: the LAST hop of X-Forwarded-For. Traefik is our only entry
+ * point and appends the real peer to whatever the client sent, so earlier hops are client-controlled
+ * (rotating a fake first hop would dodge every limit). Better Auth only hands us a web `Request`
+ * without the socket, so with no header (direct access, never behind Traefik) all callers share the
+ * `unknown` bucket: stricter, not looser.
+ */
+export const clientIp = (headers: Headers | undefined) =>
+  headers?.get('x-forwarded-for')?.split(',').at(-1)?.trim() || 'unknown'
+
+const sha = (value: string) => createHash('sha256').update(value).digest('hex')
+const cookieValue = (headers: Headers | undefined, name: string) =>
+  new RegExp(`(?:^|;\\s*)(?:__Secure-)?${name}=([^;]+)`).exec(headers?.get('cookie') ?? '')?.[1]
+
+const SECOND_FACTOR_CHECKS = new Set(['/two-factor/verify-totp', '/two-factor/verify-backup-code'])
+
 export function createAuth(options: {baseURL?: string} = {}) {
   const env = authEnv(process.env)
   const baseURL = options.baseURL ?? env.baseURL
   const prisma = authPrisma.get()
+  const redis = authRedis.get()
+  const limits = rateLimits()
   const audit = new AuditService(prisma)
   const isEnrolled = async (userId: string) =>
     (await prisma.twoFactor.count({where: {userId, verified: true}})) > 0
@@ -59,8 +97,54 @@ export function createAuth(options: {baseURL?: string} = {}) {
       updateAge: 60 * 60 * 24,
       additionalFields: {twoFactorVerifiedAt: {type: 'date', required: false, input: false}}
     },
+    // Counters live in Redis (`customStorage`), not in a table: `secondaryStorage` would also move
+    // sessions out of Postgres. Fails closed when Redis is down.
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: limits.default,
+      customStorage: {
+        consume: async (key, rule) => {
+          try {
+            const redisKey = `ba:${key}`
+            const n = await redis.incr(redisKey)
+            if (n === 1) await redis.expire(redisKey, rule.window)
+            return n <= rule.max
+              ? {allowed: true, retryAfter: null}
+              : {allowed: false, retryAfter: Math.max(await redis.ttl(redisKey), 1)}
+          } catch {
+            return {allowed: false, retryAfter: rule.window}
+          }
+        }
+      },
+      customRules: {
+        // Own limiter in sendVerificationOTP (per email / 10 min, per IP / hour), always answering 200.
+        '/email-otp/send-verification-otp': false,
+        // Library default is 3 per 10 s; a code is already capped at 5 attempts.
+        '/sign-in/*': {window: 60, max: 30},
+        // The two-factor plugin ships 3 per 10 s per IP (shared NAT, flaky in tests); the hook above
+        // limits these two per user, which is stricter and not shared between people.
+        '/two-factor/verify-totp': false,
+        '/two-factor/verify-backup-code': false
+      }
+    },
     hooks: {
       before: createAuthMiddleware(async ctx => {
+        if (SECOND_FACTOR_CHECKS.has(ctx.path)) {
+          // Better Auth has no per-session limit on these; wrong codes would otherwise be free to guess.
+          // Keyed by the session's user, never by IP alone: a brute force runs inside one session, and
+          // a rotated X-Forwarded-For must not buy fresh guesses. Without a session (the sign-in
+          // cookie flow) the two-factor cookie identifies the attempt, the proxy-set IP is the last resort.
+          const current = await getSessionFromCtx(ctx)
+          const pending = cookieValue(ctx.request?.headers, 'better-auth\\.two_factor')
+          const subject = current
+            ? `user:${current.user.id}`
+            : pending
+              ? `pending:${sha(pending)}`
+              : `ip:${clientIp(ctx.request?.headers)}`
+          if (!(await secondFactorAllowed(redis, subject, limits.secondFactor)))
+            throw new APIError('TOO_MANY_REQUESTS', {message: 'Too many attempts, try again later'})
+        }
         const decision = await secondFactorGate(
           ctx.path,
           () =>
@@ -75,7 +159,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
       }),
       after: createAuthMiddleware(async ctx => {
         const failed = isAPIError(ctx.context.returned)
-        const ip = ctx.request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? ''
+        const ip = ctx.request ? clientIp(ctx.request.headers) : ''
         // After-hooks also run for failed calls (a wrong code returns an APIError).
         if (ctx.path === '/sign-in/email-otp' || ctx.path.startsWith('/callback/')) {
           const userId = failed ? null : (ctx.context.newSession?.user.id ?? null)
@@ -123,13 +207,14 @@ export function createAuth(options: {baseURL?: string} = {}) {
         allowedAttempts: 5,
         storeOTP: 'hashed',
         // Do not await: the response time must not reveal whether the email exists (spec §7.6).
-        sendVerificationOTP: ({email, otp}) => {
+        sendVerificationOTP: async ({email, otp}, ctx) => {
+          // Over the limit (or Redis down): answer as usual, send nothing (no enumeration).
+          if (!(await otpAllowed(redis, email, clientIp(ctx?.request?.headers), limits))) return
           void signInCodeMail(otp)
             .then(mail => getMailer().send({to: email, ...mail}))
             .catch((error: unknown) => {
               console.error('mail: sign-in code failed', error)
             })
-          return Promise.resolve()
         }
       }),
       twoFactor({issuer: 'Shop Admin', allowPasswordless: true})

@@ -9,6 +9,8 @@ import type {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {seedAccess} from '../src/seed/seed-access'
 import {startDatabase} from './support/database'
+import {relaxRateLimits} from './support/rate-limits'
+import {startRedis} from './support/redis'
 
 jest.setTimeout(120_000)
 
@@ -25,20 +27,22 @@ async function codeFor(email: string): Promise<string> {
 
 describe('invite-only sign-up', () => {
   let db: Awaited<ReturnType<typeof startDatabase>>
+  let redis: Awaited<ReturnType<typeof startRedis>>
   let app: INestApplication<Server>
   let prisma: PrismaService
 
   beforeAll(async () => {
-    db = await startDatabase()
+    ;[db, redis] = await Promise.all([startDatabase(), startRedis()])
     prisma = new PrismaService()
     await seedAccess(prisma, getMailer(), 'http://admin.test')
+    relaxRateLimits()
     app = await createApp()
     await app.init()
   })
   afterAll(async () => {
     await app.close()
     await prisma.$disconnect()
-    await db.stop()
+    await Promise.all([db.stop(), redis.stop()])
   })
 
   const signIn = async (email: string) => {

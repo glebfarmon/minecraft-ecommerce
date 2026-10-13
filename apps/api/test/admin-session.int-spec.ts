@@ -11,6 +11,7 @@ import type {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {seedAccess} from '../src/seed/seed-access'
 import {startDatabase} from './support/database'
+import {relaxRateLimits} from './support/rate-limits'
 import {startRedis} from './support/redis'
 
 jest.setTimeout(120_000)
@@ -67,6 +68,7 @@ describe('admin session', () => {
         expiresAt: new Date(Date.now() + 60_000)
       }
     })
+    relaxRateLimits()
     app = await createApp()
     await app.init()
   })

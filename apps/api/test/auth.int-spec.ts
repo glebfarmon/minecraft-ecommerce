@@ -10,6 +10,8 @@ import type {Mail} from '../src/mailer/mailer'
 import type {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {startDatabase} from './support/database'
+import {relaxRateLimits} from './support/rate-limits'
+import {startRedis} from './support/redis'
 
 jest.setTimeout(120_000)
 
@@ -43,19 +45,21 @@ async function mailTo(email: string): Promise<Mail> {
 
 describe('auth in NestJS', () => {
   let db: Awaited<ReturnType<typeof startDatabase>>
+  let redis: Awaited<ReturnType<typeof startRedis>>
   let app: INestApplication<Server>
   let prisma: PrismaService
 
   beforeAll(async () => {
-    db = await startDatabase()
+    ;[db, redis] = await Promise.all([startDatabase(), startRedis()])
     prisma = new PrismaService()
+    relaxRateLimits()
     app = await createApp(ProbeAppModule)
     await app.init()
   })
   afterAll(async () => {
     await app.close()
     await prisma.$disconnect()
-    await db.stop()
+    await Promise.all([db.stop(), redis.stop()])
   })
 
   it('keeps public endpoints anonymous', async () => {

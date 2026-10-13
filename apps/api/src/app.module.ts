@@ -10,6 +10,7 @@ import {PrismaModule} from './prisma/prisma.module'
 import {RedisModule} from './redis/redis.module'
 import {StatusModule} from './status/status.module'
 import {TeamModule} from './team/team.module'
+import {ThrottleModule} from './throttle/throttle.module'
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import {TeamModule} from './team/team.module'
     HealthModule,
     StatusModule,
     CatalogModule,
-    TeamModule
+    TeamModule,
+    ThrottleModule
   ]
 })
 export class AppModule {}
