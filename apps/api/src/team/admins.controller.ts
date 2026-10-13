@@ -27,7 +27,7 @@ export class AdminsController {
     @Body(new ValibotPipe(ChangeRoleSchema)) body: ChangeRole,
     @Req() req: AuditableRequest
   ): Promise<Admin> {
-    return this.admins.changeRole(id, body.roleId, before => {
+    return this.admins.changeRole(id, body.roleId, adminOf(req).permissions, before => {
       req.auditBefore = before
     })
   }

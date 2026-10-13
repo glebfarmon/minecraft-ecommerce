@@ -349,4 +349,88 @@ describe('team API', () => {
     })
     expect(audit.before).toMatchObject({email: 'cat@example.com', disabledAt: null})
   })
+
+  describe('granting only what you hold', () => {
+    const customRole = (name: string, permissions: string[]) =>
+      prisma.role.create({data: {name, permissions}})
+
+    it('an ADMIN cannot invite into a role holding a permission they lack', async () => {
+      const adm = await signInAdmin(app, prisma, 'g-adm@example.com', 'ADMIN')
+      const strong = await customRole('G_STRONG', ['role.write'])
+      const weak = await customRole('G_WEAK', ['audit.read'])
+      const mails = (getMailer() as MemoryMailer).lastTo('g-new@example.com')
+      const res = await adm
+        .post('/api/admin/invites')
+        .send({email: 'g-new@example.com', roleId: strong.id})
+        .expect(403)
+      expect(res.body).toEqual({statusCode: 403, message: 'cannot_grant'})
+      expect(await prisma.invite.count({where: {email: 'g-new@example.com'}})).toBe(0)
+      expect((getMailer() as MemoryMailer).lastTo('g-new@example.com')).toBe(mails)
+      await adm
+        .post('/api/admin/invites')
+        .send({email: 'g-new@example.com', roleId: weak.id})
+        .expect(201)
+    })
+
+    it('refuses to resend an invite whose role the actor cannot grant', async () => {
+      const owner = await signInAdmin(app, prisma, 'g-o1@example.com', 'OWNER')
+      const adm = await signInAdmin(app, prisma, 'g-adm2@example.com', 'ADMIN')
+      const strong = await roleId('G_STRONG')
+      const created = await owner
+        .post('/api/admin/invites')
+        .send({email: 'g-rs@example.com', roleId: strong})
+        .expect(201)
+      const id = (created.body as {id: string}).id
+      const before = (await prisma.invite.findUniqueOrThrow({where: {id}})).tokenHash
+      await adm.post(`/api/admin/invites/${id}/resend`).expect(403)
+      expect((await prisma.invite.findUniqueOrThrow({where: {id}})).tokenHash).toBe(before)
+      await owner.post(`/api/admin/invites/${id}/resend`).expect(201)
+    })
+
+    it('a role.write holder can only create and edit roles within their own permissions', async () => {
+      const mine = await customRole('G_WRITER', ['role.write'])
+      const writer = await signInAdmin(app, prisma, 'g-w@example.com', 'G_WRITER')
+      await writer
+        .post('/api/admin/roles')
+        .send({name: 'G_X', permissions: ['audit.read']})
+        .expect(403)
+      await writer
+        .patch(`/api/admin/roles/${mine.id}`)
+        .send({name: 'G_WRITER', permissions: ['role.write', 'admin.invite']})
+        .expect(403)
+      expect((await prisma.role.findUniqueOrThrow({where: {id: mine.id}})).permissions).toEqual([
+        'role.write'
+      ])
+      await writer
+        .post('/api/admin/roles')
+        .send({name: 'G_Y', permissions: ['role.write']})
+        .expect(201)
+    })
+
+    it('a role.write holder cannot move someone into a role with more permissions', async () => {
+      const writer = await signInAdmin(app, prisma, 'g-w2@example.com', 'G_WRITER')
+      await signInAdmin(app, prisma, 'g-sup@example.com', 'SUPPORT')
+      const target = await userId('g-sup@example.com')
+      await writer
+        .patch(`/api/admin/admins/${target}/role`)
+        .send({roleId: await roleId('ADMIN')})
+        .expect(403)
+      await writer
+        .patch(`/api/admin/admins/${target}/role`)
+        .send({roleId: await roleId('G_WRITER')})
+        .expect(200)
+    })
+
+    it('an OWNER can still grant anything', async () => {
+      const owner = await signInAdmin(app, prisma, 'g-o2@example.com', 'OWNER')
+      await owner
+        .post('/api/admin/roles')
+        .send({name: 'G_ALL', permissions: ['role.write', 'admin.invite', 'audit.read']})
+        .expect(201)
+      await owner
+        .post('/api/admin/invites')
+        .send({email: 'g-all@example.com', roleId: await roleId('G_STRONG')})
+        .expect(201)
+    })
+  })
 })

@@ -63,6 +63,14 @@ const guarded = {
   '401': {description: 'No session, or the admin is disabled'},
   '403': {description: '`2fa_required`, or the role lacks the permission (`forbidden`)'}
 }
+/** Same as `guarded`, plus the rule that an admin only grants permissions they hold. */
+const guardedGrant = {
+  ...guarded,
+  '403': {
+    description:
+      '`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)'
+  }
+}
 const invalid = {'400': {description: 'Invalid body'}}
 const protectedOwner = {
   '400': {description: 'Invalid body, unknown role, or `owner_protected`'}
@@ -130,7 +138,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
           responses: {
             '200': json('The updated admin', AdminSchema),
             ...protectedOwner,
-            ...guarded,
+            ...guardedGrant,
             ...missing
           }
         }
@@ -159,7 +167,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
           responses: {
             '201': json('The invite (the link goes only to the email)', InviteSchema),
             ...protectedOwner,
-            ...guarded,
+            ...guardedGrant,
             '409': {description: '`user_exists`'},
             '503': {description: '`mail_failed`: the invite exists; resend it'}
           }
@@ -183,7 +191,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
           parameters: [pathParam('id')],
           responses: {
             '201': json('The invite', InviteSchema),
-            ...guarded,
+            ...guardedGrant,
             ...missing,
             '409': {description: '`invite_closed`: already accepted or revoked'},
             '503': {description: '`mail_failed`'}
@@ -201,7 +209,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
           responses: {
             '201': json('The role', RoleSchema),
             ...invalid,
-            ...guarded,
+            ...guardedGrant,
             '409': {description: '`role_name_taken`'}
           }
         }
@@ -215,7 +223,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
           responses: {
             '200': json('The role', RoleSchema),
             '400': {description: 'Invalid body, or `owner_protected` for a system role'},
-            ...guarded,
+            ...guardedGrant,
             ...missing,
             '409': {description: '`role_name_taken`'}
           }

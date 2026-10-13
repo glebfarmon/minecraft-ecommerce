@@ -517,7 +517,7 @@
             "description": "No session, or the admin is disabled"
           },
           "403": {
-            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+            "description": "`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)"
           },
           "404": {
             "description": "No such record"
@@ -768,7 +768,7 @@
             "description": "No session, or the admin is disabled"
           },
           "403": {
-            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+            "description": "`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)"
           },
           "409": {
             "description": "`user_exists`"
@@ -944,7 +944,7 @@
             "description": "No session, or the admin is disabled"
           },
           "403": {
-            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+            "description": "`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)"
           },
           "404": {
             "description": "No such record"
@@ -1068,7 +1068,7 @@
             "description": "No session, or the admin is disabled"
           },
           "403": {
-            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+            "description": "`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)"
           },
           "409": {
             "description": "`role_name_taken`"
@@ -1152,7 +1152,7 @@
             "description": "No session, or the admin is disabled"
           },
           "403": {
-            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+            "description": "`2fa_required`, `forbidden` (the role lacks the permission), or `cannot_grant` (the target role or body holds a permission the admin lacks)"
           },
           "404": {
             "description": "No such record"

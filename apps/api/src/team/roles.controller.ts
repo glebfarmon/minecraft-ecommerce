@@ -3,6 +3,7 @@ import {Body, Delete, Get, HttpCode, Param, Patch, Post, Req} from '@nestjs/comm
 import {type Role, type RoleInput, RoleInputSchema} from '@shop/shared/access'
 
 import {AdminController} from '../access/admin-controller'
+import {adminOf} from '../access/admin-request'
 import {RequirePermission} from '../access/require-permission'
 import {type AuditableRequest, Audited} from '../audit/audit.interceptor'
 import {ValibotPipe} from '../common/valibot.pipe'
@@ -21,8 +22,11 @@ export class RolesController {
   @Post()
   @RequirePermission('role.write')
   @Audited('role.create', 'role')
-  create(@Body(new ValibotPipe(RoleInputSchema)) body: RoleInput): Promise<Role> {
-    return this.roles.create(body)
+  create(
+    @Body(new ValibotPipe(RoleInputSchema)) body: RoleInput,
+    @Req() req: AuditableRequest
+  ): Promise<Role> {
+    return this.roles.create(body, adminOf(req).permissions)
   }
 
   @Patch(':id')
@@ -33,7 +37,7 @@ export class RolesController {
     @Body(new ValibotPipe(RoleInputSchema)) body: RoleInput,
     @Req() req: AuditableRequest
   ): Promise<Role> {
-    return this.roles.update(id, body, before => {
+    return this.roles.update(id, body, adminOf(req).permissions, before => {
       req.auditBefore = before
     })
   }

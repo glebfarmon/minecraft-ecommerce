@@ -26,14 +26,15 @@ export class InvitesController {
     @Body(new ValibotPipe(CreateInviteSchema)) body: CreateInvite,
     @Req() req: AuditableRequest
   ): Promise<Invite> {
-    return this.invites.create(body, adminOf(req).userId)
+    const admin = adminOf(req)
+    return this.invites.create(body, admin.userId, admin.permissions)
   }
 
   @Post(':id/resend')
   @RequirePermission('admin.invite')
   @Audited('invite.resend', 'invite')
-  resend(@Param('id') id: string): Promise<Invite> {
-    return this.invites.resend(id)
+  resend(@Param('id') id: string, @Req() req: AuditableRequest): Promise<Invite> {
+    return this.invites.resend(id, adminOf(req).permissions)
   }
 
   @Delete(':id')

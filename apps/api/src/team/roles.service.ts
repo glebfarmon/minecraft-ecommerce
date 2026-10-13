@@ -1,7 +1,8 @@
 import {Injectable} from '@nestjs/common'
 
-import type {Role, RoleInput} from '@shop/shared/access'
+import type {Permission, Role, RoleInput} from '@shop/shared/access'
 
+import {assertCanGrant} from '../access/grant'
 import {PermissionCache, resolveRole} from '../access/permission-cache'
 import {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
@@ -40,7 +41,8 @@ export class RolesService {
     return rows.map(toRole)
   }
 
-  async create(input: RoleInput): Promise<Role> {
+  async create(input: RoleInput, actor: readonly Permission[]): Promise<Role> {
+    assertCanGrant(actor, input.permissions)
     const row = await this.prisma.role
       .create({data: {name: input.name, permissions: [...new Set(input.permissions)]}})
       .catch(nameTaken)
@@ -48,8 +50,14 @@ export class RolesService {
   }
 
   /** Ends the sessions of everyone holding the role, so the change applies at their next sign-in. */
-  async update(id: string, input: RoleInput, before: (r: Role) => void): Promise<Role> {
+  async update(
+    id: string,
+    input: RoleInput,
+    actor: readonly Permission[],
+    before: (r: Role) => void
+  ): Promise<Role> {
     const current = await this.editable(id)
+    assertCanGrant(actor, input.permissions)
     before(toRole(current))
     const [row] = await this.prisma
       .$transaction([

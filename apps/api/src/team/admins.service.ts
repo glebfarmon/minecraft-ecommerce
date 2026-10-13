@@ -1,7 +1,9 @@
 import {Inject, Injectable} from '@nestjs/common'
 
-import type {Admin} from '@shop/shared/access'
+import type {Admin, Permission} from '@shop/shared/access'
 
+import {assertCanGrant} from '../access/grant'
+import {PermissionCache} from '../access/permission-cache'
 import type {Mailer} from '../mailer/mailer'
 import {MAILER} from '../mailer/mailer'
 import {twoFactorResetMail} from '../mailer/templates'
@@ -34,7 +36,8 @@ export const toAdmin = (u: UserWithRole): Admin => ({
 export class AdminsService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(MAILER) private readonly mailer: Mailer
+    @Inject(MAILER) private readonly mailer: Mailer,
+    private readonly cache: PermissionCache
   ) {}
 
   private async find(id: string): Promise<UserWithRole> {
@@ -52,12 +55,18 @@ export class AdminsService {
     return users.map(toAdmin)
   }
 
-  async changeRole(id: string, roleId: string, before: (v: Admin) => void): Promise<Admin> {
+  async changeRole(
+    id: string,
+    roleId: string,
+    actor: readonly Permission[],
+    before: (v: Admin) => void
+  ): Promise<Admin> {
     const user = await this.find(id)
     if (isOwnerRole(user.role)) throw ownerProtected()
     const target = await this.prisma.role.findUnique({where: {id: roleId}})
     if (!target) throw unknownRole()
     if (isOwnerRole(target)) throw ownerProtected()
+    assertCanGrant(actor, (await this.cache.get(roleId)).permissions)
     before(toAdmin(user))
     const [, updated] = await this.prisma.$transaction([
       this.prisma.session.deleteMany({where: {userId: id}}),

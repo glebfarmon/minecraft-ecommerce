@@ -1,7 +1,9 @@
 import {Inject, Injectable, ServiceUnavailableException} from '@nestjs/common'
 
-import type {CreateInvite, Invite, InviteLookup} from '@shop/shared/access'
+import type {CreateInvite, Invite, InviteLookup, Permission} from '@shop/shared/access'
 
+import {assertCanGrant} from '../access/grant'
+import {PermissionCache} from '../access/permission-cache'
 import {authEnv} from '../auth/auth-env'
 import type {Mailer} from '../mailer/mailer'
 import {MAILER} from '../mailer/mailer'
@@ -48,7 +50,8 @@ const OPEN = {acceptedAt: null, revokedAt: null}
 export class InvitesService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(MAILER) private readonly mailer: Mailer
+    @Inject(MAILER) private readonly mailer: Mailer,
+    private readonly cache: PermissionCache
   ) {}
 
   async list(): Promise<Invite[]> {
@@ -61,10 +64,15 @@ export class InvitesService {
     return rows.sort((a, b) => Number(isOpen(b, now)) - Number(isOpen(a, now))).map(toInvite)
   }
 
-  async create(input: CreateInvite, invitedById: string): Promise<Invite> {
+  async create(
+    input: CreateInvite,
+    invitedById: string,
+    actor: readonly Permission[]
+  ): Promise<Invite> {
     const role = await this.prisma.role.findUnique({where: {id: input.roleId}})
     if (!role) throw unknownRole()
     if (isOwnerRole(role)) throw ownerProtected()
+    assertCanGrant(actor, (await this.cache.get(role.id)).permissions)
     if ((await this.prisma.user.count({where: {email: input.email}})) > 0)
       throw conflict('user_exists')
     const {token, tokenHash} = newInviteToken()
@@ -82,7 +90,9 @@ export class InvitesService {
     return toInvite(row)
   }
 
-  async resend(id: string): Promise<Invite> {
+  async resend(id: string, actor: readonly Permission[]): Promise<Invite> {
+    const current = await this.prisma.invite.findUnique({where: {id}})
+    if (current) assertCanGrant(actor, (await this.cache.get(current.roleId)).permissions)
     const {token, tokenHash} = newInviteToken()
     const {count} = await this.prisma.invite.updateMany({
       where: {id, ...OPEN},
