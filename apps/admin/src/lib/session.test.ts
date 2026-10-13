@@ -37,4 +37,16 @@ describe('getMe', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({message: '2fa_required'}), {status: 403}))
     await expect(getMe()).resolves.toEqual({state: '2fa'})
   })
+
+  it('throws on a server error instead of reporting a sign-out', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValueOnce(new Response('{}', {status: 500}))
+    await expect(getMe()).rejects.toThrow('500')
+  })
+
+  it('throws on a 403 that is not the 2FA gate', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({message: 'forbidden'}), {status: 403}))
+    await expect(getMe()).rejects.toThrow('403')
+  })
 })
