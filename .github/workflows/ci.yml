@@ -26,6 +26,8 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+      # The admin RTK Query client is generated from apps/api/openapi.json; the committed file must match.
+      - run: pnpm --filter @shop/admin codegen && git diff --exit-code apps/admin/src/lib/api/generated.ts
       - run: pnpm test
       # Testcontainers: Docker is available on ubuntu-latest runners.
       - run: pnpm test:int

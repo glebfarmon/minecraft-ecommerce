@@ -8,15 +8,26 @@
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "codegen": "tsx scripts/codegen.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
+    "@reduxjs/toolkit": "^2.13.0",
+    "@shop/shared": "workspace:*",
     "@shop/ui": "workspace:*",
+    "better-auth": "~1.7.7",
     "next": "^16.3.7",
+    "qrcode.react": "^4.2.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-hook-form": "^7.90.0",
+    "react-redux": "^9.3.0",
+    "server-only": "^0.0.1",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
+    "@rtk-query/codegen-openapi": "^2.2.0",
     "@shop/config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
@@ -30,6 +41,7 @@
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }
 }
