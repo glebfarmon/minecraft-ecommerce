@@ -9,6 +9,7 @@ import {Reflector} from '@nestjs/core'
 import {type Observable, tap} from 'rxjs'
 
 import type {AdminRequest} from '../access/admin-request'
+import {clientIp} from '../common/client-ip'
 import {AuditService} from './audit.service'
 import {redact} from './redact'
 
@@ -22,7 +23,6 @@ export const Audited = (action: string, entityType: string) =>
 export type AuditableRequest = AdminRequest & {
   params?: Record<string, string | undefined>
   originalUrl?: string
-  ip?: string
   auditBefore?: unknown
 }
 
@@ -52,7 +52,8 @@ export class AuditInterceptor implements NestInterceptor {
             entityId: id,
             before: redact(req.auditBefore),
             after: redact(body),
-            ip: req.ip ?? req.socket.remoteAddress ?? ''
+            // Same rule as every limiter and the sign-in rows; `req.ip` would be the proxy peer.
+            ip: clientIp(req.headers, req.socket.remoteAddress)
           })
           .catch((error: unknown) => {
             console.error('audit: record failed', error)
