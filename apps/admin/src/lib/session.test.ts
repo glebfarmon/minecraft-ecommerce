@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import {getMe} from './session'
 
 jest.mock('next/headers', () => ({
