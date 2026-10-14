@@ -1,18 +1,14 @@
 import {INestApplication} from '@nestjs/common'
-import {Test} from '@nestjs/testing'
 import request from 'supertest'
 
-import {AppModule} from '../src/app.module'
-import {configureApp} from '../src/configure-app'
+import {createApp} from '../src/create-app'
 
 describe('health', () => {
   let app: INestApplication
 
   beforeAll(async () => {
     process.env.APP_VERSION = 'test-sha'
-    const moduleRef = await Test.createTestingModule({imports: [AppModule]}).compile()
-    app = moduleRef.createNestApplication()
-    configureApp(app)
+    app = await createApp()
     await app.init()
   })
 
@@ -33,5 +29,10 @@ describe('health', () => {
     const res = await request(app.getHttpServer()).get('/api/does-not-exist').expect(404)
     expect(res.type).toBe('application/json')
     expect(res.body).toMatchObject({statusCode: 404})
+  })
+
+  it('serves Swagger UI at /api/docs', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs').expect(200)
+    expect(res.text).toContain('swagger-ui')
   })
 })

@@ -1,11 +1,12 @@
 'use client'
 
 import {COPIED_FLASH_MS} from '@/config/cart'
-import type {Entry, Section} from '@/config/products'
 import {useTransientFlag} from '@/hooks/use-transient-flag'
 import {Check, Copy} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import type {ReactNode} from 'react'
+
+import type {ProductEntry as Entry, ProductSection as Section} from '@shop/shared/catalog'
 
 /** A titled panel inside the product modal. */
 export function Block({

@@ -19,3 +19,4 @@ references/
 .impeccable/build/
 .impeccable/review/
 graphify-out/
+apps/api/src/generated/

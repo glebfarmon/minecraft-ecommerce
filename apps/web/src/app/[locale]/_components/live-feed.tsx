@@ -1,12 +1,14 @@
 import {OnlineDot} from '@/components/online-dot'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
-import {findProduct, findServer, formatPrice} from '@/lib/catalog'
+import {formatPrice} from '@/lib/catalog'
 import {Plus} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
 import type {CSSProperties} from 'react'
 
+import type {CatalogResponse} from '@shop/shared/catalog'
+
 // TEMP: placeholder purchases to preview the design. Remove when SSE arrives with the API.
-export const STUB_PURCHASES = [
+const STUB_ROWS = [
   {id: '1', player: 'Notch_fan', server: 'survival', slug: 'vip', minutesAgo: 1},
   {id: '2', player: 'Creeper77', server: 'survival', slug: 'starter-kit', minutesAgo: 3},
   {id: '3', player: 'xX_Alex_Xx', server: 'anarchy', slug: 'warlord', minutesAgo: 6},
@@ -17,15 +19,19 @@ export const STUB_PURCHASES = [
   {id: '8', player: 'Kasia_PL', server: 'minigames', slug: 'cosmetic-case', minutesAgo: 31},
   {id: '9', player: 'RedstoneRay', server: 'survival', slug: 'legend', minutesAgo: 44},
   {id: '10', player: 'Golem_99', server: 'anarchy', slug: 'chaos-case', minutesAgo: 58}
-].flatMap(({server, slug, ...rest}) => {
-  const product = findProduct(server, slug)
-  const owner = findServer(server)
-  return product && owner
-    ? [{...rest, product, accent: owner.accent, onAccent: owner.onAccent}]
-    : []
-})
+]
 
-type Purchase = (typeof STUB_PURCHASES)[number]
+function purchases(catalog: CatalogResponse) {
+  return STUB_ROWS.flatMap(({server, slug, ...rest}) => {
+    const product = catalog.products.find(p => p.server === server && p.slug === slug)
+    const owner = catalog.servers.find(s => s.slug === server)
+    return product && owner
+      ? [{...rest, product, accent: owner.accent, onAccent: owner.onAccent}]
+      : []
+  })
+}
+
+type Purchase = ReturnType<typeof purchases>[number]
 
 /** Below this many purchases a looping marquee would repeat the same donors, so the row stays still. */
 const MARQUEE_MIN = 6
@@ -47,7 +53,7 @@ function Item({purchase: p}: {purchase: Purchase}) {
         </span>
       </span>
       <span className="font-display text-lg leading-none font-semibold text-accent tabular-nums">
-        {formatPrice(p.product.price.EUR, 'EUR', locale)}
+        {formatPrice(p.product.prices.EUR, 'EUR', locale)}
       </span>
     </li>
   )
@@ -76,9 +82,11 @@ function Row({purchases, hidden}: {purchases: Purchase[]; hidden?: boolean}) {
 }
 
 /** Purchase feed (SSE arrives with the API). Empty and short feeds sit still; a full one runs as a right-to-left marquee. */
-export function LiveFeed({purchases = STUB_PURCHASES}: {purchases?: Purchase[]}) {
+export function LiveFeed({catalog}: {catalog: CatalogResponse | null}) {
   const t = useTranslations('feed')
-  const full = purchases.length >= MARQUEE_MIN
+  if (!catalog) return null
+  const items = purchases(catalog)
+  const full = items.length >= MARQUEE_MIN
   return (
     <section aria-labelledby="feed-title" className="border-b border-line py-10">
       <h2
@@ -93,16 +101,16 @@ export function LiveFeed({purchases = STUB_PURCHASES}: {purchases?: Purchase[]})
       {full ? (
         <div className="feed-marquee overflow-hidden motion-reduce:overflow-x-auto">
           <div className="flex w-max animate-[feed-marquee_70s_linear_infinite] motion-reduce:animate-none">
-            <Row purchases={purchases} />
-            <Row purchases={purchases} hidden />
+            <Row purchases={items} />
+            <Row purchases={items} hidden />
           </div>
         </div>
       ) : (
         <ul className="mx-auto flex max-w-page flex-wrap items-center gap-x-12 gap-y-5 px-[var(--gutter)]">
-          {purchases.map(p => (
+          {items.map(p => (
             <Item key={p.id} purchase={p} />
           ))}
-          {purchases.length === 0 && <Ghost label={t('empty')} />}
+          {items.length === 0 && <Ghost label={t('empty')} />}
         </ul>
       )}
     </section>

@@ -1,15 +1,16 @@
 import type {Currency} from '@/config/currencies'
-import type {Product} from '@/config/products'
-import type {Server} from '@/config/servers'
-import {findServer, formatPrice} from '@/lib/catalog'
+import {useCatalog} from '@/features/catalog/catalog-provider'
+import {formatPrice} from '@/lib/catalog'
 import {Lock} from 'lucide-react'
 import {useLocale, useTranslations} from 'next-intl'
 
-type Line = {product: Product; qty: number}
+import type {CatalogProduct, CatalogServer} from '@shop/shared/catalog'
+
+type Line = {product: CatalogProduct; qty: number}
 
 /** Cart lines grouped by the server that delivers them, in cart order. */
-function groupByServer(lines: Line[]) {
-  const groups = new Map<string, {server: Server | undefined; lines: Line[]}>()
+function groupByServer(lines: Line[], findServer: (slug: string) => CatalogServer | undefined) {
+  const groups = new Map<string, {server: CatalogServer | undefined; lines: Line[]}>()
   for (const line of lines) {
     const group = groups.get(line.product.server)
     if (group) group.lines.push(line)
@@ -19,7 +20,7 @@ function groupByServer(lines: Line[]) {
 }
 
 export const orderTotal = (lines: Line[], currency: Currency) =>
-  lines.reduce((sum, l) => sum + l.product.price[currency] * l.qty, 0)
+  lines.reduce((sum, l) => sum + l.product.prices[currency] * l.qty, 0)
 
 /** Stays disabled until the orders API exists; the form around it already validates. */
 function PayButton({total, className}: {total: string; className: string}) {
@@ -69,6 +70,7 @@ export function OrderSummary({
 }) {
   const t = useTranslations('checkout')
   const locale = useLocale()
+  const {findServer} = useCatalog()
   const money = (minor: number) => formatPrice(minor, currency, locale)
 
   return (
@@ -89,7 +91,7 @@ export function OrderSummary({
       </div>
 
       <ul className="mt-4 flex flex-col gap-4">
-        {groupByServer(lines).map(([slug, group]) => (
+        {groupByServer(lines, findServer).map(([slug, group]) => (
           <li key={slug}>
             <p className="eyebrow-sm">{group.server?.name ?? slug}</p>
             <ul className="mt-1 flex flex-col divide-y divide-line">
@@ -101,7 +103,7 @@ export function OrderSummary({
                     {product.name}
                     {qty > 1 && <span className="tabular ml-1.5 text-muted">×{qty}</span>}
                   </span>
-                  <span className="tabular shrink-0">{money(product.price[currency] * qty)}</span>
+                  <span className="tabular shrink-0">{money(product.prices[currency] * qty)}</span>
                 </li>
               ))}
             </ul>

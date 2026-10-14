@@ -1,5 +1,6 @@
 import {ShopProvider} from '@/features/cart/shop-provider'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {renderWithCatalog} from '@/features/catalog/test-catalog'
+import {fireEvent, screen, waitFor} from '@testing-library/react'
 
 import {SettingsMenu} from './settings-menu'
 
@@ -21,7 +22,7 @@ jest.mock('motion/react', () => ({
 }))
 
 const setup = () =>
-  render(
+  renderWithCatalog(
     <ShopProvider>
       <SettingsMenu />
     </ShopProvider>
@@ -34,7 +35,6 @@ const open = () => {
 describe('SettingsMenu', () => {
   beforeEach(() => {
     mockReplace.mockClear()
-    localStorage.clear()
   })
 
   it('shows the current language and currency symbol on the trigger', () => {

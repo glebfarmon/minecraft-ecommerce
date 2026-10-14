@@ -1,10 +1,7 @@
-// Demo catalog. Every value here is placeholder data until the catalog API
-// (sub-project 2) exists; the UI labels it as demo.
-import type {Currency} from '@/config/currencies'
-import type {CategoryId} from '@/config/servers'
-import type {Locale} from '@/i18n/routing'
+// Demo catalog, moved from apps/web/src/config/products.ts. Seeded into an empty database; never overwrites.
+import type {Currency, Locale, ProductIcon} from '@shop/shared/catalog'
 
-export type ProductIcon = 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
+import type {CategoryId} from './demo-catalog'
 
 /** One line of a description section: an optional copyable command, an explanation, an optional cooldown tag. */
 export type Entry = {cmd?: string; text?: string; cooldown?: string}
@@ -242,7 +239,7 @@ const legendSections: Record<Locale, Section[]> = {
 
 const p = (eur: number, pln: number) => ({EUR: eur, PLN: pln})
 
-export const products: Product[] = [
+export const DEMO_PRODUCTS: Product[] = [
   {
     slug: 'vip',
     server: 'survival',

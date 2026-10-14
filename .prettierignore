@@ -8,3 +8,5 @@ test-results/
 .claude/
 next-env.d.ts
 .impeccable/
+apps/api/src/generated/
+apps/admin/src/lib/api/generated.ts

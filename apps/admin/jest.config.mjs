@@ -3,8 +3,11 @@ import nextJest from 'next/jest.js'
 const createJestConfig = nextJest({dir: './'})
 
 export default createJestConfig({
-  testEnvironment: 'jsdom',
+  testEnvironment: '<rootDir>/jest.environment.mjs',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   // Mirrors the `@/*` path in tsconfig.json; next/jest does not read it.
-  moduleNameMapper: {'^@/(.*)$': '<rootDir>/src/$1'}
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^server-only$': '<rootDir>/src/test/empty.ts'
+  }
 })

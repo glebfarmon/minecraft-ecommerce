@@ -6,6 +6,14 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "next.config.ts", "src", ".next/types/**/*.ts", "jest.setup.ts"],
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    "openapi-config.ts",
+    "scripts",
+    "src",
+    ".next/types/**/*.ts",
+    "jest.setup.ts"
+  ],
   "exclude": ["node_modules"]
 }

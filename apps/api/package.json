@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "files": [
-    "dist"
+    "dist",
+    "prisma",
+    "prisma.config.ts",
+    "src/prisma/database-url.ts"
   ],
   "scripts": {
     "build": "nest build",
@@ -11,7 +14,11 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest",
+    "generate": "prisma generate",
+    "seed": "tsx src/seed/main.ts",
+    "openapi": "tsx src/openapi/write-openapi.ts && prettier --write openapi.json",
+    "test:int": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --testRegex '.*\\.int-spec\\.ts$' --runInBand"
   },
   "jest": {
     "rootDir": ".",
@@ -19,35 +26,63 @@
       "<rootDir>/src",
       "<rootDir>/test"
     ],
-    "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+    "testRegex": ".*\\.(spec|e2e-spec)\\.tsx?$",
     "transform": {
-      "^.+\\.ts$": "ts-jest"
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "moduleFileExtensions": [
       "ts",
+      "tsx",
       "js",
       "json"
     ],
     "testEnvironment": "node"
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "^1.2.0",
     "@nestjs/common": "^11.2.7",
     "@nestjs/core": "^11.2.7",
     "@nestjs/platform-express": "^11.2.7",
+    "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.7.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.1.0",
+    "@shop/shared": "workspace:*",
+    "@thallesp/nestjs-better-auth": "^2.8.0",
+    "@valibot/to-json-schema": "^1.8.0",
+    "better-auth": "^1.7.7",
+    "ioredis": "^6.0.0",
+    "nodemailer": "^10.1.0",
+    "prisma": "^7.10.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "resend": "^6.32.1",
+    "rxjs": "^7.8.2",
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
     "@nestjs/testing": "^11.2.7",
     "@shop/config": "workspace:*",
+    "@testcontainers/postgresql": "^12.2.0",
+    "@testcontainers/redis": "^12.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/supertest": "^7.2.1",
     "eslint": "^9.39.5",
     "jest": "^30.5.2",
+    "otplib": "^13.5.0",
     "supertest": "^7.3.0",
     "ts-jest": "^29.4.14",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3"
   }
 }

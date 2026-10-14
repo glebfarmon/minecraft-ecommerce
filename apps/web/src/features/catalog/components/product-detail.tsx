@@ -1,19 +1,19 @@
 'use client'
 
 import {MORPH_FADE} from '@/components/morph-content'
-import type {Product} from '@/config/products'
-import type {Server} from '@/config/servers'
 import {useAddToCart} from '@/features/cart/components/add-to-cart'
 import {useCart, useCurrency} from '@/features/cart/shop-provider'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import {Block, SectionBlock} from '@/features/catalog/components/product-sections'
 import {useScrollEdges} from '@/hooks/use-scroll-edges'
-import type {Locale} from '@/i18n/routing'
 import {formatPrice, productPlateLayoutId} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
 import {motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useRef} from 'react'
+
+import type {CatalogProduct, CatalogServer} from '@shop/shared/catalog'
 
 export function ProductDetail({
   product,
@@ -21,8 +21,8 @@ export function ProductDetail({
   titleId,
   onAdded
 }: {
-  product: Product
-  server: Server
+  product: CatalogProduct
+  server: CatalogServer
   titleId: string
   /** Called right after the product lands in the cart; the flight into the cart is the caller's to start. */
   onAdded: () => void
@@ -31,16 +31,20 @@ export function ProductDetail({
   const tc = useTranslations('catalog')
   const locale = useLocale()
   const {currency} = useCurrency()
+  const {categoryName} = useCatalog()
   const {lines} = useCart()
   const {added, addAndFlash} = useAddToCart(product)
   const scroller = useRef<HTMLDivElement>(null)
   const edges = useScrollEdges(scroller, 'y')
-  const sections = product.sections?.[locale as Locale] ?? []
-  const inCart = lines.some(l => l.product === product)
+  const sections = product.sections
+  // By identity the check would break whenever the catalog is fetched again.
+  const inCart = lines.some(
+    l => l.product.server === product.server && l.product.slug === product.slug
+  )
 
   const details = [
     {label: t('server'), value: server.name},
-    {label: t('category'), value: tc(product.category)},
+    {label: t('category'), value: categoryName(product.category)},
     {
       label: t('duration'),
       value: product.durationDays ? tc('days', {count: product.durationDays}) : tc('forever')
@@ -82,7 +86,7 @@ export function ProductDetail({
           data-fade-start={edges.start}
           data-fade-end={edges.end}
           className="scroll-thin scroll-fade-y -mr-2 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 max-md:order-4 max-md:max-h-[min(15.75rem,36dvh)] md:[overscroll-behavior:contain]">
-          {product.adult && (
+          {product.kind === 'CASE' && (
             <Block title="18+" className="bg-accent-soft">
               <p className="text-sm leading-relaxed text-fg/85">
                 {t('adultNote')} {t('fairNote')}
@@ -90,7 +94,7 @@ export function ProductDetail({
             </Block>
           )}
           <Block title={t('description')}>
-            <p className="leading-relaxed text-fg/85">{product.description[locale as Locale]}</p>
+            <p className="leading-relaxed text-fg/85">{product.description}</p>
           </Block>
           {sections.map(section => (
             <SectionBlock key={section.title} section={section} />
@@ -103,7 +107,7 @@ export function ProductDetail({
           <div>
             <p className="text-sm text-muted">{t('price')}</p>
             <p className="tabular mt-1 font-display text-3xl leading-none font-semibold">
-              {formatPrice(product.price[currency], currency, locale)}
+              {formatPrice(product.prices[currency], currency, locale)}
             </p>
           </div>
           <button

@@ -1,4 +1,5 @@
 import {Footer} from '@/app/[locale]/_components/footer'
+import {loadCatalog} from '@/features/catalog/api/get-catalog'
 import {getRules} from '@/features/rules/api/get-rules'
 import {RulesView} from '@/features/rules/components/rules-view'
 import {formatEdition} from '@/features/rules/lib/format-edition'
@@ -39,10 +40,11 @@ export async function generateMetadata({
 export default async function RulesPage({params}: {params: Promise<{locale: string}>}) {
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
-  const [rules, t, settings] = await Promise.all([
+  const [rules, t, settings, catalog] = await Promise.all([
     getRules(locale),
     getTranslations({locale, namespace: 'rules'}),
-    getSiteSettings()
+    getSiteSettings(),
+    loadCatalog(locale)
   ])
 
   return (
@@ -70,7 +72,7 @@ export default async function RulesPage({params}: {params: Promise<{locale: stri
           )}
         </div>
       </main>
-      <Footer settings={settings} />
+      <Footer settings={settings} servers={catalog?.servers ?? []} />
     </>
   )
 }

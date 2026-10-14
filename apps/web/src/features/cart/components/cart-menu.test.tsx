@@ -1,8 +1,9 @@
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
 import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
+
+import type {CatalogProduct} from '@shop/shared/catalog'
 
 import {CartMenu} from './cart-menu'
 
@@ -27,9 +28,9 @@ afterAll(() => {
   MotionGlobalConfig.skipAnimations = false
 })
 
-const [first] = products
+const [first] = TEST_CATALOG.products
 if (!first) throw new Error('catalog is empty')
-const product: Product = first
+const product: CatalogProduct = first
 
 function AddProduct() {
   const {add} = useCartActions()
@@ -45,7 +46,7 @@ function AddProduct() {
 }
 
 const setup = () =>
-  render(
+  renderWithCatalog(
     <ShopProvider>
       <AddProduct />
       <CartMenu />
@@ -56,10 +57,6 @@ const open = () => {
 }
 
 describe('CartMenu', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('shows the empty state and a disabled checkout', () => {
     setup()
     open()

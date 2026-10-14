@@ -1,5 +1,9 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
+import {loadCart} from '@/features/cart/api/load-cart'
+import {CartTabSync} from '@/features/cart/components/cart-tab-sync'
 import {ShopProvider} from '@/features/cart/shop-provider'
+import {loadCatalog} from '@/features/catalog/api/get-catalog'
+import {CatalogProvider} from '@/features/catalog/catalog-provider'
 import {CookieBanner} from '@/features/consent/components/cookie-banner'
 import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {StatusProvider} from '@/features/status/status-provider'
@@ -10,6 +14,7 @@ import {NextIntlClientProvider, hasLocale} from 'next-intl'
 import {getMessages, getTranslations} from 'next-intl/server'
 import {Inter_Tight, JetBrains_Mono, Oswald} from 'next/font/google'
 import {notFound} from 'next/navigation'
+import {connection} from 'next/server'
 import type {ReactNode} from 'react'
 
 import '../globals.css'
@@ -30,13 +35,6 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap'
 })
 
-// Daily regeneration keeps the footer year current on otherwise static pages.
-export const revalidate = 86_400
-
-export function generateStaticParams() {
-  return routing.locales.map(locale => ({locale}))
-}
-
 export async function generateMetadata({
   params
 }: {
@@ -54,11 +52,15 @@ export default async function LocaleLayout({
   children: ReactNode
   params: Promise<{locale: string}>
 }) {
+  // Catalog and content come from the API, which is not reachable during `next build`:
+  // render per request and let the data cache (60 s) keep it cheap. See ADR 0007.
+  await connection()
   const {locale} = await params
   if (!hasLocale(routing.locales, locale)) notFound()
   const t = await getTranslations({locale})
   const messages = await getMessages()
-  const settings = await getSiteSettings()
+  const [settings, catalog] = await Promise.all([getSiteSettings(), loadCatalog(locale)])
+  const cart = await loadCart(catalog)
 
   return (
     <html
@@ -71,13 +73,17 @@ export default async function LocaleLayout({
           {t('skip')}
         </a>
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
-          <StatusProvider>
-            <ShopProvider>
-              <Navbar siteName={settings.siteName} />
-              {children}
-              <CookieBanner />
-            </ShopProvider>
-          </StatusProvider>
+          <CatalogProvider servers={catalog?.servers ?? null}>
+            <StatusProvider>
+              {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
+              <ShopProvider key={locale} initialLines={cart.lines} initialCurrency={cart.currency}>
+                <CartTabSync />
+                <Navbar siteName={settings.siteName} />
+                {children}
+                <CookieBanner />
+              </ShopProvider>
+            </StatusProvider>
+          </CatalogProvider>
         </NextIntlClientProvider>
       </body>
     </html>

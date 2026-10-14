@@ -50,7 +50,7 @@ A public GitHub portfolio project that demonstrates full-stack skills, DevOps, a
 | 8   | Admin access        | Permissions fixed in code; roles in DB (seeded `OWNER`, `ADMIN`, `SUPPORT`); `OWNER` edits role permissions, creates roles, assigns them; `OWNER` always has all permissions. Audit log.             |
 | 9   | Delivery failures   | Outbox + queue with retries; `FAILED` → alert + manual retry.                                                                                                                                        |
 | 10  | Infra               | Buy Hetzner VPS + domain; Cloudflare in front; Dokploy on the VPS.                                                                                                                                   |
-| 12  | Servers & catalog   | Multiple game servers. Admin-managed categories. A product is offered per server with its own commands and prices. Cart may mix servers.                                                             |
+| 12  | Servers & catalog   | Multiple game servers. Admin-managed categories. A product belongs to one server, with its own commands and prices; categories are global with a per-server order. Cart may mix servers.             |
 | 13  | Refunds             | Mandatory "immediate delivery" consent. Refund only for `FAILED` delivery or admin decision; whole order only; orders with an opened case are not refundable. Refund/chargeback run revoke commands. |
 | 14  | Email               | Resend + React Email, one sending subdomain `mail.<domain>`, behind a `Mailer` interface. Mailpit locally/CI.                                                                                        |
 | 15  | Admin login         | Better Auth: email OTP + Google; Apple implemented but disabled until keys exist. Invite-only. TOTP 2FA mandatory.                                                                                   |
@@ -112,18 +112,18 @@ infra/
 
 ### 3.3 Backend modules (NestJS)
 
-| Module     | Owns                                                                        |
-| ---------- | --------------------------------------------------------------------------- |
-| `catalog`  | servers, categories, products, offerings, prices, translations; Redis cache |
-| `orders`   | cart pricing, promo codes, order lifecycle, public order status             |
-| `payments` | `PaymentsGateway` interface; Stripe implementation; webhooks                |
-| `delivery` | outbox, RCON client, retries, grants, expiry scheduler, revoke flow         |
-| `cases`    | case definitions, keys, provably fair opening, scratch grid                 |
-| `auth`     | Better Auth integration, sessions, invites, 2FA                             |
-| `admin`    | roles/permissions, audit log, dashboard queries, uploads (R2)               |
-| `feed`     | Redis pub/sub → SSE live purchase feed                                      |
-| `mail`     | `Mailer` interface, Resend implementation                                   |
-| `health`   | `@nestjs/terminus` checks (Postgres, Redis)                                 |
+| Module     | Owns                                                                      |
+| ---------- | ------------------------------------------------------------------------- |
+| `catalog`  | servers, categories, products (owned by one server), prices, translations |
+| `orders`   | cart pricing, promo codes, order lifecycle, public order status           |
+| `payments` | `PaymentsGateway` interface; Stripe implementation; webhooks              |
+| `delivery` | outbox, RCON client, retries, grants, expiry scheduler, revoke flow       |
+| `cases`    | case definitions, keys, provably fair opening, scratch grid               |
+| `auth`     | Better Auth integration, sessions, invites, 2FA                           |
+| `admin`    | roles/permissions, audit log, dashboard queries, uploads (R2)             |
+| `feed`     | Redis pub/sub → SSE live purchase feed                                    |
+| `mail`     | `Mailer` interface, Resend implementation                                 |
+| `health`   | `@nestjs/terminus` checks (Postgres, Redis)                               |
 
 Module boundaries are enforced by importing only a module's public service, never its repositories. ADR documents when a module (e.g. `delivery`) would be extracted into a service and why a broker would then be added.
 
@@ -192,18 +192,18 @@ Module boundaries are enforced by importing only a module's public service, neve
 
 **Catalog**
 
-- `servers` — name, slug, `rconHost`, `rconPort`, `rconPasswordEnc` (AES-256-GCM, key from env), `isActive`, sort.
+- `servers` — name, slug, `rconHost`, `rconPort`, `rconPasswordEnc` (AES-256-GCM, key from env), `accent`, `onAccent`, `isActive`, sort.
 - `categories` — slug, sort. `category_translations` — name.
-- `products` — `categoryId`, slug, `kind` (`PERMANENT` | `TIMED` | `CASE`), `durationDays?`, `caseId?`, `imageKey?`, `isActive`. `product_translations` — name, description.
-- `product_offerings` — `productId`, `serverId`, `grantCommands text[]`, `revokeCommands text[]`; unique `(productId, serverId)`.
-- `prices` — `offeringId`, `currency`, `amountMinor`; unique `(offeringId, currency)`.
+- `products` — `serverId`, `categoryId`, slug, `kind` (`PERMANENT` | `TIMED` | `CASE`), `durationDays?`, `caseId?`, `imageKey?`, `mark`, `icon`, `grantCommands text[]`, `revokeCommands text[]`, `sort`, `isActive`; unique `(serverId, slug)`. `product_translations` — name, description, `sections jsonb`.
+- `server_categories` — `serverId`, `categoryId`, `sort`.
+- `prices` — `productId`, `currency`, `amountMinor`; unique `(productId, currency)`.
 
 **Orders**
 
 - `orders` — `publicId`, nick, email, currency, `subtotalMinor`, `discountMinor`, `totalMinor`, `status` (`PENDING` | `PAID` | `DELIVERED` | `EXPIRED` | `REFUNDED` | `DISPUTED`), `stripeSessionId` unique, `promoCodeId?`, `deliveryConsentAt`, `gaClientId?` (set only with analytics consent, used for Measurement Protocol), timestamps.
-- `order_items` — `orderId`, `offeringId`, quantity, `unitAmountMinor`, snapshot of product name and server name.
+- `order_items` — `orderId`, `productId`, quantity, `unitAmountMinor`, snapshot of product name and server name.
 - `deliveries` — `orderItemId?`, `grantId?`, `caseKeyId?` (prize delivery), `serverId`, `kind` (`GRANT` | `REVOKE`), rendered commands, `status` (`PENDING` | `RUNNING` | `DONE` | `FAILED` | `NEEDS_REVIEW`), `attempts`, `nextAttemptAt`, `lastError`, response log.
-- `grants` — nick, `serverId`, `offeringId`, `expiresAt`, `revokedAt?` (for `TIMED`).
+- `grants` — nick, `serverId`, `productId`, `expiresAt`, `revokedAt?` (for `TIMED`).
 - `processed_webhook_events` — `stripeEventId` PK.
 - `promo_codes` — code (case-insensitive unique), `kind` (`PERCENT` | `FIXED`), value, `currency?` for fixed, `maxUses`, `usedCount`, `startsAt`, `endsAt`, scope (categories/products).
 
@@ -216,7 +216,7 @@ Module boundaries are enforced by importing only a module's public service, neve
 
 **Admin**
 
-- Better Auth tables: `user`, `session`, `account`, `verification`, `twoFactor`.
+- Better Auth tables: `user` (+ `disabledAt?`), `session` (+ `twoFactorVerifiedAt?`), `account`, `verification`, `twoFactor`.
 - `roles` — name, `permissions text[]`, `isSystem`. `user.roleId`.
 - `invites` — email, `roleId`, `tokenHash`, `expiresAt`, `acceptedAt?`.
 - `audit_logs` — `actorId`, action, `entityType`, `entityId`, `before jsonb`, `after jsonb`, ip, `createdAt`.
@@ -238,7 +238,7 @@ Module boundaries are enforced by importing only a module's public service, neve
 - Admin tables use keyset pagination (`WHERE createdAt < :cursor LIMIT 50`).
 - Aggregations (KPIs, case stats) run in SQL (`groupBy` / typed `$queryRaw`).
 - `pg_stat_statements` enabled; Prisma logs queries > 200 ms as `warn`; investigate with `EXPLAIN ANALYZE`.
-- Catalog responses cached in Redis (§8).
+- Catalog responses are cached by the web data cache (§8, ADR 0007).
 
 ### 6.5 Migrations
 
@@ -300,7 +300,7 @@ Redis (AOF on, `maxmemory 256mb`, `noeviction` as BullMQ requires; all cache key
 
 1. **BullMQ** queues: `delivery`, `mail`; job schedulers: grant expiry (hourly), outbox sweeper (every minute).
 2. **Rate limiting** counters.
-3. **Catalog cache** per server + locale, TTL 5 min, invalidated on admin edits.
+3. **Catalog cache:** the web data cache (60 s per locale), not Redis.
 4. **Pub/sub**: `worker` publishes delivered purchases → `api` streams them over SSE.
 
 Outbox pattern: the Stripe webhook transaction writes `deliveries` rows; after commit a BullMQ job is added with `jobId = deliveryId`; the sweeper re-enqueues `PENDING` deliveries that have no job. Postgres is the source of truth; losing Redis loses no paid delivery.
@@ -313,7 +313,7 @@ No RabbitMQ/Kafka: one codebase, low volume, BullMQ covers retries, delays and s
 
 ### 9.1 Checkout
 
-1. Player picks a server, adds offerings; the cart (Redux slice persisted in `localStorage`) may contain items from several servers, grouped by server.
+1. Player picks a server, adds products; the cart (Redux slice persisted in `localStorage`) may contain items from several servers, grouped by server.
 2. Player enters nick (+ confirmation), email, optional promo, ticks immediate-delivery consent; Turnstile runs.
 3. `POST /api/orders`: prices recomputed from DB; promo reserved atomically (`usedCount + 1 WHERE usedCount < maxUses`), discount applied to eligible items across servers; order `PENDING`.
 4. Stripe Checkout Session (hosted page): line items in the chosen currency, `metadata.orderId`, customer email, 30-min expiry; card, BLIK, P24 via automatic payment methods. Site shows a demo banner with the test card.
@@ -375,7 +375,7 @@ The prize table (product IDs + weights) is copied into each `case_key` at paymen
 2. Atomic claim `UPDATE case_keys SET openedAt = now() WHERE id = :keyId AND openedAt IS NULL AND voidedAt IS NULL`.
 3. Compute prize, create `GRANT` delivery on the key's server in the same transaction; respond `{ prize, nonce, serverSeedHash }` (+ `serverSeed` for the last key).
 4. Animation starts after the response and lands on the known prize; the reel content is decorative.
-5. Admin cannot save a case whose prize products lack an offering on a server where the case is sold.
+5. Admin cannot save a case whose prize products belong to a different server than the case product.
 
 ### 10.5 Scratch cards
 
@@ -394,7 +394,7 @@ Same outcome algorithm; subsequent HMAC bytes deterministically build a 3×3 gri
 
 - Next.js 16 (App Router, React 19, Turbopack), Tailwind v4, shadcn/ui in `packages/ui`, Motion for animation, selected Magic UI components.
 - next-intl: `[locale]` segment, detection in `proxy.ts`, typed message keys, CI check that `pl.json` has every key of `en.json`, prices via `useFormatter`.
-- Server Components render catalog pages (ISR `revalidate: 60`); RTK Query (generated hooks) for cart, checkout, order polling, case opening and all admin data.
+- Server Components render catalog pages (request-time rendering with a 60 s data cache, ADR 0007); RTK Query (generated hooks) for cart, checkout, order polling, case opening and all admin data.
 - Forms: react-hook-form + `@hookform/resolvers/valibot` with shared schemas.
 - Admin: TanStack Table (shadcn data table), shadcn charts for case stats; whole app `noindex`.
 - Legal pages as MDX per locale: Terms, Privacy, Refunds, Cookies (templates marked "demo, not legal advice").
@@ -439,17 +439,17 @@ Same outcome algorithm; subsequent HMAC bytes deterministically build a 3×3 gri
 
 **Admin (`admin`, EN)**
 
-| Page                       | Function                                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------------------------- |
-| `/login`                   | Email OTP, Google, (Apple), 2FA setup/verify                                                      |
-| `/` Dashboard              | KPI cards, delivery health (queue size, FAILED, NEEDS_REVIEW, RCON status per server), case stats |
-| `/orders`, `/orders/[id]`  | Search by nick/email/publicId, details, deliveries log, retry/mark done, refund                   |
-| `/servers`                 | CRUD, RCON credentials, "test connection"                                                         |
-| `/categories`, `/products` | CRUD, translations (missing-PL report), offerings per server, commands, prices, images            |
-| `/cases`                   | CRUD, prizes and weights, preview of odds                                                         |
-| `/promo-codes`             | CRUD, usage                                                                                       |
-| `/team`                    | Admins, invites, roles and permission matrix                                                      |
-| `/audit`                   | Audit log with filters                                                                            |
+| Page                       | Function                                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/login`                   | Email OTP, Google, (Apple), 2FA setup/verify                                                                         |
+| `/` Dashboard              | KPI cards, delivery health (queue size, FAILED, NEEDS_REVIEW, RCON status per server), case stats                    |
+| `/orders`, `/orders/[id]`  | Search by nick/email/publicId, details, deliveries log, retry/mark done, refund                                      |
+| `/servers`                 | CRUD, RCON credentials, "test connection"                                                                            |
+| `/categories`, `/products` | CRUD, translations (missing-PL report), the product's server and per-server category order, commands, prices, images |
+| `/cases`                   | CRUD, prizes and weights, preview of odds                                                                            |
+| `/promo-codes`             | CRUD, usage                                                                                                          |
+| `/team`                    | Admins, invites, roles and permission matrix                                                                         |
+| `/audit`                   | Audit log with filters                                                                                               |
 
 ---
 
@@ -532,16 +532,16 @@ CI: parallel jobs; coverage gates `packages/shared` ≥ 95%, `api` domain ≥ 80
 
 Each sub-project: own implementation plan → PR(s) → green CI → deploy.
 
-| #   | Sub-project             | Delivers                                                                                                                                                                                                                                                                                                                                                                                                            | Depends on |
-| --- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 1   | Foundation              | Monorepo, tooling (ESLint, Prettier, Husky, commitlint), Docker compose with Traefik/Postgres/Redis, NestJS + Next.js skeletons with liveness `/api/health` (returns deployed version), CI skeleton, VPS + Cloudflare + Dokploy deploy of skeleton, `CLAUDE.md`, first ADRs. Mailpit, local S3, DB/Redis health checks and the `worker` entrypoint arrive with the sub-projects that first use them (3/4, 3, 2, 5). | —          |
-| 2   | Data & catalog          | Prisma schema (all tables), migrations, seed, catalog API with translations, Redis cache, ValibotPipe, Swagger + OpenAPI codegen, contract checks                                                                                                                                                                                                                                                                   | 1          |
-| 3   | Admin auth & management | Better Auth (OTP, Google, Apple-ready, 2FA, invites), roles/permissions, audit log, admin shell, CRUD for servers/categories/products/cases/promo, R2 uploads                                                                                                                                                                                                                                                       | 2          |
-| 4   | Checkout & payments     | Cart, orders, promo reservation, Stripe gateway + fake gateway, webhooks, receipts via Resend, order status page                                                                                                                                                                                                                                                                                                    | 2          |
-| 5   | Delivery                | Outbox + BullMQ, RCON client, retries/NEEDS_REVIEW, grants + hourly expiry, refunds/disputes with revoke, dashboard KPIs and delivery health, fake RCON server                                                                                                                                                                                                                                                      | 4          |
-| 6   | Storefront              | Home, catalog, product pages, i18n EN/PL, legal MDX, cookie banner + GA4, SEO files, OG images, a11y, live feed (SSE)                                                                                                                                                                                                                                                                                               | 2, 4       |
-| 7   | Gambling                | Case keys, provably fair, roulette and scratch UIs, `/open`, `/fairness`, age gate, case stats on dashboard                                                                                                                                                                                                                                                                                                         | 5, 6       |
-| 8   | Ops & showcase          | pino/Sentry/uptime, backups + restore CI, Lighthouse CI, coverage gates, remaining ADRs, README with AI section                                                                                                                                                                                                                                                                                                     | all        |
+| #   | Sub-project                                                                  | Delivers                                                                                                                                                                                                                                                                                                                                                                                                            | Depends on |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | Foundation                                                                   | Monorepo, tooling (ESLint, Prettier, Husky, commitlint), Docker compose with Traefik/Postgres/Redis, NestJS + Next.js skeletons with liveness `/api/health` (returns deployed version), CI skeleton, VPS + Cloudflare + Dokploy deploy of skeleton, `CLAUDE.md`, first ADRs. Mailpit, local S3, DB/Redis health checks and the `worker` entrypoint arrive with the sub-projects that first use them (3/4, 3, 2, 5). | —          |
+| 2   | Data & catalog                                                               | Prisma setup and catalog tables, migrations, seed, catalog API with translations, ValibotPipe, OpenAPI document + Swagger UI, contract checks                                                                                                                                                                                                                                                                       | 1          |
+| 3   | Admin auth & management (split: 3a access, 3b catalog CRUD, 3c site content) | Better Auth (OTP, Google, Apple-ready, 2FA, invites), roles/permissions, audit log, admin shell, CRUD for servers/categories/products/cases/promo, R2 uploads, RTK Query codegen for admin                                                                                                                                                                                                                          | 2          |
+| 4   | Checkout & payments                                                          | Cart, orders, promo reservation, Stripe gateway + fake gateway, webhooks, receipts via Resend, order status page                                                                                                                                                                                                                                                                                                    | 2          |
+| 5   | Delivery                                                                     | Outbox + BullMQ, RCON client, retries/NEEDS_REVIEW, grants + hourly expiry, refunds/disputes with revoke, dashboard KPIs and delivery health, fake RCON server                                                                                                                                                                                                                                                      | 4          |
+| 6   | Storefront                                                                   | Home, catalog, product pages, i18n EN/PL, legal MDX, cookie banner + GA4, SEO files, OG images, a11y, live feed (SSE)                                                                                                                                                                                                                                                                                               | 2, 4       |
+| 7   | Gambling                                                                     | Case keys, provably fair, roulette and scratch UIs, `/open`, `/fairness`, age gate, case stats on dashboard                                                                                                                                                                                                                                                                                                         | 5, 6       |
+| 8   | Ops & showcase                                                               | pino/Sentry/uptime, backups + restore CI, Lighthouse CI, coverage gates, remaining ADRs, README with AI section                                                                                                                                                                                                                                                                                                     | all        |
 
 Parallel track: visual design from the owner's references, applied during sub-projects 6–7.
 

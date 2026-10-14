@@ -11,7 +11,7 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 
 ## 2. Hetzner server
 
-1. Hetzner Cloud → new server: Ubuntu 24.04, smallest shared x86 plan with 4 GB RAM (CX22 or its successor), your SSH key.
+1. Hetzner Cloud → new server: Debian 13, **Arm64 (Ampere)** shared plan with 2 vCPU / 4 GB RAM (CAX11 or its successor), public IPv4 + IPv6, your SSH key. CI publishes `linux/arm64` images only; an x86 server cannot run them. Add 4 GB swap (`fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`, plus a `/etc/fstab` line).
 2. Firewalls → create `shop-fw`, attach to the server:
    - TCP 22 from `<your-ip>/32`
    - TCP 80 and 443 from every range in https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6
@@ -22,8 +22,28 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 
 1. `ssh root@<server-ip>` then `curl -sSL https://dokploy.com/install.sh | sh`.
 2. Open the UI through a tunnel for first setup: `ssh -L 3000:localhost:3000 root@<server-ip>` → http://localhost:3000 → create the admin account.
-3. Settings → Certificates → add the Cloudflare Origin certificate and key.
-4. Settings → Web Server → domain `deploy.<domain>`, HTTPS on, custom certificate.
+3. Settings → Certificates → add the Cloudflare Origin certificate and key (name `cloudflare-origin`). Traefik serves it for every `*.<domain>` host by SNI.
+4. Settings → Web Server → domain `deploy.<domain>`, Let's Encrypt **off** (Cloudflare terminates TLS; the origin uses the Origin certificate).
+5. If `https://deploy.<domain>` answers 526 and `openssl s_client -connect <server-ip>:443 -servername deploy.<domain>` shows `TRAEFIK DEFAULT CERT`, Dokploy wrote only an HTTP router. Replace the router in `/etc/dokploy/traefik/dynamic/dokploy.yml` (keep a `.bak`):
+
+   ```yaml
+   http:
+     routers:
+       dokploy-router-app:
+         rule: Host(`deploy.<domain>`)
+         service: dokploy-service-app
+         entryPoints:
+           - websecure
+         tls: {}
+     services:
+       dokploy-service-app:
+         loadBalancer:
+           servers:
+             - url: http://dokploy:3000
+           passHostHeader: true
+   ```
+
+   Traefik reloads the file on its own. Saving the Web Server domain in the UI again overwrites it.
 
 ## 4. Cloudflare Access for the Dokploy UI
 
@@ -45,9 +65,48 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 | `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
 | `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
 
-Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
+Every domain: HTTPS **on**, certificate provider **None** (Traefik picks the Origin certificate by SNI), "strip path" **off**. The `/api` domains must keep the prefix. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
 
-The Foundation apps read only `PORT`, `APP_VERSION` and `HOSTNAME`, which the images set. No database or Redis env vars and no migrations are needed yet. Later sub-projects add their env vars and migration step to this runbook.
+The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the following.
+
+**Environment**
+
+- `shop-api`: `DATABASE_URL` = the Postgres connection string (internal Dokploy host), e.g. `postgresql://<user>:<password>@<postgres-service>:5432/<db>`. Without it the API falls back to `localhost:5432` and `/api/catalog` returns 500.
+- `shop-api` (admin auth, ADR 0009):
+  - `REDIS_URL` = the internal Redis URL (rate limits, permission cache, used TOTP codes). The admin limiters fail closed: while Redis is down, sign-in codes are not sent and the admin API and TOTP checks answer with errors (429/403/500). The storefront (`/api/catalog`, the web app) keeps working.
+  - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
+  - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
+  - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
+  - `TRUST_CF_CONNECTING_IP=true`. The client IP for rate limits and audit rows is then `CF-Connecting-IP`; this is safe only while the origin is reachable through Cloudflare alone (the `shop-fw` firewall, section 2). Without it the last `X-Forwarded-For` hop is used, else the socket peer.
+  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_DEFAULT` 100 per IP per min.
+- `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
+- `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
+
+**Admin routing.** `admin.<domain>` path `/api` must go to `shop-api` (the table above) so the sign-in cookie, the OAuth callback and API calls share the admin origin.
+
+**Google sign-in.** In Google Cloud Console (OAuth client, web application):
+
+- Authorized JavaScript origins: `https://admin.<domain>`, `http://admin.shop.localhost`
+- Authorized redirect URIs: `https://admin.<domain>/api/auth/callback/google`, `http://admin.shop.localhost/api/auth/callback/google`
+
+**Migrations (every deploy).** Before updating `shop-api`, run once against the new image, in the API container or a one-off Dokploy command with the same `DATABASE_URL`:
+
+```bash
+node_modules/.bin/prisma migrate deploy
+```
+
+**Seed (once only).** On the first deploy, with an empty database, run:
+
+```bash
+node dist/seed/main.js
+```
+
+**First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend and also printed to the seed's output (use it if the mail does not arrive). In production the API and the seed refuse to start without `RESEND_API_KEY` or `SMTP_URL`. Open it, sign in, and enroll TOTP (mandatory for every admin).
+
+Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
+
+CI verifies `/api/health/ready` (database reachable) after the version check, so a missing or wrong `DATABASE_URL` fails the deploy job.
 
 4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility).
 5. Settings → Profile → API → generate an API key.
@@ -82,8 +141,12 @@ curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 
 ## 9. First push
 
-`quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
+Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
 
-## 10. Rollback
+## 10. Local admin stack
+
+`docker compose up -d postgres redis mailpit`; Mailpit shows sign-in codes and invites at http://localhost:8025. The admin e2e flow is stateful: before a local rerun, `docker compose -f compose.yaml -f compose.e2e.yaml down -v`.
+
+## 11. Rollback
 
 In Dokploy set the app image to `ghcr.io/<owner>/<repo>/<app>:sha-<previous sha>` and redeploy. Set it back to `:latest` after the fix lands. `<owner>/<repo>` must be lowercase in GHCR names.

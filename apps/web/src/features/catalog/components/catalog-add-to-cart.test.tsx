@@ -1,6 +1,6 @@
-import {products} from '@/config/products'
 import {ShopProvider} from '@/features/cart/shop-provider'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
 import {Children, useEffect, useRef} from 'react'
 import type {ReactNode} from 'react'
@@ -49,12 +49,11 @@ afterAll(() => {
   MotionGlobalConfig.skipAnimations = false
 })
 beforeEach(() => {
-  localStorage.clear()
   flyToCart.mockClear()
   dialogOpenAtFlight = undefined
 })
 
-const product = products.find(p => p.server === 'survival')
+const product = TEST_CATALOG.products.find(p => p.server === 'survival')
 if (!product) throw new Error('catalog is empty')
 
 const openModal = () => {
@@ -66,9 +65,9 @@ const addFromModal = () => {
 
 describe('Catalog: add to cart from the product modal', () => {
   it('flies the card into the cart only after the modal has closed back into it', async () => {
-    render(
+    renderWithCatalog(
       <ShopProvider>
-        <Catalog initialServer="survival" />
+        <Catalog initialServer="survival" products={TEST_CATALOG.products} />
       </ShopProvider>
     )
     openModal()
@@ -83,9 +82,9 @@ describe('Catalog: add to cart from the product modal', () => {
   })
 
   it('does not fly when the modal is just closed', async () => {
-    render(
+    renderWithCatalog(
       <ShopProvider>
-        <Catalog initialServer="survival" />
+        <Catalog initialServer="survival" products={TEST_CATALOG.products} />
       </ShopProvider>
     )
     openModal()

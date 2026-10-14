@@ -2,11 +2,16 @@
   "$schema": "https://turborepo.com/schema.json",
   "agentGuidance": false,
   "tasks": {
-    "build": {"dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"]},
+    "generate": {"inputs": ["prisma/schema.prisma"], "outputs": ["src/generated/**"]},
+    "build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
     "dev": {"cache": false, "persistent": true},
-    "lint": {"dependsOn": ["^build"]},
-    "typecheck": {"dependsOn": ["^build"]},
-    "test": {"dependsOn": ["^build"], "outputs": ["coverage/**"]},
+    "lint": {"dependsOn": ["^build", "generate"]},
+    "typecheck": {"dependsOn": ["^build", "generate"]},
+    "test": {"dependsOn": ["^build", "generate"], "outputs": ["coverage/**"]},
+    "test:int": {"dependsOn": ["^build", "generate"], "cache": false},
     "test:e2e": {"cache": false, "passThroughEnv": ["WEB_URL", "ADMIN_URL", "API_URL"]}
   }
 }

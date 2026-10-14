@@ -1,7 +1,7 @@
-import type {Product} from '@/config/products'
-import {products} from '@/config/products'
-import {findServer} from '@/lib/catalog'
-import {fireEvent, render, screen} from '@testing-library/react'
+import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {fireEvent, screen} from '@testing-library/react'
+
+import type {CatalogProduct, CatalogServer} from '@shop/shared/catalog'
 
 import {ProductDetail} from './product-detail'
 
@@ -22,14 +22,15 @@ jest.mock('@/features/cart/shop-provider', () => ({
   useCartActions: () => ({add})
 }))
 
-const product = products[0] as Product
-const server = findServer(product.server)
+const product = TEST_CATALOG.products[0] as CatalogProduct
+const server = TEST_CATALOG.servers[0] as CatalogServer
 
 describe('ProductDetail add to cart', () => {
   it('adds the product and then reports it so the modal can close', () => {
-    if (!server) throw new Error('missing server')
     const onAdded = jest.fn()
-    render(<ProductDetail product={product} server={server} titleId="t" onAdded={onAdded} />)
+    renderWithCatalog(
+      <ProductDetail product={product} server={server} titleId="t" onAdded={onAdded} />
+    )
     fireEvent.click(screen.getByRole('button', {name: 'addToCart'}))
     expect(add).toHaveBeenCalledWith(product)
     expect(onAdded).toHaveBeenCalledTimes(1)
@@ -37,9 +38,10 @@ describe('ProductDetail add to cart', () => {
 
   // The modal is still on screen (and above the cart); the card flies once the modal has become the card again.
   it('does not start the flight itself', () => {
-    if (!server) throw new Error('missing server')
     flyToCart.mockClear()
-    render(<ProductDetail product={product} server={server} titleId="t" onAdded={jest.fn()} />)
+    renderWithCatalog(
+      <ProductDetail product={product} server={server} titleId="t" onAdded={jest.fn()} />
+    )
     fireEvent.click(screen.getByRole('button', {name: 'addToCart'}))
     expect(flyToCart).not.toHaveBeenCalled()
   })

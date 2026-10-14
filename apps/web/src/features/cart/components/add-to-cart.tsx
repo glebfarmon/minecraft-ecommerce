@@ -1,12 +1,13 @@
 'use client'
 
 import {ADDED_FLASH_MS} from '@/config/cart'
-import type {Product} from '@/config/products'
 import {useCartActions} from '@/features/cart/shop-provider'
 import {useTransientFlag} from '@/hooks/use-transient-flag'
 import {flyToCart} from '@/lib/fly-to-cart'
 import {Check, ShoppingBag} from 'lucide-react'
 import {useTranslations} from 'next-intl'
+
+import type {CatalogProduct as Product} from '@shop/shared/catalog'
 
 export function useAddToCart(product: Product) {
   const {add} = useCartActions()

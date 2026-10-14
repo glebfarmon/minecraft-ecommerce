@@ -4,17 +4,18 @@ import {MobileMenu} from '@/app/[locale]/_components/mobile-menu'
 import {NavLinks} from '@/app/[locale]/_components/nav-links'
 import {PAGES, type SiteSettings} from '@/config/site'
 import {CartMenu} from '@/features/cart/components/cart-menu'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {SettingsMenu} from '@/features/settings/components/settings-menu'
 import {OnlineBadge} from '@/features/status/components/online-badge'
 import {useScrolled} from '@/hooks/use-scrolled'
 import {Link, usePathname} from '@/i18n/navigation'
-import {findServer} from '@/lib/catalog'
 import {useTranslations} from 'next-intl'
 import type {MouseEvent} from 'react'
 import {useEffect, useState} from 'react'
 
 export function Navbar({siteName}: {siteName: SiteSettings['siteName']}) {
   const t = useTranslations('nav')
+  const {findServer} = useCatalog()
   const scrolled = useScrolled()
   const pathname = usePathname()
   // Home keeps the selected server (/anarchy, /anarchy/<product>), so the logo scrolls up instead of dropping it.

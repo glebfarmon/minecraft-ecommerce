@@ -6,17 +6,27 @@ import {LiveFeed} from '@/app/[locale]/_components/live-feed'
 import type {SiteSettings} from '@/config/site'
 import {Catalog} from '@/features/catalog/components/catalog'
 
-export function HomeView({server, settings}: {server: string; settings: SiteSettings}) {
+import type {CatalogResponse} from '@shop/shared/catalog'
+
+export function HomeView({
+  server,
+  settings,
+  catalog
+}: {
+  server: string
+  settings: SiteSettings
+  catalog: CatalogResponse | null
+}) {
   return (
     <>
       <main>
         <Hero serverIp={settings.serverIp} />
-        <Catalog initialServer={server} />
+        <Catalog initialServer={server} products={catalog?.products ?? []} />
         <HowItWorks />
-        <LiveFeed />
+        <LiveFeed catalog={catalog} />
         <Faq />
       </main>
-      <Footer settings={settings} />
+      <Footer settings={settings} servers={catalog?.servers ?? []} />
     </>
   )
 }
