@@ -53,13 +53,13 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 
 - `shop-api`: `DATABASE_URL` = the Postgres connection string (internal Dokploy host), e.g. `postgresql://<user>:<password>@<postgres-service>:5432/<db>`. Without it the API falls back to `localhost:5432` and `/api/catalog` returns 500.
 - `shop-api` (admin auth, ADR 0009):
-  - `REDIS_URL` = the internal Redis URL (rate limits, sessions).
+  - `REDIS_URL` = the internal Redis URL (rate limits, permission cache, used TOTP codes). The admin limiters fail closed: while Redis is down, sign-in codes are not sent and the admin API and TOTP checks answer with errors (429/403/500). The storefront (`/api/catalog`, the web app) keeps working.
   - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
   - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
   - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
   - `TRUST_CF_CONNECTING_IP=true`. The client IP for rate limits and audit rows is then `CF-Connecting-IP`; this is safe only while the origin is reachable through Cloudflare alone (the `shop-fw` firewall, section 2). Without it the last `X-Forwarded-For` hop is used, else the socket peer.
-  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_DEFAULT` 100 per IP per min.
+  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_DEFAULT` 100 per IP per min.
 - `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
 - `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
 
@@ -82,7 +82,7 @@ node_modules/.bin/prisma migrate deploy
 node dist/seed/main.js
 ```
 
-**First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend (printed to the log if no mailer is configured). Open it, sign in, and enroll TOTP (mandatory for every admin).
+**First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend and also printed to the seed's output (use it if the mail does not arrive). In production the API and the seed refuse to start without `RESEND_API_KEY` or `SMTP_URL`. Open it, sign in, and enroll TOTP (mandatory for every admin).
 
 Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
 
