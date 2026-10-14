@@ -9,7 +9,8 @@ const ADMIN = process.env.ADMIN_URL ?? 'http://admin.shop.localhost'
 const OWNER = 'owner@shop.localhost'
 const SUE = 'sue@shop.localhost'
 
-test.describe.configure({mode: 'serial'})
+// No retries: a retry would rerun the group against state the first attempt already changed.
+test.describe.configure({mode: 'serial', retries: 0})
 test.skip(({browserName}) => browserName !== 'chromium', 'one browser is enough for the auth flow')
 
 /** Email code sign-in on /login or an invite page (where the email is prefilled and read-only). */
