@@ -32,7 +32,7 @@ echo "127.0.0.1 shop.localhost admin.shop.localhost api.shop.localhost" | sudo t
 
 ## Production
 
-One arm64 server behind Cloudflare: Dokploy runs Postgres, Redis and three containers (`shop-api`, `shop-web`, `shop-admin`) from images that CI builds. Every merge to `main` deploys itself. First setup takes about two hours; the full steps are in [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
+One arm64 server behind Cloudflare: Dokploy runs Postgres, Redis and three containers (`shop-api`, `shop-web`, `shop-admin`) from images that CI builds. Every merge to `main` deploys itself. First setup takes two to three hours. New to servers, Docker or GitHub Actions? Follow the step-by-step guide [`docs/guides/deploy-from-scratch.md`](docs/guides/deploy-from-scratch.md); the short reference is [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
 
 | #   | Where              | What                                                                                                                                               |
 | --- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -66,4 +66,5 @@ docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait && pnpm 
 - Design: `docs/superpowers/specs/`
 - Plans: `docs/superpowers/plans/`
 - Decisions: `docs/adr/`
-- Deploy runbook: `docs/runbooks/deploy.md`
+- Deploy guide (step by step): `docs/guides/deploy-from-scratch.md`
+- Deploy runbook (reference): `docs/runbooks/deploy.md`

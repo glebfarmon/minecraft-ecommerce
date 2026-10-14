@@ -1,6 +1,6 @@
 # Deploy runbook
 
-One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip>`.
+One-time setup of production. For a step-by-step walkthrough with every click and check, see [`docs/guides/deploy-from-scratch.md`](../guides/deploy-from-scratch.md). Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip>`.
 
 ## 1. Domain and Cloudflare
 
