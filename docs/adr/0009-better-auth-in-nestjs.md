@@ -25,4 +25,4 @@ The parent spec (§7.1) picks Better Auth for admin sign-in: email OTP, Google, 
 - Production refuses to start without `BETTER_AUTH_SECRET` (32+ chars) and `BETTER_AUTH_URL`; the dev fallbacks are public and never used when `NODE_ENV=production`.
 - `TRUST_CF_CONNECTING_IP=true` is safe only when the origin is reachable solely through Cloudflare (the Hetzner firewall allows only Cloudflare ranges); otherwise the header can be forged.
 - Known gap: Better Auth accepts the same TOTP code twice within its window (no replay protection). Tracked for the final review.
-- Staff can widen privileges inside the staff tier: `admin.invite` may invite to any non-`OWNER` role and `role.write` may widen a custom role it holds (only `OWNER` is protected). Raised with the owner as a spec question.
+- Grant escalation is blocked: invites, role changes and role edits are limited to permissions the actor holds (403 `cannot_grant`).
