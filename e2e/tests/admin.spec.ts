@@ -61,7 +61,12 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   const owner = await ownerContext.newPage()
   await owner.goto(`${ADMIN}/login`)
   await signInWithCode(owner, OWNER)
-  await owner.getByLabel('Code from the app').fill(generateSync({secret: ownerSecret}))
+  // The API refuses a TOTP it already accepted (replay guard, 90 s); the enrollment above may have
+  // used the current step's code, so take the next step's (still accepted, window ±1).
+  const nextStep = (Math.floor(Date.now() / 30_000) + 1) * 30
+  await owner
+    .getByLabel('Code from the app')
+    .fill(generateSync({secret: ownerSecret, epoch: nextStep}))
   await owner.getByRole('button', {name: 'Verify'}).click()
   await expect(owner.getByRole('heading', {name: /^Welcome/})).toBeVisible()
   await owner.goto(`${ADMIN}/team`)

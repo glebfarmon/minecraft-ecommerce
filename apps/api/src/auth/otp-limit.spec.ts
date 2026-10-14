@@ -1,4 +1,11 @@
-import {hit, otpAllowed, secondFactorAllowed} from './otp-limit'
+import {
+  claimTotp,
+  hit,
+  otpAllowed,
+  releaseTotp,
+  secondFactorAllowed,
+  secondFactorDayAllowed
+} from './otp-limit'
 
 /** Mirrors the counter script: INCR, then give the key a TTL whenever it has none. */
 function fakeRedis() {
@@ -74,5 +81,69 @@ describe('hit', () => {
     expect(script).toMatch(/INCR/)
     expect(script).toMatch(/TTL/)
     expect(script).toMatch(/EXPIRE/)
+  })
+})
+
+describe('secondFactorDayAllowed', () => {
+  it('allows 30 checks per day per subject, then refuses', async () => {
+    const redis = fakeRedis()
+    const results = []
+    for (let i = 0; i < 31; i++)
+      results.push(await secondFactorDayAllowed(redis as never, 'user:u1'))
+    expect(results.slice(0, 30).every(Boolean)).toBe(true)
+    expect(results.at(-1)).toBe(false)
+    expect(redis.ttls.get('2fa:day:user:u1')).toBe(86_400)
+    expect(await secondFactorDayAllowed(redis as never, 'user:u2')).toBe(true)
+  })
+
+  it('uses the budget it is given', async () => {
+    const redis = fakeRedis()
+    expect(await secondFactorDayAllowed(redis as never, 'user:u1', 1)).toBe(true)
+    expect(await secondFactorDayAllowed(redis as never, 'user:u1', 1)).toBe(false)
+  })
+
+  it('fails closed when Redis is down', async () => {
+    const down = {eval: () => Promise.reject(new Error('down'))}
+    expect(await secondFactorDayAllowed(down as never, 'user:u1')).toBe(false)
+  })
+})
+
+/** A key-value store with the calls the replay guard makes (SET key value EX ttl NX, DEL). */
+function fakeStore() {
+  const keys = new Map<string, {value: string; ttlS: number}>()
+  return {
+    keys,
+    del: jest.fn((key: string) => Promise.resolve(keys.delete(key) ? 1 : 0)),
+    set: jest.fn((key: string, value: string, _ex: 'EX', ttlS: number, mode?: 'NX') => {
+      if (mode === 'NX' && keys.has(key)) return Promise.resolve(null)
+      keys.set(key, {value, ttlS})
+      return Promise.resolve('OK')
+    })
+  }
+}
+
+describe('claimTotp (replay guard)', () => {
+  it('lets a code through once per user for the whole ±1 step window (90 s)', async () => {
+    const redis = fakeStore()
+    expect(await claimTotp(redis as never, 'u1', '123456')).toBe(true)
+    expect(redis.keys.get('totp:used:u1:123456')).toEqual({value: '1', ttlS: 90})
+    expect(redis.set).toHaveBeenCalledWith('totp:used:u1:123456', '1', 'EX', 90, 'NX')
+    expect(await claimTotp(redis as never, 'u1', '123456')).toBe(false)
+    // Another code, or the same code for someone else, is not a replay.
+    expect(await claimTotp(redis as never, 'u1', '654321')).toBe(true)
+    expect(await claimTotp(redis as never, 'u2', '123456')).toBe(true)
+  })
+
+  it('gives a claimed code back when it did not pass (a wrong code stays a plain 401)', async () => {
+    const redis = fakeStore()
+    expect(await claimTotp(redis as never, 'u1', '123456')).toBe(true)
+    await releaseTotp(redis as never, 'u1', '123456')
+    expect(redis.keys.has('totp:used:u1:123456')).toBe(false)
+    expect(await claimTotp(redis as never, 'u1', '123456')).toBe(true)
+  })
+
+  it('fails closed when Redis is down', async () => {
+    const down = {set: () => Promise.reject(new Error('down'))}
+    expect(await claimTotp(down as never, 'u1', '123456')).toBe(false)
   })
 })

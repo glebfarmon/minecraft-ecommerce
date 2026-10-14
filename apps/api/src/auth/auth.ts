@@ -6,7 +6,7 @@ import {APIError, createAuthMiddleware, getSessionFromCtx, isAPIError} from 'bet
 import {emailOTP, twoFactor} from 'better-auth/plugins'
 import Redis from 'ioredis'
 
-import {AuditService} from '../audit/audit.service'
+import {type AuditEntryInput, AuditService} from '../audit/audit.service'
 import {CLIENT_IP_HEADER, requestIp} from '../common/client-ip'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
@@ -14,7 +14,14 @@ import {PrismaService} from '../prisma/prisma.service'
 import {rateLimits} from '../throttle/rate-limits'
 import {authEnv} from './auth-env'
 import {acceptInvite, inviteGate} from './invite-gate'
-import {hit, otpAllowed, secondFactorAllowed} from './otp-limit'
+import {
+  claimTotp,
+  hit,
+  otpAllowed,
+  releaseTotp,
+  secondFactorAllowed,
+  secondFactorDayAllowed
+} from './otp-limit'
 import {type GateSession, secondFactorGate, shouldStamp} from './second-factor'
 
 function socialProviders() {
@@ -62,7 +69,13 @@ const sha = (value: string) => createHash('sha256').update(value).digest('hex')
 const cookieValue = (headers: Headers | undefined, name: string) =>
   new RegExp(`(?:^|;\\s*)(?:__Secure-)?${name}=([^;]+)`).exec(headers?.get('cookie') ?? '')?.[1]
 
-const SECOND_FACTOR_CHECKS = new Set(['/two-factor/verify-totp', '/two-factor/verify-backup-code'])
+const VERIFY_TOTP = '/two-factor/verify-totp'
+const SECOND_FACTOR_CHECKS = new Set([VERIFY_TOTP, '/two-factor/verify-backup-code'])
+/** The submitted TOTP, when it has the only shape that can pass (6 digits). */
+const totpCode = (body: unknown) => {
+  const code = (body as {code?: unknown} | undefined)?.code
+  return typeof code === 'string' && /^\d{6}$/.test(code) ? code : null
+}
 
 export function createAuth(options: {baseURL?: string} = {}) {
   const env = authEnv(process.env)
@@ -71,6 +84,14 @@ export function createAuth(options: {baseURL?: string} = {}) {
   const redis = authRedis.get()
   const limits = rateLimits()
   const audit = new AuditService(prisma)
+  // The call it records already succeeded (or already failed): a broken audit write must not turn it
+  // into a 500. Logs the action and error kind only, never the row (it carries the email).
+  const recordAudit = (entry: AuditEntryInput) =>
+    audit.record(entry).catch((error: unknown) => {
+      console.error(
+        `audit: ${entry.action} not recorded (${error instanceof Error ? error.name : 'error'})`
+      )
+    })
   const isEnrolled = async (userId: string) =>
     (await prisma.twoFactor.count({where: {userId, verified: true}})) > 0
   return betterAuth({
@@ -134,8 +155,18 @@ export function createAuth(options: {baseURL?: string} = {}) {
             : pending
               ? `pending:${sha(pending)}`
               : `ip:${requestIp(ctx.request?.headers)}`
-          if (!(await secondFactorAllowed(redis, subject, limits.secondFactor)))
+          if (
+            !(await secondFactorAllowed(redis, subject, limits.secondFactor)) ||
+            !(await secondFactorDayAllowed(redis, subject, limits.secondFactorDay))
+          )
             throw new APIError('TOO_MANY_REQUESTS', {message: 'Too many attempts, try again later'})
+          // RFC 6238 §5.2: a code must not pass twice; Better Auth accepts it for 90 s and keeps no
+          // record. Claimed here, before the check, in one atomic step (no race between two uses).
+          // Only sessions reach verify-totp: this app has no credential sign-in, so Better Auth never
+          // issues the pending two-factor cookie (that flow would need its own user lookup here).
+          const code = ctx.path === VERIFY_TOTP ? totpCode(ctx.body) : null
+          if (current && code && !(await claimTotp(redis, current.user.id, code)))
+            throw new APIError('FORBIDDEN', {message: 'totp_reused'})
         }
         const decision = await secondFactorGate(
           ctx.path,
@@ -156,15 +187,24 @@ export function createAuth(options: {baseURL?: string} = {}) {
         if (ctx.path === '/sign-in/email-otp' || ctx.path.startsWith('/callback/')) {
           const userId = failed ? null : (ctx.context.newSession?.user.id ?? null)
           const body = ctx.body as {email?: unknown} | undefined
-          await audit.record({
+          await recordAudit({
             actorId: userId,
             action: userId ? 'auth.sign_in' : 'auth.sign_in_failed',
             after: {email: typeof body?.email === 'string' ? body.email : null, method: ctx.path},
             ip
           })
         }
-        // ...and never stamp those.
-        if (failed) return
+        // ...and never stamp those. After-hooks run only when every before-hook passed, so a failed
+        // verify-totp here claimed its code above: give it back (only a code that passed stays used).
+        if (failed) {
+          const code = ctx.path === VERIFY_TOTP ? totpCode(ctx.body) : null
+          const session = code ? await getSessionFromCtx(ctx) : null
+          if (code && session)
+            await releaseTotp(redis, session.user.id, code).catch(() => {
+              // Kept claimed: the same code is refused for 90 s, a new one still works.
+            })
+          return
+        }
         // The first TOTP check replaces the session (BA sets newSession and deletes the old one);
         // later checks keep the current session (ctx.context.session).
         const current = ctx.context.newSession ?? ctx.context.session
@@ -173,7 +213,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
           where: {id: current.session.id},
           data: {twoFactorVerifiedAt: new Date()}
         })
-        await audit.record({actorId: current.user.id, action: 'auth.2fa_verified', ip})
+        await recordAudit({actorId: current.user.id, action: 'auth.2fa_verified', ip})
       })
     },
     databaseHooks: {

@@ -5,6 +5,7 @@ import Redis from 'ioredis'
 import {generateSync} from 'otplib'
 import request from 'supertest'
 
+import {AuditService} from '../src/audit/audit.service'
 import {createApp} from '../src/create-app'
 import {getMailer} from '../src/mailer/create-mailer'
 import type {MemoryMailer} from '../src/mailer/memory-mailer'
@@ -13,6 +14,7 @@ import {seedAccess} from '../src/seed/seed-access'
 import {startDatabase} from './support/database'
 import {relaxRateLimits} from './support/rate-limits'
 import {startRedis} from './support/redis'
+import {freshTotp} from './support/totp'
 
 jest.setTimeout(120_000)
 
@@ -116,7 +118,7 @@ describe('admin session', () => {
     const before = await currentSession(agent)
     await agent
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
 
     // The first verification replaces the session; the stamp is on the one the cookie now holds.
@@ -148,7 +150,7 @@ describe('admin session', () => {
     const before = await currentSession(agent)
     await agent
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
     const after = await currentSession(agent)
     expect(after.id).toBe(before.id)
@@ -179,7 +181,7 @@ describe('admin session', () => {
     await signIn(verified, 'ann@example.com')
     await verified
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
     const codes = await verified
       .post('/api/auth/two-factor/generate-backup-codes')
@@ -200,7 +202,7 @@ describe('admin session', () => {
     await signIn(agent, 'ann@example.com')
     await agent
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
     await agent.get('/api/admin/me').expect(200)
     await prisma.user.update({where: {email: 'ann@example.com'}, data: {disabledAt: new Date()}})
@@ -208,6 +210,47 @@ describe('admin session', () => {
       await agent.get('/api/admin/me').expect(401)
     } finally {
       await prisma.user.update({where: {email: 'ann@example.com'}, data: {disabledAt: null}})
+    }
+  })
+
+  it('refuses a TOTP code that was already used (replay), then accepts a fresh one', async () => {
+    const first = request.agent(app.getHttpServer())
+    await signIn(first, 'ann@example.com')
+    const code = await freshTotp(secret)
+    await first.post('/api/auth/two-factor/verify-totp').send({code}).expect(200)
+
+    // A fresh sign-in (new session) presents the same code inside Better Auth's ±1 step window.
+    const second = request.agent(app.getHttpServer())
+    await signIn(second, 'ann@example.com')
+    const replay = await second.post('/api/auth/two-factor/verify-totp').send({code}).expect(403)
+    expect((replay.body as {message?: string}).message).toBe('totp_reused')
+    expect((await currentSession(second)).twoFactorVerifiedAt).toBeNull()
+    await second.get('/api/admin/me').expect(403)
+
+    await second
+      .post('/api/auth/two-factor/verify-totp')
+      .send({code: await freshTotp(secret)})
+      .expect(200)
+    await second.get('/api/admin/me').expect(200)
+  })
+
+  it('keeps a successful sign-in and TOTP check when the audit write fails', async () => {
+    const record = jest
+      .spyOn(AuditService.prototype, 'record')
+      .mockRejectedValue(new Error('audit table down'))
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      const agent = request.agent(app.getHttpServer())
+      await signIn(agent, 'ann@example.com')
+      await agent
+        .post('/api/auth/two-factor/verify-totp')
+        .send({code: await freshTotp(secret)})
+        .expect(200)
+      await agent.get('/api/admin/me').expect(200)
+      expect(record).toHaveBeenCalledTimes(2)
+    } finally {
+      record.mockRestore()
+      quiet.mockRestore()
     }
   })
 

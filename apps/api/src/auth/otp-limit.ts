@@ -63,3 +63,52 @@ export async function secondFactorAllowed(
     return false
   }
 }
+
+/**
+ * Daily TOTP and backup-code budget per subject (same subjects as `secondFactorAllowed`): 5 per
+ * minute alone would still allow about 7,200 guesses a day. Fails closed.
+ */
+export async function secondFactorDayAllowed(
+  redis: Counter,
+  subject: string,
+  max: number = RATE_LIMIT_DEFAULTS.secondFactorDay
+): Promise<boolean> {
+  try {
+    return await under(redis, `2fa:day:${subject}`, max, 86_400)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Better Auth accepts a TOTP for the previous, current and next 30 s step and keeps no record of
+ * used ones, so a code would work again for up to 90 s (RFC 6238 §5.2 forbids reuse).
+ */
+const TOTP_REPLAY_TTL_S = 90
+const usedKey = (userId: string, code: string) => `totp:used:${userId}:${code}`
+
+/**
+ * Claims a submitted code for this user: true the first time, false while the code is remembered.
+ * One atomic SET NX, so two requests racing with the same code cannot both pass. A wrong code is
+ * claimed too (harmless: it does not pass anyway). Fails closed: no Redis, no code passes.
+ */
+export async function claimTotp(
+  redis: Pick<Redis, 'set'>,
+  userId: string,
+  code: string
+): Promise<boolean> {
+  try {
+    return (await redis.set(usedKey(userId, code), '1', 'EX', TOTP_REPLAY_TTL_S, 'NX')) === 'OK'
+  } catch {
+    return false
+  }
+}
+
+/** Gives back a code this request claimed but that did not pass, so retyping it is a plain 401. */
+export async function releaseTotp(
+  redis: Pick<Redis, 'del'>,
+  userId: string,
+  code: string
+): Promise<void> {
+  await redis.del(usedKey(userId, code))
+}

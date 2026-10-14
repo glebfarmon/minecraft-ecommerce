@@ -1,12 +1,12 @@
 import type {Server} from 'node:http'
 
 import type {INestApplication} from '@nestjs/common'
-import {generateSync} from 'otplib'
 import request from 'supertest'
 
 import {getMailer} from '../../src/mailer/create-mailer'
 import type {MemoryMailer} from '../../src/mailer/memory-mailer'
 import type {PrismaService} from '../../src/prisma/prisma.service'
+import {freshTotp} from './totp'
 
 /** The code is mailed in the background, so it may land just after the response. */
 export async function emailedCode(email: string, previous?: string): Promise<string> {
@@ -52,7 +52,7 @@ export async function signInAdmin(
     new URL((enabled.body as {totpURI: string}).totpURI).searchParams.get('secret') ?? ''
   await agent
     .post('/api/auth/two-factor/verify-totp')
-    .send({code: generateSync({secret})})
+    .send({code: await freshTotp(secret)})
     .expect(200)
   return Object.assign(agent, {secret})
 }

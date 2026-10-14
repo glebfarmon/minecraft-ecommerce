@@ -6,6 +6,7 @@ describe('rateLimits', () => {
       otpPerEmail: 3,
       otpPerIp: 10,
       secondFactor: 5,
+      secondFactorDay: 30,
       admin: 300,
       adminIp: 600,
       default: 100
@@ -19,6 +20,7 @@ describe('rateLimits', () => {
         RATE_LIMIT_OTP_EMAIL: '50',
         RATE_LIMIT_OTP_IP: '60',
         RATE_LIMIT_SECOND_FACTOR: '70',
+        RATE_LIMIT_2FA_DAY: '75',
         RATE_LIMIT_ADMIN: '80',
         RATE_LIMIT_ADMIN_IP: '85',
         RATE_LIMIT_DEFAULT: '90'
@@ -27,6 +29,7 @@ describe('rateLimits', () => {
       otpPerEmail: 50,
       otpPerIp: 60,
       secondFactor: 70,
+      secondFactorDay: 75,
       admin: 80,
       adminIp: 85,
       default: 90

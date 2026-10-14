@@ -8,6 +8,7 @@ export function relaxRateLimits(): void {
     'RATE_LIMIT_OTP_EMAIL',
     'RATE_LIMIT_OTP_IP',
     'RATE_LIMIT_SECOND_FACTOR',
+    'RATE_LIMIT_2FA_DAY',
     'RATE_LIMIT_ADMIN',
     'RATE_LIMIT_ADMIN_IP',
     'RATE_LIMIT_DEFAULT'

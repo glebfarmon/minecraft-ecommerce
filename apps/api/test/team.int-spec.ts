@@ -1,7 +1,6 @@
 import type {Server} from 'node:http'
 
 import type {INestApplication} from '@nestjs/common'
-import {generateSync} from 'otplib'
 import request from 'supertest'
 
 import {createApp} from '../src/create-app'
@@ -13,6 +12,7 @@ import {emailedCode, signInAdmin} from './support/admin'
 import {startDatabase} from './support/database'
 import {relaxRateLimits} from './support/rate-limits'
 import {startRedis} from './support/redis'
+import {freshTotp} from './support/totp'
 
 jest.setTimeout(120_000)
 
@@ -42,7 +42,7 @@ describe('team API', () => {
     await agent.post('/api/auth/sign-in/email-otp').send({email, otp}).expect(200)
     await agent
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
     return agent
   }
@@ -282,7 +282,7 @@ describe('team API', () => {
     expect(secret).not.toBe(dan.secret)
     await agent
       .post('/api/auth/two-factor/verify-totp')
-      .send({code: generateSync({secret})})
+      .send({code: await freshTotp(secret)})
       .expect(200)
     await agent.get('/api/admin/me').expect(200)
   })
