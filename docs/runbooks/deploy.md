@@ -11,7 +11,7 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 
 ## 2. Hetzner server
 
-1. Hetzner Cloud → new server: Ubuntu 24.04, smallest shared x86 plan with 4 GB RAM (CX22 or its successor), your SSH key.
+1. Hetzner Cloud → new server: Debian 13, **Arm64 (Ampere)** shared plan with 2 vCPU / 4 GB RAM (CAX11 or its successor), public IPv4 + IPv6, your SSH key. CI publishes `linux/arm64` images only; an x86 server cannot run them. Add 4 GB swap (`fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`, plus a `/etc/fstab` line).
 2. Firewalls → create `shop-fw`, attach to the server:
    - TCP 22 from `<your-ip>/32`
    - TCP 80 and 443 from every range in https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6
@@ -22,8 +22,28 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 
 1. `ssh root@<server-ip>` then `curl -sSL https://dokploy.com/install.sh | sh`.
 2. Open the UI through a tunnel for first setup: `ssh -L 3000:localhost:3000 root@<server-ip>` → http://localhost:3000 → create the admin account.
-3. Settings → Certificates → add the Cloudflare Origin certificate and key.
-4. Settings → Web Server → domain `deploy.<domain>`, HTTPS on, custom certificate.
+3. Settings → Certificates → add the Cloudflare Origin certificate and key (name `cloudflare-origin`). Traefik serves it for every `*.<domain>` host by SNI.
+4. Settings → Web Server → domain `deploy.<domain>`, Let's Encrypt **off** (Cloudflare terminates TLS; the origin uses the Origin certificate).
+5. If `https://deploy.<domain>` answers 526 and `openssl s_client -connect <server-ip>:443 -servername deploy.<domain>` shows `TRAEFIK DEFAULT CERT`, Dokploy wrote only an HTTP router. Replace the router in `/etc/dokploy/traefik/dynamic/dokploy.yml` (keep a `.bak`):
+
+   ```yaml
+   http:
+     routers:
+       dokploy-router-app:
+         rule: Host(`deploy.<domain>`)
+         service: dokploy-service-app
+         entryPoints:
+           - websecure
+         tls: {}
+     services:
+       dokploy-service-app:
+         loadBalancer:
+           servers:
+             - url: http://dokploy:3000
+           passHostHeader: true
+   ```
+
+   Traefik reloads the file on its own. Saving the Web Server domain in the UI again overwrites it.
 
 ## 4. Cloudflare Access for the Dokploy UI
 
@@ -45,7 +65,7 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 | `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
 | `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
 
-Keep "strip path" **off** for the `/api` domains. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
+Every domain: HTTPS **on**, certificate provider **None** (Traefik picks the Origin certificate by SNI), "strip path" **off**. The `/api` domains must keep the prefix. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
 
 The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the following.
 
@@ -121,7 +141,7 @@ curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 
 ## 9. First push
 
-`quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
+Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
 
 ## 10. Local admin stack
 
