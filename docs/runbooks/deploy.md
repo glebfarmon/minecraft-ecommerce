@@ -49,10 +49,11 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
 ## 4. Cloudflare Access for the Dokploy UI
 
 1. Zero Trust (free plan) → Access → Applications → Self-hosted → `deploy.<domain>`.
-2. Policy 1 "Owner": Allow, Include → Emails → your email.
+2. Policy 1 "Owner": Allow, Include → Emails → your email. Not "Login Methods: One-time PIN": that admits anyone who can receive a code.
 3. Access → Service Auth → Service Tokens → create `github-actions`; save Client ID and Secret.
 4. Policy 2 "CI": action **Service Auth**, Include → Service Token → `github-actions`.
-5. Check: opening `https://deploy.<domain>` asks for the Access login first.
+5. Policies are reusable objects: check that both appear on the application itself, not only under Access → Policies.
+6. Check: `curl -s -o /dev/null -w '%{http_code}' https://deploy.<domain>/` gives `302` (Access login); with `-H "CF-Access-Client-Id: …" -H "CF-Access-Client-Secret: …"` it gives `200`. A `403` with the token means no Service Auth policy on the application admits it.
 
 ## 5. Dokploy project and apps
 
@@ -105,9 +106,9 @@ Never put the seed in the per-deploy command: re-running it would resurrect demo
 
 CI verifies `/api/health/ready` (database reachable) after the version check, so a missing or wrong `DATABASE_URL` fails the deploy job.
 
-4. After the first CI publish, make the three GHCR packages **public** (GitHub → Packages → Package settings → Change visibility).
+4. After the first CI publish, check that the three GHCR packages are **public** (a public repository publishes them public; otherwise GitHub → Packages → Package settings → Change visibility). Dokploy then pulls them without registry credentials: provider **Docker**, registry, username and password empty; the build type is ignored.
 5. Settings → Profile → API → generate an API key.
-6. Copy each application's ID from its URL in the Dokploy UI.
+6. Copy each application's ID from its URL in the Dokploy UI: the last segment, after `/application/` (not the project or environment ID). A wrong ID fails the deploy job with `404 Application not found`.
 
 ## 6. GitHub secrets (repo → Settings → Secrets and variables → Actions)
 
