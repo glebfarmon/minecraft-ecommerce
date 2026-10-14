@@ -23,5 +23,7 @@ WORKDIR /app
 COPY --from=builder --chown=node:node /out/ .
 USER node
 EXPOSE 4000
-HEALTHCHECK --interval=10s --timeout=3s --retries=5 CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1
-CMD ["node", "dist/main.js"]
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --retries=5 CMD wget -qO- http://127.0.0.1:4000/api/health || exit 1
+# Apply pending migrations before serving, so every deploy runs on the schema it was built for.
+# Prisma takes an advisory lock, so concurrent starts are safe; a failed migration stops the container.
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && exec node dist/main.js"]
