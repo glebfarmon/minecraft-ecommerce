@@ -52,7 +52,23 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 **Environment**
 
 - `shop-api`: `DATABASE_URL` = the Postgres connection string (internal Dokploy host), e.g. `postgresql://<user>:<password>@<postgres-service>:5432/<db>`. Without it the API falls back to `localhost:5432` and `/api/catalog` returns 500.
+- `shop-api` (admin auth, ADR 0009):
+  - `REDIS_URL` = the internal Redis URL (rate limits, sessions).
+  - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
+  - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
+  - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
+  - `TRUST_CF_CONNECTING_IP=true`. The client IP for rate limits and audit rows is then `CF-Connecting-IP`; this is safe only while the origin is reachable through Cloudflare alone (the `shop-fw` firewall, section 2). Without it the last `X-Forwarded-For` hop is used, else the socket peer.
+  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_DEFAULT` 100 per IP per min.
+- `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
 - `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
+
+**Admin routing.** `admin.<domain>` path `/api` must go to `shop-api` (the table above) so the sign-in cookie, the OAuth callback and API calls share the admin origin.
+
+**Google sign-in.** In Google Cloud Console (OAuth client, web application):
+
+- Authorized JavaScript origins: `https://admin.<domain>`, `http://admin.shop.localhost`
+- Authorized redirect URIs: `https://admin.<domain>/api/auth/callback/google`, `http://admin.shop.localhost/api/auth/callback/google`
 
 **Migrations (every deploy).** Before updating `shop-api`, run once against the new image, in the API container or a one-off Dokploy command with the same `DATABASE_URL`:
 
@@ -65,6 +81,8 @@ node_modules/.bin/prisma migrate deploy
 ```bash
 node dist/seed/main.js
 ```
+
+**First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend (printed to the log if no mailer is configured). Open it, sign in, and enroll TOTP (mandatory for every admin).
 
 Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
 
@@ -105,6 +123,10 @@ curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 
 `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
 
-## 10. Rollback
+## 10. Local admin stack
+
+`docker compose up -d postgres redis mailpit`; Mailpit shows sign-in codes and invites at http://localhost:8025. The admin e2e flow is stateful: before a local rerun, `docker compose -f compose.yaml -f compose.e2e.yaml down -v`.
+
+## 11. Rollback
 
 In Dokploy set the app image to `ghcr.io/<owner>/<repo>/<app>:sha-<previous sha>` and redeploy. Set it back to `:latest` after the fix lands. `<owner>/<repo>` must be lowercase in GHCR names.
