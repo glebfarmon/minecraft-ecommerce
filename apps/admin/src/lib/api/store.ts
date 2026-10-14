@@ -1,6 +1,7 @@
 import {configureStore} from '@reduxjs/toolkit'
 
 import {api} from './generated'
+import './tags'
 
 export const makeStore = () =>
   configureStore({
