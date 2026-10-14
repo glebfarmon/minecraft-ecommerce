@@ -4,11 +4,36 @@ const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
 
 test.use({viewport: {width: 1600, height: 900}})
 
-test('a PL rule link scrolls to and flashes the rule', async ({page}) => {
+test('a PL rule link scrolls to and marks the rule', async ({page}) => {
   await page.goto(`${WEB}/pl/rules#r-2-3`)
   const rule = page.locator('#r-2-3')
   await expect(rule).toBeInViewport()
-  await expect(rule).toHaveCSS('animation-name', 'rule-flash')
+  // The accent sweep lives on ::before.
+  expect(await rule.evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('rule-pin')
+})
+
+test('a rule link skips the page entrance, so the cited rule shows while it is marked', async ({
+  page
+}) => {
+  await page.goto(`${WEB}/rules#r-2-1`, {waitUntil: 'commit'})
+  const section = page.locator('#s-2')
+  await expect(section).toBeAttached()
+  await page.waitForTimeout(150)
+  const opacity = await section.evaluate(
+    el => getComputedStyle(el.parentElement as Element).opacity
+  )
+  expect(opacity).toBe('1')
+  await expect(page.locator('#r-2-1')).toBeInViewport()
+})
+
+test('a rule link followed during a search lands on the rule', async ({page}) => {
+  await page.goto(`${WEB}/pl/rules`)
+  await page.getByRole('searchbox', {name: 'Szukaj w zasadach'}).fill('zlosliwe')
+  await expect(page.locator('#r-1-1')).toHaveCount(0)
+  await page.evaluate(() => {
+    window.location.hash = '#r-1-1'
+  })
+  await expect(page.locator('#r-1-1')).toBeInViewport()
 })
 
 test('PL search ignores diacritics and highlights the original word', async ({page}) => {
@@ -65,6 +90,15 @@ test.describe('copy link', () => {
 test.describe('phone', () => {
   test.use({viewport: {width: 375, height: 800}})
 
+  test('the floating buttons wait until the cookie banner is answered', async ({page}) => {
+    await page.goto(`${WEB}/pl/rules`)
+    const banner = page.getByRole('region', {name: 'Pliki cookie'})
+    await expect(banner).toBeVisible()
+    await expect(page.getByRole('button', {name: 'Otwórz wyszukiwanie'})).toBeHidden()
+    await banner.getByRole('button').first().click()
+    await expect(page.getByRole('button', {name: 'Otwórz wyszukiwanie'})).toBeVisible()
+  })
+
   test('a long section title wraps inside its card', async ({page}) => {
     await page.goto(`${WEB}/pl/rules`)
     const fits = await page.locator('#s-1').evaluate(section => {
@@ -76,7 +110,23 @@ test.describe('phone', () => {
     expect(fits).toBe(true)
   })
 
-  test('no horizontal scroll and contents open from a popover', async ({page}) => {
+  test('search opens from the floating button', async ({context, page}) => {
+    await context.addCookies([{name: 'cookie_consent', value: 'necessary', url: WEB}])
+    await page.goto(`${WEB}/pl/rules`)
+    const box = page.getByRole('dialog', {name: 'Szukaj w zasadach'}).getByRole('searchbox')
+    // Retried until hydration has attached the handler.
+    await expect(async () => {
+      await page.getByRole('button', {name: 'Otwórz wyszukiwanie'}).click()
+      await expect(box).toBeVisible({timeout: 1000})
+    }).toPass()
+    await expect(box).toBeFocused()
+    await box.fill('zlosliwe')
+    await expect(page.locator('mark', {hasText: 'Złośliwe'}).first()).toBeVisible()
+    await expect(page.locator('#r-1-1')).toHaveCount(0)
+  })
+
+  test('no horizontal scroll and contents open from a popover', async ({context, page}) => {
+    await context.addCookies([{name: 'cookie_consent', value: 'necessary', url: WEB}])
     await page.goto(`${WEB}/pl/rules`)
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -97,4 +147,12 @@ test('switching language keeps the rule anchor', async ({page}) => {
   await page.getByRole('button', {name: 'Language and currency'}).click()
   await page.getByRole('radio', {name: /Polski/}).click()
   await expect(page).toHaveURL(/\/pl\/rules#r-2-3$/)
+})
+
+test('FAQ in the footer leads to the home page section', async ({page}) => {
+  await page.goto(`${WEB}/pl/rules`)
+  await page.getByRole('navigation', {name: 'Stopka'}).getByRole('link', {name: 'FAQ'}).click()
+  // A client navigation to the home page, which renders the catalog on the server.
+  await expect(page).toHaveURL(/\/pl#faq$/, {timeout: 15_000})
+  await expect(page.locator('#faq')).toBeInViewport()
 })

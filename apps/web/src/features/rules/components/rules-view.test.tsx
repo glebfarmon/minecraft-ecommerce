@@ -1,5 +1,8 @@
+import {RULES_SEARCH_DELAY_MS} from '@/config/rules'
 import type {RuleSection} from '@/features/rules/types'
-import {act, fireEvent, render, screen} from '@testing-library/react'
+import {act, fireEvent, render, screen, within} from '@testing-library/react'
+import {MotionGlobalConfig} from 'motion/react'
+import {renderToString} from 'react-dom/server'
 
 import {RulesView} from './rules-view'
 
@@ -7,6 +10,12 @@ jest.mock('next-intl', () => ({
   useLocale: () => 'pl',
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key} ${Object.values(values).join(',')}` : key
+}))
+
+// jsdom never finishes an exit animation; sections leaving the list unmount at once.
+jest.mock('motion/react', () => ({
+  ...jest.requireActual<object>('motion/react'),
+  AnimatePresence: ({children}: {children: React.ReactNode}) => children
 }))
 
 const pl = (value: string) => ({value, lang: 'pl' as const})
@@ -29,11 +38,49 @@ const sections: RuleSection[] = [
 ]
 
 const setup = () => render(<RulesView sections={sections} rulesPath="/pl/rules" />)
-const search = (value: string) => {
+const type = (value: string) => {
   fireEvent.change(screen.getByRole('searchbox', {name: 'searchLabel'}), {target: {value}})
 }
+const settle = () => {
+  act(() => {
+    jest.advanceTimersByTime(RULES_SEARCH_DELAY_MS)
+  })
+}
+const search = (value: string) => {
+  type(value)
+  settle()
+}
+
+beforeAll(() => {
+  MotionGlobalConfig.skipAnimations = true
+})
+afterAll(() => {
+  MotionGlobalConfig.skipAnimations = false
+})
 
 describe('RulesView', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('waits for the reader to stop typing before filtering', () => {
+    setup()
+    type('zlosliwe')
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
+    settle()
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(1)
+  })
+
+  it('shows every section again at once when the search is cleared', () => {
+    setup()
+    search('zlosliwe')
+    type('')
+    expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
+  })
+
   it('shows every section', () => {
     setup()
     expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
@@ -61,5 +108,28 @@ describe('RulesView', () => {
       window.dispatchEvent(new HashChangeEvent('hashchange'))
     })
     expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(2)
+  })
+
+  describe('phone shortcuts', () => {
+    it('keeps search and contents in floating buttons', () => {
+      setup()
+      const dock = screen.getByTestId('rules-dock')
+      expect(within(dock).getByRole('button', {name: 'openSearch'})).toBeInTheDocument()
+      expect(within(dock).getByRole('button', {name: 'openContents'})).toBeInTheDocument()
+    })
+
+    it('searches from the floating panel', () => {
+      setup()
+      fireEvent.click(screen.getByRole('button', {name: 'openSearch'}))
+      const panel = screen.getByRole('dialog', {name: 'searchLabel'})
+      fireEvent.change(within(panel).getByRole('searchbox'), {target: {value: 'zlosliwe'}})
+      settle()
+      expect(screen.getAllByRole('heading', {level: 2})).toHaveLength(1)
+    })
+  })
+
+  it('ships the sections in their entrance pose, like the home hero', () => {
+    const html = renderToString(<RulesView sections={sections} rulesPath="/pl/rules" />)
+    expect(html).toMatch(/opacity:0;transform:translateY\(12px\)[^>]*><section id="s-1"/)
   })
 })

@@ -27,7 +27,7 @@ export function Footer({settings, servers}: {settings: SiteSettings; servers: Ca
     {
       title: t('help'),
       links: [
-        {label: t('faq'), href: '#faq'},
+        {label: t('faq'), href: '/#faq'},
         {label: t('contact'), href: PAGES.contacts}
       ]
     },

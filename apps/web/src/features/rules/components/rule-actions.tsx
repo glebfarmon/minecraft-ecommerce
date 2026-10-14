@@ -25,9 +25,9 @@ function ActionButton({
       onClick={onClick}
       className="grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent data-[status=copied]:text-online data-[status=failed]:text-danger">
       {status === 'copied' ? (
-        <Check className="size-4" />
+        <Check className="size-4 animate-icon-pop motion-reduce:animate-none" />
       ) : status === 'failed' ? (
-        <X className="size-4" />
+        <X className="size-4 animate-icon-pop motion-reduce:animate-none" />
       ) : (
         icon
       )}

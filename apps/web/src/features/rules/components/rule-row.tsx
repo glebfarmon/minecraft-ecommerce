@@ -18,10 +18,8 @@ export function RuleRow({
   rulesPath: string
 }) {
   return (
-    // `target:` flashes the rule a link (#r-2-3) points to; scroll-mt clears the fixed navbar.
-    <li
-      id={item.anchor}
-      className="group flex scroll-mt-28 gap-4 rounded-xl px-4 py-4 target:animate-rule-flash">
+    // `rule-pin` marks the rule a link (#r-2-3) points to; scroll-mt clears the fixed navbar.
+    <li id={item.anchor} className="group rule-pin flex scroll-mt-28 gap-4 rounded-xl px-4 py-4">
       <a
         href={`#${item.anchor}`}
         className="tabular w-10 shrink-0 pt-0.5 font-mono text-sm text-accent hover:underline">

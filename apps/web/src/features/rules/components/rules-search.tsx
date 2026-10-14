@@ -8,16 +8,31 @@ const EDITABLE = 'input, textarea, select, [contenteditable="true"]'
 
 export function RulesSearch({
   query,
-  onQueryChange
+  onQueryChange,
+  inPanel = false
 }: {
   query: string
   onQueryChange: (query: string) => void
+  /** Inside the phone search panel: focus on open; the page's own box keeps the "/" shortcut. */
+  inPanel?: boolean
 }) {
   const t = useTranslations('rules')
   const input = useRef<HTMLInputElement>(null)
 
+  // After the panel's own focus handling, which runs after this child's effects.
+  useEffect(() => {
+    if (!inPanel) return
+    const frame = requestAnimationFrame(() => {
+      input.current?.focus()
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+    }
+  }, [inPanel])
+
   // "/" jumps to search, unless the reader is typing elsewhere or using a modified shortcut.
   useEffect(() => {
+    if (inPanel) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return
       if (event.target instanceof Element && event.target.closest(EDITABLE)) return
@@ -28,7 +43,7 @@ export function RulesSearch({
     return () => {
       window.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [inPanel])
 
   return (
     <div role="search" className="relative">
@@ -59,7 +74,7 @@ export function RulesSearch({
           className="absolute top-1/2 right-3 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted hover:text-fg">
           <X className="size-4" />
         </button>
-      ) : (
+      ) : inPanel ? null : (
         <kbd
           title={t('searchShortcut')}
           className="absolute top-1/2 right-4 -translate-y-1/2 rounded-md border border-border px-1.5 font-mono text-xs text-muted">

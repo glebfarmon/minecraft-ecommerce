@@ -169,6 +169,8 @@
     "contents": "Contents",
     "openContents": "Show contents",
     "closeContents": "Close contents",
+    "openSearch": "Open search",
+    "closeSearch": "Close search",
     "searchLabel": "Search the rules",
     "searchPlaceholder": "Search the rules…",
     "searchShortcut": "Press / to search",
