@@ -12,6 +12,7 @@
     "@shop/config": "workspace:*",
     "@types/node": "^26.6.3",
     "eslint": "^9.39.5",
+    "otplib": "^13.5.0",
     "typescript": "^6.0.3"
   }
 }

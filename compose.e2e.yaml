@@ -11,8 +11,14 @@ services:
     command: ['sh', '-c', 'node_modules/.bin/prisma migrate deploy && node dist/seed/main.js']
     environment:
       DATABASE_URL: postgresql://shop:shop@postgres:5432/shop
+      # The seed mails the owner invite through Mailpit; the link points at the admin origin.
+      BETTER_AUTH_URL: http://admin.shop.localhost
+      ADMIN_OWNER_EMAIL: owner@shop.localhost
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: Shop <no-reply@shop.localhost>
     depends_on:
       postgres: {condition: service_healthy}
+      mailpit: {condition: service_started}
     healthcheck: {disable: true}
 
   api:
@@ -25,8 +31,18 @@ services:
       # Test values: the image runs with NODE_ENV=production, which refuses auth fallbacks.
       BETTER_AUTH_SECRET: e2e-secret-at-least-32-characters-long
       BETTER_AUTH_URL: http://admin.shop.localhost
+      REDIS_URL: redis://redis:6379
+      ADMIN_OWNER_EMAIL: owner@shop.localhost
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: Shop <no-reply@shop.localhost>
+      # The e2e signs the owner in several times from one IP; spec limits (3 codes / 10 min per email,
+      # 10 / h per IP) would trip a rerun. Production keeps the defaults.
+      RATE_LIMIT_OTP_EMAIL: '100'
+      RATE_LIMIT_OTP_IP: '100'
     depends_on:
       migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      mailpit: {condition: service_started}
 
   web:
     build:
@@ -41,3 +57,7 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+    environment:
+      API_ORIGIN: http://api:4000
+    depends_on:
+      api: {condition: service_healthy}
