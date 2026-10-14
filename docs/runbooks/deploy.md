@@ -17,6 +17,7 @@ One-time setup of production. Replace `<domain>`, `<owner>`, `<repo>`, `<your-ip
    - TCP 80 and 443 from every range in https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6
    - Nothing else (port 3000 stays closed).
 3. Cloudflare DNS → A records, **proxied (orange cloud)**, to the server IPv4: `@`, `admin`, `api`, `deploy`.
+4. Cloudflare → Caching → Cache Rules → rule "Next images": URI Path starts with `/_next/image` → **Eligible for cache**, Edge TTL **Use cache-control header if present**. The web app sends `immutable` for these, so optimized images are served from the edge and survive deploys (the app's own image cache lives in the container).
 
 ## 3. Dokploy
 

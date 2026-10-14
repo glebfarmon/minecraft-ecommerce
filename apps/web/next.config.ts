@@ -10,7 +10,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: repoRoot,
   turbopack: {root: repoRoot},
   transpilePackages: ['@shop/ui'],
-  images: {formats: ['image/avif', 'image/webp'], qualities: [85]},
+  // WebP only: AVIF took ~1 s per size to encode on the production server, and every deploy starts with an
+  // empty image cache. Every browser accepts WebP, so Cloudflare can cache /_next/image without varying on Accept.
+  images: {formats: ['image/webp'], qualities: [85]},
   // CLAUDE.md at the repo root is the agent guide; don't generate per-app copies.
   agentRules: false,
   // Automatic memoisation: a state change in Catalog or Navbar no longer re-renders every child.
