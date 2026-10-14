@@ -135,10 +135,25 @@ describe('InvitesPanel', () => {
     expect(req.url).toMatch(/\/api\/admin\/invites\/i1\/resend$/)
   })
 
-  it('cancels an open invite', async () => {
+  it('sends nothing on the first Cancel click and offers to keep the invite', async () => {
     const fetchMock = mockApi()
     renderWithStore(<InvitesPanel />)
     fireEvent.click(await screen.findByRole('button', {name: 'Cancel open@x.io'}))
+    expect(screen.getByText(/The link stops working/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', {name: 'Keep invite'}))
+    expect(
+      (fetchMock.mock.calls as [unknown][]).some(
+        ([r]) => r instanceof Request && r.method !== 'GET'
+      )
+    ).toBe(false)
+    expect(screen.getByRole('button', {name: 'Cancel open@x.io'})).toBeInTheDocument()
+  })
+
+  it('revokes an open invite after confirmation', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<InvitesPanel />)
+    fireEvent.click(await screen.findByRole('button', {name: 'Cancel open@x.io'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Revoke invite'}))
     const req = await mutation(fetchMock)
     expect(req.method).toBe('DELETE')
     expect(req.url).toMatch(/\/api\/admin\/invites\/i1$/)

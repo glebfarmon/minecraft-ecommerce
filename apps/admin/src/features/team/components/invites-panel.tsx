@@ -37,6 +37,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   const [cancel] = useDeleteApiAdminInvitesByIdMutation()
   const [roleId, setRoleId] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   const {register, handleSubmit, control, reset} = useForm({
@@ -135,26 +136,56 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
                   <TableCell>{status}</TableCell>
                   <TableCell>{new Date(invite.expiresAt).toLocaleDateString('en-GB')}</TableCell>
                   <TableCell>
-                    {!closed && (
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          aria-label={`Resend ${invite.email}`}
-                          onClick={() =>
-                            void run(resend({id: invite.id}), `Invite re-sent to ${invite.email}.`)
-                          }>
-                          Resend
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          aria-label={`Cancel ${invite.email}`}
-                          onClick={() => void run(cancel({id: invite.id}))}>
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
+                    {!closed &&
+                      (confirming === invite.id ? (
+                        <div className="flex flex-col gap-2">
+                          <p className="text-sm">
+                            Revoke the invite for {invite.email}? The link stops working.
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setConfirming(null)
+                                void run(cancel({id: invite.id}))
+                              }}>
+                              Revoke invite
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setConfirming(null)
+                              }}>
+                              Keep invite
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            aria-label={`Resend ${invite.email}`}
+                            onClick={() =>
+                              void run(
+                                resend({id: invite.id}),
+                                `Invite re-sent to ${invite.email}.`
+                              )
+                            }>
+                            Resend
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            aria-label={`Cancel ${invite.email}`}
+                            onClick={() => {
+                              setConfirming(invite.id)
+                            }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      ))}
                   </TableCell>
                 </TableRow>
               )

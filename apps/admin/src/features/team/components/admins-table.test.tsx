@@ -100,7 +100,11 @@ describe('AdminsTable', () => {
     await waitFor(() => {
       const patch = mutations(fetchMock).find(req => req.method === 'PATCH')
       expect(patch?.url).toMatch(/\/api\/admin\/admins\/a\/role$/)
+      expect(patch).toBeDefined()
     })
+    const patch = mutations(fetchMock).find(req => req.method === 'PATCH') as Request
+    expect(await patch.clone().json()).toEqual({roleId: 'r2'})
+    await waitFor(() => {})
   })
 
   it('resets two-factor after confirmation', async () => {

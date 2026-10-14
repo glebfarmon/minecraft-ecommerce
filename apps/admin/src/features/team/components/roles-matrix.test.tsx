@@ -73,6 +73,13 @@ describe('RolesMatrix', () => {
     expect(await screen.findByRole('button', {name: 'Save Auditor'})).toBeDisabled()
     fireEvent.click(screen.getByRole('checkbox', {name: 'Auditor admin.invite'}))
     fireEvent.click(screen.getByRole('button', {name: 'Save Auditor'}))
+    expect(screen.getByText(/Everyone with this role is signed out/)).toBeInTheDocument()
+    expect(
+      (fetchMock.mock.calls as [unknown][]).some(
+        ([r]) => r instanceof Request && r.method !== 'GET'
+      )
+    ).toBe(false)
+    fireEvent.click(screen.getByRole('button', {name: 'Save role'}))
     const req = await mutation(fetchMock)
     expect(req.method).toBe('PATCH')
     expect(req.url).toMatch(/\/api\/admin\/roles\/r3$/)
@@ -104,10 +111,20 @@ describe('RolesMatrix', () => {
     expect(fetchMock.mock.calls).toHaveLength(1)
   })
 
-  it('deletes a custom role', async () => {
+  it('sends nothing on the first Delete click', async () => {
     const fetchMock = mockApi()
     renderWithStore(<RolesMatrix editable />)
     fireEvent.click(await screen.findByRole('button', {name: 'Delete Auditor'}))
+    expect(screen.getByText(/Fails while the role is in use/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', {name: 'Back'}))
+    expect(fetchMock.mock.calls).toHaveLength(1)
+  })
+
+  it('deletes a custom role after confirmation', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<RolesMatrix editable />)
+    fireEvent.click(await screen.findByRole('button', {name: 'Delete Auditor'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Delete role'}))
     const req = await mutation(fetchMock)
     expect(req.method).toBe('DELETE')
     expect(req.url).toMatch(/\/api\/admin\/roles\/r3$/)
@@ -117,6 +134,7 @@ describe('RolesMatrix', () => {
     mockApi({status: 409, message: 'role_in_use'})
     renderWithStore(<RolesMatrix editable />)
     fireEvent.click(await screen.findByRole('button', {name: 'Delete Auditor'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Delete role'}))
     expect(await screen.findByRole('alert')).toHaveTextContent(/still assigned/)
   })
 
@@ -125,6 +143,7 @@ describe('RolesMatrix', () => {
     renderWithStore(<RolesMatrix editable />)
     fireEvent.click(await screen.findByRole('checkbox', {name: 'Auditor admin.invite'}))
     fireEvent.click(screen.getByRole('button', {name: 'Save Auditor'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Save role'}))
     expect(await screen.findByRole('alert')).toHaveTextContent(/permissions you hold/)
   })
 })

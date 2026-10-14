@@ -39,6 +39,7 @@ export function RolesMatrix({
   const [deleteRole] = useDeleteApiAdminRolesByIdMutation()
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({})
   const [newPermissions, setNewPermissions] = useState<Permission[]>([])
+  const [confirming, setConfirming] = useState<{id: string; kind: 'save' | 'delete'} | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const {register, handleSubmit, control, reset} = useForm({
@@ -110,35 +111,71 @@ export function RolesMatrix({
                   </TableCell>
                 ))}
                 <TableCell>
-                  {!locked && (
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        aria-label={`Save ${role.name}`}
-                        disabled={!dirty}
-                        onClick={() =>
-                          void run(
-                            updateRole({id: role.id, body: {name: role.name, permissions: draft}})
-                          ).then(ok => {
-                            if (ok)
-                              setDrafts(d =>
-                                Object.fromEntries(
-                                  Object.entries(d).filter(([id]) => id !== role.id)
-                                )
-                              )
-                          })
-                        }>
-                        Save
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        aria-label={`Delete ${role.name}`}
-                        onClick={() => void run(deleteRole({id: role.id}))}>
-                        Delete
-                      </Button>
-                    </div>
-                  )}
+                  {!locked &&
+                    (confirming?.id === role.id ? (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm">
+                          {confirming.kind === 'save'
+                            ? `Save ${role.name}? Everyone with this role is signed out.`
+                            : `Delete ${role.name}? Fails while the role is in use.`}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              setConfirming(null)
+                              if (confirming.kind === 'delete') {
+                                void run(deleteRole({id: role.id}))
+                                return
+                              }
+                              void run(
+                                updateRole({
+                                  id: role.id,
+                                  body: {name: role.name, permissions: draft}
+                                })
+                              ).then(ok => {
+                                if (ok)
+                                  setDrafts(d =>
+                                    Object.fromEntries(
+                                      Object.entries(d).filter(([id]) => id !== role.id)
+                                    )
+                                  )
+                              })
+                            }}>
+                            {confirming.kind === 'save' ? 'Save role' : 'Delete role'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setConfirming(null)
+                            }}>
+                            Back
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          aria-label={`Save ${role.name}`}
+                          disabled={!dirty}
+                          onClick={() => {
+                            setConfirming({id: role.id, kind: 'save'})
+                          }}>
+                          Save
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          aria-label={`Delete ${role.name}`}
+                          onClick={() => {
+                            setConfirming({id: role.id, kind: 'delete'})
+                          }}>
+                          Delete
+                        </Button>
+                      </div>
+                    ))}
                 </TableCell>
               </TableRow>
             )
