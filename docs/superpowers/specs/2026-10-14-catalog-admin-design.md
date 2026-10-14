@@ -21,26 +21,27 @@ Success:
 
 ## 2. Decisions
 
-| #   | Topic              | Decision                                                                                                                                                                                                                                                    |
-| --- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Images             | None in 3b. Icons stay; R2 is a later sub-project.                                                                                                                                                                                                          |
-| 2   | Delete             | Allowed only while nothing references the record. Otherwise the record can only be disabled. The API answers `409 in_use` with counts.                                                                                                                      |
-| 3   | Permissions        | `catalog.write` (everything in the catalog, including order) and `server.rcon` (RCON address, password, connection test). Reading the catalog needs only an admin session. `ADMIN` gets both, `SUPPORT` neither, `OWNER` always all.                        |
-| 4   | Storefront latency | Unchanged: the web app caches the catalog for 60 s (`revalidate: 60`). The admin says "Live on the site within a minute" after a save. Instant revalidation would need a Next route handler, which CLAUDE.md forbids.                                       |
-| 5   | Drafts             | A new product is created disabled and may be incomplete. Enabling requires both prices (EUR, PLN) and both translations (en, pl). An enabled product must stay complete.                                                                                    |
-| 6   | Shape              | REST per entity plus page-per-entity in the admin, the same pattern as `/team`. Writes are small and each one is audited separately.                                                                                                                        |
-| 7   | Concurrency        | `version Int` on `Server`, `Category`, `Product`. Every update and delete sends the version it read; a mismatch is `409 stale`. Reorder requests send the full id list; a different set of ids is `409 stale`.                                              |
-| 8   | Drag and drop      | `@dnd-kit/sortable` in the admin: mouse, touch and keyboard (select, arrow keys, drop). The new order is saved on drop; a failed save puts the item back and shows the error.                                                                               |
-| 9   | Slugs              | A product's `slug` and `serverId`, and a server's `slug`, can change only while the record is disabled: they are in storefront URLs and in the `cart` cookie (`{server, slug}`). Category slugs can change at any time.                                     |
-| 10  | RCON password      | AES-256-GCM into the existing `rconPasswordEnc`, key from `RCON_ENCRYPTION_KEY` (32 bytes, base64). Write-only: the API returns `rconPasswordSet: boolean`. Without the key, RCON writes and tests answer `503 rcon_key_missing`; the rest of the API runs. |
-| 11  | Commands           | `grantCommands` and `revokeCommands` are lists of lines. The only placeholder is `{nick}`; any other `{…}` is a validation error. Revoke commands run when a `TIMED` grant expires (delivery sub-project); 3b only edits them.                              |
-| 12  | Swagger            | Every catalog operation has the tag `Catalog admin`, a `summary`, a `description` (what it does, the permission, the storefront effect) and a description for every response code. Schema fields carry `v.description(...)`.                                |
+| #   | Topic              | Decision                                                                                                                                                                                                                                                                                                                      |
+| --- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Images             | None in 3b. Icons stay; R2 is a later sub-project.                                                                                                                                                                                                                                                                            |
+| 2   | Delete             | Allowed only while nothing references the record. Otherwise the record can only be disabled. The API answers `409 in_use` with counts.                                                                                                                                                                                        |
+| 3   | Permissions        | `catalog.write` (everything in the catalog, including order) and `server.rcon` (RCON address, password, connection test). Reading the catalog needs only an admin session. `ADMIN` gets both, `SUPPORT` neither, `OWNER` always all.                                                                                          |
+| 4   | Storefront latency | Unchanged: the web app caches the catalog for 60 s (`revalidate: 60`). The admin says "Live on the site within a minute" after a save. Instant revalidation would need a Next route handler, which CLAUDE.md forbids.                                                                                                         |
+| 5   | Drafts             | A new product is created disabled and may be incomplete. Enabling requires both prices (EUR, PLN) and both translations (en, pl). An enabled product must stay complete.                                                                                                                                                      |
+| 6   | Shape              | REST per entity plus page-per-entity in the admin, the same pattern as `/team`. Writes are small and each one is audited separately.                                                                                                                                                                                          |
+| 7   | Concurrency        | `version Int` on `Server`, `Category`, `Product`. Every update and delete sends the version it read; a mismatch is `409 stale`. Reorder requests send the full id list; a different set of ids is `409 stale`.                                                                                                                |
+| 8   | Drag and drop      | `@dnd-kit/sortable` in the admin: mouse, touch and keyboard (select, arrow keys, drop). The new order is saved on drop; a failed save puts the item back and shows the error.                                                                                                                                                 |
+| 9   | Slugs              | A product's `slug` and `serverId`, and a server's `slug`, can change only while the record is disabled: they are in storefront URLs and in the `cart` cookie (`{server, slug}`). Category slugs can change at any time.                                                                                                       |
+| 10  | RCON password      | AES-256-GCM into the existing `rconPasswordEnc`, key from `RCON_ENCRYPTION_KEY` (32 bytes, base64). Write-only: the API returns `rconPasswordSet: boolean`. Without the key, RCON writes and tests answer `503 rcon_key_missing`; the rest of the API runs.                                                                   |
+| 11  | Commands           | `grantCommands` and `revokeCommands` are lists of lines. The only placeholder is `{nick}`; any other `{…}` is a validation error. Revoke commands run when a `TIMED` grant expires (delivery sub-project); 3b only edits them.                                                                                                |
+| 12  | Swagger            | Every catalog operation has the tag `Catalog admin`, a `summary`, a `description` (what it does, the permission, the storefront effect) and a description for every response code. Schema fields carry `v.description(...)`.                                                                                                  |
+| 13  | RCON host          | The connection test makes the API open a socket to an admin-chosen address, so the API resolves the host and refuses loopback, private, link-local and unique-local addresses (`400 rcon_host_private`), both on save and before every test. `RCON_ALLOW_PRIVATE_HOSTS=true` lifts this for local development and tests only. |
 
 ## 3. Data model (Prisma)
 
 No new tables. Changes:
 
-- `servers`, `categories`, `products`: add `version Int @default(1)`, incremented on every update and reorder of that row.
+- `servers`, `categories`, `products`: add `version Int @default(1)`, incremented on every update of that row. Reordering does not change it (sort is not part of any edit form); reorders are checked by the id set instead (decision #7).
 - Order uses the existing `Server.sort`, `ServerCategory.sort` and `Product.sort` (within a server and a category).
 - Migration `catalog_admin_permissions`: appends `catalog.write` and `server.rcon` to the `ADMIN` role's `permissions` if the role exists. The seed runs once in production, so the seed alone cannot update an existing role. `SYSTEM_ROLES` in `@shop/shared` gets the same change for fresh databases.
 
@@ -82,14 +83,14 @@ All routes are under `/api/admin/catalog`, declared with `@AdminController` (ses
 
 Errors (existing `{statusCode, message, issues}` shape):
 
-| Code                   | When                                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `400`                  | Invalid body, incomplete product on enable, slug change while enabled, unknown placeholder, category not on the server |
-| `403`                  | Missing permission                                                                                                     |
-| `404`                  | No such record                                                                                                         |
-| `409 stale`            | Version mismatch, or the reorder list is not the current set of ids                                                    |
-| `409 in_use`           | Delete or detach blocked; `issues` carries the counts                                                                  |
-| `503 rcon_key_missing` | `RCON_ENCRYPTION_KEY` not set                                                                                          |
+| Code                   | When                                                                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`                  | Invalid body, incomplete product on enable, slug change while enabled, unknown placeholder, category not on the server, private RCON host |
+| `403`                  | Missing permission                                                                                                                        |
+| `404`                  | No such record                                                                                                                            |
+| `409 stale`            | Version mismatch, or the reorder list is not the current set of ids                                                                       |
+| `409 in_use`           | Delete or detach blocked; `issues` carries the counts                                                                                     |
+| `503 rcon_key_missing` | `RCON_ENCRYPTION_KEY` not set                                                                                                             |
 
 **Swagger (decision #12).** `buildOpenApiDocument()` gains every route above. A unit test fails when a controller route under `/api/admin/catalog` is missing from the document, or when any operation lacks `summary`, `description` or `tags`, or any response lacks a description. `openapi.json` is regenerated and committed; the admin RTK Query client is regenerated from it.
 
@@ -115,7 +116,8 @@ Pages (shadcn/ui from `@shop/ui`, EN, forms per ADR 0006):
 3. Moving a product to a category not attached to its server: `400`.
 4. A product's server is changed while enabled: `400` (decision #9).
 5. RCON test against an unreachable host: `{ok: false, error: "timeout"}` after 5 s; not a 5xx.
-6. `RCON_ENCRYPTION_KEY` rotates: stored passwords no longer decrypt; the test reports `decrypt_failed` and the admin re-enters the password. Rotation tooling is out of scope.
+6. An admin enters an internal address (`postgres`, `127.0.0.1`, `10.0.0.5`) as the RCON host: `400 rcon_host_private`; the API never connects to it.
+7. `RCON_ENCRYPTION_KEY` rotates: stored passwords no longer decrypt; the test reports `decrypt_failed` and the admin re-enters the password. Rotation tooling is out of scope.
 
 ## 7. Testing
 
@@ -127,7 +129,7 @@ Pages (shadcn/ui from `@shop/ui`, EN, forms per ADR 0006):
 
 ## 8. Docs and config
 
-- `.env.example` and the deploy runbook: `RCON_ENCRYPTION_KEY` (`openssl rand -base64 32`).
+- `.env.example` and the deploy runbook: `RCON_ENCRYPTION_KEY` (`openssl rand -base64 32`); `RCON_ALLOW_PRIVATE_HOSTS` (dev and tests only, never in production).
 - CLAUDE.md: catalog writes go through `/api/admin/catalog`; new admin endpoints must be documented in `openapi.ts` (the coverage test enforces it).
 - Deploy guide: set `RCON_ENCRYPTION_KEY` on `shop-api` before using RCON.
 
