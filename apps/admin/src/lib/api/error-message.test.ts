@@ -14,6 +14,12 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage({status: 409, data: {message: code}})).toBe(text)
   })
 
+  it('explains a body the API refused as invalid', () => {
+    expect(apiErrorMessage({status: 400, data: {message: 'Validation failed', issues: {}}})).toBe(
+      'Some fields are invalid. Check the form and try again.'
+    )
+  })
+
   it('adds the counts of an in_use answer', () => {
     expect(apiErrorMessage({status: 409, data: {message: 'in_use', issues: {products: 3}}})).toBe(
       'This is still in use: 3 products. Move or delete them first.'

@@ -65,6 +65,64 @@ describe('ProductEditor', () => {
     expect(await screen.findByLabelText('Enabled')).toBeEnabled()
   })
 
+  describe('an enabled product', () => {
+    const enabled = {
+      ...draft,
+      isActive: true,
+      prices: {EUR: 499, PLN: 2199},
+      translations: {
+        en: {name: 'Probe', description: '', sections: []},
+        pl: {name: 'Sonda', description: '', sections: []}
+      },
+      missing: []
+    }
+    function mockEnabled() {
+      const sent: unknown[] = []
+      jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+        const req = input instanceof Request ? input : new Request(String(input), init)
+        const url = new URL(req.url)
+        if (req.method === 'PATCH') {
+          sent.push(await req.json())
+          return Response.json({...enabled, version: 2})
+        }
+        if (url.pathname === '/api/admin/catalog/servers') return Response.json(servers)
+        if (url.pathname === '/api/admin/catalog/products/p1') return Response.json(enabled)
+        return Response.json([])
+      })
+      return sent
+    }
+
+    it('stays enabled when a price is cleared and typed again', async () => {
+      const sent = mockEnabled()
+      renderWithStore(<ProductEditor id="p1" canEdit />)
+      const eur = await screen.findByLabelText('Price EUR')
+      fireEvent.change(eur, {target: {value: ''}})
+      expect(screen.getByLabelText('Enabled')).toBeChecked()
+      expect(screen.getByLabelText('Enabled')).toBeEnabled()
+      fireEvent.change(eur, {target: {value: '4.99'}})
+      fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+      expect(
+        await screen.findByText('Saved. Live on the site within a minute.')
+      ).toBeInTheDocument()
+      expect(sent).toEqual([expect.objectContaining({isActive: true})])
+    })
+
+    it('will not save while enabled and incomplete, and says how to fix it', async () => {
+      const sent = mockEnabled()
+      renderWithStore(<ProductEditor id="p1" canEdit />)
+      await screen.findByLabelText('Price EUR')
+      fireEvent.click(screen.getByRole('tab', {name: 'PL'}))
+      fireEvent.change(screen.getByLabelText('Name (PL)'), {target: {value: ''}})
+      fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+      expect(
+        await screen.findByText('Fill Polish translation or untick Enabled')
+      ).toBeInTheDocument()
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(sent).toEqual([])
+      expect(screen.getByLabelText('Enabled')).toBeChecked()
+    })
+  })
+
   it('refuses a command with another placeholder before saving', async () => {
     const fetchMock = mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)

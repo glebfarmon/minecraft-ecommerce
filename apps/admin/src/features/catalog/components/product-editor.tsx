@@ -66,6 +66,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'en' | 'pl'>('en')
+  // Set when Save is refused because the product is enabled but incomplete.
+  const [blockedActive, setBlockedActive] = useState(false)
 
   const form = useForm<ProductForm>({
     resolver: valibotResolver(ProductFormSchema),
@@ -91,11 +93,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const values = useWatch({control}) as ProductForm
   const missing = missingForActive(formToCreate({...emptyProductForm(), ...values}))
   const incomplete = missing.length > 0
-
-  // A product that turns incomplete cannot stay enabled.
-  useEffect(() => {
-    if (incomplete && values.isActive) setValue('isActive', false)
-  }, [incomplete, values.isActive, setValue])
+  // Never untick Enabled for the admin: a silent untick would take the product off the shop.
+  const activeError =
+    blockedActive && values.isActive && incomplete
+      ? `Fill ${missing.map(m => MISSING_LABEL[m]).join(', ')} or untick Enabled`
+      : undefined
 
   if (id && product.isLoading) return <p>Loading product…</p>
   if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
@@ -113,6 +115,9 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   async function save(v: ProductForm) {
     setError(null)
     setSaved(false)
+    const blocked = v.isActive && missingForActive(formToCreate(v)).length > 0
+    setBlockedActive(blocked)
+    if (blocked) return
     if (!id) {
       const result = await create({body: formToCreate(v)})
       if (result.error) setError(apiErrorMessage(result.error))
@@ -274,7 +279,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Controller
             control={control}
             name="isActive"
@@ -283,7 +288,10 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 id={fieldId('isActive')}
                 ref={f.ref}
                 checked={f.value}
-                disabled={incomplete}
+                // An enabled product keeps its checkbox, so it can always be unticked.
+                disabled={incomplete && !f.value}
+                aria-invalid={activeError ? true : undefined}
+                aria-describedby={activeError ? `${fieldId('isActive')}-error` : undefined}
                 onBlur={f.onBlur}
                 onCheckedChange={checked => {
                   f.onChange(checked === true)
@@ -292,6 +300,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
             )}
           />
           <Label htmlFor={fieldId('isActive')}>Enabled</Label>
+          {activeError && (
+            <p id={`${fieldId('isActive')}-error`} className="text-destructive w-full text-xs">
+              {activeError}
+            </p>
+          )}
         </div>
 
         {field(
