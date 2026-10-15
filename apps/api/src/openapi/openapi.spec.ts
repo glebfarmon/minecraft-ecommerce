@@ -58,6 +58,38 @@ describe('OpenAPI document', () => {
     ])
   })
 
+  it('explains every catalog admin operation and response', () => {
+    const ops = Object.entries(doc.paths)
+      .filter(([p]) => p.startsWith('/api/admin/catalog'))
+      .flatMap(([p, methods]) =>
+        Object.entries(methods).map(([m, op]) => ({where: `${m} ${p}`, op}))
+      )
+    expect(ops.length).toBe(19)
+    // Each failure names the operation, so a gap is easy to find.
+    const gaps = ops.flatMap(({where, op}) => [
+      ...(/^[a-z]\w+$/.test(op.operationId ?? '') ? [] : [`${where}: operationId`]),
+      ...(op.tags?.join() === 'Catalog admin' ? [] : [`${where}: tags`]),
+      ...(op.summary.trim() ? [] : [`${where}: summary`]),
+      ...(op.description?.trim() ? [] : [`${where}: description`]),
+      ...Object.entries(op.responses)
+        .filter(([, res]) => !res.description.trim())
+        .map(([code]) => `${where}: response ${code}`)
+    ])
+    expect(gaps).toEqual([])
+  })
+
+  it('documents the catalog permission errors and conflicts', () => {
+    const patch = doc.paths['/api/admin/catalog/products/{id}']?.patch
+    expect(Object.keys(patch?.responses ?? {}).sort()).toEqual(
+      ['200', '400', '401', '403', '404', '409'].sort()
+    )
+    expect(patch?.description).toContain('catalog.write')
+    const test = doc.paths['/api/admin/catalog/servers/{id}/rcon/test']?.post
+    expect(Object.keys(test?.responses ?? {})).toEqual(
+      expect.arrayContaining(['200', '400', '429', '503'])
+    )
+  })
+
   it('matches the committed openapi.json (run `pnpm --filter @shop/api openapi` after changing schemas)', () => {
     const committed: unknown = JSON.parse(
       readFileSync(path.join(__dirname, '../../openapi.json'), 'utf8')

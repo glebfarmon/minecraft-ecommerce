@@ -1,10 +1,16 @@
-import {Controller, Get, type Type} from '@nestjs/common'
-import {GUARDS_METADATA, INTERCEPTORS_METADATA, PATH_METADATA} from '@nestjs/common/constants'
+import {Controller, Get, RequestMethod, type Type} from '@nestjs/common'
+import {
+  GUARDS_METADATA,
+  INTERCEPTORS_METADATA,
+  METHOD_METADATA,
+  PATH_METADATA
+} from '@nestjs/common/constants'
 import {DiscoveryModule, DiscoveryService, MetadataScanner} from '@nestjs/core'
 import {Test} from '@nestjs/testing'
 
 import {AppModule} from '../app.module'
 import {AuditInterceptor} from '../audit/audit.interceptor'
+import {buildOpenApiDocument} from '../openapi/openapi'
 import {AdminSessionGuard} from './admin-session.guard'
 import {PermissionGuard} from './require-permission'
 
@@ -40,6 +46,12 @@ async function adminRoutes(extra: Type[] = []) {
             .filter(isAdmin)
             .map(path => ({
               route: `${type.name}.${name} /${path}`,
+              path,
+              method:
+                RequestMethod[
+                  (Reflect.getMetadata(METHOD_METADATA, handler) as RequestMethod | undefined) ??
+                    RequestMethod.GET
+                ].toLowerCase(),
               guards: meta(GUARDS_METADATA, type, handler),
               interceptors: meta(INTERCEPTORS_METADATA, type, handler)
             }))
@@ -60,6 +72,8 @@ const unprotected = (routes: Awaited<ReturnType<typeof adminRoutes>>) =>
     )
     .map(r => r.route)
 
+const docPath = (path: string) => `/api/${path.replace(/:(\w+)/g, '{$1}')}`
+
 describe('admin routes', () => {
   it('all run AdminSessionGuard, PermissionGuard and the audit interceptor', async () => {
     const routes = await adminRoutes()
@@ -78,5 +92,13 @@ describe('admin routes', () => {
     expect(unprotected(await adminRoutes([ProbeController]))).toEqual([
       'ProbeController.probe /admin/probe'
     ])
+  })
+
+  it('documents every admin route in the OpenAPI document', async () => {
+    const doc = buildOpenApiDocument()
+    const undocumented = (await adminRoutes())
+      .filter(r => !(doc.paths[docPath(r.path)] as Record<string, unknown> | undefined)?.[r.method])
+      .map(r => r.route)
+    expect(undocumented).toEqual([])
   })
 })
