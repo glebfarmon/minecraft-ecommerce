@@ -3,6 +3,7 @@ import {Module} from '@nestjs/common'
 import {AccessModule} from './access/access.module'
 import {AuditModule} from './audit/audit.module'
 import {AuthModule} from './auth/auth.module'
+import {CatalogAdminModule} from './catalog-admin/catalog-admin.module'
 import {CatalogModule} from './catalog/catalog.module'
 import {HealthModule} from './health/health.module'
 import {MailerModule} from './mailer/mailer.module'
@@ -23,6 +24,7 @@ import {ThrottleModule} from './throttle/throttle.module'
     HealthModule,
     StatusModule,
     CatalogModule,
+    CatalogAdminModule,
     TeamModule,
     ThrottleModule
   ]
