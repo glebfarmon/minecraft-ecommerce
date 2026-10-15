@@ -1,0 +1,391 @@
+'use client'
+
+import {SectionsEditor} from '@/features/catalog/components/sections-editor'
+import {
+  emptyProductForm,
+  formToCreate,
+  formToUpdate,
+  productToForm
+} from '@/features/catalog/lib/product-form'
+import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
+import {apiErrorMessage} from '@/lib/api/error-message'
+import {
+  useCreateCatalogProductMutation,
+  useDeleteCatalogProductMutation,
+  useGetCatalogProductQuery,
+  useListCatalogServersQuery,
+  useUpdateCatalogProductMutation
+} from '@/lib/api/generated'
+import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useRouter} from 'next/navigation'
+import {type ReactNode, useEffect, useState} from 'react'
+import {
+  Controller,
+  type FieldError,
+  type FieldPath,
+  get,
+  useForm,
+  useFormState,
+  useWatch
+} from 'react-hook-form'
+
+import {PRODUCT_ICONS, PRODUCT_KINDS} from '@shop/shared/catalog'
+import {missingForActive} from '@shop/shared/catalog-admin'
+import {Button} from '@shop/ui/button'
+import {Checkbox} from '@shop/ui/checkbox'
+import {Input} from '@shop/ui/input'
+import {Label} from '@shop/ui/label'
+import {Select} from '@shop/ui/select'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '@shop/ui/tabs'
+import {Textarea} from '@shop/ui/textarea'
+
+const MISSING_LABEL = {
+  'price.EUR': 'EUR price',
+  'price.PLN': 'PLN price',
+  'translation.en': 'English translation',
+  'translation.pl': 'Polish translation'
+} as const
+
+const COMMAND_HINT = 'One command per line, without /. Use {nick} for the buyer’s name.'
+const LOCALES = [
+  {locale: 'en', tab: 'EN'},
+  {locale: 'pl', tab: 'PL'}
+] as const
+
+type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: boolean}
+
+export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
+  const router = useRouter()
+  const product = useGetCatalogProductQuery({id: id ?? ''}, {skip: !id})
+  const servers = useListCatalogServersQuery()
+  const [create, {isLoading: creating}] = useCreateCatalogProductMutation()
+  const [update, {isLoading: updating}] = useUpdateCatalogProductMutation()
+  const [remove, {isLoading: removing}] = useDeleteCatalogProductMutation()
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [tab, setTab] = useState<'en' | 'pl'>('en')
+
+  const form = useForm<ProductForm>({
+    resolver: valibotResolver(ProductFormSchema),
+    defaultValues: emptyProductForm(serverId, categoryId)
+  })
+  const {register, control, handleSubmit, setValue} = form
+  const {errors} = useFormState({control})
+
+  // Load the stored product once; later refetches must not wipe what the admin is typing.
+  const loadedId = product.data?.id
+  useEffect(() => {
+    if (product.data) form.reset(productToForm(product.data))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when another product loads
+  }, [loadedId])
+
+  const values = useWatch({control}) as ProductForm
+  const missing = missingForActive(formToCreate({...emptyProductForm(), ...values}))
+  const incomplete = missing.length > 0
+
+  // A product that turns incomplete cannot stay enabled.
+  useEffect(() => {
+    if (incomplete && values.isActive) setValue('isActive', false)
+  }, [incomplete, values.isActive, setValue])
+
+  if (id && product.isLoading) return <p>Loading product…</p>
+  if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
+
+  const server = servers.data?.find(s => s.id === values.serverId)
+  const busy = creating || updating || removing
+
+  const onSave = handleSubmit(async v => {
+    setError(null)
+    setSaved(false)
+    if (!id) {
+      const result = await create({body: formToCreate(v)})
+      if (result.error) setError(apiErrorMessage(result.error))
+      else router.replace(`/catalog/products/${result.data.id}`)
+      return
+    }
+    if (!product.data) return
+    const result = await update({id, body: formToUpdate(v, product.data.version)})
+    if (result.error) setError(apiErrorMessage(result.error))
+    else setSaved(true)
+  })
+
+  async function onDelete() {
+    if (!id || !product.data) return
+    setError(null)
+    setConfirmDelete(false)
+    const result = await remove({id, version: String(product.data.version)})
+    if (result.error) setError(apiErrorMessage(result.error))
+    else router.push('/catalog')
+  }
+
+  const errorOf = (name: FieldPath<ProductForm>) =>
+    (get(errors, name) as FieldError | undefined)?.message
+  const fieldProps = (name: FieldPath<ProductForm>) => ({
+    'id': fieldId(name),
+    'aria-invalid': errorOf(name) ? true : undefined,
+    'aria-describedby': errorOf(name) ? `${fieldId(name)}-error` : undefined
+  })
+  const field = (name: FieldPath<ProductForm>, label: string, input: ReactNode, hint?: string) => (
+    <Field name={name} label={label} error={errorOf(name)} hint={hint}>
+      {input}
+    </Field>
+  )
+
+  return (
+    <form onSubmit={e => void onSave(e)} noValidate className="flex max-w-3xl flex-col gap-6">
+      {incomplete && (
+        <p className="text-muted-foreground text-sm">
+          {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
+        </p>
+      )}
+      {error && <p role="alert">{error}</p>}
+      {saved && <p role="status">Saved. Live on the site within a minute.</p>}
+
+      <fieldset disabled={!canEdit} className="flex flex-col gap-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {field(
+            'serverId',
+            'Server',
+            <Controller
+              control={control}
+              name="serverId"
+              render={({field: f}) => (
+                <Select
+                  {...fieldProps('serverId')}
+                  name={f.name}
+                  ref={f.ref}
+                  value={f.value}
+                  onBlur={f.onBlur}
+                  onChange={e => {
+                    f.onChange(e.target.value)
+                    const next = servers.data?.find(s => s.id === e.target.value)
+                    if (!next?.categories.some(c => c.id === values.categoryId))
+                      setValue('categoryId', '')
+                  }}>
+                  <option value="">Choose a server</option>
+                  {(servers.data ?? []).map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            />
+          )}
+          {field(
+            'categoryId',
+            'Category',
+            <Controller
+              control={control}
+              name="categoryId"
+              render={({field: f}) => (
+                <Select
+                  {...fieldProps('categoryId')}
+                  name={f.name}
+                  ref={f.ref}
+                  value={f.value}
+                  onBlur={f.onBlur}
+                  onChange={e => {
+                    f.onChange(e.target.value)
+                  }}>
+                  <option value="">Choose a category</option>
+                  {(server?.categories ?? []).map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            />
+          )}
+          {field('slug', 'Slug', <Input {...fieldProps('slug')} {...register('slug')} />)}
+          {field('mark', 'Mark', <Input {...fieldProps('mark')} {...register('mark')} />)}
+          {field(
+            'kind',
+            'Kind',
+            <Select
+              {...fieldProps('kind')}
+              {...register('kind', {
+                // Duration is hidden for other kinds; a leftover value would fail validation there.
+                onChange: (e: {target: {value: string}}) => {
+                  if (e.target.value !== 'TIMED') setValue('durationDays', '')
+                }
+              })}>
+              {PRODUCT_KINDS.map(k => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </Select>
+          )}
+          {values.kind === 'TIMED' &&
+            field(
+              'durationDays',
+              'Duration (days)',
+              <Input
+                inputMode="numeric"
+                {...fieldProps('durationDays')}
+                {...register('durationDays')}
+              />
+            )}
+          {field(
+            'icon',
+            'Icon',
+            <Select {...fieldProps('icon')} {...register('icon')}>
+              {PRODUCT_ICONS.map(i => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </Select>
+          )}
+          {field(
+            'prices.EUR',
+            'Price EUR',
+            <Input inputMode="decimal" {...fieldProps('prices.EUR')} {...register('prices.EUR')} />
+          )}
+          {field(
+            'prices.PLN',
+            'Price PLN',
+            <Input inputMode="decimal" {...fieldProps('prices.PLN')} {...register('prices.PLN')} />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Controller
+            control={control}
+            name="isActive"
+            render={({field: f}) => (
+              <Checkbox
+                id={fieldId('isActive')}
+                ref={f.ref}
+                checked={f.value}
+                disabled={incomplete}
+                onBlur={f.onBlur}
+                onCheckedChange={checked => {
+                  f.onChange(checked === true)
+                }}
+              />
+            )}
+          />
+          <Label htmlFor={fieldId('isActive')}>Enabled</Label>
+        </div>
+
+        {field(
+          'grant',
+          'Grant commands',
+          <Textarea className="font-mono" {...fieldProps('grant')} {...register('grant')} />,
+          COMMAND_HINT
+        )}
+        {field(
+          'revoke',
+          'Revoke commands',
+          <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
+          COMMAND_HINT
+        )}
+
+        <Tabs
+          value={tab}
+          onValueChange={value => {
+            setTab(value as 'en' | 'pl')
+          }}>
+          <TabsList>
+            {LOCALES.map(({locale, tab: label}) => (
+              <TabsTrigger
+                key={locale}
+                value={locale}
+                onClick={() => {
+                  setTab(locale)
+                }}>
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {LOCALES.map(({locale, tab: label}) => (
+            <TabsContent key={locale} value={locale} className="flex flex-col gap-4">
+              {field(
+                `translations.${locale}.name`,
+                `Name (${label})`,
+                <Input
+                  {...fieldProps(`translations.${locale}.name`)}
+                  {...register(`translations.${locale}.name`)}
+                />
+              )}
+              {field(
+                `translations.${locale}.description`,
+                `Description (${label})`,
+                <Textarea
+                  {...fieldProps(`translations.${locale}.description`)}
+                  {...register(`translations.${locale}.description`)}
+                />
+              )}
+              <SectionsEditor
+                locale={locale}
+                control={control}
+                register={register}
+                disabled={!canEdit}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      </fieldset>
+
+      {canEdit && (
+        <div className="flex gap-2">
+          <Button type="submit" disabled={busy}>
+            Save
+          </Button>
+          {id &&
+            (confirmDelete ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy}
+                onClick={() => void onDelete()}>
+                Confirm delete
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setConfirmDelete(true)
+                }}>
+                Delete
+              </Button>
+            ))}
+        </div>
+      )}
+    </form>
+  )
+}
+
+const fieldId = (name: string) => `product-${name.replace(/\./g, '-')}`
+
+function Field({
+  name,
+  label,
+  error,
+  hint,
+  children
+}: {
+  name: string
+  label: string
+  error?: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={fieldId(name)}>{label}</Label>
+      {children}
+      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+      {error && (
+        <p id={`${fieldId(name)}-error`} className="text-destructive text-xs">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
