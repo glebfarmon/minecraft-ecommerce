@@ -102,8 +102,42 @@ describe('catalog products API', () => {
       .patch(`/api/admin/catalog/products/${created.id}`)
       .send({...complete, translations: {en, pl: null}, isActive: true, version: 2})
       .expect(400)
+      .expect(res => {
+        expect((res.body as {message: string}).message).toBe('incomplete')
+      })
     const stored = await ctx.prisma.productTranslation.count({where: {productId: created.id}})
     expect(stored).toBe(2)
+    const row = await ctx.prisma.product.findUniqueOrThrow({
+      where: {id: created.id},
+      include: {prices: true}
+    })
+    expect(row.version).toBe(2)
+    expect(row.prices.map(p => [p.currency, p.amountMinor]).sort()).toEqual([
+      ['EUR', 499],
+      ['PLN', 2199]
+    ])
+  })
+
+  it('keeps an enabled product complete: clearing a price is 400 and the price row stays', async () => {
+    const body = draft()
+    const created = (await editor.post('/api/admin/catalog/products').send(body).expect(201))
+      .body as ProductBody
+    const complete = {...body, prices: {EUR: 499, PLN: 2199}, translations: {en, pl: en}}
+    await editor
+      .patch(`/api/admin/catalog/products/${created.id}`)
+      .send({...complete, isActive: true, version: 1})
+      .expect(200)
+    await editor
+      .patch(`/api/admin/catalog/products/${created.id}`)
+      .send({...complete, prices: {EUR: 499, PLN: null}, isActive: true, version: 2})
+      .expect(400)
+      .expect(res => {
+        const b = res.body as {message: string; issues: {missing: string[]}}
+        expect(b.message).toBe('incomplete')
+        expect(b.issues.missing).toEqual(['price.PLN'])
+      })
+    const prices = await ctx.prisma.price.findMany({where: {productId: created.id}})
+    expect(prices.map(p => p.currency).sort()).toEqual(['EUR', 'PLN'])
   })
 
   it('locks slug and server of an enabled product', async () => {
@@ -177,5 +211,53 @@ describe('catalog products API', () => {
     expect(list.every(p => p.serverId === survival)).toBe(true)
     expect(list.map(p => p.sort)).toEqual([...list.map(p => p.sort)].sort((a, b) => a - b))
     await support.post('/api/admin/catalog/products').send(draft()).expect(403)
+  })
+
+  it('reorders a category and the storefront follows; an out-of-date list changes nothing', async () => {
+    const listUrl = `/api/admin/catalog/products?serverId=${survival}&categoryId=${ranks}`
+    const orderUrl = `/api/admin/catalog/servers/${survival}/categories/${ranks}/products/order`
+    const ids = ((await editor.get(listUrl).expect(200)).body as {id: string}[]).map(p => p.id)
+    const reversed = [...ids].reverse()
+
+    const res = await editor.put(orderUrl).send({ids: reversed}).expect(200)
+    expect((res.body as {id: string}[]).map(p => p.id)).toEqual(reversed)
+
+    const activeSlugs = (
+      await ctx.prisma.product.findMany({
+        where: {serverId: survival, categoryId: ranks, isActive: true},
+        orderBy: {sort: 'asc'},
+        select: {slug: true}
+      })
+    ).map(p => p.slug)
+    const shown = (await storefront()).filter(p => activeSlugs.includes(p.slug)).map(p => p.slug)
+    expect(shown).toEqual(activeSlugs)
+
+    await editor
+      .put(orderUrl)
+      .send({ids: reversed.slice(1)})
+      .expect(409)
+    await editor
+      .put(orderUrl)
+      .send({ids: [...reversed.slice(1), 'stranger']})
+      .expect(409)
+    const after = ((await editor.get(listUrl).expect(200)).body as {id: string}[]).map(p => p.id)
+    expect(after).toEqual(reversed)
+  })
+
+  it('reordering does not change versions, so open edit forms stay valid', async () => {
+    const before = await ctx.prisma.product.findMany({
+      where: {serverId: survival, categoryId: ranks}
+    })
+    const orderUrl = `/api/admin/catalog/servers/${survival}/categories/${ranks}/products/order`
+    await editor
+      .put(orderUrl)
+      .send({ids: before.map(p => p.id).reverse()})
+      .expect(200)
+    const after = await ctx.prisma.product.findMany({
+      where: {serverId: survival, categoryId: ranks}
+    })
+    expect(after.map(p => [p.id, p.version]).sort()).toEqual(
+      before.map(p => [p.id, p.version]).sort()
+    )
   })
 })

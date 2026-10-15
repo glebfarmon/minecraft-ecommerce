@@ -1,8 +1,9 @@
-import {Body, Delete, Get, HttpCode, Param, Patch, Post, Query, Req} from '@nestjs/common'
+import {Body, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req} from '@nestjs/common'
 
 import {
   type AdminProduct,
   type AdminProductListItem,
+  OrderInputSchema,
   type ProductCreate,
   ProductCreateSchema,
   type ProductListQuery,
@@ -52,6 +53,17 @@ export class ProductsController {
     return this.products.update(id, body, before => {
       req.auditBefore = before
     })
+  }
+
+  @Put('servers/:serverId/categories/:categoryId/products/order')
+  @RequirePermission('catalog.write')
+  @Audited('product.order', 'product')
+  order(
+    @Param('serverId') serverId: string,
+    @Param('categoryId') categoryId: string,
+    @Body(new ValibotPipe(OrderInputSchema)) body: {ids: string[]}
+  ): Promise<AdminProductListItem[]> {
+    return this.products.order(serverId, categoryId, body.ids)
   }
 
   @Delete('products/:id')

@@ -13,7 +13,7 @@ import {
 import {badRequest, conflict, notFound, stale} from '../common/http-errors'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
-import {isPrismaError} from './order'
+import {assertSameSet, isPrismaError, serializable} from './order'
 import {productInclude, toAdminProduct, toListItem} from './products.mapper'
 import {assertUpdated} from './versioned'
 
@@ -156,6 +156,22 @@ export class ProductsService {
   }
 
   /** Nothing references products yet; orders (sub-project 4) add their count here as `in_use`. */
+  async order(
+    serverId: string,
+    categoryId: string,
+    ids: string[]
+  ): Promise<AdminProductListItem[]> {
+    await serializable(this.prisma, async tx => {
+      const current = await tx.product.findMany({where: {serverId, categoryId}, select: {id: true}})
+      assertSameSet(
+        current.map(p => p.id),
+        ids
+      )
+      for (const [sort, id] of ids.entries()) await tx.product.update({where: {id}, data: {sort}})
+    })
+    return this.list({serverId, categoryId})
+  }
+
   async remove(id: string, version: number, before: (p: AdminProduct) => void): Promise<void> {
     const current = await this.prisma.product.findUnique({where: {id}, include: productInclude})
     if (!current) throw notFound()
