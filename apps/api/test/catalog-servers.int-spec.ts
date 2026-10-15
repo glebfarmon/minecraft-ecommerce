@@ -97,19 +97,53 @@ describe('catalog servers API', () => {
     const editor = await ctx.admin({permissions: ['catalog.write']})
     const before = await ids()
     const reversed = [...before].reverse()
-    await editor.put('/api/admin/catalog/servers/order').send({ids: reversed}).expect(200)
+    await editor
+      .put('/api/admin/catalog/servers/order')
+      .send({ids: reversed, base: before})
+      .expect(200)
     expect(await ids()).toEqual(reversed)
     expect((await storefrontServers()).map(s => s.slug)).toEqual([
       'minigames',
       'anarchy',
       'survival'
     ])
+    const audit = await ctx.prisma.auditLog.findFirstOrThrow({
+      where: {action: 'server.order'},
+      orderBy: {createdAt: 'desc'}
+    })
+    expect(audit.before).toEqual(before)
     await editor
       .put('/api/admin/catalog/servers/order')
-      .send({ids: reversed.slice(1)})
+      .send({ids: reversed.slice(1), base: reversed})
       .expect(409)
     expect(await ids()).toEqual(reversed)
-    await editor.put('/api/admin/catalog/servers/order').send({ids: before}).expect(200)
+    await editor
+      .put('/api/admin/catalog/servers/order')
+      .send({ids: before, base: reversed})
+      .expect(200)
+  })
+
+  it('refuses a reorder made from an order someone else has since changed', async () => {
+    const editor = await ctx.admin({permissions: ['catalog.write']})
+    const before = await ids()
+    const colleague = [before[1], before[0], ...before.slice(2)] as string[]
+    await editor
+      .put('/api/admin/catalog/servers/order')
+      .send({ids: colleague, base: before})
+      .expect(200)
+    // Same set of ids, but made from the order before the colleague's save.
+    await editor
+      .put('/api/admin/catalog/servers/order')
+      .send({ids: [...before].reverse(), base: before})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'stale'})
+      })
+    expect(await ids()).toEqual(colleague)
+    await editor
+      .put('/api/admin/catalog/servers/order')
+      .send({ids: before, base: colleague})
+      .expect(200)
   })
 
   it('reorders and attaches categories, but will not detach one with products', async () => {
@@ -133,7 +167,7 @@ describe('catalog servers API', () => {
     const next = [tools.id, ...[...current].reverse()]
     const res = await editor
       .put(`/api/admin/catalog/servers/${survival.id}/categories`)
-      .send({categoryIds: next})
+      .send({categoryIds: next, base: current})
       .expect(200)
     expect((res.body as ServerBody).categories.map(c => c.id)).toEqual(next)
     expect((await storefrontServers()).find(s => s.slug === 'survival')?.categories[0]?.slug).toBe(
@@ -142,7 +176,7 @@ describe('catalog servers API', () => {
 
     const blocked = await editor
       .put(`/api/admin/catalog/servers/${survival.id}/categories`)
-      .send({categoryIds: [tools.id]})
+      .send({categoryIds: [tools.id], base: next})
       .expect(409)
     expect(blocked.body).toMatchObject({
       message: 'in_use',
@@ -151,19 +185,41 @@ describe('catalog servers API', () => {
 
     await editor
       .put(`/api/admin/catalog/servers/${survival.id}/categories`)
-      .send({categoryIds: current})
+      .send({categoryIds: current, base: next})
       .expect(200)
+  })
+
+  it('refuses to change categories from a list someone else has since changed', async () => {
+    const editor = await ctx.admin({permissions: ['catalog.write']})
+    const survival = await ctx.prisma.server.findUniqueOrThrow({
+      where: {slug: 'survival'},
+      include: {categories: {orderBy: {sort: 'asc'}}}
+    })
+    const current = survival.categories.map(c => c.categoryId)
+    await editor
+      .put(`/api/admin/catalog/servers/${survival.id}/categories`)
+      .send({categoryIds: current, base: [...current].reverse()})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'stale'})
+      })
+    const after = await ctx.prisma.serverCategory.findMany({
+      where: {serverId: survival.id},
+      orderBy: {sort: 'asc'}
+    })
+    expect(after.map(c => c.categoryId)).toEqual(current)
   })
 
   it('refuses an unknown category', async () => {
     const editor = await ctx.admin({permissions: ['catalog.write']})
     const survival = await ctx.prisma.server.findUniqueOrThrow({
       where: {slug: 'survival'},
-      include: {categories: true}
+      include: {categories: {orderBy: {sort: 'asc'}}}
     })
+    const current = survival.categories.map(c => c.categoryId)
     await editor
       .put(`/api/admin/catalog/servers/${survival.id}/categories`)
-      .send({categoryIds: [...survival.categories.map(c => c.categoryId), 'nope']})
+      .send({categoryIds: [...current, 'nope'], base: current})
       .expect(400)
       .expect(res => {
         expect(res.body).toMatchObject({message: 'unknown_category'})

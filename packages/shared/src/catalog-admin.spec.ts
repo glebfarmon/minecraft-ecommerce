@@ -5,7 +5,9 @@ import {
   ProductCreateSchema,
   ProductUpdateSchema,
   RconInputSchema,
+  ServerCategoriesInputSchema,
   ServerCreateSchema,
+  ServerUpdateSchema,
   VersionQuerySchema,
   fromMinor,
   hasOnlyNickPlaceholder,
@@ -119,8 +121,22 @@ describe('ProductUpdateSchema', () => {
 
 describe('other inputs', () => {
   it('refuses duplicate ids in an order', () => {
-    expect(v.safeParse(OrderInputSchema, {ids: ['a', 'a']}).success).toBe(false)
-    expect(v.safeParse(OrderInputSchema, {ids: []}).success).toBe(false)
+    expect(v.safeParse(OrderInputSchema, {ids: ['a', 'a'], base: ['a']}).success).toBe(false)
+    expect(v.safeParse(OrderInputSchema, {ids: [], base: []}).success).toBe(false)
+  })
+
+  it('needs the order a reorder was made from', () => {
+    expect(v.safeParse(OrderInputSchema, {ids: ['b', 'a']}).success).toBe(false)
+    expect(v.safeParse(OrderInputSchema, {ids: ['b', 'a'], base: ['a', 'b']}).success).toBe(true)
+    expect(v.safeParse(OrderInputSchema, {ids: ['b', 'a'], base: ['a', 'a']}).success).toBe(false)
+    expect(v.safeParse(OrderInputSchema, {ids: ['b', 'a'], base: []}).success).toBe(false)
+    expect(v.safeParse(ServerCategoriesInputSchema, {categoryIds: ['a']}).success).toBe(false)
+    expect(v.safeParse(ServerCategoriesInputSchema, {categoryIds: ['a'], base: []}).success).toBe(
+      true
+    )
+    expect(
+      v.safeParse(ServerCategoriesInputSchema, {categoryIds: [], base: ['a', 'a']}).success
+    ).toBe(false)
   })
 
   it('needs host and port together, and a password or clearPassword, not both', () => {
@@ -147,5 +163,19 @@ describe('other inputs', () => {
   it('reads the version from the query string', () => {
     expect(v.parse(VersionQuerySchema, {version: '3'})).toEqual({version: 3})
     expect(v.safeParse(VersionQuerySchema, {version: '0'}).success).toBe(false)
+  })
+
+  it('refuses versions beyond the database integer range', () => {
+    expect(v.parse(VersionQuerySchema, {version: '2147483647'})).toEqual({version: 2147483647})
+    expect(v.safeParse(VersionQuerySchema, {version: '2147483648'}).success).toBe(false)
+    const server = {
+      slug: 'survival',
+      name: 'Survival',
+      accent: '#ff6b1a',
+      onAccent: '#000000',
+      isActive: true
+    }
+    expect(v.safeParse(ServerUpdateSchema, {...server, version: 2_147_483_647}).success).toBe(true)
+    expect(v.safeParse(ServerUpdateSchema, {...server, version: 2_147_483_648}).success).toBe(false)
   })
 })

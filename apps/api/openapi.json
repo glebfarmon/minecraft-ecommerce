@@ -1698,7 +1698,7 @@
       "put": {
         "operationId": "orderCatalogServers",
         "summary": "Reorder the server tabs",
-        "description": "Send every server id in the new tab order. Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "description": "Send every server id in the new tab order, and in `base` the order you moved from. Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1714,9 +1714,18 @@
                     },
                     "minItems": 1,
                     "description": "Every id of the list, in the new order. A different set of ids is 409 `stale`."
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`."
                   }
                 },
-                "required": ["ids"]
+                "required": ["ids", "base"]
               }
             }
           }
@@ -1846,7 +1855,7 @@
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
           },
           "409": {
-            "description": "`stale`: the ids are not exactly the current list (someone added, removed or reordered)"
+            "description": "`stale`: the ids are not the current set, or `base` is not the current order (someone added, removed or reordered since you read the list)"
           }
         },
         "tags": ["Catalog admin"]
@@ -2039,6 +2048,7 @@
                   "version": {
                     "type": "integer",
                     "minimum": 1,
+                    "maximum": 2147483647,
                     "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
                   }
                 },
@@ -2214,7 +2224,7 @@
             "description": "No such record"
           },
           "409": {
-            "description": "`in_use`: the server still has products; `issues` carries the counts. Or `stale` (out-of-date `version`)."
+            "description": "`in_use`: the server still has products; `issues` carries the counts (empty if a reference appeared during the delete). Or `stale` (out-of-date `version`)."
           }
         },
         "tags": ["Catalog admin"]
@@ -2224,7 +2234,7 @@
       "put": {
         "operationId": "setCatalogServerCategories",
         "summary": "Attach, detach and order a server’s categories",
-        "description": "Send the full list of attached category ids in display order. Ids not in the list are detached, which is refused while the server has products in them. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "description": "Send the full list of attached category ids in display order, and in `base` the attached list you started from. Ids not in the list are detached, which is refused while the server has products in them. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
         "parameters": [
           {
             "name": "id",
@@ -2249,9 +2259,17 @@
                       "minLength": 1
                     },
                     "description": "Categories attached to the server, in display order; missing ones are detached"
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "The attached categories the client saw, in their order. If the current list differs, the request is 409 `stale`."
                   }
                 },
-                "required": ["categoryIds"]
+                "required": ["categoryIds", "base"]
               }
             }
           }
@@ -2381,7 +2399,7 @@
             "description": "No such record"
           },
           "409": {
-            "description": "`in_use`: a detached category still has products on this server (`issues.products`), or `stale` (concurrent change)"
+            "description": "`in_use`: a detached category still has products on this server (`issues.products`), or `stale`: `base` is not the current attached list (someone attached, detached or reordered since you read it)"
           }
         },
         "tags": ["Catalog admin"]
@@ -2883,6 +2901,7 @@
                   "version": {
                     "type": "integer",
                     "minimum": 1,
+                    "maximum": 2147483647,
                     "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
                   }
                 },
@@ -3001,7 +3020,7 @@
             "description": "No such record"
           },
           "409": {
-            "description": "`in_use`: products use it or servers have it attached; `issues` carries the counts. Or `stale` (out-of-date `version`)."
+            "description": "`in_use`: products use it or servers have it attached; `issues` carries the counts (empty if a reference appeared during the delete). Or `stale` (out-of-date `version`)."
           }
         },
         "tags": ["Catalog admin"]
@@ -4114,6 +4133,7 @@
                   "version": {
                     "type": "integer",
                     "minimum": 1,
+                    "maximum": 2147483647,
                     "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
                   }
                 },
@@ -4427,7 +4447,7 @@
       "put": {
         "operationId": "orderCatalogProducts",
         "summary": "Reorder the products of one category on one server",
-        "description": "Send every product id of that list in the new order (this is the order on the storefront). Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "description": "Send every product id of that list in the new order (this is the order on the storefront), and in `base` the order you moved from. Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
         "parameters": [
           {
             "name": "serverId",
@@ -4461,9 +4481,18 @@
                     },
                     "minItems": 1,
                     "description": "Every id of the list, in the new order. A different set of ids is 409 `stale`."
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`."
                   }
                 },
-                "required": ["ids"]
+                "required": ["ids", "base"]
               }
             }
           }
@@ -4582,7 +4611,7 @@
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
           },
           "409": {
-            "description": "`stale`: the ids are not exactly the current list (someone added, removed or reordered)"
+            "description": "`stale`: the ids are not the current set, or `base` is not the current order (someone added, removed or reordered since you read the list)"
           }
         },
         "tags": ["Catalog admin"]

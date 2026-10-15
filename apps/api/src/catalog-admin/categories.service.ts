@@ -88,7 +88,13 @@ export class CategoriesService {
     const counts = {products: current._count.products, servers: current.servers.length}
     if (counts.products > 0 || counts.servers > 0) throw inUse(counts)
     before(toAdminCategory(current))
-    const {count} = await this.prisma.category.deleteMany({where: {id, version}})
+    // A product or server link added since the check above makes the foreign key refuse the delete.
+    const {count} = await this.prisma.category
+      .deleteMany({where: {id, version}})
+      .catch((error: unknown) => {
+        if (isPrismaError(error, 'P2003')) throw inUse({})
+        throw error
+      })
     if (count === 0) throw stale()
   }
 }

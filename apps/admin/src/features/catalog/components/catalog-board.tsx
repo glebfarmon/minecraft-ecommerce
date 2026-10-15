@@ -40,7 +40,9 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
 export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   const servers = useListCatalogServersQuery()
   const [orderServers] = useOrderCatalogServersMutation()
-  const tabs = useOptimisticOrder(servers.data ?? [], ids => orderServers({body: {ids}}))
+  const tabs = useOptimisticOrder(servers.data ?? [], (ids, base) =>
+    orderServers({body: {ids, base}})
+  )
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (servers.isLoading) return <p>Loading catalog…</p>
@@ -99,15 +101,19 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
   const [setCategories] = useSetCatalogServerCategoriesMutation()
   const allCategories = useListCatalogCategoriesQuery()
   const products = useListCatalogProductsQuery({serverId: server.id})
-  const categories = useOptimisticOrder(server.categories, ids =>
-    setCategories({id: server.id, body: {categoryIds: ids}})
+  const categories = useOptimisticOrder(server.categories, (categoryIds, base) =>
+    setCategories({id: server.id, body: {categoryIds, base}})
   )
   const [error, setError] = useState<string | null>(null)
   const [attach, setAttach] = useState('')
 
+  /** Attach or detach, starting from the list as shown; the API refuses it if that is out of date. */
   async function save(ids: string[]) {
     setError(null)
-    const result = await setCategories({id: server.id, body: {categoryIds: ids}})
+    const result = await setCategories({
+      id: server.id,
+      body: {categoryIds: ids, base: categories.base}
+    })
     if (result.error) setError(apiErrorMessage(result.error))
   }
 
@@ -124,6 +130,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
         </Link>
       </div>
       {(error ?? categories.error) && <p role="alert">{error ?? categories.error}</p>}
+      {products.isError && <p role="alert">Could not load products. Refresh the page.</p>}
       {categories.items.length === 0 ? (
         <p className="text-muted-foreground">No categories yet. Attach one below.</p>
       ) : (
@@ -150,9 +157,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                       variant="outline"
                       aria-label={`Detach ${category.name}`}
                       onClick={() =>
-                        void save(
-                          server.categories.filter(c => c.id !== category.id).map(c => c.id)
-                        )
+                        void save(categories.items.filter(c => c.id !== category.id).map(c => c.id))
                       }>
                       Detach
                     </Button>
@@ -164,6 +169,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                 categoryId={category.id}
                 categoryName={category.name}
                 products={(products.data ?? []).filter(p => p.categoryId === category.id)}
+                status={products.isLoading ? 'loading' : products.isError ? 'failed' : 'ready'}
                 canEdit={canEdit}
               />
             </div>
@@ -175,7 +181,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           className="flex items-end gap-2"
           onSubmit={e => {
             e.preventDefault()
-            if (attach) void save([...server.categories.map(c => c.id), attach])
+            if (attach) void save([...categories.items.map(c => c.id), attach])
             setAttach('')
           }}>
           <div className="flex flex-col gap-1">
@@ -208,16 +214,24 @@ function ProductList({
   categoryId,
   categoryName,
   products,
+  status,
   canEdit
 }: {
   serverId: string
   categoryId: string
   categoryName: string
   products: Product[]
+  /** `failed` is explained once, above the categories. */
+  status: 'loading' | 'failed' | 'ready'
   canEdit: boolean
 }) {
   const [order] = useOrderCatalogProductsMutation()
-  const list = useOptimisticOrder(products, ids => order({serverId, categoryId, body: {ids}}))
+  const list = useOptimisticOrder(products, (ids, base) =>
+    order({serverId, categoryId, body: {ids, base}})
+  )
+  if (status === 'loading')
+    return <p className="text-muted-foreground text-sm">Loading products…</p>
+  if (status === 'failed') return null
   if (products.length === 0) return <p className="text-muted-foreground text-sm">No products.</p>
   return (
     <>

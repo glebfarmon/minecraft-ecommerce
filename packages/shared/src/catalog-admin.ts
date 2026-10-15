@@ -24,10 +24,13 @@ const Slug = v.pipe(
   v.regex(SLUG_PATTERN, 'Use 1–40 lowercase letters, digits or dashes'),
   v.description('URL segment: 1–40 of a–z, 0–9 and "-". Also stored in shoppers’ cart cookies.')
 )
+/** Versions are Postgres INT4; anything larger would reach the database and fail there. */
+const MAX_VERSION = 2_147_483_647
 const Version = v.pipe(
   v.number(),
   v.integer(),
   v.minValue(1),
+  v.maxValue(MAX_VERSION),
   v.description('The version you read. If someone saved since, the write fails with 409 `stale`.')
 )
 const text = (max: number, what: string) =>
@@ -128,6 +131,13 @@ export const OrderInputSchema = v.object({
     IdList,
     v.minLength(1),
     v.description('Every id of the list, in the new order. A different set of ids is 409 `stale`.')
+  ),
+  base: v.pipe(
+    IdList,
+    v.minLength(1),
+    v.description(
+      'The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`.'
+    )
   )
 })
 
@@ -135,6 +145,12 @@ export const ServerCategoriesInputSchema = v.object({
   categoryIds: v.pipe(
     IdList,
     v.description('Categories attached to the server, in display order; missing ones are detached')
+  ),
+  base: v.pipe(
+    IdList,
+    v.description(
+      'The attached categories the client saw, in their order. If the current list differs, the request is 409 `stale`.'
+    )
   )
 })
 
@@ -287,7 +303,7 @@ export const ProductListQuerySchema = v.object({
 })
 
 export const VersionQuerySchema = v.object({
-  version: v.pipe(v.string(), v.regex(/^[1-9]\d*$/), v.transform(Number))
+  version: v.pipe(v.string(), v.regex(/^[1-9]\d*$/), v.transform(Number), v.maxValue(MAX_VERSION))
 })
 
 export type ServerCreate = v.InferOutput<typeof ServerCreateSchema>

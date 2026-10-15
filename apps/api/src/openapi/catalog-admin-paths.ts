@@ -44,7 +44,7 @@ const stale = {
 const slugTaken = {'409': {description: '`slug_taken`, or `stale` (out-of-date `version`)'}}
 const inUse = (what: string) => ({
   '409': {
-    description: `\`in_use\`: ${what}; \`issues\` carries the counts. Or \`stale\` (out-of-date \`version\`).`
+    description: `\`in_use\`: ${what}; \`issues\` carries the counts (empty if a reference appeared during the delete). Or \`stale\` (out-of-date \`version\`).`
   }
 })
 const versionQuery = queryParam(
@@ -56,7 +56,7 @@ const noContent = {'204': {description: 'Deleted'}}
 const orderStale = {
   '409': {
     description:
-      '`stale`: the ids are not exactly the current list (someone added, removed or reordered)'
+      '`stale`: the ids are not the current set, or `base` is not the current order (someone added, removed or reordered since you read the list)'
   }
 }
 
@@ -87,7 +87,7 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
     put: op({
       operationId: 'orderCatalogServers',
       summary: 'Reorder the server tabs',
-      description: `Send every server id in the new tab order. Versions do not change. ${write} ${LIVE}`,
+      description: `Send every server id in the new tab order, and in \`base\` the order you moved from. Versions do not change. ${write} ${LIVE}`,
       requestBody: body(OrderInputSchema),
       responses: {
         '200': json('Servers in the new order', v.array(AdminServerSchema)),
@@ -131,7 +131,7 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
     put: op({
       operationId: 'setCatalogServerCategories',
       summary: 'Attach, detach and order a server’s categories',
-      description: `Send the full list of attached category ids in display order. Ids not in the list are detached, which is refused while the server has products in them. ${write} ${LIVE}`,
+      description: `Send the full list of attached category ids in display order, and in \`base\` the attached list you started from. Ids not in the list are detached, which is refused while the server has products in them. ${write} ${LIVE}`,
       parameters: [pathParam('id')],
       requestBody: body(ServerCategoriesInputSchema),
       responses: {
@@ -141,7 +141,7 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
         ...missing,
         '409': {
           description:
-            '`in_use`: a detached category still has products on this server (`issues.products`), or `stale` (concurrent change)'
+            '`in_use`: a detached category still has products on this server (`issues.products`), or `stale`: `base` is not the current attached list (someone attached, detached or reordered since you read it)'
         }
       }
     })
@@ -300,7 +300,7 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
     put: op({
       operationId: 'orderCatalogProducts',
       summary: 'Reorder the products of one category on one server',
-      description: `Send every product id of that list in the new order (this is the order on the storefront). Versions do not change. ${write} ${LIVE}`,
+      description: `Send every product id of that list in the new order (this is the order on the storefront), and in \`base\` the order you moved from. Versions do not change. ${write} ${LIVE}`,
       parameters: [pathParam('serverId'), pathParam('categoryId')],
       requestBody: body(OrderInputSchema),
       responses: {

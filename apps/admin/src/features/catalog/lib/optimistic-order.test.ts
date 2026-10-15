@@ -25,7 +25,12 @@ describe('useOptimisticOrder', () => {
     expect(result.current.items.map(i => i.id)).toEqual(['c', 'a', 'b'])
     rerender({items: [c, a, b]})
     expect(result.current.items.map(i => i.id)).toEqual(['c', 'a', 'b'])
-    expect(save).toHaveBeenCalledWith(['c', 'a', 'b'])
+    expect(save).toHaveBeenCalledWith(['c', 'a', 'b'], ['a', 'b', 'c'])
+  })
+
+  it('exposes the server order a change is made from', () => {
+    const {result} = renderHook(() => useOptimisticOrder([b, a], () => Promise.resolve({})))
+    expect(result.current.base).toEqual(['b', 'a'])
   })
 
   it('puts the items back and explains why when the save fails', async () => {

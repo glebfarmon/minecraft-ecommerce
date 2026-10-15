@@ -3,6 +3,7 @@ import {Body, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req} from '
 import {
   type AdminProduct,
   type AdminProductListItem,
+  type OrderInput,
   OrderInputSchema,
   type ProductCreate,
   ProductCreateSchema,
@@ -61,9 +62,12 @@ export class ProductsController {
   order(
     @Param('serverId') serverId: string,
     @Param('categoryId') categoryId: string,
-    @Body(new ValibotPipe(OrderInputSchema)) body: {ids: string[]}
+    @Body(new ValibotPipe(OrderInputSchema)) body: OrderInput,
+    @Req() req: AuditableRequest
   ): Promise<AdminProductListItem[]> {
-    return this.products.order(serverId, categoryId, body.ids)
+    return this.products.order(serverId, categoryId, body, before => {
+      req.auditBefore = before
+    })
   }
 
   @Delete('products/:id')

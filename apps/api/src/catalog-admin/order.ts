@@ -12,8 +12,18 @@ export function assertSameSet(current: readonly string[], requested: readonly st
 }
 
 /**
- * Serializable, so two reorders (or a reorder and an insert) cannot interleave; Postgres aborts
- * the loser with a serialization failure (Prisma P2034), which the client sees as 409 `stale`.
+ * A reorder also sends the order it was made from (`base`); if the list has been reordered since,
+ * saving would silently replace a colleague's order (spec §6.1), so it is 409 `stale`.
+ */
+export function assertSameOrder(current: readonly string[], base: readonly string[]): void {
+  if (current.length !== base.length || current.some((id, i) => id !== base[i])) throw stale()
+}
+
+/**
+ * Runs `fn` in a SERIALIZABLE transaction: if two such transactions read and write overlapping
+ * rows (two reorders, a reorder and a product move, a product save and a category detach), Postgres
+ * aborts one with a serialization failure (Prisma P2034), which the client sees as 409 `stale`.
+ * Only writes that go through here are protected against each other; nothing is retried.
  */
 export function serializable<T>(
   prisma: PrismaService,

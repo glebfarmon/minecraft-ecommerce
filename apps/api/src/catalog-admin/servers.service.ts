@@ -2,6 +2,7 @@ import {Injectable} from '@nestjs/common'
 
 import type {
   AdminServer,
+  OrderInput,
   ServerCategoriesInput,
   ServerCreate,
   ServerUpdate
@@ -9,7 +10,7 @@ import type {
 
 import {badRequest, conflict, inUse, notFound, stale} from '../common/http-errors'
 import {PrismaService} from '../prisma/prisma.service'
-import {assertSameSet, isPrismaError, serializable} from './order'
+import {assertSameOrder, assertSameSet, isPrismaError, serializable} from './order'
 import {serverInclude, toAdminServer} from './servers.mapper'
 import {assertUpdated} from './versioned'
 
@@ -77,17 +78,30 @@ export class ServersService {
     if (!current) throw notFound()
     if (current._count.products > 0) throw inUse({products: current._count.products})
     before(toAdminServer(current, withRcon))
-    const {count} = await this.prisma.server.deleteMany({where: {id, version}})
+    // A product added since the check above makes the foreign key refuse the delete.
+    const {count} = await this.prisma.server
+      .deleteMany({where: {id, version}})
+      .catch((error: unknown) => {
+        if (isPrismaError(error, 'P2003')) throw inUse({})
+        throw error
+      })
     if (count === 0) throw stale()
   }
 
-  async order(ids: string[], withRcon: boolean): Promise<AdminServer[]> {
+  /** `before` receives the order being replaced, for the audit row. */
+  async order(
+    input: OrderInput,
+    withRcon: boolean,
+    before: (ids: string[]) => void
+  ): Promise<AdminServer[]> {
+    const {ids, base} = input
     await serializable(this.prisma, async tx => {
-      const current = await tx.server.findMany({select: {id: true}})
-      assertSameSet(
-        current.map(s => s.id),
-        ids
-      )
+      const current = (
+        await tx.server.findMany({select: {id: true}, orderBy: [{sort: 'asc'}, {slug: 'asc'}]})
+      ).map(s => s.id)
+      assertSameSet(current, ids)
+      assertSameOrder(current, base)
+      before(current)
       for (const [sort, id] of ids.entries()) await tx.server.update({where: {id}, data: {sort}})
     })
     return this.list(withRcon)
@@ -103,6 +117,10 @@ export class ServersService {
     await serializable(this.prisma, async tx => {
       const current = await tx.server.findUnique({where: {id}, include: serverInclude})
       if (!current) throw notFound()
+      assertSameOrder(
+        current.categories.map(c => c.category.id),
+        input.base
+      )
       before(toAdminServer(current, withRcon))
       const known = await tx.category.count({where: {id: {in: input.categoryIds}}})
       if (known !== input.categoryIds.length) throw badRequest('unknown_category')

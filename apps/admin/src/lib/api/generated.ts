@@ -522,6 +522,8 @@ export type OrderCatalogServersApiArg = {
   body: {
     /** Every id of the list, in the new order. A different set of ids is 409 `stale`. */
     ids: string[]
+    /** The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`. */
+    base: string[]
   }
 }
 export type GetCatalogServerApiResponse = /** status 200 The server */ {
@@ -623,6 +625,8 @@ export type SetCatalogServerCategoriesApiArg = {
   body: {
     /** Categories attached to the server, in display order; missing ones are detached */
     categoryIds: string[]
+    /** The attached categories the client saw, in their order. If the current list differs, the request is 409 `stale`. */
+    base: string[]
   }
 }
 export type UpdateCatalogServerRconApiResponse = /** status 200 The server */ {
@@ -1045,6 +1049,8 @@ export type OrderCatalogProductsApiArg = {
   body: {
     /** Every id of the list, in the new order. A different set of ids is 409 `stale`. */
     ids: string[]
+    /** The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`. */
+    base: string[]
   }
 }
 export const {

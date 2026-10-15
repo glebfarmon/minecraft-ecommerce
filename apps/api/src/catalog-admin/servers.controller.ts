@@ -3,6 +3,7 @@ import {Body, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req} from '
 import {hasPermission} from '@shop/shared/access'
 import {
   type AdminServer,
+  type OrderInput,
   OrderInputSchema,
   type ServerCategoriesInput,
   ServerCategoriesInputSchema,
@@ -36,10 +37,12 @@ export class ServersController {
   @RequirePermission('catalog.write')
   @Audited('server.order', 'server')
   order(
-    @Body(new ValibotPipe(OrderInputSchema)) body: {ids: string[]},
+    @Body(new ValibotPipe(OrderInputSchema)) body: OrderInput,
     @Req() req: AuditableRequest
   ): Promise<AdminServer[]> {
-    return this.servers.order(body.ids, withRcon(req))
+    return this.servers.order(body, withRcon(req), before => {
+      req.auditBefore = before
+    })
   }
 
   @Get(':id')

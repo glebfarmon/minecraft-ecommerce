@@ -4,6 +4,7 @@ import {CURRENCIES, LOCALES} from '@shop/shared/catalog'
 import {
   type AdminProduct,
   type AdminProductListItem,
+  type OrderInput,
   type ProductCreate,
   type ProductListQuery,
   type ProductUpdate,
@@ -13,7 +14,7 @@ import {
 import {badRequest, conflict, notFound, stale} from '../common/http-errors'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
-import {assertSameSet, isPrismaError, serializable} from './order'
+import {assertSameOrder, assertSameSet, isPrismaError, serializable} from './order'
 import {productInclude, toAdminProduct, toListItem} from './products.mapper'
 import {assertUpdated} from './versioned'
 
@@ -81,21 +82,20 @@ export class ProductsService {
 
   /** Created disabled and last in its category (spec decision #5). */
   async create(input: ProductCreate): Promise<AdminProduct> {
-    const row = await this.prisma
-      .$transaction(async tx => {
-        await assertPlacement(tx, input.serverId, input.categoryId)
-        return tx.product.create({
-          data: {
-            ...columns(input),
-            isActive: false,
-            sort: await nextSort(tx, input.serverId, input.categoryId),
-            translations: {create: translationRows(input)},
-            prices: {create: priceRows(input)}
-          },
-          include: productInclude
-        })
+    // Serializable, like setCategories: a concurrent detach cannot slip past the placement check.
+    const row = await serializable(this.prisma, async tx => {
+      await assertPlacement(tx, input.serverId, input.categoryId)
+      return tx.product.create({
+        data: {
+          ...columns(input),
+          isActive: false,
+          sort: await nextSort(tx, input.serverId, input.categoryId),
+          translations: {create: translationRows(input)},
+          prices: {create: priceRows(input)}
+        },
+        include: productInclude
       })
-      .catch(slugTaken)
+    }).catch(slugTaken)
     return toAdminProduct(row)
   }
 
@@ -104,74 +104,77 @@ export class ProductsService {
     input: ProductUpdate,
     before: (p: AdminProduct) => void
   ): Promise<AdminProduct> {
-    const row = await this.prisma
-      .$transaction(async tx => {
-        const current = await tx.product.findUnique({where: {id}, include: productInclude})
-        if (!current) throw notFound()
-        // Slug and server are in storefront URLs and cart cookies (spec decision #9).
-        if (
-          current.isActive &&
-          (input.slug !== current.slug || input.serverId !== current.serverId)
-        )
-          throw badRequest('slug_locked')
-        await assertPlacement(tx, input.serverId, input.categoryId)
-        const missing = missingForActive(input)
-        if (input.isActive && missing.length > 0) throw badRequest('incomplete', {missing})
-        before(toAdminProduct(current))
+    const row = await serializable(this.prisma, async tx => {
+      const current = await tx.product.findUnique({where: {id}, include: productInclude})
+      if (!current) throw notFound()
+      // Slug and server are in storefront URLs and cart cookies (spec decision #9).
+      if (current.isActive && (input.slug !== current.slug || input.serverId !== current.serverId))
+        throw badRequest('slug_locked')
+      await assertPlacement(tx, input.serverId, input.categoryId)
+      const missing = missingForActive(input)
+      if (input.isActive && missing.length > 0) throw badRequest('incomplete', {missing})
+      before(toAdminProduct(current))
 
-        const moved = input.serverId !== current.serverId || input.categoryId !== current.categoryId
-        const {count} = await tx.product.updateMany({
-          where: {id, version: input.version},
-          data: {
-            ...columns(input),
-            isActive: input.isActive,
-            ...(moved && {sort: await nextSort(tx, input.serverId, input.categoryId)}),
-            version: {increment: 1}
-          }
-        })
-        await assertUpdated(count, async () => (await tx.product.count({where: {id}})) > 0)
-
-        const keepLocales = translationRows(input).map(t => t.locale)
-        await tx.productTranslation.deleteMany({
-          where: {productId: id, locale: {notIn: keepLocales}}
-        })
-        for (const t of translationRows(input))
-          await tx.productTranslation.upsert({
-            where: {productId_locale: {productId: id, locale: t.locale}},
-            create: {productId: id, ...t},
-            update: t
-          })
-        const keepCurrencies = priceRows(input).map(p => p.currency)
-        await tx.price.deleteMany({where: {productId: id, currency: {notIn: keepCurrencies}}})
-        for (const p of priceRows(input))
-          await tx.price.upsert({
-            where: {productId_currency: {productId: id, currency: p.currency}},
-            create: {productId: id, ...p},
-            update: {amountMinor: p.amountMinor}
-          })
-        return tx.product.findUniqueOrThrow({where: {id}, include: productInclude})
+      const moved = input.serverId !== current.serverId || input.categoryId !== current.categoryId
+      const {count} = await tx.product.updateMany({
+        where: {id, version: input.version},
+        data: {
+          ...columns(input),
+          isActive: input.isActive,
+          ...(moved && {sort: await nextSort(tx, input.serverId, input.categoryId)}),
+          version: {increment: 1}
+        }
       })
-      .catch(slugTaken)
+      await assertUpdated(count, async () => (await tx.product.count({where: {id}})) > 0)
+
+      const keepLocales = translationRows(input).map(t => t.locale)
+      await tx.productTranslation.deleteMany({
+        where: {productId: id, locale: {notIn: keepLocales}}
+      })
+      for (const t of translationRows(input))
+        await tx.productTranslation.upsert({
+          where: {productId_locale: {productId: id, locale: t.locale}},
+          create: {productId: id, ...t},
+          update: t
+        })
+      const keepCurrencies = priceRows(input).map(p => p.currency)
+      await tx.price.deleteMany({where: {productId: id, currency: {notIn: keepCurrencies}}})
+      for (const p of priceRows(input))
+        await tx.price.upsert({
+          where: {productId_currency: {productId: id, currency: p.currency}},
+          create: {productId: id, ...p},
+          update: {amountMinor: p.amountMinor}
+        })
+      return tx.product.findUniqueOrThrow({where: {id}, include: productInclude})
+    }).catch(slugTaken)
     return toAdminProduct(row)
   }
 
-  /** Nothing references products yet; orders (sub-project 4) add their count here as `in_use`. */
+  /** `before` receives the order being replaced, for the audit row. */
   async order(
     serverId: string,
     categoryId: string,
-    ids: string[]
+    input: OrderInput,
+    before: (ids: string[]) => void
   ): Promise<AdminProductListItem[]> {
+    const {ids, base} = input
     await serializable(this.prisma, async tx => {
-      const current = await tx.product.findMany({where: {serverId, categoryId}, select: {id: true}})
-      assertSameSet(
-        current.map(p => p.id),
-        ids
-      )
+      const current = (
+        await tx.product.findMany({
+          where: {serverId, categoryId},
+          select: {id: true},
+          orderBy: [{sort: 'asc'}, {slug: 'asc'}]
+        })
+      ).map(p => p.id)
+      assertSameSet(current, ids)
+      assertSameOrder(current, base)
+      before(current)
       for (const [sort, id] of ids.entries()) await tx.product.update({where: {id}, data: {sort}})
     })
     return this.list({serverId, categoryId})
   }
 
+  /** Nothing references products yet; orders (sub-project 4) add their count here as `in_use`. */
   async remove(id: string, version: number, before: (p: AdminProduct) => void): Promise<void> {
     const current = await this.prisma.product.findUnique({where: {id}, include: productInclude})
     if (!current) throw notFound()

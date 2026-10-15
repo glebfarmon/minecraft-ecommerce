@@ -219,7 +219,7 @@ describe('catalog products API', () => {
     const ids = ((await editor.get(listUrl).expect(200)).body as {id: string}[]).map(p => p.id)
     const reversed = [...ids].reverse()
 
-    const res = await editor.put(orderUrl).send({ids: reversed}).expect(200)
+    const res = await editor.put(orderUrl).send({ids: reversed, base: ids}).expect(200)
     expect((res.body as {id: string}[]).map(p => p.id)).toEqual(reversed)
 
     const activeSlugs = (
@@ -234,24 +234,40 @@ describe('catalog products API', () => {
 
     await editor
       .put(orderUrl)
-      .send({ids: reversed.slice(1)})
+      .send({ids: reversed.slice(1), base: reversed})
       .expect(409)
     await editor
       .put(orderUrl)
-      .send({ids: [...reversed.slice(1), 'stranger']})
+      .send({ids: [...reversed.slice(1), 'stranger'], base: reversed})
       .expect(409)
+    // Same set, but made from the order before the save above: someone else's reorder wins.
+    await editor
+      .put(orderUrl)
+      .send({ids, base: ids})
+      .expect(409)
+      .expect(r => {
+        expect(r.body).toMatchObject({message: 'stale'})
+      })
     const after = ((await editor.get(listUrl).expect(200)).body as {id: string}[]).map(p => p.id)
     expect(after).toEqual(reversed)
+
+    const audit = await ctx.prisma.auditLog.findFirstOrThrow({
+      where: {action: 'product.order'},
+      orderBy: {createdAt: 'desc'}
+    })
+    expect(audit.before).toEqual(ids)
   })
 
   it('reordering does not change versions, so open edit forms stay valid', async () => {
     const before = await ctx.prisma.product.findMany({
-      where: {serverId: survival, categoryId: ranks}
+      where: {serverId: survival, categoryId: ranks},
+      orderBy: [{sort: 'asc'}, {slug: 'asc'}]
     })
     const orderUrl = `/api/admin/catalog/servers/${survival}/categories/${ranks}/products/order`
+    const base = before.map(p => p.id)
     await editor
       .put(orderUrl)
-      .send({ids: before.map(p => p.id).reverse()})
+      .send({ids: [...base].reverse(), base})
       .expect(200)
     const after = await ctx.prisma.product.findMany({
       where: {serverId: survival, categoryId: ranks}
