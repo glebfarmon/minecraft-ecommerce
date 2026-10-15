@@ -72,3 +72,33 @@ export const ProductFormSchema = v.pipe(
   )
 )
 export type ProductForm = v.InferInput<typeof ProductFormSchema>
+
+const Hex = v.pipe(v.string(), v.regex(/^#[0-9a-f]{6}$/i, 'Use a hex color like #ff6b1a'))
+export const ServerFormSchema = v.object({
+  slug: SlugField,
+  name: v.pipe(
+    v.string(),
+    v.trim(),
+    v.minLength(1, 'Enter a name'),
+    v.maxLength(40, 'Use at most 40 characters')
+  ),
+  accent: Hex,
+  onAccent: Hex,
+  isActive: v.boolean()
+})
+export type ServerForm = v.InferOutput<typeof ServerFormSchema>
+
+export const RconFormSchema = v.object({
+  host: v.pipe(v.string(), v.trim(), v.maxLength(253)),
+  port: v.pipe(
+    v.string(),
+    v.trim(),
+    v.check(
+      p => p === '' || (/^\d+$/.test(p) && Number(p) >= 1 && Number(p) <= 65535),
+      'Use a port between 1 and 65535'
+    )
+  ),
+  password: v.string(),
+  clearPassword: v.boolean()
+})
+export type RconForm = v.InferOutput<typeof RconFormSchema>
