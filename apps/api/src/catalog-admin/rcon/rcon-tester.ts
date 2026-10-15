@@ -22,22 +22,27 @@ export class RconClientTester implements RconTester {
   async test(target: RconTarget, timeoutMs: number): Promise<RconTestResult> {
     const started = performance.now()
     let timer: NodeJS.Timeout | undefined
-    let rcon: Rcon | undefined
+    const rcon = new Rcon({...target, timeout: timeoutMs})
     const deadline = new Promise<never>((_, reject) => {
       timer = setTimeout(() => {
         reject(new Error('timeout'))
       }, timeoutMs)
     })
+    // Whichever promise loses the race must not become an unhandled rejection.
+    deadline.catch(() => undefined)
+    const connecting = rcon.connect()
+    connecting.catch(() => undefined)
     try {
       // rcon-client's own timeout covers replies, not a connect that hangs; the race covers both.
-      rcon = await Promise.race([Rcon.connect({...target, timeout: timeoutMs}), deadline])
+      await Promise.race([connecting, deadline])
       await Promise.race([rcon.send('list'), deadline])
       return {ok: true, ms: Math.round(performance.now() - started)}
     } catch (error) {
       return {ok: false, error: failure(error)}
     } finally {
       clearTimeout(timer)
-      await rcon?.end().catch(() => undefined)
+      // end() waits for 'close' and cannot run on a half-open connect; destroy always works.
+      rcon.socket?.destroy()
     }
   }
 }

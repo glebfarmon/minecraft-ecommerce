@@ -1,3 +1,5 @@
+import {createServer} from 'node:net'
+
 import {startFakeRcon} from '../../../test/support/fake-rcon'
 import {RconClientTester} from './rcon-tester'
 
@@ -34,5 +36,46 @@ describe('RconClientTester', () => {
     // TEST-NET-1 is never routed, so the connect hangs until our timeout.
     const result = await tester.test({host: '192.0.2.1', port: 25575, password: 'x'}, 300)
     expect(result).toEqual({ok: false, error: 'timeout'})
+  })
+
+  it('times out and closes the socket when the server never answers auth', async () => {
+    const closed = (() => {
+      let done!: () => void
+      const promise = new Promise<void>(resolve => {
+        done = resolve
+      })
+      return {promise, done}
+    })()
+    const server = createServer(socket => {
+      socket.on('error', () => undefined)
+      socket.on('close', () => {
+        closed.done()
+      })
+      socket.resume() // read (and discard) so the client's FIN is seen
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const {port} = server.address() as {port: number}
+    try {
+      const started = Date.now()
+      const result = await tester.test({host: '127.0.0.1', port, password: 'x'}, 300)
+      expect(result).toEqual({ok: false, error: 'timeout'})
+      expect(Date.now() - started).toBeLessThan(1500)
+      await expect(
+        Promise.race([
+          closed.promise,
+          new Promise((_, reject) =>
+            setTimeout(() => {
+              reject(new Error('socket left open'))
+            }, 500).unref()
+          )
+        ])
+      ).resolves.toBeUndefined()
+    } finally {
+      await new Promise<void>(resolve =>
+        server.close(() => {
+          resolve()
+        })
+      )
+    }
   })
 })

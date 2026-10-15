@@ -11,22 +11,37 @@ for (const [net, prefix] of [
   ['100.64.0.0', 10],
   ['127.0.0.0', 8],
   ['169.254.0.0', 16],
+  ['192.0.0.0', 24],
+  ['198.18.0.0', 15],
   ['172.16.0.0', 12],
   ['192.168.0.0', 16],
   ['224.0.0.0', 4],
   ['240.0.0.0', 4]
 ] as const)
   internal.addSubnet(net, prefix, 'ipv4')
-internal.addAddress('::', 'ipv6')
-internal.addAddress('::1', 'ipv6')
+// IPv4-compatible ::/96 (also covers :: and ::1), NAT64, 6to4 and hex-form IPv4-mapped addresses
+// all embed an IPv4 address, so they are refused outright. Mapped addresses are checked as IPv4.
+internal.addSubnet('::', 96, 'ipv6')
+internal.addSubnet('64:ff9b::', 96, 'ipv6')
+internal.addSubnet('2002::', 16, 'ipv6')
 internal.addSubnet('fc00::', 7, 'ipv6')
 internal.addSubnet('fe80::', 10, 'ipv6')
 internal.addSubnet('ff00::', 8, 'ipv6')
 
 /** Loopback, private, CGNAT, link-local, unique-local or multicast; IPv4-mapped IPv6 included. */
 export function isPrivateAddress(ip: string): boolean {
+  if (isIP(ip) === 0) return true // fail closed on anything that is not an IP
   const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip)?.[1]
   if (mapped) return internal.check(mapped, 'ipv4')
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(ip)
+  if (hex?.[1] && hex[2]) {
+    const hi = parseInt(hex[1], 16)
+    const lo = parseInt(hex[2], 16)
+    return internal.check(
+      `${String(hi >> 8)}.${String(hi & 255)}.${String(lo >> 8)}.${String(lo & 255)}`,
+      'ipv4'
+    )
+  }
   return internal.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4')
 }
 

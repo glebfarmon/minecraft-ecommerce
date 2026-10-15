@@ -13,7 +13,14 @@ describe('RCON host guard', () => {
     'fd00::1',
     'fe80::1',
     '::ffff:10.0.0.5',
-    '::ffff:127.0.0.1'
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '64:ff9b::a00:5',
+    '2002:a00:5::1',
+    '::127.0.0.1',
+    '198.18.0.1',
+    '192.0.0.8',
+    'not-an-ip'
   ])('treats %s as internal', ip => {
     expect(isPrivateAddress(ip)).toBe(true)
   })
