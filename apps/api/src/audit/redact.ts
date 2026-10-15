@@ -6,7 +6,8 @@ const SECRET_KEYS = new Set([
   'tokenHash',
   'backupCodes',
   'password',
-  'totpURI'
+  'totpURI',
+  'rconPasswordEnc'
 ])
 
 /** Audit rows must never hold credentials (plan Review Focus #5). */
