@@ -27,7 +27,7 @@ const SESSION_COOKIE = /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]
 
 const ADMIN_PATH = /^\/api\/admin(?:[/?#]|$)/i
 
-const RCON_TEST_PATH = /^\/api\/admin\/catalog\/servers\/[^/]+\/rcon\/test(?:[?#]|$)/i
+const RCON_TEST_PATH = /^\/api\/admin\/catalog\/servers\/[^/]+\/rcon\/test\/?(?:[?#]|$)/i
 
 /** Express routes case-insensitively, so `/API/Admin/...` reaches admin handlers too. */
 export const isAdminPath = (req: ThrottledRequest): boolean =>

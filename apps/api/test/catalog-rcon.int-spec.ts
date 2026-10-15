@@ -115,7 +115,9 @@ describe('catalog RCON API', () => {
       .put(url())
       .send({host: '127.0.0.1', port: fake.port, password: 'secret'})
       .expect(200)
-    for (let i = 0; i < 5; i++) await operator.post(`${url()}/test`).expect(200)
+    // Express 5 routes the trailing-slash spelling to the same handler, so it must count too.
+    for (let i = 0; i < 5; i++) await operator.post(`${url()}/test${i % 2 ? '/' : ''}`).expect(200)
+    await operator.post(`${url()}/test/`).expect(429)
     await operator.post(`${url()}/test`).expect(429)
   })
 })
