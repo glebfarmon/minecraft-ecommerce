@@ -34,6 +34,21 @@ describe('RCON host guard', () => {
     await expect(resolveRconHost('localhost', true)).resolves.toMatch(/^(127\.0\.0\.1|::1)$/)
   })
 
+  it('ignores RCON_ALLOW_PRIVATE_HOSTS in production', async () => {
+    const saved = {node: process.env.NODE_ENV, allow: process.env.RCON_ALLOW_PRIVATE_HOSTS}
+    process.env.RCON_ALLOW_PRIVATE_HOSTS = 'true'
+    try {
+      process.env.NODE_ENV = 'production'
+      await expect(resolveRconHost('127.0.0.1')).rejects.toBeInstanceOf(RconHostPrivateError)
+      process.env.NODE_ENV = 'development'
+      await expect(resolveRconHost('127.0.0.1')).resolves.toBe('127.0.0.1')
+    } finally {
+      process.env.NODE_ENV = saved.node
+      if (saved.allow === undefined) delete process.env.RCON_ALLOW_PRIVATE_HOSTS
+      else process.env.RCON_ALLOW_PRIVATE_HOSTS = saved.allow
+    }
+  })
+
   it('returns a literal public IP as is', async () => {
     await expect(resolveRconHost('1.1.1.1', false)).resolves.toBe('1.1.1.1')
   })

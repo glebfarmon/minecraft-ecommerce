@@ -24,6 +24,14 @@ describe('RCON password encryption', () => {
     expect(() => decryptRconPassword(stored, randomBytes(32))).toThrow()
   })
 
+  it('refuses a truncated authentication tag', () => {
+    const parts = encryptRconPassword('hunter2', key).split(':')
+    parts[2] = Buffer.from(parts[2] ?? '', 'base64')
+      .subarray(0, 4)
+      .toString('base64')
+    expect(() => decryptRconPassword(parts.join(':'), key)).toThrow()
+  })
+
   it('reads a 32-byte base64 key and refuses a missing or short one', () => {
     expect(rconKey({RCON_ENCRYPTION_KEY: key.toString('base64')})).toEqual(key)
     expect(() => rconKey({})).toThrow(RconKeyMissingError)

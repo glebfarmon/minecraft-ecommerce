@@ -45,13 +45,17 @@ export function isPrivateAddress(ip: string): boolean {
   return internal.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4')
 }
 
+/** Local development and tests may point RCON at a container; production never may. */
+const allowPrivateHosts = (env = process.env) =>
+  env.RCON_ALLOW_PRIVATE_HOSTS === 'true' && env.NODE_ENV !== 'production'
+
 /**
  * The address to connect to. Every address the name resolves to must be public, and the caller
  * connects to the returned IP, so a second lookup cannot swap in an internal one.
  */
 export async function resolveRconHost(
   host: string,
-  allowPrivate = process.env.RCON_ALLOW_PRIVATE_HOSTS === 'true'
+  allowPrivate = allowPrivateHosts()
 ): Promise<string> {
   const addresses = isIP(host) ? [{address: host}] : await lookup(host, {all: true})
   const first = addresses[0]?.address
