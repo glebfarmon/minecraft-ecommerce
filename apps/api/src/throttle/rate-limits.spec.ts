@@ -9,6 +9,7 @@ describe('rateLimits', () => {
       secondFactorDay: 30,
       admin: 300,
       adminIp: 600,
+      rconTest: 5,
       default: 100
     })
     expect(rateLimits({})).toEqual(RATE_LIMIT_DEFAULTS)
@@ -23,6 +24,7 @@ describe('rateLimits', () => {
         RATE_LIMIT_2FA_DAY: '75',
         RATE_LIMIT_ADMIN: '80',
         RATE_LIMIT_ADMIN_IP: '85',
+        RATE_LIMIT_RCON_TEST: '95',
         RATE_LIMIT_DEFAULT: '90'
       })
     ).toEqual({
@@ -32,8 +34,14 @@ describe('rateLimits', () => {
       secondFactorDay: 75,
       admin: 80,
       adminIp: 85,
+      rconTest: 95,
       default: 90
     })
+  })
+
+  it('limits RCON tests to 5 per minute by default and reads RATE_LIMIT_RCON_TEST', () => {
+    expect(rateLimits({}).rconTest).toBe(5)
+    expect(rateLimits({RATE_LIMIT_RCON_TEST: '2'}).rconTest).toBe(2)
   })
 
   it('treats an empty value as unset', () => {

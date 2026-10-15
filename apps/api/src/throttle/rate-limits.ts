@@ -15,6 +15,8 @@ export type RateLimits = {
   admin: number
   /** Admin API requests per client IP per minute (bounds made-up session cookies). */
   adminIp: number
+  /** RCON connection tests per session per minute (each one opens a socket to a game server). */
+  rconTest: number
   /** Every other throttled request per IP per minute. */
   default: number
 }
@@ -27,6 +29,7 @@ export const RATE_LIMIT_DEFAULTS: Readonly<RateLimits> = Object.freeze({
   secondFactorDay: 30,
   admin: 300,
   adminIp: 600,
+  rconTest: 5,
   default: 100
 })
 
@@ -37,6 +40,7 @@ const ENV_NAMES = {
   secondFactorDay: 'RATE_LIMIT_2FA_DAY',
   admin: 'RATE_LIMIT_ADMIN',
   adminIp: 'RATE_LIMIT_ADMIN_IP',
+  rconTest: 'RATE_LIMIT_RCON_TEST',
   default: 'RATE_LIMIT_DEFAULT'
 } as const satisfies Record<keyof RateLimits, string>
 
