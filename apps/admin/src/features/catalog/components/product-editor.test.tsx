@@ -98,4 +98,56 @@ describe('ProductEditor', () => {
     expect(await screen.findByLabelText('Price EUR')).toBeDisabled()
     expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument()
   })
+
+  it('lets a read-only admin switch to the PL tab', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit={false} />)
+    await screen.findByLabelText('Price EUR')
+    // A browser does not click buttons inside a disabled fieldset; jsdom does, so check it directly.
+    expect(screen.getByRole('tab', {name: 'PL'})).toBeEnabled()
+    fireEvent.click(screen.getByRole('tab', {name: 'PL'}))
+    expect(await screen.findByLabelText('Name (PL)')).toBeDisabled()
+  })
+
+  it('keeps the loaded version after a 409, even when the refetch brings a newer one', async () => {
+    const versions: unknown[] = []
+    let patched = false
+    jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      const url = new URL(req.url)
+      if (req.method === 'PATCH') {
+        patched = true
+        versions.push(((await req.json()) as {version: unknown}).version)
+        return Response.json({statusCode: 409, message: 'stale'}, {status: 409})
+      }
+      if (url.pathname === '/api/admin/catalog/servers') return Response.json(servers)
+      if (url.pathname === '/api/admin/catalog/products/p1')
+        return Response.json(patched ? {...draft, version: 2} : draft)
+      return Response.json([])
+    })
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    await screen.findByLabelText('Price EUR')
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Someone else changed this')
+    // Give any refetch triggered by the failed save time to land.
+    await new Promise(resolve => setTimeout(resolve, 50))
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    await waitFor(() => {
+      expect(versions).toEqual([1, 1])
+    })
+  })
+
+  it('opens the tab that holds a translation error when Save is blocked', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    await screen.findByLabelText('Price EUR')
+    fireEvent.click(screen.getByRole('tab', {name: 'PL'}))
+    fireEvent.change(screen.getByLabelText('Name (PL)'), {target: {value: 'x'.repeat(61)}})
+    fireEvent.click(screen.getByRole('tab', {name: 'EN'}))
+    expect(screen.queryByLabelText('Name (PL)')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await screen.findByText('Use at most 60 characters')).toBeInTheDocument()
+    expect(screen.getByRole('tab', {name: 'PL'})).toHaveAttribute('aria-selected', 'true')
+    expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'PATCH')).toBe(false)
+  })
 })

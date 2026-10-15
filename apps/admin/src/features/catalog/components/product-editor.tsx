@@ -18,10 +18,11 @@ import {
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useRouter} from 'next/navigation'
-import {type ReactNode, useEffect, useState} from 'react'
+import {type ReactNode, useEffect, useRef, useState} from 'react'
 import {
   Controller,
   type FieldError,
+  type FieldErrors,
   type FieldPath,
   get,
   useForm,
@@ -73,10 +74,17 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const {register, control, handleSubmit, setValue} = form
   const {errors} = useFormState({control})
 
+  // The version this editor's values are based on. Set when a product loads and after our own
+  // successful save, never from a refetch: otherwise a Save after a 409 would carry the other
+  // admin's version and silently overwrite their change.
+  const version = useRef<number | null>(null)
+
   // Load the stored product once; later refetches must not wipe what the admin is typing.
   const loadedId = product.data?.id
   useEffect(() => {
-    if (product.data) form.reset(productToForm(product.data))
+    if (!product.data) return
+    version.current = product.data.version
+    form.reset(productToForm(product.data))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when another product loads
   }, [loadedId])
 
@@ -95,7 +103,14 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const server = servers.data?.find(s => s.id === values.serverId)
   const busy = creating || updating || removing
 
-  const onSave = handleSubmit(async v => {
+  // Inactive tabs unmount, so show the tab holding a translation error, or Save looks dead.
+  const onInvalid = (invalid: FieldErrors<ProductForm>) => {
+    const withErrors = LOCALES.map(l => l.locale).filter(l => invalid.translations?.[l])
+    const [first] = withErrors
+    if (first && !withErrors.includes(tab)) setTab(first)
+  }
+
+  async function save(v: ProductForm) {
     setError(null)
     setSaved(false)
     if (!id) {
@@ -104,17 +119,21 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       else router.replace(`/catalog/products/${result.data.id}`)
       return
     }
-    if (!product.data) return
-    const result = await update({id, body: formToUpdate(v, product.data.version)})
-    if (result.error) setError(apiErrorMessage(result.error))
-    else setSaved(true)
-  })
+    if (version.current === null) return
+    const result = await update({id, body: formToUpdate(v, version.current)})
+    if (result.error) {
+      setError(apiErrorMessage(result.error))
+      return
+    }
+    version.current = result.data.version
+    setSaved(true)
+  }
 
   async function onDelete() {
-    if (!id || !product.data) return
+    if (!id || version.current === null) return
     setError(null)
     setConfirmDelete(false)
-    const result = await remove({id, version: String(product.data.version)})
+    const result = await remove({id, version: String(version.current)})
     if (result.error) setError(apiErrorMessage(result.error))
     else router.push('/catalog')
   }
@@ -133,7 +152,10 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   )
 
   return (
-    <form onSubmit={e => void onSave(e)} noValidate className="flex max-w-3xl flex-col gap-6">
+    <form
+      onSubmit={e => void handleSubmit(save, onInvalid)(e)}
+      noValidate
+      className="flex max-w-3xl flex-col gap-6">
       {incomplete && (
         <p className="text-muted-foreground text-sm">
           {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
@@ -284,26 +306,29 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
           COMMAND_HINT
         )}
+      </fieldset>
 
-        <Tabs
-          value={tab}
-          onValueChange={value => {
-            setTab(value as 'en' | 'pl')
-          }}>
-          <TabsList>
-            {LOCALES.map(({locale, tab: label}) => (
-              <TabsTrigger
-                key={locale}
-                value={locale}
-                onClick={() => {
-                  setTab(locale)
-                }}>
-                {label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      <Tabs
+        value={tab}
+        onValueChange={value => {
+          setTab(value as 'en' | 'pl')
+        }}>
+        <TabsList>
           {LOCALES.map(({locale, tab: label}) => (
-            <TabsContent key={locale} value={locale} className="flex flex-col gap-4">
+            <TabsTrigger
+              key={locale}
+              value={locale}
+              onClick={() => {
+                setTab(locale)
+              }}>
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {LOCALES.map(({locale, tab: label}) => (
+          <TabsContent key={locale} value={locale}>
+            {/* Triggers stay outside the fieldset so a read-only admin can still switch tabs. */}
+            <fieldset disabled={!canEdit} className="flex flex-col gap-4">
               {field(
                 `translations.${locale}.name`,
                 `Name (${label})`,
@@ -326,10 +351,10 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 register={register}
                 disabled={!canEdit}
               />
-            </TabsContent>
-          ))}
-        </Tabs>
-      </fieldset>
+            </fieldset>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {canEdit && (
         <div className="flex gap-2">
