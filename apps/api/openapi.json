@@ -255,7 +255,13 @@
                         "permissions": {
                           "type": "array",
                           "items": {
-                            "enum": ["admin.invite", "role.write", "audit.read"],
+                            "enum": [
+                              "admin.invite",
+                              "role.write",
+                              "audit.read",
+                              "catalog.write",
+                              "server.rcon"
+                            ],
                             "type": "string"
                           }
                         }
@@ -265,7 +271,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }
@@ -984,7 +996,13 @@
                       "permissions": {
                         "type": "array",
                         "items": {
-                          "enum": ["admin.invite", "role.write", "audit.read"],
+                          "enum": [
+                            "admin.invite",
+                            "role.write",
+                            "audit.read",
+                            "catalog.write",
+                            "server.rcon"
+                          ],
                           "type": "string"
                         }
                       }
@@ -1020,7 +1038,13 @@
                   "permissions": {
                     "type": "array",
                     "items": {
-                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "enum": [
+                        "admin.invite",
+                        "role.write",
+                        "audit.read",
+                        "catalog.write",
+                        "server.rcon"
+                      ],
                       "type": "string"
                     }
                   }
@@ -1051,7 +1075,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }
@@ -1104,7 +1134,13 @@
                   "permissions": {
                     "type": "array",
                     "items": {
-                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "enum": [
+                        "admin.invite",
+                        "role.write",
+                        "audit.read",
+                        "catalog.write",
+                        "server.rcon"
+                      ],
                       "type": "string"
                     }
                   }
@@ -1135,7 +1171,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }

@@ -7,6 +7,10 @@
       "types": "./dist/access.d.ts",
       "default": "./dist/access.js"
     },
+    "./catalog-admin": {
+      "types": "./dist/catalog-admin.d.ts",
+      "default": "./dist/catalog-admin.js"
+    },
     "./catalog": {
       "types": "./dist/catalog.d.ts",
       "default": "./dist/catalog.js"

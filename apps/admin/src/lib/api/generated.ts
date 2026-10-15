@@ -107,9 +107,9 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     id: string
     name: string
     isSystem: boolean
-    permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+    permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
   }
-  permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+  permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
 }
 export type GetApiAdminMeApiArg = void
 export type GetApiAdminAdminsApiResponse = /** status 200 Admins */ {
@@ -232,32 +232,32 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
   id: string
   name: string
   isSystem: boolean
-  permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+  permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
 }[]
 export type GetApiAdminRolesApiArg = void
 export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
   id: string
   name: string
   isSystem: boolean
-  permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+  permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
 }
 export type PostApiAdminRolesApiArg = {
   body: {
     name: string
-    permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+    permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
   }
 }
 export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
   id: string
   name: string
   isSystem: boolean
-  permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+  permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
   id: string
   body: {
     name: string
-    permissions: ('admin.invite' | 'role.write' | 'audit.read')[]
+    permissions: ('admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon')[]
   }
 }
 export type DeleteApiAdminRolesByIdApiResponse = unknown
