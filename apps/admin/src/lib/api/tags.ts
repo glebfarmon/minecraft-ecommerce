@@ -32,7 +32,7 @@ export const enhancedApi = api.enhanceEndpoints({
     getCatalogServer: {providesTags: ['CatalogServers']},
     createCatalogServer: {invalidatesTags: ['CatalogServers', 'Audit']},
     updateCatalogServer: {invalidatesTags: ['CatalogServers', 'Audit']},
-    deleteCatalogServer: {invalidatesTags: ['CatalogServers', 'Audit']},
+    deleteCatalogServer: {invalidatesTags: ['CatalogServers', 'CatalogCategories', 'Audit']},
     orderCatalogServers: {invalidatesTags: ['CatalogServers', 'Audit']},
     setCatalogServerCategories: {invalidatesTags: ['CatalogServers', 'CatalogCategories', 'Audit']},
     updateCatalogServerRcon: {invalidatesTags: ['CatalogServers', 'Audit']},
