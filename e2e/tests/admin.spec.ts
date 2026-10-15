@@ -132,8 +132,11 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
   const list = page.getByRole('list', {name: 'Products in Ranks'})
   await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Legend', 'Probe Rank'])
   await list.getByRole('button', {name: 'Move Probe Rank'}).focus()
+  // dnd-kit attaches its key listeners and measures rects asynchronously: pause between keys.
   await page.keyboard.press('Space')
+  await page.waitForTimeout(300)
   await page.keyboard.press('ArrowUp')
+  await page.waitForTimeout(300)
   await page.keyboard.press('Space')
   await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
   await page.reload()
