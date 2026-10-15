@@ -121,45 +121,57 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
   await page.getByRole('tab', {name: 'PL'}).click()
   await page.getByLabel('Name (PL)').fill('Ranga Próbna')
   await page.getByLabel('Grant commands').fill('lp user {nick} parent add probe')
-  await page.getByRole('button', {name: 'Save'}).click()
-  await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
-  await page.getByLabel('Enabled').check()
-  await page.getByRole('button', {name: 'Save'}).click()
-  await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
+  // From the first Save on the product may exist: always remove it, even when a step below fails,
+  // so the shared stack stays as the other e2e tests expect it (and a rerun can create it again).
+  try {
+    await page.getByRole('button', {name: 'Save'}).click()
+    await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
+    await page.getByLabel('Enabled').check()
+    await page.getByRole('button', {name: 'Save'}).click()
+    await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
 
-  // Keyboard drag: the new product starts last; one step up puts it above Legend.
-  await page.goto(`${ADMIN}/catalog`)
-  const list = page.getByRole('list', {name: 'Products in Ranks'})
-  await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Legend', 'Probe Rank'])
-  await list.getByRole('button', {name: 'Move Probe Rank'}).focus()
-  // dnd-kit attaches its key listeners and measures rects asynchronously: pause between keys.
-  await page.keyboard.press('Space')
-  await page.waitForTimeout(300)
-  await page.keyboard.press('ArrowUp')
-  await page.waitForTimeout(300)
-  await page.keyboard.press('Space')
-  await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
-  await page.reload()
-  await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
+    // Keyboard drag: the new product starts last; one step up puts it above Legend.
+    await page.goto(`${ADMIN}/catalog`)
+    const list = page.getByRole('list', {name: 'Products in Ranks'})
+    await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Legend', 'Probe Rank'])
+    await list.getByRole('button', {name: 'Move Probe Rank'}).focus()
+    // dnd-kit attaches its key listeners and measures rects asynchronously: pause between keys.
+    await page.keyboard.press('Space')
+    await page.waitForTimeout(300)
+    await page.keyboard.press('ArrowUp')
+    await page.waitForTimeout(300)
+    await page.keyboard.press('Space')
+    await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
+    await page.reload()
+    await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
 
-  // The storefront caches the catalog for up to 60 s.
-  const shop = await page.context().newPage()
-  await expect
-    .poll(
-      async () => {
-        await shop.goto(`${WEB}/`)
-        return shop.getByRole('button', {name: /^(Elite|Probe Rank|Legend)$/}).allTextContents()
-      },
-      {timeout: 90_000, intervals: [5_000]}
-    )
-    .toEqual(['Elite', 'Probe Rank', 'Legend'])
-
-  // Leave the shared stack as the other e2e tests expect it.
-  await page.getByRole('link', {name: 'Probe Rank'}).click()
-  await page.getByLabel('Enabled').uncheck()
-  await page.getByRole('button', {name: 'Save'}).click()
-  await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
-  await page.getByRole('button', {name: 'Delete'}).click()
-  await page.getByRole('button', {name: 'Confirm delete'}).click()
-  await expect(page).toHaveURL(/\/catalog$/)
+    // The storefront caches the catalog for up to 60 s.
+    const shop = await page.context().newPage()
+    await expect
+      .poll(
+        async () => {
+          await shop.goto(`${WEB}/`)
+          return shop.getByRole('button', {name: /^(Elite|Probe Rank|Legend)$/}).allTextContents()
+        },
+        {timeout: 90_000, intervals: [5_000]}
+      )
+      .toEqual(['Elite', 'Probe Rank', 'Legend'])
+  } finally {
+    await page.goto(`${ADMIN}/catalog`)
+    const probe = page.getByRole('list', {name: 'Products in Ranks'}).getByRole('link', {
+      name: 'Probe Rank'
+    })
+    if ((await probe.count()) > 0) {
+      await probe.click()
+      const enabled = page.getByLabel('Enabled')
+      if (await enabled.isChecked()) {
+        await enabled.uncheck()
+        await page.getByRole('button', {name: 'Save'}).click()
+        await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
+      }
+      await page.getByRole('button', {name: 'Delete'}).click()
+      await page.getByRole('button', {name: 'Confirm delete'}).click()
+      await expect(page).toHaveURL(/\/catalog$/)
+    }
+  }
 })
