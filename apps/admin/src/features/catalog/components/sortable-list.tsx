@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
-import type {HTMLAttributes, ReactNode} from 'react'
+import {type HTMLAttributes, type ReactNode, useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
 
@@ -53,6 +53,8 @@ export function SortableList<T extends {id: string}>({
     useSensor(KeyboardSensor, {coordinateGetter: sortableKeyboardCoordinates})
   )
   const ids = items.map(i => i.id)
+  // A stable id: dnd-kit's global counter differs between server and client render.
+  const dndId = useId()
 
   function onDragEnd({active, over}: DragEndEvent) {
     if (!over || active.id === over.id) return
@@ -63,6 +65,7 @@ export function SortableList<T extends {id: string}>({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={onDragEnd}
