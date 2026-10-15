@@ -39,6 +39,8 @@ services:
       # 10 / h per IP) would trip a rerun. Production keeps the defaults.
       RATE_LIMIT_OTP_EMAIL: '100'
       RATE_LIMIT_OTP_IP: '100'
+      # e2e only: a throwaway key, never used anywhere else.
+      RCON_ENCRYPTION_KEY: MEUuxU2yK9jLs4j3q7S+m6vFcpMJynMOdcvcUMTkKQs=
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}

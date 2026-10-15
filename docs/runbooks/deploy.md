@@ -77,6 +77,7 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 - `shop-api` (admin auth, ADR 0009):
   - `REDIS_URL` = the internal Redis URL (rate limits, permission cache, used TOTP codes). The admin limiters fail closed: while Redis is down, sign-in codes are not sent and the admin API and TOTP checks answer with errors (429/403/500). The storefront (`/api/catalog`, the web app) keeps working.
   - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
+  - `RCON_ENCRYPTION_KEY` = 32 random bytes in base64 (`openssl rand -base64 32`); it encrypts the RCON passwords stored by the catalog admin. Store it in your password manager: losing or changing it means re-entering every RCON password. Without it the RCON settings answer 503 (the shop keeps working). `RCON_ALLOW_PRIVATE_HOSTS` must stay unset in production: it would let an admin probe the server's internal network.
   - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
   - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
@@ -92,7 +93,7 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 - Authorized JavaScript origins: `https://admin.<domain>`, `http://admin.shop.localhost`
 - Authorized redirect URIs: `https://admin.<domain>/api/auth/callback/google`, `http://admin.shop.localhost/api/auth/callback/google`
 
-**Migrations (automatic).** The `shop-api` container runs `prisma migrate deploy` on every start, before the server listens. A failed migration stops the container: the deploy job then fails on the version check, and the logs of `shop-api` show the Prisma error. While the new container migrates, the old one may still serve, so a migration must not break the previous release (add columns first, drop them in a later release).
+**Migrations (automatic).** The `shop-api` container runs `prisma migrate deploy` on every start, before the server listens. A failed migration stops the container: the deploy job then fails on the version check, and the logs of `shop-api` show the Prisma error. While the new container migrates, the old one may still serve, so a migration must not break the previous release (add columns first, drop them in a later release). Migration `20261014100100_catalog_admin_permissions` gives the existing `ADMIN` role `catalog.write` and `server.rcon`.
 
 **Seed (once only).** After the first `shop-api` start has applied the migrations, run in its Terminal:
 
