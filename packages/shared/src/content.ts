@@ -28,11 +28,21 @@ export const SiteSettingsSchema = v.object({
   supportEmail: v.pipe(v.string(), v.trim(), v.email(), v.description('Support contact address'))
 })
 export type SiteSettings = v.InferOutput<typeof SiteSettingsSchema>
+
+/** Brand values before an admin edits them: the seed's first row and the storefront's fallback. */
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  siteName: {plain: 'Block', accent: 'haus'},
+  serverIp: 'mc.mineblaze.net',
+  discordUrl: 'https://discord.com',
+  supportEmail: 'support@blockhaus.example'
+}
+
+const MAX_INT = 2_147_483_647
 const Version = v.pipe(
   v.number(),
   v.integer(),
   v.minValue(1),
-  v.maxValue(2_147_483_647),
+  v.maxValue(MAX_INT),
   v.description('Row version for optimistic locking')
 )
 export const AdminSiteSettingsSchema = v.object({...SiteSettingsSchema.entries, version: Version})
@@ -50,7 +60,7 @@ export const RulesDraftUpdateSchema = v.object({
     v.number(),
     v.integer(),
     v.minValue(0),
-    v.maxValue(2_147_483_647),
+    v.maxValue(MAX_INT),
     v.description('The draft revision this edit was made from')
   )
 })
@@ -59,7 +69,7 @@ export const RulesPublishInputSchema = v.object({
     v.number(),
     v.integer(),
     v.minValue(0),
-    v.maxValue(2_147_483_647),
+    v.maxValue(MAX_INT),
     v.description('The draft revision being published; 409 `stale` if someone saved since')
   )
 })
@@ -73,6 +83,7 @@ export const RulesVersionsQuerySchema = v.object({
       v.string(),
       v.regex(/^[1-9]\d{0,9}$/),
       v.transform(Number),
+      v.maxValue(MAX_INT),
       v.description('nextCursor of the previous page')
     )
   )
@@ -80,7 +91,14 @@ export const RulesVersionsQuerySchema = v.object({
 
 export const MessageLocaleSchema = v.picklist(['en', 'pl'])
 export const MessageOverrideInputSchema = v.object({
-  value: v.pipe(v.string(), v.maxLength(2000), v.description('Replacement text, up to 2000 chars'))
+  value: v.pipe(
+    v.string(),
+    v.trim(),
+    // A blank override would blank a live text; resetting is the way back to the default.
+    v.minLength(1, 'Enter a text, or reset to use the default'),
+    v.maxLength(2000),
+    v.description('Replacement text, 1–2000 chars after trimming')
+  )
 })
 export const AdminMessageSchema = v.object({
   key: v.string(),

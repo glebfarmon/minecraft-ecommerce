@@ -79,6 +79,8 @@ describe('admin texts and settings API', () => {
       .send({value: 'Rules'})
       .expect(422)
     await editor.put('/api/admin/content/messages/de/hero.title').send({value: 'x'}).expect(400)
+    // A blank override would blank a live text; reset is the way back to the default.
+    await editor.put('/api/admin/content/messages/en/hero.title').send({value: '  '}).expect(400)
   })
 
   it('updates settings with the version and refuses a stale one', async () => {

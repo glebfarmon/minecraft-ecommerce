@@ -1304,7 +1304,7 @@ export type SetContentMessageApiArg = {
   locale: string
   key: string
   body: {
-    /** Replacement text, up to 2000 chars */
+    /** Replacement text, 1–2000 chars after trimming */
     value: string
   }
 }

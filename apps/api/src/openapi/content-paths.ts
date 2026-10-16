@@ -68,7 +68,13 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       operationId: 'getPublicSettings',
       summary: 'Site name, server address and contacts',
       description: `${NO_SESSION} Never cached by the browser.`,
-      responses: {'200': json('Site settings', SiteSettingsSchema)}
+      responses: {
+        '200': json('Site settings', SiteSettingsSchema),
+        '404': {
+          description:
+            '`not_found`: the settings row does not exist yet (the api creates it at start)'
+        }
+      }
     })
   },
   '/api/admin/content/rules/draft': {
@@ -76,7 +82,14 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       operationId: 'getRulesDraft',
       summary: 'The rules draft',
       description: `The working copy of the rules with its \`revision\`; it is invisible to players until published. ${write}`,
-      responses: {'200': json('The draft', RulesDraftSchema), ...guarded}
+      responses: {
+        '200': json('The draft', RulesDraftSchema),
+        ...guarded,
+        '404': {
+          description:
+            '`not_found`: the content rows do not exist yet (the api creates them at start)'
+        }
+      }
     }),
     put: adminOp({
       operationId: 'saveRulesDraft',
@@ -87,6 +100,10 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
         '200': json('The saved draft with its new revision', RulesDraftSchema),
         '400': {description: 'Invalid document, or a link that is not safe'},
         ...guarded,
+        '404': {
+          description:
+            '`not_found`: the content rows do not exist yet (the api creates them at start)'
+        },
         ...stale('the draft')
       }
     })
@@ -101,6 +118,10 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
         '201': json('The new version', v.object({id: v.number(), publishedAt: v.string()})),
         '400': {description: 'Missing or invalid `revision`'},
         ...guarded,
+        '404': {
+          description:
+            '`not_found`: the content rows do not exist yet (the api creates them at start)'
+        },
         ...stale('the draft')
       }
     })
@@ -115,7 +136,7 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       ],
       responses: {
         '200': json('A page of editions', RulesVersionListSchema),
-        '400': {description: 'Invalid cursor'},
+        '400': {description: 'Invalid cursor (not a positive integer up to 2147483647)'},
         ...guarded
       }
     })
@@ -129,7 +150,7 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       responses: {
         '201': json('The draft after the restore', RulesDraftSchema),
         ...guarded,
-        '404': {description: 'No such edition (`not_found`)'}
+        '404': {description: 'No such edition, or no draft yet (`not_found`)'}
       }
     })
   },
@@ -156,7 +177,8 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       responses: {
         '200': json('The message with its new text', AdminMessageSchema),
         '400': {
-          description: '`unknown_key`, `invalid_locale`, or Validation failed (invalid body)'
+          description:
+            '`unknown_key`, `invalid_locale`, or Validation failed (invalid body, or a blank text: reset instead)'
         },
         ...guarded,
         ...placeholderMismatch
@@ -179,7 +201,14 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
       operationId: 'getContentSettings',
       summary: 'Site settings with their version',
       description: `Site name, server address and contacts. ${write}`,
-      responses: {'200': json('Settings', AdminSiteSettingsSchema), ...guarded}
+      responses: {
+        '200': json('Settings', AdminSiteSettingsSchema),
+        ...guarded,
+        '404': {
+          description:
+            '`not_found`: the content rows do not exist yet (the api creates them at start)'
+        }
+      }
     }),
     put: adminOp({
       operationId: 'updateContentSettings',
@@ -190,6 +219,10 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
         '200': json('The saved settings', AdminSiteSettingsSchema),
         '400': {description: 'Invalid body'},
         ...guarded,
+        '404': {
+          description:
+            '`not_found`: the content rows do not exist yet (the api creates them at start)'
+        },
         ...stale('the settings')
       }
     })

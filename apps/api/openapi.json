@@ -4814,6 +4814,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "`not_found`: the settings row does not exist yet (the api creates it at start)"
           }
         },
         "tags": ["Content"]
@@ -4922,6 +4925,9 @@
           },
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
           }
         },
         "tags": ["Content admin"]
@@ -5121,6 +5127,9 @@
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
           },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          },
           "409": {
             "description": "`stale`: the draft changed since you read it (send the current value)"
           }
@@ -5180,6 +5189,9 @@
           },
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
           },
           "409": {
             "description": "`stale`: the draft changed since you read it (send the current value)"
@@ -5247,7 +5259,7 @@
             }
           },
           "400": {
-            "description": "Invalid cursor"
+            "description": "Invalid cursor (not a positive integer up to 2147483647)"
           },
           "401": {
             "description": "No session, or the admin is disabled"
@@ -5374,7 +5386,7 @@
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
           },
           "404": {
-            "description": "No such edition (`not_found`)"
+            "description": "No such edition, or no draft yet (`not_found`)"
           }
         },
         "tags": ["Content admin"]
@@ -5483,8 +5495,9 @@
                 "properties": {
                   "value": {
                     "type": "string",
+                    "minLength": 1,
                     "maxLength": 2000,
-                    "description": "Replacement text, up to 2000 chars"
+                    "description": "Replacement text, 1–2000 chars after trimming"
                   }
                 },
                 "required": ["value"]
@@ -5532,7 +5545,7 @@
             }
           },
           "400": {
-            "description": "`unknown_key`, `invalid_locale`, or Validation failed (invalid body)"
+            "description": "`unknown_key`, `invalid_locale`, or Validation failed (invalid body, or a blank text: reset instead)"
           },
           "401": {
             "description": "No session, or the admin is disabled"
@@ -5649,6 +5662,9 @@
           },
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
           }
         },
         "tags": ["Content admin"]
@@ -5772,6 +5788,9 @@
           },
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
           },
           "409": {
             "description": "`stale`: the settings changed since you read it (send the current value)"

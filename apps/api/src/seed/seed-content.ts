@@ -1,3 +1,5 @@
+import {DEFAULT_SITE_SETTINGS} from '@shop/shared/content'
+
 import type {Prisma, PrismaClient} from '../generated/prisma/client'
 import {DEMO_RULES, DEMO_RULES_PUBLISHED_AT} from './demo-rules'
 
@@ -17,11 +19,11 @@ export async function seedContent(prisma: PrismaClient): Promise<void> {
       update: {},
       create: {
         id: 1,
-        siteNamePlain: 'Block',
-        siteNameAccent: 'haus',
-        serverIp: 'mc.mineblaze.net',
-        discordUrl: 'https://discord.com',
-        supportEmail: 'support@blockhaus.example',
+        siteNamePlain: DEFAULT_SITE_SETTINGS.siteName.plain,
+        siteNameAccent: DEFAULT_SITE_SETTINGS.siteName.accent,
+        serverIp: DEFAULT_SITE_SETTINGS.serverIp,
+        discordUrl: DEFAULT_SITE_SETTINGS.discordUrl,
+        supportEmail: DEFAULT_SITE_SETTINGS.supportEmail,
         updatedBy: 'seed'
       }
     })

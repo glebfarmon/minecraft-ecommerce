@@ -27,7 +27,7 @@ Admins with `content.write` edit the rules (draft, publish, versions, restore), 
 - API §5 routes and validation limits.
 - Web §6.2–6.5: real bodies for `getRules`, `getSiteSettings`, `getMessageOverrides`; `applyOverrides` in `i18n/request.ts`; fallbacks (`DEFAULT_SITE_SETTINGS`, `{}` overrides, "Rules are temporarily unavailable").
 - Admin §7: `/content/rules` (editor with EN/PL tabs, "uses EN" hint, live preview with `RichText`, publish with confirmation, versions + restore), `/content/texts` (grouped, search, default/override/changed/reset, per-field errors), `/content/settings`. Navigation item "Content" visible with `content.write`.
-- `RichText` moves to `@shop/ui` so the admin preview uses the same renderer.
+- ~~`RichText` moves to `@shop/ui`~~ As built: the parser `parseInline` lives in `@shop/shared/rules` and each app keeps its own small renderer (web `features/rules/components/rich-text.tsx`, admin `features/content/components/rules-preview.tsx`), so `@shop/ui` stays free of rules markup and both apps parse the same way.
 - Allowlist §8 unchanged.
 
 ## 4. Testing

@@ -109,6 +109,8 @@ describe('admin rules API', () => {
     }
     expect(list.versions.length).toBe(before + 1)
     expect(list.versions[0]?.id).toBeGreaterThan(list.versions[1]?.id ?? 0)
+    await editor.get('/api/admin/content/rules/versions?cursor=2147483647').expect(200)
+    await editor.get('/api/admin/content/rules/versions?cursor=2147483648').expect(400)
   })
 
   it('refuses to publish a draft revision the admin has not seen, publishing nothing', async () => {
