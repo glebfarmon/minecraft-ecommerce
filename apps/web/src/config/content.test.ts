@@ -1,4 +1,5 @@
 /** @jest-environment node */
+export {}
 const load = async (value: string | undefined): Promise<number> => {
   const before = process.env.CONTENT_REVALIDATE_SECONDS
   if (value === undefined) delete process.env.CONTENT_REVALIDATE_SECONDS

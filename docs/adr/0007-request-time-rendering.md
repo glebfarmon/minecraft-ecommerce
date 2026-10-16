@@ -9,7 +9,7 @@ The storefront reads the catalog (and later site content) from `apps/api`. CI bu
 
 ## Decision
 
-`app/[locale]/layout.tsx` calls `await connection()` before reading data, so every `[locale]` route renders per request. Data is fetched with `fetch(url, {next: {revalidate: 60, tags: [...]}})`: the Next data cache serves repeat requests and refreshes in the background. No `generateStaticParams` for data-driven segments; unknown slugs are checked against the fetched data and `notFound()` is called.
+`app/[locale]/layout.tsx` calls `await connection()` before reading data, so every `[locale]` route renders per request. Data is fetched with `fetch(url, {next: {revalidate: 60, tags: [...]}})`: the Next data cache serves repeat requests and refreshes in the background. The 60 s is the default of `CATALOG_REVALIDATE_SECONDS` (env, positive integer); e2e sets 1. No `generateStaticParams` for data-driven segments; unknown slugs are checked against the fetched data and `notFound()` is called.
 
 ## Consequences
 

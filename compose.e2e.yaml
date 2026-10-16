@@ -54,6 +54,8 @@ services:
       API_ORIGIN: http://api:4000
       # Content (rules, texts, settings) refreshes after a second, so the e2e need not wait a minute.
       CONTENT_REVALIDATE_SECONDS: '1'
+      # Same for the catalog, so a product the e2e just enabled shows on the storefront within seconds.
+      CATALOG_REVALIDATE_SECONDS: '1'
     depends_on:
       api: {condition: service_healthy}
 

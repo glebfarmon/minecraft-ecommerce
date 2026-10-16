@@ -145,7 +145,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     await page.reload()
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
 
-    // The storefront caches the catalog for up to 60 s.
+    // The e2e stack sets CATALOG_REVALIDATE_SECONDS=1; allow for the stale-while-revalidate turnover under CI load.
     const shop = await page.context().newPage()
     await expect
       .poll(
@@ -153,7 +153,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
           await shop.goto(`${WEB}/`)
           return shop.getByRole('button', {name: /^(Elite|Probe Rank|Legend)$/}).allTextContents()
         },
-        {timeout: 90_000, intervals: [5_000]}
+        {timeout: 30_000, intervals: [2_000]}
       )
       .toEqual(['Elite', 'Probe Rank', 'Legend'])
   } finally {
