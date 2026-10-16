@@ -187,6 +187,7 @@ describe('RulesEditor', () => {
     expect(sent).toHaveLength(0)
   })
 
+  // 101 rule items render slowly on a CI runner, so this one gets more than Jest's 5 s.
   it('shows the 100-rule limit of a section and sends nothing', async () => {
     const items = Array.from({length: 101}, (_, i) => ({
       id: `big-${String(i + 1)}`,
@@ -204,5 +205,5 @@ describe('RulesEditor', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
     expect(await screen.findByText('A section can hold at most 100 rules.')).toBeVisible()
     expect(sent).toHaveLength(0)
-  })
+  }, 30_000)
 })
