@@ -1,0 +1,54 @@
+{
+  "name": "@shop/messages",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./en.json": "./en.json",
+    "./pl.json": "./pl.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "jest": {
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest",
+      "^.+/node_modules/.+/@formatjs/.+\\.js$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "allowJs": true,
+            "module": "commonjs",
+            "esModuleInterop": true
+          }
+        }
+      ]
+    },
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "/node_modules/(?!\\.pnpm|@formatjs)"
+    ]
+  },
+  "dependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.20"
+  },
+  "devDependencies": {
+    "@shop/config": "workspace:*",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.6.3",
+    "eslint": "^9.39.5",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
+    "typescript": "^6.0.3"
+  }
+}
