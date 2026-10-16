@@ -1,4 +1,5 @@
 /** @jest-environment node */
+import {CONTENT_FETCH_TIMEOUT_MS} from '@/config/content'
 import * as v from 'valibot'
 
 import {contentFetch} from './content-fetch'
@@ -17,6 +18,14 @@ describe('contentFetch', () => {
       next: {revalidate: 60, tags: ['content-x']},
       signal: expect.any(AbortSignal)
     })
+  })
+
+  it('gives up after CONTENT_FETCH_TIMEOUT_MS (2 s), so a slow API cannot hold the page', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json({a: 'x'}))
+    const timeout = jest.spyOn(AbortSignal, 'timeout')
+    await contentFetch('/api/content/x', Schema, 't')
+    expect(CONTENT_FETCH_TIMEOUT_MS).toBe(2000)
+    expect(timeout).toHaveBeenCalledWith(CONTENT_FETCH_TIMEOUT_MS)
   })
 
   it('returns null on a 404', async () => {

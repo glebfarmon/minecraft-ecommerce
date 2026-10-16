@@ -1,22 +1,15 @@
 import type {PublicRules} from '@/features/rules/types'
 import type {Locale} from '@/i18n/routing'
-import {contentFetch} from '@/lib/content-fetch'
+import {loadContent} from '@/lib/content-fetch'
+import {cache} from 'react'
 
 import {PublicRulesSchema} from '@shop/shared/rules'
 
 /**
  * Published rules for `locale` from `/api/content/rules` (ADR 0007/0008). `null` when nothing is published (404,
- * not logged) or when the API cannot answer (logged); the page then shows the unavailable state.
+ * not logged) or when the API cannot answer (logged); the page then shows the unavailable state. `cache`: one
+ * fetch per request (the timeout signal turns off Next's own fetch dedupe).
  */
-export async function getRules(locale: Locale): Promise<PublicRules | null> {
-  try {
-    return await contentFetch(
-      `/api/content/rules?locale=${locale}`,
-      PublicRulesSchema,
-      'content-rules'
-    )
-  } catch (error) {
-    console.error(error)
-    return null
-  }
-}
+export const getRules = cache((locale: Locale): Promise<PublicRules | null> =>
+  loadContent(`/api/content/rules?locale=${locale}`, PublicRulesSchema, 'content-rules', null)
+)

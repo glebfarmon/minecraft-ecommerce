@@ -1,8 +1,18 @@
 /** @jest-environment node */
 import {DEFAULT_SITE_SETTINGS} from '@/config/site'
+import {newRequest} from '@/test/request-cache'
 
 import {getSiteSettings} from './get-site-settings'
 
+jest.mock('react', () => ({
+  ...jest.requireActual<typeof import('react')>('react'),
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories cannot import
+  cache: (require('@/test/request-cache') as typeof import('@/test/request-cache')).requestCache
+}))
+
+beforeEach(() => {
+  newRequest()
+})
 afterEach(() => {
   jest.restoreAllMocks()
 })
@@ -21,6 +31,14 @@ describe('getSiteSettings', () => {
       expect.stringMatching(/\/api\/content\/settings$/),
       expect.objectContaining({next: {revalidate: 60, tags: ['content-settings']}})
     )
+  })
+
+  it('fetches once per request however many components ask', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(Response.json(DEFAULT_SITE_SETTINGS))
+    await Promise.all([getSiteSettings(), getSiteSettings()])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it.each([
