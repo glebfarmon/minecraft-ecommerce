@@ -3,7 +3,13 @@ import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {TextsTable} from './texts-table'
 
-type Msg = {key: string; namespace: string; default: string; override: string | null}
+type Msg = {
+  key: string
+  namespace: string
+  default: string
+  override: string | null
+  stale?: boolean
+}
 
 const LONG = 'L'.repeat(100)
 
@@ -56,6 +62,21 @@ describe('TextsTable', () => {
     const hero = screen.getByLabelText('Override for hero.title').closest('tr') as HTMLElement
     expect(within(hero).queryByRole('alert')).not.toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(1)
+  })
+
+  it('flags an override that no longer fits its default as needing an update', async () => {
+    mockApi(
+      () => Response.json({}),
+      () =>
+        messages().map(m => (m.key === 'rules.title' ? {...m, override: 'Old', stale: true} : m))
+    )
+    renderWithStore(<TextsTable />)
+    const rules = (await screen.findByLabelText('Override for rules.title')).closest(
+      'tr'
+    ) as HTMLElement
+    expect(within(rules).getByText('needs update')).toBeInTheDocument()
+    const hero = screen.getByLabelText('Override for hero.title').closest('tr') as HTMLElement
+    expect(within(hero).queryByText('needs update')).not.toBeInTheDocument()
   })
 
   it('groups rows under namespace headings and uses a textarea for long texts', async () => {

@@ -1284,6 +1284,8 @@ export type ListContentMessagesApiResponse = /** status 200 Messages */ {
   default: string
   /** Edited text, null when not overridden */
   override: string | null
+  /** The override no longer has the placeholders or tags of the default (changed by a deploy); the site shows the default until it is fixed */
+  stale: boolean
 }[]
 export type ListContentMessagesApiArg = {
   locale: 'en' | 'pl'
@@ -1295,6 +1297,8 @@ export type SetContentMessageApiResponse = /** status 200 The message with its n
   default: string
   /** Edited text, null when not overridden */
   override: string | null
+  /** The override no longer has the placeholders or tags of the default (changed by a deploy); the site shows the default until it is fixed */
+  stale: boolean
 }
 export type SetContentMessageApiArg = {
   locale: string

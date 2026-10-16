@@ -146,6 +146,13 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
           {message.override !== null && (
             <span className="w-fit rounded bg-accent px-2 py-0.5 text-xs">changed</span>
           )}
+          {message.stale && (
+            <span
+              className="text-destructive w-fit rounded border border-current px-2 py-0.5 text-xs"
+              title="The default text changed its placeholders or tags. The site shows the default until you save a matching text.">
+              needs update
+            </span>
+          )}
           {error && (
             <p id={errorId} role="alert" className="text-destructive text-xs">
               {error}

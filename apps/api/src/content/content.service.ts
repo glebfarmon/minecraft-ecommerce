@@ -1,13 +1,13 @@
 import {Injectable, InternalServerErrorException, Logger, NotFoundException} from '@nestjs/common'
 import * as v from 'valibot'
 
-import {isEditableKey} from '@shop/messages'
 import type {Locale} from '@shop/shared/catalog'
 import type {SiteSettings} from '@shop/shared/content'
 import {type PublicRules, RulesDocumentSchema} from '@shop/shared/rules'
 
 import {PrismaService} from '../prisma/prisma.service'
 import {localizeRules} from './localize-rules'
+import {fitsDefault} from './messages-admin.service'
 
 @Injectable()
 export class ContentService {
@@ -33,7 +33,14 @@ export class ContentService {
       where: {locale},
       orderBy: {key: 'asc'}
     })
-    return Object.fromEntries(rows.filter(r => isEditableKey(r.key)).map(r => [r.key, r.value]))
+    // A deploy can change a default's placeholders or tags under a stored override; serving it
+    // would break next-intl on the live site, so the default applies until an admin fixes it.
+    const fitting = rows.filter(r => {
+      if (fitsDefault(locale, r.key, r.value)) return true
+      this.logger.warn(`Dropped stale message override ${locale}:${r.key}`)
+      return false
+    })
+    return Object.fromEntries(fitting.map(r => [r.key, r.value]))
   }
 
   async settings(): Promise<SiteSettings> {

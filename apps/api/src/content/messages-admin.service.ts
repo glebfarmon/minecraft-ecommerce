@@ -32,13 +32,24 @@ export function checkOverride(locale: MessageLocale, key: string, value: string)
   if (expected.join('\n') !== found.join('\n')) throw mismatch(expected, found)
 }
 
+/** False when a stored override no longer fits its default (a deploy changed its placeholders or tags). */
+export function fitsDefault(locale: MessageLocale, key: string, value: string): boolean {
+  try {
+    checkOverride(locale, key, value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 const EDITABLE_KEYS = Object.keys(flattenMessages(en)).filter(isEditableKey).sort()
 
 const toMessage = (locale: MessageLocale, key: string, override: string | null): AdminMessage => ({
   key,
   namespace: key.split('.')[0] ?? key,
   default: getMessage(locale, key) ?? '',
-  override
+  override,
+  stale: override !== null && !fitsDefault(locale, key, override)
 })
 
 @Injectable()

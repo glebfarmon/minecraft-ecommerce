@@ -86,7 +86,13 @@ export const AdminMessageSchema = v.object({
   key: v.string(),
   namespace: v.string(),
   default: v.pipe(v.string(), v.description('Built-in text')),
-  override: v.pipe(v.nullable(v.string()), v.description('Edited text, null when not overridden'))
+  override: v.pipe(v.nullable(v.string()), v.description('Edited text, null when not overridden')),
+  stale: v.pipe(
+    v.boolean(),
+    v.description(
+      'The override no longer has the placeholders or tags of the default (changed by a deploy); the site shows the default until it is fixed'
+    )
+  )
 })
 export const AdminMessagesSchema = v.array(AdminMessageSchema)
 export const PublicMessagesSchema = v.record(v.string(), v.string())
