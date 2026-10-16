@@ -39,6 +39,10 @@ services:
       # 10 / h per IP) would trip a rerun. Production keeps the defaults.
       RATE_LIMIT_OTP_EMAIL: '100'
       RATE_LIMIT_OTP_IP: '100'
+      # The web server fetches the catalog and content from one IP; with 1 s cache lifetimes and
+      # parallel workers it passes 100 requests/min, a 429 keeps the stale page and the e2e that
+      # waits for an admin edit on the storefront times out.
+      RATE_LIMIT_DEFAULT: '10000'
       # e2e only: a throwaway key, never used anywhere else.
       RCON_ENCRYPTION_KEY: MEUuxU2yK9jLs4j3q7S+m6vFcpMJynMOdcvcUMTkKQs=
     depends_on:
