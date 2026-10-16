@@ -44,6 +44,33 @@ describe('admin texts and settings API', () => {
       })
   })
 
+  it('audits an override and a reset with the key, language and previous text', async () => {
+    const editor = await ctx.admin({permissions: ['content.write']})
+    const url = '/api/admin/content/messages/en/hero.title'
+    await editor.put(url).send({value: 'First'}).expect(200)
+    await editor.put(url).send({value: 'Second'}).expect(200)
+    await editor.delete(url).expect(204)
+    // The interceptor writes audit rows after the response.
+    const rows = await waitForRows(3)
+    expect(rows.map(r => [r.action, r.entityId, r.before])).toEqual([
+      ['message.override', 'en:hero.title', {locale: 'en', key: 'hero.title', value: null}],
+      ['message.override', 'en:hero.title', {locale: 'en', key: 'hero.title', value: 'First'}],
+      ['message.reset', 'en:hero.title', {locale: 'en', key: 'hero.title', value: 'Second'}]
+    ])
+  })
+
+  async function waitForRows(n: number) {
+    for (let i = 0; i < 50; i += 1) {
+      const rows = await ctx.prisma.auditLog.findMany({
+        where: {entityType: 'message', entityId: 'en:hero.title'},
+        orderBy: {createdAt: 'asc'}
+      })
+      if (rows.length >= n) return rows
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    throw new Error(`expected ${String(n)} audit rows`)
+  }
+
   it('refuses unknown keys and placeholder changes', async () => {
     const editor = await ctx.admin({permissions: ['content.write']})
     await editor.put('/api/admin/content/messages/en/cart.title').send({value: 'x'}).expect(400)

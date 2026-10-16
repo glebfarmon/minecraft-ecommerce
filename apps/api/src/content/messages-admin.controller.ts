@@ -13,7 +13,7 @@ import {RequirePermission} from '../access/require-permission'
 import {type AuditableRequest, Audited} from '../audit/audit.interceptor'
 import {badRequest} from '../common/http-errors'
 import {ValibotPipe} from '../common/valibot.pipe'
-import {MessagesAdminService} from './messages-admin.service'
+import {type MessageBefore, MessagesAdminService} from './messages-admin.service'
 
 const LocaleQuerySchema = v.object({locale: MessageLocaleSchema})
 
@@ -21,6 +21,12 @@ const localeOf = (raw: string): 'en' | 'pl' => {
   const parsed = v.safeParse(MessageLocaleSchema, raw)
   if (!parsed.success) throw badRequest('invalid_locale')
   return parsed.output
+}
+
+/** The audit row names the text as `locale:key` and keeps the text it replaced. */
+const auditTo = (req: AuditableRequest) => (before: MessageBefore) => {
+  req.auditBefore = before
+  req.auditEntityId = `${before.locale}:${before.key}`
 }
 
 @AdminController('content/messages')
@@ -45,14 +51,18 @@ export class MessagesAdminController {
     body: v.InferOutput<typeof MessageOverrideInputSchema>,
     @Req() req: AuditableRequest
   ): Promise<AdminMessage> {
-    return this.messages.set(localeOf(locale), key, body.value, adminOf(req).email)
+    return this.messages.set(localeOf(locale), key, body.value, adminOf(req).email, auditTo(req))
   }
 
   @Delete(':locale/:key')
   @HttpCode(204)
   @RequirePermission('content.write')
   @Audited('message.reset', 'message')
-  async reset(@Param('locale') locale: string, @Param('key') key: string): Promise<void> {
-    await this.messages.reset(localeOf(locale), key)
+  async reset(
+    @Param('locale') locale: string,
+    @Param('key') key: string,
+    @Req() req: AuditableRequest
+  ): Promise<void> {
+    await this.messages.reset(localeOf(locale), key, auditTo(req))
   }
 }

@@ -38,6 +38,34 @@ describe('AuditInterceptor', () => {
     })
   })
 
+  it('prefers an entity id the handler set over the path id', async () => {
+    const record = jest.fn(() => Promise.resolve())
+    const interceptor = new AuditInterceptor(
+      {record} as never,
+      {getAllAndOverride: () => ({action: 'message.reset', entityType: 'message'})} as never
+    )
+    await lastValueFrom(
+      interceptor.intercept(
+        ctx({
+          method: 'DELETE',
+          params: {locale: 'pl', key: 'hero.title'},
+          headers: {},
+          socket: {remoteAddress: '::1'},
+          admin: {userId: 'u1'},
+          auditEntityId: 'pl:hero.title',
+          auditBefore: {locale: 'pl', key: 'hero.title', value: 'Old'}
+        }),
+        {handle: () => of(undefined)}
+      )
+    )
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 'pl:hero.title',
+        before: {locale: 'pl', key: 'hero.title', value: 'Old'}
+      })
+    )
+  })
+
   it('names unannotated handlers after the method and path', async () => {
     const record = jest.fn(() => Promise.resolve())
     const interceptor = new AuditInterceptor(

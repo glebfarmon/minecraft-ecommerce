@@ -8,6 +8,8 @@ import {badRequest} from '../common/http-errors'
 import {PrismaService} from '../prisma/prisma.service'
 
 type MessageLocale = 'en' | 'pl'
+/** What an override or reset replaced, for the audit row. */
+export type MessageBefore = {locale: MessageLocale; key: string; value: string | null}
 
 const mismatch = (expected: string[], found: string[]) =>
   new UnprocessableEntityException({
@@ -49,22 +51,36 @@ export class MessagesAdminService {
     return EDITABLE_KEYS.map(key => toMessage(locale, key, overrides.get(key) ?? null))
   }
 
-  async set(
+  /** `onBefore` gets the text it replaces (`null` when the default applied), for the audit row. */
+  set(
     locale: MessageLocale,
     key: string,
     value: string,
-    actorEmail: string
+    actorEmail: string,
+    onBefore: (before: MessageBefore) => void
   ): Promise<AdminMessage> {
     checkOverride(locale, key, value)
-    await this.prisma.messageOverride.upsert({
-      where: {locale_key: {locale, key}},
-      create: {locale, key, value, updatedBy: actorEmail},
-      update: {value, updatedBy: actorEmail}
+    return this.prisma.$transaction(async tx => {
+      const previous = await tx.messageOverride.findUnique({where: {locale_key: {locale, key}}})
+      await tx.messageOverride.upsert({
+        where: {locale_key: {locale, key}},
+        create: {locale, key, value, updatedBy: actorEmail},
+        update: {value, updatedBy: actorEmail}
+      })
+      onBefore({locale, key, value: previous?.value ?? null})
+      return toMessage(locale, key, value)
     })
-    return toMessage(locale, key, value)
   }
 
-  async reset(locale: MessageLocale, key: string): Promise<void> {
-    await this.prisma.messageOverride.deleteMany({where: {locale, key}})
+  reset(
+    locale: MessageLocale,
+    key: string,
+    onBefore: (before: MessageBefore) => void
+  ): Promise<void> {
+    return this.prisma.$transaction(async tx => {
+      const previous = await tx.messageOverride.findUnique({where: {locale_key: {locale, key}}})
+      await tx.messageOverride.deleteMany({where: {locale, key}})
+      onBefore({locale, key, value: previous?.value ?? null})
+    })
   }
 }
