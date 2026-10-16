@@ -324,10 +324,17 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -452,7 +459,13 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -461,7 +474,13 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -474,6 +493,7 @@ export type PostApiAdminRolesApiArg = {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
 }
@@ -482,7 +502,13 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -496,6 +522,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
 }

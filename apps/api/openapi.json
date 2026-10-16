@@ -261,7 +261,8 @@
                               "audit.read",
                               "catalog.write",
                               "server.rcon",
-                              "content.write"
+                              "content.write",
+                              "order.read"
                             ],
                             "type": "string"
                           }
@@ -278,7 +279,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }
@@ -1004,7 +1006,8 @@
                             "audit.read",
                             "catalog.write",
                             "server.rcon",
-                            "content.write"
+                            "content.write",
+                            "order.read"
                           ],
                           "type": "string"
                         }
@@ -1047,7 +1050,8 @@
                         "audit.read",
                         "catalog.write",
                         "server.rcon",
-                        "content.write"
+                        "content.write",
+                        "order.read"
                       ],
                       "type": "string"
                     }
@@ -1085,7 +1089,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }
@@ -1145,7 +1150,8 @@
                         "audit.read",
                         "catalog.write",
                         "server.rcon",
-                        "content.write"
+                        "content.write",
+                        "order.read"
                       ],
                       "type": "string"
                     }
@@ -1183,7 +1189,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }

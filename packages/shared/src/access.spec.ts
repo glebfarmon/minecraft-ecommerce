@@ -9,16 +9,22 @@ import {
 } from './access'
 
 describe('access contract', () => {
-  it('gives the owner every permission and support none', () => {
+  it('gives the owner every permission', () => {
     expect([...SYSTEM_ROLES.OWNER].sort()).toEqual([...PERMISSIONS].sort())
     expect(SYSTEM_ROLES.ADMIN).toEqual([
       'admin.invite',
       'audit.read',
       'catalog.write',
       'server.rcon',
-      'content.write'
+      'content.write',
+      'order.read'
     ])
-    expect(SYSTEM_ROLES.SUPPORT).toEqual([])
+    expect(SYSTEM_ROLES.SUPPORT).toEqual(['order.read'])
+  })
+
+  it('lets admin and support read orders', () => {
+    expect(SYSTEM_ROLES.ADMIN).toContain('order.read')
+    expect(SYSTEM_ROLES.SUPPORT).toContain('order.read')
   })
 
   it('checks a permission', () => {
@@ -51,6 +57,6 @@ describe('catalog permissions', () => {
     expect(PERMISSIONS).toEqual(
       expect.arrayContaining(['catalog.write', 'server.rcon', 'content.write'])
     )
-    expect(SYSTEM_ROLES.SUPPORT).toEqual([])
+    expect(SYSTEM_ROLES.SUPPORT).toEqual(['order.read'])
   })
 })
