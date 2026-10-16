@@ -49,6 +49,36 @@ describe('admin rules API', () => {
     expect(now.content.sections[0]?.title.en).toBe('Basics')
   })
 
+  it('saves a long bilingual rulebook (~300 KB of JSON)', async () => {
+    const editor = await ctx.admin({permissions: ['content.write']})
+    const draft = (await editor.get('/api/admin/content/rules/draft').expect(200)).body as Draft
+    const text = (n: string) => ({
+      en: `Rule ${n} `.padEnd(500, 'e'),
+      pl: `Zasada ${n} `.padEnd(500, 'p')
+    })
+    const big = {
+      revision: draft.revision,
+      content: {
+        sections: Array.from({length: 10}, (_, s) => ({
+          id: `big-${String(s)}`,
+          title: {en: `Section ${String(s)}`},
+          items: Array.from({length: 30}, (_, i) => ({
+            id: `big-${String(s)}-${String(i)}`,
+            text: text(`${String(s)}.${String(i)}`)
+          }))
+        }))
+      }
+    }
+    expect(JSON.stringify(big).length).toBeGreaterThan(300_000)
+    const saved = (await editor.put('/api/admin/content/rules/draft').send(big).expect(200))
+      .body as Draft
+    // Put the previous draft back for the tests below.
+    await editor
+      .put('/api/admin/content/rules/draft')
+      .send({revision: saved.revision, content: draft.content})
+      .expect(200)
+  })
+
   it('refuses unsafe links in the draft', async () => {
     const editor = await ctx.admin({permissions: ['content.write']})
     const draft = (await editor.get('/api/admin/content/rules/draft').expect(200)).body as Draft

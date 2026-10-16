@@ -49,6 +49,8 @@ export function apiErrorMessage(error: unknown): string {
   const known = code ? MESSAGES[code] : undefined
   if (known) return known
   if (e?.status === 404) return 'That item no longer exists. Refresh the page.'
+  // The body parser answers 413 before the API sees the body; only the rules draft gets that big.
+  if (e?.status === 413) return 'The rules are too long to save in one go.'
   if (e?.status === 429) return 'Too many requests. Wait a moment and try again.'
   return 'Something went wrong. Try again.'
 }

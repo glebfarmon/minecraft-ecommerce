@@ -14,6 +14,12 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage({status: 409, data: {message: code}})).toBe(text)
   })
 
+  it('explains a body too large for the API (413)', () => {
+    expect(apiErrorMessage({status: 413, data: 'PayloadTooLargeError'})).toBe(
+      'The rules are too long to save in one go.'
+    )
+  })
+
   it('explains a body the API refused as invalid', () => {
     expect(apiErrorMessage({status: 400, data: {message: 'Validation failed', issues: {}}})).toBe(
       'Some fields are invalid. Check the form and try again.'
