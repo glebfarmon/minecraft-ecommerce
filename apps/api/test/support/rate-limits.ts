@@ -11,6 +11,7 @@ export function relaxRateLimits(): void {
     'RATE_LIMIT_2FA_DAY',
     'RATE_LIMIT_ADMIN',
     'RATE_LIMIT_ADMIN_IP',
+    'RATE_LIMIT_ORDER',
     'RATE_LIMIT_DEFAULT'
   ])
     process.env[name] = '10000'
