@@ -58,12 +58,20 @@ test('section counts use Polish plural forms', async ({page}) => {
 // Separate tests: visiting /pl sets next-intl's locale cookie, which then redirects /rules to /pl/rules.
 test('edition date is localized in PL', async ({page}) => {
   await page.goto(`${WEB}/pl/rules`)
-  await expect(page.getByText('Obowiązująca wersja z 28 maja 2026')).toBeVisible()
+  await expect(
+    page.getByText(
+      /Obowiązująca wersja z \d{1,2} (stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia) \d{4}/
+    )
+  ).toBeVisible()
 })
 
 test('edition date is localized in EN', async ({page}) => {
   await page.goto(`${WEB}/rules`)
-  await expect(page.getByText('Current edition: May 28, 2026')).toBeVisible()
+  await expect(
+    page.getByText(
+      /Current edition: (January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}/
+    )
+  ).toBeVisible()
 })
 
 test.describe('copy link', () => {

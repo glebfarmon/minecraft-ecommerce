@@ -244,7 +244,7 @@ test('the owner overrides the hero title and the home page shows it', async ({pa
   await page.getByRole('link', {name: 'Content', exact: true}).click()
   await page.getByRole('link', {name: 'Texts', exact: true}).click()
   await page.getByLabel('Search texts').fill('hero.title')
-  const row = page.getByRole('row').filter({hasText: /^hero\.title\b/})
+  const row = page.getByRole('row').filter({has: page.getByLabel('Override for hero.title')})
   const original = (await row.getByRole('cell').nth(1).innerText()).trim()
   expect(original).not.toBe('')
   // Plain words change; placeholders ({count}) and tags (<b>) stay as they are.
@@ -276,7 +276,7 @@ test('the owner overrides the hero title and the home page shows it', async ({pa
     await page.getByLabel('Search texts').fill('hero.title')
     const reset = page
       .getByRole('row')
-      .filter({hasText: /^hero\.title\b/})
+      .filter({has: page.getByLabel('Override for hero.title')})
       .getByRole('button', {
         name: 'Reset'
       })
