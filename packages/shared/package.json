@@ -11,6 +11,14 @@
       "types": "./dist/catalog-admin.d.ts",
       "default": "./dist/catalog-admin.js"
     },
+    "./content": {
+      "types": "./dist/content.d.ts",
+      "default": "./dist/content.js"
+    },
+    "./rules": {
+      "types": "./dist/rules.d.ts",
+      "default": "./dist/rules.js"
+    },
     "./catalog": {
       "types": "./dist/catalog.d.ts",
       "default": "./dist/catalog.js"

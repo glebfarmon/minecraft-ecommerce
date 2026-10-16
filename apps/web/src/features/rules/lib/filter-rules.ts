@@ -1,6 +1,7 @@
-import {parseInline, toPlainText} from '@/features/rules/lib/inline-markdown'
 import {findMatches} from '@/features/rules/lib/normalize-search'
 import type {RuleSection} from '@/features/rules/types'
+
+import {parseInline, toPlainText} from '@shop/shared/rules'
 
 const hit = (text: string, query: string, locale: string) =>
   findMatches(text, query, locale).length > 0

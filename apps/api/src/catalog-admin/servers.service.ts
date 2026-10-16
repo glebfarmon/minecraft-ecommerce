@@ -9,10 +9,10 @@ import type {
 } from '@shop/shared/catalog-admin'
 
 import {badRequest, conflict, inUse, notFound, stale} from '../common/http-errors'
+import {assertUpdated} from '../common/versioned'
 import {PrismaService} from '../prisma/prisma.service'
 import {assertSameOrder, assertSameSet, isPrismaError, serializable} from './order'
 import {serverInclude, toAdminServer} from './servers.mapper'
-import {assertUpdated} from './versioned'
 
 const slugTaken = (error: unknown): never => {
   if (isPrismaError(error, 'P2002')) throw conflict('slug_taken')

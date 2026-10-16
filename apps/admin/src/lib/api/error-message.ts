@@ -19,6 +19,9 @@ const MESSAGES: Record<string, string | undefined> = {
   'rcon_host_unresolvable': 'That host name does not resolve. Check it for typos.',
   'rcon_not_configured': 'Set host, port and password first.',
   'rcon_key_missing': 'RCON is not configured on the server (RCON_ENCRYPTION_KEY).',
+  'not_published': 'Publish the draft first.',
+  'unknown_key': 'That text no longer exists. Refresh the page.',
+  'invalid_locale': 'Unknown language.',
   // ValibotPipe's message for a body that fails the shared schema.
   'Validation failed': 'Some fields are invalid. Check the form and try again.'
 }
@@ -37,9 +40,17 @@ export function apiErrorMessage(error: unknown): string {
     if (counts.length > 0)
       return `This is still in use: ${counts.join(', ')}. Move or delete them first.`
   }
+  if (code === 'placeholder_mismatch') {
+    const expected = e?.data?.issues?.expected
+    if (Array.isArray(expected) && expected.length > 0)
+      return `Keep the same placeholders and tags as the original: ${expected.join(', ')}`
+    return 'Keep the same placeholders and tags as the original.'
+  }
   const known = code ? MESSAGES[code] : undefined
   if (known) return known
   if (e?.status === 404) return 'That item no longer exists. Refresh the page.'
+  // The body parser answers 413 before the API sees the body; only the rules draft gets that big.
+  if (e?.status === 413) return 'The rules are too long to save in one go.'
   if (e?.status === 429) return 'Too many requests. Wait a moment and try again.'
   return 'Something went wrong. Try again.'
 }

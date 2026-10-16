@@ -8,7 +8,8 @@ import {configureApp} from './configure-app'
 
 /**
  * Better Auth reads the raw request body, so Nest's own body parser is off; the integration
- * re-adds JSON and URL-encoded parsing for every route outside /api/auth.
+ * re-adds JSON (limit `JSON_BODY_LIMIT` in auth/auth.module.ts) and URL-encoded parsing for every
+ * route outside /api/auth.
  * `rootModule` lets tests wrap AppModule with test-only controllers.
  */
 export async function createApp(rootModule: Type = AppModule): Promise<INestApplication<Server>> {

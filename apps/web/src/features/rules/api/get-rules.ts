@@ -1,23 +1,15 @@
-import {RULES_EN} from '@/features/rules/data/rules.en'
-import {RULES_PL} from '@/features/rules/data/rules.pl'
-import type {PublicRules, RulesSource} from '@/features/rules/types'
+import type {PublicRules} from '@/features/rules/types'
 import type {Locale} from '@/i18n/routing'
+import {loadContent} from '@/lib/content-fetch'
+import {cache} from 'react'
 
-const SOURCES: Record<Locale, RulesSource> = {en: RULES_EN, pl: RULES_PL}
+import {PublicRulesSchema} from '@shop/shared/rules'
 
 /**
- * Published rules for `locale`, or `null` when nothing is published.
- * Phase 1 reads the demo files; phase 2 fetches `/api/content/rules` behind `'use cache'` (spec §6.2)
- * and keeps this signature.
+ * Published rules for `locale` from `/api/content/rules` (ADR 0007/0008). `null` when nothing is published (404,
+ * not logged) or when the API cannot answer (logged); the page then shows the unavailable state. `cache`: one
+ * fetch per request (the timeout signal turns off Next's own fetch dedupe).
  */
-export function getRules(locale: Locale): Promise<PublicRules | null> {
-  const source = SOURCES[locale]
-  return Promise.resolve({
-    publishedAt: source.publishedAt,
-    sections: source.sections.map(section => ({
-      id: section.id,
-      title: {value: section.title, lang: locale},
-      items: section.items.map(item => ({id: item.id, text: {value: item.text, lang: locale}}))
-    }))
-  })
-}
+export const getRules = cache((locale: Locale): Promise<PublicRules | null> =>
+  loadContent(`/api/content/rules?locale=${locale}`, PublicRulesSchema, 'content-rules', null)
+)

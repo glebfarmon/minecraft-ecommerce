@@ -3,6 +3,8 @@ import {TEST_CATALOG} from '@/features/catalog/test-catalog'
 
 import {getCatalog, loadCatalog} from './get-catalog'
 
+jest.mock('@/config/catalog', () => ({CATALOG_REVALIDATE_SECONDS: 7}))
+
 const respond = (status: number, body: unknown) =>
   jest.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), {status}))
 
@@ -11,11 +13,11 @@ afterEach(() => {
 })
 
 describe('getCatalog', () => {
-  it('fetches the locale with a 60 s tagged cache and parses the body', async () => {
+  it('fetches the locale with the configured tagged cache and parses the body', async () => {
     const fetchMock = respond(200, TEST_CATALOG)
     await expect(getCatalog('pl')).resolves.toEqual(TEST_CATALOG)
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:4000/api/catalog?locale=pl', {
-      next: {revalidate: 60, tags: ['catalog']},
+      next: {revalidate: 7, tags: ['catalog']},
       signal: expect.any(AbortSignal)
     })
   })

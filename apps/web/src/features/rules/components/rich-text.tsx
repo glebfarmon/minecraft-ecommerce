@@ -1,6 +1,7 @@
-import {parseInline} from '@/features/rules/lib/inline-markdown'
 import type {ReactNode} from 'react'
 import {Fragment} from 'react'
+
+import {parseInline} from '@shop/shared/rules'
 
 const identity = (value: string): ReactNode => value
 

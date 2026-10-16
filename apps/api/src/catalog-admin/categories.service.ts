@@ -4,10 +4,10 @@ import {LOCALES} from '@shop/shared/catalog'
 import type {AdminCategory, CategoryInput, CategoryUpdate} from '@shop/shared/catalog-admin'
 
 import {conflict, inUse, notFound, stale} from '../common/http-errors'
+import {assertUpdated} from '../common/versioned'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
 import {isPrismaError} from './order'
-import {assertUpdated} from './versioned'
 
 const include = {
   translations: true,

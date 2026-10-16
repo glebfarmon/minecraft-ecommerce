@@ -15,6 +15,7 @@ import {
 import {CatalogResponseSchema, LocaleSchema} from '@shop/shared/catalog'
 
 import {catalogAdminPaths} from './catalog-admin-paths'
+import {contentPaths} from './content-paths'
 import {
   type OpenApiDocument,
   body,
@@ -209,7 +210,8 @@ export function buildOpenApiDocument(): OpenApiDocument {
           }
         }
       },
-      ...catalogAdminPaths
+      ...catalogAdminPaths,
+      ...contentPaths
     }
   }
 }

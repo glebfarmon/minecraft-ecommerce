@@ -1,4 +1,4 @@
-import {notFound, stale} from '../common/http-errors'
+import {notFound, stale} from './http-errors'
 
 /**
  * After `updateMany({where: {id, version}})`: one row means the write landed; none means the row

@@ -14,6 +14,12 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage({status: 409, data: {message: code}})).toBe(text)
   })
 
+  it('explains a body too large for the API (413)', () => {
+    expect(apiErrorMessage({status: 413, data: 'PayloadTooLargeError'})).toBe(
+      'The rules are too long to save in one go.'
+    )
+  })
+
   it('explains a body the API refused as invalid', () => {
     expect(apiErrorMessage({status: 400, data: {message: 'Validation failed', issues: {}}})).toBe(
       'Some fields are invalid. Check the form and try again.'
@@ -23,6 +29,16 @@ describe('apiErrorMessage', () => {
   it('adds the counts of an in_use answer', () => {
     expect(apiErrorMessage({status: 409, data: {message: 'in_use', issues: {products: 3}}})).toBe(
       'This is still in use: 3 products. Move or delete them first.'
+    )
+  })
+
+  it('lists the expected placeholders and tags for placeholder_mismatch', () => {
+    const error = {
+      status: 422,
+      data: {message: 'placeholder_mismatch', issues: {expected: ['{nick}', '<accent>'], found: []}}
+    }
+    expect(apiErrorMessage(error)).toBe(
+      'Keep the same placeholders and tags as the original: {nick}, <accent>'
     )
   })
 })
