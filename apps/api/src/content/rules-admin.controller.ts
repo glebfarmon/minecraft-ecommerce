@@ -16,6 +16,8 @@ import {notFound} from '../common/http-errors'
 import {ValibotPipe} from '../common/valibot.pipe'
 import {RulesAdminService} from './rules-admin.service'
 
+const MAX_INT = 2_147_483_647
+
 @AdminController('content/rules')
 export class RulesAdminController {
   constructor(private readonly rules: RulesAdminService) {}
@@ -57,7 +59,7 @@ export class RulesAdminController {
   @RequirePermission('content.write')
   @Audited('rules.restore', 'rules')
   restore(@Param('id') id: string, @Req() req: AuditableRequest): Promise<RulesDraft> {
-    if (!/^[1-9]\d{0,9}$/.test(id)) throw notFound()
+    if (!/^[1-9]\d{0,9}$/.test(id) || Number(id) > MAX_INT) throw notFound()
     return this.rules.restore(Number(id), adminOf(req).email, before => {
       req.auditBefore = before
     })

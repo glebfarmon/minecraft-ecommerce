@@ -93,6 +93,7 @@ describe('admin rules API', () => {
       'Basics'
     )
     await editor.post('/api/admin/content/rules/versions/999999/restore').expect(404)
+    await editor.post('/api/admin/content/rules/versions/9999999999/restore').expect(404)
   })
 
   it('writes audit rows for save, publish and restore', async () => {

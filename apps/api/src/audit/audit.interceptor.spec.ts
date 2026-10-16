@@ -108,6 +108,22 @@ describe('AuditInterceptor', () => {
     })
   })
 
+  it('takes entityId from the response body: numbers become strings, other values are ignored', async () => {
+    const run = async (body: unknown) => {
+      const record = jest.fn(() => Promise.resolve())
+      const interceptor = new AuditInterceptor(
+        {record} as never,
+        {getAllAndOverride: () => ({action: 'x.y', entityType: 'x'})} as never
+      )
+      const req = {method: 'POST', params: {}, headers: {}, socket: {}, admin: {userId: 'u1'}}
+      await lastValueFrom(interceptor.intercept(ctx(req), {handle: () => of(body)}))
+      return (record.mock.calls[0] as unknown as [{entityId?: string}])[0].entityId
+    }
+    expect(await run({id: 7})).toBe('7')
+    expect(await run({id: null})).toBeUndefined()
+    expect(await run({id: {a: 1}})).toBeUndefined()
+  })
+
   it('skips reads', async () => {
     const record = jest.fn()
     const interceptor = new AuditInterceptor(
