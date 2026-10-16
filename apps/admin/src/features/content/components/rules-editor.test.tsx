@@ -172,4 +172,23 @@ describe('RulesEditor', () => {
     expect(await screen.findByLabelText('Rule 1.2 (PL)')).toHaveAttribute('aria-invalid', 'true')
     expect(sent).toHaveLength(0)
   })
+
+  it('shows the 100-rule limit of a section and sends nothing', async () => {
+    const items = Array.from({length: 101}, (_, i) => ({
+      id: `big-${String(i + 1)}`,
+      text: {en: `Rule ${String(i + 1)}.`}
+    }))
+    const big = {...draft, content: {sections: [{id: 'big', title: {en: 'Big'}, items}]}}
+    const sent: unknown[] = []
+    jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      if (req.method !== 'GET') sent.push(req.method)
+      return Promise.resolve(Response.json(big))
+    })
+    renderWithStore(<RulesEditor />)
+    await screen.findByLabelText('Rule 1.101 (EN)')
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    expect(await screen.findByText('A section can hold at most 100 rules.')).toBeVisible()
+    expect(sent).toHaveLength(0)
+  })
 })

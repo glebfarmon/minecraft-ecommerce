@@ -1,5 +1,8 @@
+import {makeStore} from '@/lib/api/store'
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor, within} from '@testing-library/react'
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react'
+import type {ReactNode} from 'react'
+import {Provider} from 'react-redux'
 
 import {RulesEditor} from './rules-editor'
 import {VersionsList} from './versions-list'
@@ -118,5 +121,64 @@ describe('VersionsList', () => {
       expect(calls.filter(c => c.method === 'PUT')).toHaveLength(1)
     })
     expect(calls.find(c => c.method === 'PUT')?.body).toMatchObject({revision: 9})
+  })
+
+  it('does not re-apply an old restore when the editor mounts again', async () => {
+    // A stateful draft: restore and save change what the next GET returns.
+    let current: {content: unknown; revision: number} = draft
+    const puts: unknown[] = []
+    jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      const url = new URL(req.url)
+      if (url.pathname.endsWith('/restore')) {
+        current = restored
+        return Response.json(restored, {status: 201})
+      }
+      if (url.pathname.endsWith('/versions')) return Response.json(secondPage)
+      if (req.method === 'PUT') {
+        const body = (await req.json()) as {content: unknown; revision: number}
+        puts.push(body)
+        current = {...draft, content: body.content, revision: body.revision + 1}
+        return Response.json(current)
+      }
+      return Response.json({...draft, ...current})
+    })
+    const store = makeStore()
+    const page = (show: boolean): ReactNode => (
+      <Provider store={store}>
+        {show && (
+          <>
+            <RulesEditor />
+            <VersionsList />
+          </>
+        )}
+      </Provider>
+    )
+    const {rerender} = render(page(true))
+    fireEvent.click(await screen.findByRole('button', {name: 'Restore to draft'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Restore'}))
+    await waitFor(() => {
+      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveValue('Be polite.')
+    })
+    fireEvent.change(screen.getByLabelText('Rule 1.1 (EN)'), {
+      target: {value: 'Be polite, always.'}
+    })
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: 'Publish'})).toBeEnabled()
+    })
+    expect(puts).toEqual([expect.objectContaining({revision: 9})])
+
+    // Leave the page (e.g. to Texts) and come back: the saved draft (revision 10) is shown.
+    rerender(page(false))
+    rerender(page(true))
+    await waitFor(() => {
+      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveValue('Be polite, always.')
+    })
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    await waitFor(() => {
+      expect(puts).toHaveLength(2)
+    })
+    expect(puts[1]).toMatchObject({revision: 10})
   })
 })

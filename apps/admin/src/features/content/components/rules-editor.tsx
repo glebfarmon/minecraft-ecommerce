@@ -48,6 +48,14 @@ type TextPath = `${SectionPath}.title.${Locale}` | `${SectionPath}.items.${numbe
 const STALE = 'Someone else changed the draft. Reload to see their version.'
 const PUBLISHED = 'Published. Visible on the site within about a minute.'
 const FALLBACK = 'Uses the English text'
+const SECTIONS_LIMIT = 'The rules can have at most 50 sections.'
+const ITEMS_LIMIT = 'A section can hold at most 100 rules.'
+
+/** An error on the array itself (its length), not on one of its entries. */
+function hasArrayError(errors: unknown, path: string) {
+  const e = get(errors, path) as {message?: string; root?: {message?: string}} | undefined
+  return Boolean(e?.root?.message ?? e?.message)
+}
 
 // The schema checks what the API will get: new ids filled in, empty PL texts dropped.
 const documentResolver = valibotResolver(RulesDocumentSchema)
@@ -98,8 +106,12 @@ export function RulesEditor() {
 
   // A restore replaces the form and the revision (an external store, hence the effect)…
   const restoredAt = restored.fulfilledTimeStamp
+  // RTK keeps a fixedCacheKey result after unmount: a restore done before this editor mounted
+  // is already in the draft it loads, so applying it again would bring back an old revision.
+  const restoredBeforeMount = useRef(restoredAt)
   useEffect(() => {
     if (!restored.data || restoredAt === undefined) return
+    if (restoredAt === restoredBeforeMount.current) return
     revision.current = restored.data.revision
     reset(documentToForm(restored.data.content))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per restore
@@ -119,6 +131,7 @@ export function RulesEditor() {
   const busy = saving || publishing || restored.isLoading
 
   // Only the active language is mounted, so show the tab that holds an error, or Save looks dead.
+  // Length errors (sections, rules per section) are shown in both tabs, so they need no switch.
   const onInvalid = (invalid: FieldErrors<RulesForm>) => {
     const {sections} = form.getValues()
     const hasError = (l: Locale) =>
@@ -159,7 +172,7 @@ export function RulesEditor() {
 
   const rootError = (() => {
     const {errors} = form.formState
-    return errors.sections?.root?.message ?? errors.sections?.message ?? errors.root?.message
+    return hasArrayError(errors, 'sections') ? SECTIONS_LIMIT : errors.root?.message
   })()
 
   return (
@@ -305,9 +318,12 @@ function Section({
 }: EditorProps & {index: number; handle: DragHandleProps; onRemove: () => void}) {
   const section = sectionPath(index)
   const {fields, append, remove, move} = useFieldArray({control, name: `${section}.items`})
-  const title = useWatch({control, name: `${section}.title.en`})
+  // Undefined for a moment after a remove or reset.
+  const title = useWatch({control, name: `${section}.title.en`}) as string | undefined
+  const {errors} = useFormState({control, name: `${section}.items`})
+  const tooMany = hasArrayError(errors, `${section}.items`)
   const n = String(index + 1)
-  const name = title.trim() || `section ${n}`
+  const name = (title ?? '').trim() || `section ${n}`
   const tag = locale.toUpperCase()
 
   return (
@@ -358,6 +374,7 @@ function Section({
           )
         }}
       </SortableList>
+      {tooMany && <p className="text-destructive text-sm">{ITEMS_LIMIT}</p>}
       <Button
         type="button"
         variant="outline"
@@ -398,12 +415,13 @@ function TextField({
   hideLabel?: boolean
   className?: string
 }) {
-  const value = useWatch({control, name})
+  // Undefined for a moment after a remove or reset.
+  const value = useWatch({control, name}) as string | undefined
   const {errors} = useFormState({control, name})
   const error = (get(errors, name) as FieldError | undefined)?.message
   const id = fieldId(name)
   // An empty PL text is fine: the site shows the English one (and so does the preview).
-  const hint = name.endsWith('.pl') && !value.trim() ? FALLBACK : undefined
+  const hint = name.endsWith('.pl') && !(value ?? '').trim() ? FALLBACK : undefined
   const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ')
   const props = {
     'id': id,
