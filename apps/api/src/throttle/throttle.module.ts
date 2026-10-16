@@ -27,6 +27,8 @@ const SESSION_COOKIE = /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]
 
 const ADMIN_PATH = /^\/api\/admin(?:[/?#]|$)/i
 
+const RCON_TEST_PATH = /^\/api\/admin\/catalog\/servers\/[^/]+\/rcon\/test\/?(?:[?#]|$)/i
+
 /** Express routes case-insensitively, so `/API/Admin/...` reaches admin handlers too. */
 export const isAdminPath = (req: ThrottledRequest): boolean =>
   ADMIN_PATH.test(req.originalUrl ?? req.url ?? '')
@@ -106,6 +108,15 @@ const adminRequest = (ctx: ExecutionContext) => ctx.switchToHttp().getRequest<Th
               ttl: 60_000,
               limit: limits.adminIp,
               skipIf: ctx => !isAdminPath(adminRequest(ctx))
+            },
+            // RCON connection tests: each opens a socket to a game server.
+            {
+              name: 'rconTest',
+              ttl: 60_000,
+              limit: limits.rconTest,
+              skipIf: ctx =>
+                !RCON_TEST_PATH.test(adminRequest(ctx).originalUrl ?? adminRequest(ctx).url ?? ''),
+              getTracker: req => adminTracker(req as ThrottledRequest)
             }
           ],
           getTracker: req => ipTracker(req as ThrottledRequest),

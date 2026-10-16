@@ -44,6 +44,7 @@ model Server {
   rconPasswordEnc String?
   isActive        Boolean          @default(true)
   sort            Int              @default(0)
+  version         Int              @default(1)
   categories      ServerCategory[]
   products        Product[]
 
@@ -53,6 +54,7 @@ model Server {
 model Category {
   id           String                @id @default(cuid())
   slug         String                @unique
+  version      Int                   @default(1)
   translations CategoryTranslation[]
   servers      ServerCategory[]
   products     Product[]
@@ -95,6 +97,7 @@ model Product {
   revokeCommands String[]
   isActive       Boolean              @default(true)
   sort           Int                  @default(0)
+  version        Int                  @default(1)
   server         Server               @relation(fields: [serverId], references: [id], onDelete: Restrict)
   category       Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   translations   ProductTranslation[]

@@ -11,7 +11,12 @@ import {
 describe('access contract', () => {
   it('gives the owner every permission and support none', () => {
     expect([...SYSTEM_ROLES.OWNER].sort()).toEqual([...PERMISSIONS].sort())
-    expect(SYSTEM_ROLES.ADMIN).toEqual(['admin.invite', 'audit.read'])
+    expect(SYSTEM_ROLES.ADMIN).toEqual([
+      'admin.invite',
+      'audit.read',
+      'catalog.write',
+      'server.rcon'
+    ])
     expect(SYSTEM_ROLES.SUPPORT).toEqual([])
   })
 
@@ -37,5 +42,12 @@ describe('access contract', () => {
       name: 'Editor',
       permissions: ['audit.read']
     })
+  })
+})
+
+describe('catalog permissions', () => {
+  it('lists the catalog permissions', () => {
+    expect(PERMISSIONS).toEqual(expect.arrayContaining(['catalog.write', 'server.rcon']))
+    expect(SYSTEM_ROLES.SUPPORT).toEqual([])
   })
 })

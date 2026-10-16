@@ -77,11 +77,12 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 - `shop-api` (admin auth, ADR 0009):
   - `REDIS_URL` = the internal Redis URL (rate limits, permission cache, used TOTP codes). The admin limiters fail closed: while Redis is down, sign-in codes are not sent and the admin API and TOTP checks answer with errors (429/403/500). The storefront (`/api/catalog`, the web app) keeps working.
   - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
+  - `RCON_ENCRYPTION_KEY` = 32 random bytes in base64 (`openssl rand -base64 32`); it encrypts the RCON passwords stored by the catalog admin. Store it in your password manager: losing or changing it means re-entering every RCON password. Without it the RCON settings answer 503 (the shop keeps working). `RCON_ALLOW_PRIVATE_HOSTS` must stay unset in production: it would let an admin probe the server's internal network.
   - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
   - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
   - `TRUST_CF_CONNECTING_IP=true`. The client IP for rate limits and audit rows is then `CF-Connecting-IP`; this is safe only while the origin is reachable through Cloudflare alone (the `shop-fw` firewall, section 2). Without it the last `X-Forwarded-For` hop is used, else the socket peer.
-  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_DEFAULT` 100 per IP per min.
+  - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_RCON_TEST` 5 per session per min (RCON connection tests), `RATE_LIMIT_DEFAULT` 100 per IP per min.
 - `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
 - `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
 
@@ -92,7 +93,7 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 - Authorized JavaScript origins: `https://admin.<domain>`, `http://admin.shop.localhost`
 - Authorized redirect URIs: `https://admin.<domain>/api/auth/callback/google`, `http://admin.shop.localhost/api/auth/callback/google`
 
-**Migrations (automatic).** The `shop-api` container runs `prisma migrate deploy` on every start, before the server listens. A failed migration stops the container: the deploy job then fails on the version check, and the logs of `shop-api` show the Prisma error. While the new container migrates, the old one may still serve, so a migration must not break the previous release (add columns first, drop them in a later release).
+**Migrations (automatic).** The `shop-api` container runs `prisma migrate deploy` on every start, before the server listens. A failed migration stops the container: the deploy job then fails on the version check, and the logs of `shop-api` show the Prisma error. While the new container migrates, the old one may still serve, so a migration must not break the previous release (add columns first, drop them in a later release). Migration `20261014100100_catalog_admin_permissions` gives the existing `ADMIN` role `catalog.write` and `server.rcon`; like every migration it runs automatically when the new `shop-api` container starts, so there is nothing to run by hand.
 
 **Seed (once only).** After the first `shop-api` start has applied the migrations, run in its Terminal:
 

@@ -1,7 +1,13 @@
 import * as v from 'valibot'
 
 /** Every permission the admin API checks. Later sub-projects append theirs. */
-export const PERMISSIONS = ['admin.invite', 'role.write', 'audit.read'] as const
+export const PERMISSIONS = [
+  'admin.invite',
+  'role.write',
+  'audit.read',
+  'catalog.write',
+  'server.rcon'
+] as const
 export type Permission = (typeof PERMISSIONS)[number]
 export const PermissionSchema = v.picklist(PERMISSIONS)
 
@@ -9,7 +15,7 @@ export type SystemRoleName = 'OWNER' | 'ADMIN' | 'SUPPORT'
 /** Seeded roles. OWNER always has every permission, whatever the table says. */
 export const SYSTEM_ROLES: Record<SystemRoleName, readonly Permission[]> = {
   OWNER: PERMISSIONS,
-  ADMIN: ['admin.invite', 'audit.read'],
+  ADMIN: ['admin.invite', 'audit.read', 'catalog.write', 'server.rcon'],
   SUPPORT: []
 }
 

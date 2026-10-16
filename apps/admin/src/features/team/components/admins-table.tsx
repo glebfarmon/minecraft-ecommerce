@@ -1,6 +1,6 @@
 'use client'
 
-import {apiErrorMessage} from '@/features/team/api-error'
+import {apiErrorMessage} from '@/lib/api/error-message'
 import {
   useDeleteApiAdminAdminsByIdMutation,
   useGetApiAdminAdminsQuery,

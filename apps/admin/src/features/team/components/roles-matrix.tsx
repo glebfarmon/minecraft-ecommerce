@@ -1,7 +1,7 @@
 'use client'
 
-import {apiErrorMessage} from '@/features/team/api-error'
 import {RoleNameSchema} from '@/features/team/schemas'
+import {apiErrorMessage} from '@/lib/api/error-message'
 import {
   useDeleteApiAdminRolesByIdMutation,
   useGetApiAdminRolesQuery,

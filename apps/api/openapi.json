@@ -255,7 +255,13 @@
                         "permissions": {
                           "type": "array",
                           "items": {
-                            "enum": ["admin.invite", "role.write", "audit.read"],
+                            "enum": [
+                              "admin.invite",
+                              "role.write",
+                              "audit.read",
+                              "catalog.write",
+                              "server.rcon"
+                            ],
                             "type": "string"
                           }
                         }
@@ -265,7 +271,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }
@@ -984,7 +996,13 @@
                       "permissions": {
                         "type": "array",
                         "items": {
-                          "enum": ["admin.invite", "role.write", "audit.read"],
+                          "enum": [
+                            "admin.invite",
+                            "role.write",
+                            "audit.read",
+                            "catalog.write",
+                            "server.rcon"
+                          ],
                           "type": "string"
                         }
                       }
@@ -1020,7 +1038,13 @@
                   "permissions": {
                     "type": "array",
                     "items": {
-                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "enum": [
+                        "admin.invite",
+                        "role.write",
+                        "audit.read",
+                        "catalog.write",
+                        "server.rcon"
+                      ],
                       "type": "string"
                     }
                   }
@@ -1051,7 +1075,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }
@@ -1104,7 +1134,13 @@
                   "permissions": {
                     "type": "array",
                     "items": {
-                      "enum": ["admin.invite", "role.write", "audit.read"],
+                      "enum": [
+                        "admin.invite",
+                        "role.write",
+                        "audit.read",
+                        "catalog.write",
+                        "server.rcon"
+                      ],
                       "type": "string"
                     }
                   }
@@ -1135,7 +1171,13 @@
                     "permissions": {
                       "type": "array",
                       "items": {
-                        "enum": ["admin.invite", "role.write", "audit.read"],
+                        "enum": [
+                          "admin.invite",
+                          "role.write",
+                          "audit.read",
+                          "catalog.write",
+                          "server.rcon"
+                        ],
                         "type": "string"
                       }
                     }
@@ -1356,6 +1398,3223 @@
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
           }
         }
+      }
+    },
+    "/api/admin/catalog/servers": {
+      "get": {
+        "operationId": "listCatalogServers",
+        "summary": "Servers in storefront tab order",
+        "description": "Every server, enabled or not, with its attached categories in display order and its product count. RCON host and port are filled only for viewers with `server.rcon`. Any signed-in admin (session with TOTP) may call it.",
+        "responses": {
+          "200": {
+            "description": "Servers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "accent": {
+                        "type": "string"
+                      },
+                      "onAccent": {
+                        "type": "string"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "sort": {
+                        "type": "number"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "productCount": {
+                        "type": "number"
+                      },
+                      "categories": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "slug": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "slug", "name"]
+                        },
+                        "description": "Attached categories in display order"
+                      },
+                      "rcon": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "host": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "port": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["host", "port"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "RCON address; null unless the viewer has `server.rcon`"
+                      },
+                      "rconPasswordSet": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "slug",
+                      "name",
+                      "accent",
+                      "onAccent",
+                      "isActive",
+                      "sort",
+                      "version",
+                      "productCount",
+                      "categories",
+                      "rcon",
+                      "rconPasswordSet"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "post": {
+        "operationId": "createCatalogServer",
+        "summary": "Create a server (disabled, last tab)",
+        "description": "Creates a disabled server at the end of the tab order; enable it with PATCH once it has categories and products. Needs `catalog.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "accent": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$",
+                    "description": "Tab and button color on the storefront"
+                  },
+                  "onAccent": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$",
+                    "description": "Text color on top of the accent"
+                  }
+                },
+                "required": ["slug", "name", "accent", "onAccent"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "accent": {
+                      "type": "string"
+                    },
+                    "onAccent": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "slug", "name"]
+                      },
+                      "description": "Attached categories in display order"
+                    },
+                    "rcon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "port": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["host", "port"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "RCON address; null unless the viewer has `server.rcon`"
+                    },
+                    "rconPasswordSet": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "accent",
+                    "onAccent",
+                    "isActive",
+                    "sort",
+                    "version",
+                    "productCount",
+                    "categories",
+                    "rcon",
+                    "rconPasswordSet"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: slug, name or colors"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`slug_taken`"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/order": {
+      "put": {
+        "operationId": "orderCatalogServers",
+        "summary": "Reorder the server tabs",
+        "description": "Send every server id in the new tab order, and in `base` the order you moved from. Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "Every id of the list, in the new order. A different set of ids is 409 `stale`."
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`."
+                  }
+                },
+                "required": ["ids", "base"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Servers in the new order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "accent": {
+                        "type": "string"
+                      },
+                      "onAccent": {
+                        "type": "string"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "sort": {
+                        "type": "number"
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "productCount": {
+                        "type": "number"
+                      },
+                      "categories": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "slug": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "slug", "name"]
+                        },
+                        "description": "Attached categories in display order"
+                      },
+                      "rcon": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "host": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "port": {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["host", "port"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "RCON address; null unless the viewer has `server.rcon`"
+                      },
+                      "rconPasswordSet": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "slug",
+                      "name",
+                      "accent",
+                      "onAccent",
+                      "isActive",
+                      "sort",
+                      "version",
+                      "productCount",
+                      "categories",
+                      "rcon",
+                      "rconPasswordSet"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: duplicate or empty ids"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`stale`: the ids are not the current set, or `base` is not the current order (someone added, removed or reordered since you read the list)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/{id}": {
+      "get": {
+        "operationId": "getCatalogServer",
+        "summary": "One server",
+        "description": "RCON host and port only with `server.rcon`; the password is never returned, only `rconPasswordSet`. Any signed-in admin (session with TOTP) may call it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "accent": {
+                      "type": "string"
+                    },
+                    "onAccent": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "slug", "name"]
+                      },
+                      "description": "Attached categories in display order"
+                    },
+                    "rcon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "port": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["host", "port"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "RCON address; null unless the viewer has `server.rcon`"
+                    },
+                    "rconPasswordSet": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "accent",
+                    "onAccent",
+                    "isActive",
+                    "sort",
+                    "version",
+                    "productCount",
+                    "categories",
+                    "rcon",
+                    "rconPasswordSet"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "patch": {
+        "operationId": "updateCatalogServer",
+        "summary": "Edit name, slug, colors or enabled state",
+        "description": "The slug can change only while the server is disabled (it is in storefront URLs and cart cookies). Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "accent": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$",
+                    "description": "Tab and button color on the storefront"
+                  },
+                  "onAccent": {
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$",
+                    "description": "Text color on top of the accent"
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "description": "Shown on the storefront"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
+                  }
+                },
+                "required": ["slug", "name", "accent", "onAccent", "isActive", "version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "accent": {
+                      "type": "string"
+                    },
+                    "onAccent": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "slug", "name"]
+                      },
+                      "description": "Attached categories in display order"
+                    },
+                    "rcon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "port": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["host", "port"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "RCON address; null unless the viewer has `server.rcon`"
+                    },
+                    "rconPasswordSet": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "accent",
+                    "onAccent",
+                    "isActive",
+                    "sort",
+                    "version",
+                    "productCount",
+                    "categories",
+                    "rcon",
+                    "rconPasswordSet"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `slug_locked` (slug change on an enabled server)"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`slug_taken`, or `stale` (out-of-date `version`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "delete": {
+        "operationId": "deleteCatalogServer",
+        "summary": "Delete a server without products",
+        "description": "Allowed only while the server has no products; otherwise disable it. Its category links go with it. Needs `catalog.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The version you read"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`in_use`: the server still has products; `issues` carries the counts (empty if a reference appeared during the delete). Or `stale` (out-of-date `version`)."
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/{id}/categories": {
+      "put": {
+        "operationId": "setCatalogServerCategories",
+        "summary": "Attach, detach and order a server’s categories",
+        "description": "Send the full list of attached category ids in display order, and in `base` the attached list you started from. Ids not in the list are detached, which is refused while the server has products in them. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "Categories attached to the server, in display order; missing ones are detached"
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "The attached categories the client saw, in their order. If the current list differs, the request is 409 `stale`."
+                  }
+                },
+                "required": ["categoryIds", "base"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The server with its categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "accent": {
+                      "type": "string"
+                    },
+                    "onAccent": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "slug", "name"]
+                      },
+                      "description": "Attached categories in display order"
+                    },
+                    "rcon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "port": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["host", "port"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "RCON address; null unless the viewer has `server.rcon`"
+                    },
+                    "rconPasswordSet": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "accent",
+                    "onAccent",
+                    "isActive",
+                    "sort",
+                    "version",
+                    "productCount",
+                    "categories",
+                    "rcon",
+                    "rconPasswordSet"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `unknown_category`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`in_use`: a detached category still has products on this server (`issues.products`), or `stale`: `base` is not the current attached list (someone attached, detached or reordered since you read it)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/{id}/rcon": {
+      "put": {
+        "operationId": "updateCatalogServerRcon",
+        "summary": "Set the RCON address and password",
+        "description": "Host and port of the game server’s RCON. Send `password` to replace it (stored AES-256-GCM encrypted, never returned) or `clearPassword: true` to remove it. Internal addresses are refused. Needs `server.rcon`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "host": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 253,
+                        "description": "Public hostname or IP of the game server; internal addresses are refused"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "port": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 65535
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "New RCON password; omit to keep the stored one"
+                  },
+                  "clearPassword": {
+                    "type": "boolean",
+                    "description": "true removes the stored password"
+                  }
+                },
+                "required": ["host", "port"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "accent": {
+                      "type": "string"
+                    },
+                    "onAccent": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "slug", "name"]
+                      },
+                      "description": "Attached categories in display order"
+                    },
+                    "rcon": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "host": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "port": {
+                              "anyOf": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": ["host", "port"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "RCON address; null unless the viewer has `server.rcon`"
+                    },
+                    "rconPasswordSet": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "accent",
+                    "onAccent",
+                    "isActive",
+                    "sort",
+                    "version",
+                    "productCount",
+                    "categories",
+                    "rcon",
+                    "rconPasswordSet"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, `rcon_host_private` (loopback, private or link-local address) or `rcon_host_unresolvable`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "503": {
+            "description": "`rcon_key_missing`: RCON_ENCRYPTION_KEY is not configured"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/{id}/rcon/test": {
+      "post": {
+        "operationId": "testCatalogServerRcon",
+        "summary": "Test the RCON connection",
+        "description": "Connects to the stored address, signs in and runs `list` with a 5 s timeout. A failed connection is a 200 with `ok: false`, not an error. At most 5 per minute per session. Needs `server.rcon`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ok: true, ms}` or `{ok: false, error}`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "const": true
+                        },
+                        "ms": {
+                          "type": "number",
+                          "description": "Round trip in ms"
+                        }
+                      },
+                      "required": ["ok", "ms"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "const": false
+                        },
+                        "error": {
+                          "enum": ["timeout", "unreachable", "auth_failed", "decrypt_failed"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["ok", "error"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`rcon_not_configured` (host, port or password missing) or `rcon_host_private`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "429": {
+            "description": "More than 5 tests in a minute"
+          },
+          "503": {
+            "description": "`rcon_key_missing`"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/categories": {
+      "get": {
+        "operationId": "listCatalogCategories",
+        "summary": "All categories",
+        "description": "Each with its English and Polish name, the servers it is attached to and its product count. Any signed-in admin (session with TOTP) may call it.",
+        "responses": {
+          "200": {
+            "description": "Categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "names": {
+                        "type": "object",
+                        "properties": {
+                          "en": {
+                            "type": "string"
+                          },
+                          "pl": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["en", "pl"]
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "productCount": {
+                        "type": "number"
+                      },
+                      "servers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id", "name"]
+                        }
+                      }
+                    },
+                    "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "post": {
+        "operationId": "createCatalogCategory",
+        "summary": "Create a category",
+        "description": "Both names are required. Attach it to servers with PUT /servers/{id}/categories. Needs `catalog.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "names": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "pl": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      }
+                    },
+                    "required": ["en", "pl"]
+                  }
+                },
+                "required": ["slug", "names"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "names": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "pl": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["en", "pl"]
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      }
+                    }
+                  },
+                  "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: slug or names"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`slug_taken`"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/categories/{id}": {
+      "patch": {
+        "operationId": "updateCatalogCategory",
+        "summary": "Rename a category",
+        "description": "Changes slug and names. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "names": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "pl": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      }
+                    },
+                    "required": ["en", "pl"]
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
+                  }
+                },
+                "required": ["slug", "names", "version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "names": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "type": "string"
+                        },
+                        "pl": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["en", "pl"]
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "productCount": {
+                      "type": "number"
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      }
+                    }
+                  },
+                  "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: slug or names"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`slug_taken`, or `stale` (out-of-date `version`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "delete": {
+        "operationId": "deleteCatalogCategory",
+        "summary": "Delete an unused category",
+        "description": "Allowed only while no product uses it and no server has it attached. Needs `catalog.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The version you read"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`in_use`: products use it or servers have it attached; `issues` carries the counts (empty if a reference appeared during the delete). Or `stale` (out-of-date `version`)."
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/products": {
+      "get": {
+        "operationId": "listCatalogProducts",
+        "summary": "Products in display order",
+        "description": "Filter by server and category to get one storefront list. Disabled and incomplete products are included, with `missing`. Any signed-in admin (session with TOTP) may call it.",
+        "parameters": [
+          {
+            "name": "serverId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only this server"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only this category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "sort": {
+                        "type": "number"
+                      },
+                      "serverId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "categoryId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "enum": ["PERMANENT", "TIMED", "CASE"],
+                        "type": "string"
+                      },
+                      "mark": {
+                        "type": "string"
+                      },
+                      "icon": {
+                        "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "English name, or the slug while there is none"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "prices": {
+                        "type": "object",
+                        "properties": {
+                          "EUR": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "PLN": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["EUR", "PLN"]
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "enum": ["price.EUR", "price.PLN", "translation.en", "translation.pl"],
+                          "type": "string"
+                        },
+                        "description": "What the product lacks before it may be enabled"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version",
+                      "sort",
+                      "serverId",
+                      "categoryId",
+                      "slug",
+                      "kind",
+                      "mark",
+                      "icon",
+                      "name",
+                      "isActive",
+                      "prices",
+                      "missing"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "post": {
+        "operationId": "createCatalogProduct",
+        "summary": "Create a product (disabled draft)",
+        "description": "Created disabled and last in its category; prices and translations may still be missing. The category must be attached to the server. Commands may only use the `{nick}` placeholder. Needs `catalog.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "serverId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Must be attached to the server"
+                  },
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "kind": {
+                    "enum": ["PERMANENT", "TIMED", "CASE"],
+                    "type": "string"
+                  },
+                  "durationDays": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3650
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Days until revoke commands run; required for TIMED, null otherwise"
+                  },
+                  "mark": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 12,
+                    "description": "Short wordmark on the product tile"
+                  },
+                  "icon": {
+                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                    "type": "string"
+                  },
+                  "grantCommands": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "RCON command without a leading slash; `{nick}` becomes the buyer’s nickname"
+                    },
+                    "maxItems": 20,
+                    "description": "Run on the game server after payment"
+                  },
+                  "revokeCommands": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "RCON command without a leading slash; `{nick}` becomes the buyer’s nickname"
+                    },
+                    "maxItems": 20,
+                    "description": "Run when a TIMED product expires"
+                  },
+                  "prices": {
+                    "type": "object",
+                    "properties": {
+                      "EUR": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000000,
+                            "description": "Price in minor units (cents or grosze): 999 means 9.99"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "PLN": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000000,
+                            "description": "Price in minor units (cents or grosze): 999 means 9.99"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["EUR", "PLN"]
+                  },
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "entries": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "cmd": {
+                                            "type": "string"
+                                          },
+                                          "text": {
+                                            "type": "string"
+                                          },
+                                          "cooldown": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": []
+                                      }
+                                    }
+                                  },
+                                  "required": ["title", "entries"]
+                                },
+                                "maxItems": 20
+                              }
+                            },
+                            "required": ["name", "description", "sections"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "pl": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "entries": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "cmd": {
+                                            "type": "string"
+                                          },
+                                          "text": {
+                                            "type": "string"
+                                          },
+                                          "cooldown": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": []
+                                      }
+                                    }
+                                  },
+                                  "required": ["title", "entries"]
+                                },
+                                "maxItems": 20
+                              }
+                            },
+                            "required": ["name", "description", "sections"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["en", "pl"]
+                  }
+                },
+                "required": [
+                  "serverId",
+                  "categoryId",
+                  "slug",
+                  "kind",
+                  "durationDays",
+                  "mark",
+                  "icon",
+                  "grantCommands",
+                  "revokeCommands",
+                  "prices",
+                  "translations"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "serverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERMANENT", "TIMED", "CASE"],
+                      "type": "string"
+                    },
+                    "durationDays": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mark": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "grantCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "revokeCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "prices": {
+                      "type": "object",
+                      "properties": {
+                        "EUR": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "PLN": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["EUR", "PLN"]
+                    },
+                    "translations": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "pl": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["en", "pl"]
+                    },
+                    "missing": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["price.EUR", "price.PLN", "translation.en", "translation.pl"],
+                        "type": "string"
+                      },
+                      "description": "What the product lacks before it may be enabled"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "sort",
+                    "serverId",
+                    "categoryId",
+                    "slug",
+                    "kind",
+                    "durationDays",
+                    "mark",
+                    "icon",
+                    "isActive",
+                    "grantCommands",
+                    "revokeCommands",
+                    "prices",
+                    "translations",
+                    "missing"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (slug, price, `{nick}`-only commands, durationDays vs kind) or `category_not_on_server`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`slug_taken` on this server"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/products/{id}": {
+      "get": {
+        "operationId": "getCatalogProduct",
+        "summary": "One product with commands, prices and translations",
+        "description": "Everything the editor shows, including `missing`. Any signed-in admin (session with TOTP) may call it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "serverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERMANENT", "TIMED", "CASE"],
+                      "type": "string"
+                    },
+                    "durationDays": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mark": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "grantCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "revokeCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "prices": {
+                      "type": "object",
+                      "properties": {
+                        "EUR": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "PLN": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["EUR", "PLN"]
+                    },
+                    "translations": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "pl": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["en", "pl"]
+                    },
+                    "missing": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["price.EUR", "price.PLN", "translation.en", "translation.pl"],
+                        "type": "string"
+                      },
+                      "description": "What the product lacks before it may be enabled"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "sort",
+                    "serverId",
+                    "categoryId",
+                    "slug",
+                    "kind",
+                    "durationDays",
+                    "mark",
+                    "icon",
+                    "isActive",
+                    "grantCommands",
+                    "revokeCommands",
+                    "prices",
+                    "translations",
+                    "missing"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "patch": {
+        "operationId": "updateCatalogProduct",
+        "summary": "Edit a product",
+        "description": "Replaces fields, prices and translations (null removes one). An enabled product must keep both prices and both translations; slug and server change only while it is disabled. Moving it to another category puts it last there. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "serverId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Must be attached to the server"
+                  },
+                  "slug": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9-]{1,40}$",
+                    "description": "URL segment: 1–40 of a–z, 0–9 and \"-\". Also stored in shoppers’ cart cookies."
+                  },
+                  "kind": {
+                    "enum": ["PERMANENT", "TIMED", "CASE"],
+                    "type": "string"
+                  },
+                  "durationDays": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3650
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Days until revoke commands run; required for TIMED, null otherwise"
+                  },
+                  "mark": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 12,
+                    "description": "Short wordmark on the product tile"
+                  },
+                  "icon": {
+                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                    "type": "string"
+                  },
+                  "grantCommands": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "RCON command without a leading slash; `{nick}` becomes the buyer’s nickname"
+                    },
+                    "maxItems": 20,
+                    "description": "Run on the game server after payment"
+                  },
+                  "revokeCommands": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "description": "RCON command without a leading slash; `{nick}` becomes the buyer’s nickname"
+                    },
+                    "maxItems": 20,
+                    "description": "Run when a TIMED product expires"
+                  },
+                  "prices": {
+                    "type": "object",
+                    "properties": {
+                      "EUR": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000000,
+                            "description": "Price in minor units (cents or grosze): 999 means 9.99"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "PLN": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000000,
+                            "description": "Price in minor units (cents or grosze): 999 means 9.99"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["EUR", "PLN"]
+                  },
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "entries": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "cmd": {
+                                            "type": "string"
+                                          },
+                                          "text": {
+                                            "type": "string"
+                                          },
+                                          "cooldown": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": []
+                                      }
+                                    }
+                                  },
+                                  "required": ["title", "entries"]
+                                },
+                                "maxItems": 20
+                              }
+                            },
+                            "required": ["name", "description", "sections"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "pl": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "sections": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "title": {
+                                      "type": "string"
+                                    },
+                                    "entries": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "cmd": {
+                                            "type": "string"
+                                          },
+                                          "text": {
+                                            "type": "string"
+                                          },
+                                          "cooldown": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": []
+                                      }
+                                    }
+                                  },
+                                  "required": ["title", "entries"]
+                                },
+                                "maxItems": 20
+                              }
+                            },
+                            "required": ["name", "description", "sections"]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["en", "pl"]
+                  },
+                  "isActive": {
+                    "type": "boolean",
+                    "description": "Shown on the storefront; needs both prices and both translations"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
+                  }
+                },
+                "required": [
+                  "serverId",
+                  "categoryId",
+                  "slug",
+                  "kind",
+                  "durationDays",
+                  "mark",
+                  "icon",
+                  "grantCommands",
+                  "revokeCommands",
+                  "prices",
+                  "translations",
+                  "isActive",
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "sort": {
+                      "type": "number"
+                    },
+                    "serverId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "categoryId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERMANENT", "TIMED", "CASE"],
+                      "type": "string"
+                    },
+                    "durationDays": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "mark": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "grantCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "revokeCommands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "prices": {
+                      "type": "object",
+                      "properties": {
+                        "EUR": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "PLN": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["EUR", "PLN"]
+                    },
+                    "translations": {
+                      "type": "object",
+                      "properties": {
+                        "en": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "pl": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "sections": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "title": {
+                                        "type": "string"
+                                      },
+                                      "entries": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "cmd": {
+                                              "type": "string"
+                                            },
+                                            "text": {
+                                              "type": "string"
+                                            },
+                                            "cooldown": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": []
+                                        }
+                                      }
+                                    },
+                                    "required": ["title", "entries"]
+                                  }
+                                }
+                              },
+                              "required": ["name", "description", "sections"]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["en", "pl"]
+                    },
+                    "missing": {
+                      "type": "array",
+                      "items": {
+                        "enum": ["price.EUR", "price.PLN", "translation.en", "translation.pl"],
+                        "type": "string"
+                      },
+                      "description": "What the product lacks before it may be enabled"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version",
+                    "sort",
+                    "serverId",
+                    "categoryId",
+                    "slug",
+                    "kind",
+                    "durationDays",
+                    "mark",
+                    "icon",
+                    "isActive",
+                    "grantCommands",
+                    "revokeCommands",
+                    "prices",
+                    "translations",
+                    "missing"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, `incomplete` (`issues.missing` lists the gaps), `slug_locked` or `category_not_on_server`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`slug_taken`, or `stale` (out-of-date `version`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      },
+      "delete": {
+        "operationId": "deleteCatalogProduct",
+        "summary": "Delete a product",
+        "description": "Removes the product with its prices and translations. Once orders exist, a product with orders can only be disabled. Needs `catalog.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The version you read"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`stale`: the record changed since you read it (send the current `version`)"
+          }
+        },
+        "tags": ["Catalog admin"]
+      }
+    },
+    "/api/admin/catalog/servers/{serverId}/categories/{categoryId}/products/order": {
+      "put": {
+        "operationId": "orderCatalogProducts",
+        "summary": "Reorder the products of one category on one server",
+        "description": "Send every product id of that list in the new order (this is the order on the storefront), and in `base` the order you moved from. Versions do not change. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "serverId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "Every id of the list, in the new order. A different set of ids is 409 `stale`."
+                  },
+                  "base": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "description": "The order the client saw and moved from. If the current order differs, the reorder is 409 `stale`."
+                  }
+                },
+                "required": ["ids", "base"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The list in its new order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "sort": {
+                        "type": "number"
+                      },
+                      "serverId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "categoryId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "slug": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "enum": ["PERMANENT", "TIMED", "CASE"],
+                        "type": "string"
+                      },
+                      "mark": {
+                        "type": "string"
+                      },
+                      "icon": {
+                        "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "English name, or the slug while there is none"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "prices": {
+                        "type": "object",
+                        "properties": {
+                          "EUR": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "PLN": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": ["EUR", "PLN"]
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "enum": ["price.EUR", "price.PLN", "translation.en", "translation.pl"],
+                          "type": "string"
+                        },
+                        "description": "What the product lacks before it may be enabled"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version",
+                      "sort",
+                      "serverId",
+                      "categoryId",
+                      "slug",
+                      "kind",
+                      "mark",
+                      "icon",
+                      "name",
+                      "isActive",
+                      "prices",
+                      "missing"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: duplicate or empty ids"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`stale`: the ids are not the current set, or `base` is not the current order (someone added, removed or reordered since you read the list)"
+          }
+        },
+        "tags": ["Catalog admin"]
       }
     }
   }

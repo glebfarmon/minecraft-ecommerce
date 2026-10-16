@@ -15,7 +15,11 @@ export function Nav({me}: {me: Me}) {
           <Link
             key={item.href}
             href={item.href}
-            aria-current={pathname === item.href ? 'page' : undefined}
+            aria-current={
+              pathname === item.href || (item.href !== '/' && pathname.startsWith(`${item.href}/`))
+                ? 'page'
+                : undefined
+            }
             className="text-muted-foreground rounded-md px-3 py-2 text-sm hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
             {item.label}
           </Link>

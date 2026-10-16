@@ -20,4 +20,11 @@ describe('redact', () => {
     expect(redact('x')).toBe('x')
     expect(redact(null)).toBeNull()
   })
+
+  it('hides the encrypted RCON password', () => {
+    expect(redact({rconHost: 'mc.example.com', rconPasswordEnc: 'v1:abc'})).toEqual({
+      rconHost: 'mc.example.com',
+      rconPasswordEnc: '[redacted]'
+    })
+  })
 })

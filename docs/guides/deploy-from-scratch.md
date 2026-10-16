@@ -555,6 +555,17 @@ Save the output as `BETTER_AUTH_SECRET`. It signs admin sessions: never change i
 
 ---
 
+### 13.4 The RCON encryption key
+
+Same recipe as in part 13.3 (a fresh value, not the auth secret):
+
+- macOS/Linux: `openssl rand -base64 32`
+- Windows PowerShell 7: `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`
+
+Save the output as `RCON_ENCRYPTION_KEY`. It encrypts the RCON password of your Minecraft server in the database. Keep a copy in your password manager: if you lose or change it, enter the RCON password again in the admin panel.
+
+---
+
 ## 14. The three applications
 
 Create three applications in project `shop`, one at a time: **Create Service → Application**, then fill the tabs as below. Do `shop-api` first.
@@ -601,6 +612,7 @@ DATABASE_URL=<Internal Connection URL of shop-db>
 REDIS_URL=<Internal Connection URL of shop-redis>
 BETTER_AUTH_URL=https://admin.<domain>
 BETTER_AUTH_SECRET=<from part 13.3>
+RCON_ENCRYPTION_KEY=<from part 13.4>
 RESEND_API_KEY=<re_… from part 10>
 MAIL_FROM=Shop Admin <no-reply@<domain>>
 ADMIN_OWNER_EMAIL=<your email: the first admin>
@@ -757,6 +769,8 @@ Write migrations that the **previous** version can live with: while the new API 
 | Error **521 / 522** (web server down / timed out)                                           | The firewall blocks Cloudflare (check the 80/443 rules) or the container is not running (Dokploy → Logs).                                                                                                                |
 | **404** from Traefik on a domain                                                            | The domain is not added to an application, or the path is wrong. Compare with the table in 14.2.                                                                                                                         |
 | `shop-api` stops at start: secret / mail error                                              | `BETTER_AUTH_SECRET` missing or shorter than 32 characters, or `RESEND_API_KEY` missing. Fix the environment, Save, Deploy.                                                                                              |
+| RCON Save says "RCON is not configured on the server"                                       | `RCON_ENCRYPTION_KEY` is missing on `shop-api`. Add it (part 13.4), Save, Deploy.                                                                                                                                        |
+| RCON Save says "public address"                                                             | Use the game host's public IP or name; internal addresses are refused on purpose.                                                                                                                                        |
 | `shop-api` log: `The table public.products does not exist`                                  | Migrations did not run (an image older than automatic migrations). In the Terminal: `node_modules/.bin/prisma migrate deploy`.                                                                                           |
 | A migration fails at start                                                                  | The container stops and the deploy job fails on the version check. Read the Prisma error in `shop-api` → Logs.                                                                                                           |
 | The shop shows "shop unavailable"                                                           | `API_ORIGIN` on `shop-web` is missing or wrong. It must be `http://<App Name of shop-api>:4000`.                                                                                                                         |

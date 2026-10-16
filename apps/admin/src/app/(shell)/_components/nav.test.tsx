@@ -23,4 +23,8 @@ describe('Nav', () => {
     render(<Nav me={me(['audit.read'])} />)
     expect(screen.getByRole('link', {name: 'Audit log'})).toBeInTheDocument()
   })
+  it('shows the catalog to every admin', () => {
+    render(<Nav me={me([])} />)
+    expect(screen.getByRole('link', {name: 'Catalog'})).toBeInTheDocument()
+  })
 })

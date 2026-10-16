@@ -59,6 +59,7 @@
     "ioredis": "^6.0.0",
     "nodemailer": "^10.1.0",
     "prisma": "^7.10.0",
+    "rcon-client": "^4.2.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "reflect-metadata": "^0.2.2",

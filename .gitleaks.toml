@@ -1,0 +1,9 @@
+# Default gitleaks rules plus one narrow exception.
+[extend]
+useDefault = true
+
+# compose.e2e.yaml carries a throwaway RCON_ENCRYPTION_KEY for the e2e stack only; it protects nothing real.
+[allowlist]
+description = "e2e-only RCON key in compose.e2e.yaml"
+regexTarget = "match"
+regexes = ['''^RCON_ENCRYPTION_KEY: MEUuxU2yK9jLs4j3q7S\+m6vFcpMJynMOdcvcUMTkKQs=$''']
