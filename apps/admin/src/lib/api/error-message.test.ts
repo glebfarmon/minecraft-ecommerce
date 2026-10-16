@@ -25,4 +25,14 @@ describe('apiErrorMessage', () => {
       'This is still in use: 3 products. Move or delete them first.'
     )
   })
+
+  it('lists the expected placeholders and tags for placeholder_mismatch', () => {
+    const error = {
+      status: 422,
+      data: {message: 'placeholder_mismatch', issues: {expected: ['{nick}', '<accent>'], found: []}}
+    }
+    expect(apiErrorMessage(error)).toBe(
+      'Keep the same placeholders and tags as the original: {nick}, <accent>'
+    )
+  })
 })

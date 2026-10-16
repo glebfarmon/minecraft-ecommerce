@@ -27,4 +27,12 @@ describe('Nav', () => {
     render(<Nav me={me([])} />)
     expect(screen.getByRole('link', {name: 'Catalog'})).toBeInTheDocument()
   })
+  it('shows Content with content.write and marks it for its sub-pages', () => {
+    render(<Nav me={me(['content.write'])} />)
+    expect(screen.getByRole('link', {name: 'Content'})).toBeInTheDocument()
+  })
+  it('hides Content without content.write', () => {
+    render(<Nav me={me([])} />)
+    expect(screen.queryByRole('link', {name: 'Content'})).not.toBeInTheDocument()
+  })
 })
