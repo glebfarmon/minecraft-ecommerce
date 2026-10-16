@@ -1,9 +1,36 @@
+/** @jest-environment node */
 import {DEFAULT_SITE_SETTINGS} from '@/config/site'
 
 import {getSiteSettings} from './get-site-settings'
 
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 describe('getSiteSettings', () => {
-  it('returns the defaults until the content API exists', async () => {
+  it('returns the API settings and asks Next to cache them with the content tag', async () => {
+    const live = {
+      siteName: {plain: 'Mine', accent: 'craft'},
+      serverIp: 'play.example.com',
+      discordUrl: 'https://discord.gg/x',
+      supportEmail: 'a@b.co'
+    }
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(Response.json(live))
+    await expect(getSiteSettings()).resolves.toEqual(live)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/content\/settings$/),
+      expect.objectContaining({next: {revalidate: 60, tags: ['content-settings']}})
+    )
+  })
+
+  it.each([
+    ['a 500', () => Promise.resolve(new Response('x', {status: 500}))],
+    ['a 404', () => Promise.resolve(new Response('x', {status: 404}))],
+    ['a network error', () => Promise.reject(new Error('ECONNREFUSED'))],
+    ['an invalid body', () => Promise.resolve(Response.json({nope: true}))]
+  ])('falls back to the defaults on %s', async (_label, impl) => {
+    jest.spyOn(global, 'fetch').mockImplementation(impl)
+    jest.spyOn(console, 'error').mockImplementation(() => undefined)
     await expect(getSiteSettings()).resolves.toEqual(DEFAULT_SITE_SETTINGS)
   })
 

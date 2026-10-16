@@ -1,9 +1,17 @@
 import {DEFAULT_SITE_SETTINGS, type SiteSettings} from '@/config/site'
+import {contentFetch} from '@/lib/content-fetch'
 
-/**
- * Brand settings. Phase 1 returns the defaults; phase 2 fetches `/api/content/settings` behind
- * `'use cache'` and falls back to `DEFAULT_SITE_SETTINGS` (spec §6.2), keeping this signature.
- */
-export function getSiteSettings(): Promise<SiteSettings> {
-  return Promise.resolve(DEFAULT_SITE_SETTINGS)
+import {SiteSettingsSchema} from '@shop/shared/content'
+
+/** Brand settings from `/api/content/settings` (ADR 0007/0008); `DEFAULT_SITE_SETTINGS` when the API cannot answer. */
+export async function getSiteSettings(): Promise<SiteSettings> {
+  try {
+    return (
+      (await contentFetch('/api/content/settings', SiteSettingsSchema, 'content-settings')) ??
+      DEFAULT_SITE_SETTINGS
+    )
+  } catch (error) {
+    console.error(error)
+    return DEFAULT_SITE_SETTINGS
+  }
 }

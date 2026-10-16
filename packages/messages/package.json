@@ -9,6 +9,10 @@
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
+    "./editable": {
+      "types": "./dist/src/editable.d.ts",
+      "default": "./dist/src/editable.js"
+    },
     "./en.json": "./en.json",
     "./pl.json": "./pl.json"
   },
