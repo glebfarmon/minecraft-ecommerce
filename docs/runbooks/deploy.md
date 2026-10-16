@@ -84,7 +84,7 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
   - `TRUST_CF_CONNECTING_IP=true`. The client IP for rate limits and audit rows is then `CF-Connecting-IP`; this is safe only while the origin is reachable through Cloudflare alone (the `shop-fw` firewall, section 2). Without it the last `X-Forwarded-For` hop is used, else the socket peer.
   - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_RCON_TEST` 5 per session per min (RCON connection tests), `RATE_LIMIT_DEFAULT` 100 per IP per min.
 - `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
-- `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable".
+- `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable". Optional: `CONTENT_REVALIDATE_SECONDS` (positive integer, default 60) is how long the storefront caches rules, texts and brand settings (ADR 0008); read at runtime, so a restart of `shop-web` applies a change.
 
 **Admin routing.** `admin.<domain>` path `/api` must go to `shop-api` (the table above) so the sign-in cookie, the OAuth callback and API calls share the admin origin.
 
@@ -102,6 +102,8 @@ node dist/seed/main.js
 ```
 
 **First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend and also printed to the seed's output (use it if the mail does not arrive). In production the API and the seed refuse to start without `RESEND_API_KEY` or `SMTP_URL`. Open it, sign in, and enroll TOTP (mandatory for every admin).
+
+**After deploying site content (3c).** Migration `content_write_permission` gives the existing `ADMIN` role `content.write`; it runs automatically like every migration. The seed now also creates the brand settings row and the first rules edition, but only when they are missing. Run `node dist/seed/main.js` once more in the `shop-api` Terminal after this deploy: it is idempotent for content and roles, and needed so the admin Content pages have a settings row and a first edition to start from (the rules page works without them, from built-in fallbacks). Details: ADR 0008.
 
 Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
 

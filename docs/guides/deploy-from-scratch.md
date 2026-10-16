@@ -663,7 +663,9 @@ Order matters: databases first, then the API, then the two websites.
 
    Expected: `seed: catalog and roles ready` and `seed: owner invite https://admin.<domain>/…`. Copy the invite link. The invitation is also emailed to `ADMIN_OWNER_EMAIL`.
 
-   **Never run the seed again** on a live shop: it would bring back demo products you deleted later.
+   **Do not run the seed again** on a live shop, with one exception: after updating to the release that adds the Content pages (site content, 3c), run it once more. It then only creates the missing brand settings and the first rules edition, and leaves everything else alone. Without it the Content pages in the admin start empty.
+
+   Optional: on `shop-web` you can set `CONTENT_REVALIDATE_SECONDS` (a whole number of seconds, default 60). It is how long the site waits before showing a rule or text change you published in the admin.
 
    If the Terminal tab does not open: on the server, `docker ps | grep shop-api` shows the container ID; then `docker exec -it <id> sh` and the same command.
 
