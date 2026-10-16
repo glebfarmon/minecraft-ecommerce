@@ -45,8 +45,15 @@ export class RulesAdminService {
     })
   }
 
-  publish(actorEmail: string): Promise<{id: number; publishedAt: string}> {
+  /** Publishes the draft only if it is still at `revision`, so nobody publishes an edit they never saw. */
+  publish(revision: number, actorEmail: string): Promise<{id: number; publishedAt: string}> {
     return this.prisma.$transaction(async tx => {
+      // Row lock: a save that lands between this read and the insert waits, so what we publish is
+      // exactly the revision the admin looked at.
+      const [locked] = await tx.$queryRaw<{revision: number}[]>`
+        SELECT revision FROM rules_drafts WHERE id = 1 FOR UPDATE`
+      if (!locked) throw notFound()
+      if (locked.revision !== revision) throw stale()
       const draft = toDraft(await tx.rulesDraft.findUniqueOrThrow({where: {id: 1}}))
       const row = await tx.rulesVersion.create({
         data: {content: json(draft.content), publishedBy: actorEmail}

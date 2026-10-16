@@ -148,7 +148,21 @@ describe('RulesEditor', () => {
     expect(
       await screen.findByText('Published. Visible on the site within about a minute.')
     ).toHaveAttribute('role', 'status')
-    expect(sent).toEqual([{method: 'POST', path: '/api/admin/content/rules/publish', body: null}])
+    // The revision the editor loaded: the API refuses it if someone saved since (409 stale).
+    expect(sent).toEqual([
+      {method: 'POST', path: '/api/admin/content/rules/publish', body: {revision: 4}}
+    ])
+  })
+
+  it('says the draft changed when a publish is refused as stale', async () => {
+    mockApi(() => Response.json({statusCode: 409, message: 'stale'}, {status: 409}))
+    renderWithStore(<RulesEditor />)
+    await screen.findByLabelText('Rule 1.1 (EN)')
+    fireEvent.click(screen.getByRole('button', {name: 'Publish'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Publish now'}))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Someone else changed the draft. Reload to see their version.'
+    )
   })
 
   it('opens the PL tab when the first error is there and hints at the EN fallback', async () => {

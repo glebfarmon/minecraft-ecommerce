@@ -165,8 +165,11 @@ export function RulesEditor() {
     setConfirmPublish(false)
     setError(null)
     setStatus(null)
-    const result = await publish()
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (revision.current === null) return
+    // The revision this form shows: if someone saved since, the API refuses (409) instead of
+    // publishing their edit unseen.
+    const result = await publish({body: {revision: revision.current}})
+    if (result.error) setError(isStale(result.error) ? STALE : apiErrorMessage(result.error))
     else setStatus(PUBLISHED)
   }
 

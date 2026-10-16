@@ -5132,7 +5132,26 @@
       "post": {
         "operationId": "publishRules",
         "summary": "Publish the draft as a new edition",
-        "description": "Stores the current draft as a new version. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "description": "Stores the draft as a new version; send the draft `revision` you read, so an edit you have not seen is never published. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647,
+                    "description": "The draft revision being published; 409 `stale` if someone saved since"
+                  }
+                },
+                "required": ["revision"]
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "The new version",
@@ -5153,11 +5172,17 @@
               }
             }
           },
+          "400": {
+            "description": "Missing or invalid `revision`"
+          },
           "401": {
             "description": "No session, or the admin is disabled"
           },
           "403": {
             "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`stale`: the draft changed since you read it (send the current value)"
           }
         },
         "tags": ["Content admin"]

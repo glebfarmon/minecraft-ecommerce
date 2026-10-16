@@ -54,6 +54,15 @@ export const RulesDraftUpdateSchema = v.object({
     v.description('The draft revision this edit was made from')
   )
 })
+export const RulesPublishInputSchema = v.object({
+  revision: v.pipe(
+    v.number(),
+    v.integer(),
+    v.minValue(0),
+    v.maxValue(2_147_483_647),
+    v.description('The draft revision being published; 409 `stale` if someone saved since')
+  )
+})
 export const RulesVersionListSchema = v.object({
   versions: v.array(v.object({id: v.number(), publishedAt: v.string(), publishedBy: v.string()})),
   nextCursor: v.nullable(v.number())
@@ -85,5 +94,6 @@ export const PublicMessagesSchema = v.record(v.string(), v.string())
 export type AdminSiteSettings = v.InferOutput<typeof AdminSiteSettingsSchema>
 export type RulesDraft = v.InferOutput<typeof RulesDraftSchema>
 export type RulesDraftUpdate = v.InferOutput<typeof RulesDraftUpdateSchema>
+export type RulesPublishInput = v.InferOutput<typeof RulesPublishInputSchema>
 export type RulesVersionList = v.InferOutput<typeof RulesVersionListSchema>
 export type AdminMessage = v.InferOutput<typeof AdminMessageSchema>

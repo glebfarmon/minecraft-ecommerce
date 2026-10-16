@@ -9,6 +9,7 @@ import {
   PublicMessagesSchema,
   RulesDraftSchema,
   RulesDraftUpdateSchema,
+  RulesPublishInputSchema,
   RulesVersionListSchema,
   SiteSettingsSchema,
   SiteSettingsUpdateSchema
@@ -94,10 +95,13 @@ export const contentPaths: Record<string, Partial<Record<Method, Operation>>> = 
     post: adminOp({
       operationId: 'publishRules',
       summary: 'Publish the draft as a new edition',
-      description: `Stores the current draft as a new version. ${write} ${LIVE}`,
+      description: `Stores the draft as a new version; send the draft \`revision\` you read, so an edit you have not seen is never published. ${write} ${LIVE}`,
+      requestBody: body(RulesPublishInputSchema),
       responses: {
         '201': json('The new version', v.object({id: v.number(), publishedAt: v.string()})),
-        ...guarded
+        '400': {description: 'Missing or invalid `revision`'},
+        ...guarded,
+        ...stale('the draft')
       }
     })
   },

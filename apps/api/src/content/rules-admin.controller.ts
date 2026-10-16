@@ -4,6 +4,8 @@ import {
   type RulesDraft,
   type RulesDraftUpdate,
   RulesDraftUpdateSchema,
+  type RulesPublishInput,
+  RulesPublishInputSchema,
   type RulesVersionList,
   RulesVersionsQuerySchema
 } from '@shop/shared/content'
@@ -43,8 +45,11 @@ export class RulesAdminController {
   @Post('publish')
   @RequirePermission('content.write')
   @Audited('rules.publish', 'rules')
-  publish(@Req() req: AuditableRequest): Promise<{id: number; publishedAt: string}> {
-    return this.rules.publish(adminOf(req).email)
+  publish(
+    @Body(new ValibotPipe(RulesPublishInputSchema)) body: RulesPublishInput,
+    @Req() req: AuditableRequest
+  ): Promise<{id: number; publishedAt: string}> {
+    return this.rules.publish(body.revision, adminOf(req).email)
   }
 
   @Get('versions')

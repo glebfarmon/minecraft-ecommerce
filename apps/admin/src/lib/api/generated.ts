@@ -248,7 +248,11 @@ const injectedRtkApi = api.injectEndpoints({
       })
     }),
     publishRules: build.mutation<PublishRulesApiResponse, PublishRulesApiArg>({
-      query: () => ({url: `/api/admin/content/rules/publish`, method: 'POST'})
+      query: queryArg => ({
+        url: `/api/admin/content/rules/publish`,
+        method: 'POST',
+        body: queryArg.body
+      })
     }),
     listRulesVersions: build.query<ListRulesVersionsApiResponse, ListRulesVersionsApiArg>({
       query: queryArg => ({
@@ -1226,7 +1230,12 @@ export type PublishRulesApiResponse = /** status 201 The new version */ {
   id: number
   publishedAt: string
 }
-export type PublishRulesApiArg = void
+export type PublishRulesApiArg = {
+  body: {
+    /** The draft revision being published; 409 `stale` if someone saved since */
+    revision: number
+  }
+}
 export type ListRulesVersionsApiResponse = /** status 200 A page of editions */ {
   versions: {
     id: number

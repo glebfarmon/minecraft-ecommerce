@@ -1,6 +1,10 @@
 import * as v from 'valibot'
 
-import {MessageOverrideInputSchema, SiteSettingsUpdateSchema} from './content'
+import {
+  MessageOverrideInputSchema,
+  RulesPublishInputSchema,
+  SiteSettingsUpdateSchema
+} from './content'
 
 const settings = {
   siteName: {plain: 'Block', accent: 'haus'},
@@ -28,5 +32,11 @@ describe('content schemas', () => {
   })
   it('caps an override at 2000 characters', () => {
     expect(v.safeParse(MessageOverrideInputSchema, {value: 'x'.repeat(2001)}).success).toBe(false)
+  })
+  it('publishes against the draft revision the admin saw', () => {
+    expect(v.safeParse(RulesPublishInputSchema, {revision: 5}).success).toBe(true)
+    expect(v.safeParse(RulesPublishInputSchema, {}).success).toBe(false)
+    expect(v.safeParse(RulesPublishInputSchema, {revision: -1}).success).toBe(false)
+    expect(v.safeParse(RulesPublishInputSchema, {revision: 1.5}).success).toBe(false)
   })
 })

@@ -61,7 +61,11 @@ describe('admin rules API', () => {
   it('publishes the draft as a new public edition and lists versions', async () => {
     const editor = await ctx.admin({permissions: ['content.write']})
     const before = await ctx.prisma.rulesVersion.count()
-    await editor.post('/api/admin/content/rules/publish').expect(201)
+    const draft = (await editor.get('/api/admin/content/rules/draft').expect(200)).body as Draft
+    await editor
+      .post('/api/admin/content/rules/publish')
+      .send({revision: draft.revision})
+      .expect(201)
     expect(await ctx.prisma.rulesVersion.count()).toBe(before + 1)
     const pub = await request(ctx.app.getHttpServer())
       .get('/api/content/rules?locale=en')
@@ -75,6 +79,26 @@ describe('admin rules API', () => {
     }
     expect(list.versions.length).toBe(before + 1)
     expect(list.versions[0]?.id).toBeGreaterThan(list.versions[1]?.id ?? 0)
+  })
+
+  it('refuses to publish a draft revision the admin has not seen, publishing nothing', async () => {
+    const a = await ctx.admin({permissions: ['content.write']})
+    const b = await ctx.admin({permissions: ['content.write']})
+    const seen = (await a.get('/api/admin/content/rules/draft').expect(200)).body as Draft
+    await b.put('/api/admin/content/rules/draft').send(edited(seen, 'Unseen')).expect(200)
+    const before = await ctx.prisma.rulesVersion.count()
+    await a
+      .post('/api/admin/content/rules/publish')
+      .send({revision: seen.revision})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'stale'})
+      })
+    await a.post('/api/admin/content/rules/publish').send({}).expect(400)
+    expect(await ctx.prisma.rulesVersion.count()).toBe(before)
+    // Put the published title back for the tests below.
+    const now = (await b.get('/api/admin/content/rules/draft').expect(200)).body as Draft
+    await b.put('/api/admin/content/rules/draft').send(edited(now, 'Basics')).expect(200)
   })
 
   it('restores an old version into the draft without publishing it', async () => {
