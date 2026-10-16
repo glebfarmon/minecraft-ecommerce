@@ -24,12 +24,15 @@ describe('parseInline', () => {
     ])
   })
 
-  it.each(['javascript:alert%281%29', 'http://example.com', '//evil.example', 'data:text/html,x'])(
-    'turns a link to %s into its plain label',
-    href => {
-      expect(parseInline(`[click](${href})`)).toEqual([{type: 'text', value: 'click'}])
-    }
-  )
+  it.each([
+    'javascript:alert%281%29',
+    'http://example.com',
+    '//evil.example',
+    '/\\evil.example',
+    'data:text/html,x'
+  ])('turns a link to %s into its plain label', href => {
+    expect(parseInline(`[click](${href})`)).toEqual([{type: 'text', value: 'click'}])
+  })
 
   it('never makes a link when the URL has a ")" (it ends the URL)', () => {
     expect(parseInline('[click](javascript:alert(1))').some(t => t.type === 'link')).toBe(false)
@@ -65,6 +68,7 @@ describe('hasOnlySafeLinks', () => {
   it.each([
     '[a](javascript:alert(1))',
     '[a](//evil.com)',
+    '[a](/\\evil.com)',
     '[a](http://x.io)',
     '[a](data:text/html,x)'
   ])('refuses %s', t => {

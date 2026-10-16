@@ -5,8 +5,8 @@ export type Inline =
 
 // **bold** | *italic* | [label](href). Non-greedy, no nesting: rule texts are short sentences.
 const TOKEN = /\*\*(.+?)\*\*|\*(.+?)\*|\[([^\]]+)\]\(([^)\s]+)\)/g
-// https:// or a site path; `//host` is protocol-relative and would leave the site.
-const SAFE_HREF = /^(https:\/\/|\/(?!\/))/i
+// https:// or a site path; `//host` and `/\host` (browsers read `\` as `/`) would leave the site.
+const SAFE_HREF = /^(https:\/\/|\/(?![/\\]))/i
 
 /** Mini-markdown used by rules: bold, italic and safe links. Anything else stays literal text. */
 export function parseInline(source: string): Inline[] {
