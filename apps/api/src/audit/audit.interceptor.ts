@@ -43,7 +43,8 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(body => {
         const path = (req.originalUrl ?? req.url ?? '').split('?')[0] ?? ''
-        const id = req.params?.id ?? (body as {id?: string} | null | undefined)?.id
+        const bodyId = (body as {id?: string | number} | null | undefined)?.id
+        const id = req.params?.id ?? (bodyId === undefined ? undefined : String(bodyId))
         this.audit
           .record({
             actorId: req.admin?.userId ?? null,
