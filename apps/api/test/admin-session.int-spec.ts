@@ -136,9 +136,23 @@ describe('admin session', () => {
         id: user.roleId,
         name: 'ADMIN',
         isSystem: true,
-        permissions: ['admin.invite', 'audit.read', 'catalog.write', 'server.rcon', 'content.write']
+        permissions: [
+          'admin.invite',
+          'audit.read',
+          'catalog.write',
+          'server.rcon',
+          'content.write',
+          'order.read'
+        ]
       },
-      permissions: ['admin.invite', 'audit.read', 'catalog.write', 'server.rcon', 'content.write']
+      permissions: [
+        'admin.invite',
+        'audit.read',
+        'catalog.write',
+        'server.rcon',
+        'content.write',
+        'order.read'
+      ]
     })
   })
 
