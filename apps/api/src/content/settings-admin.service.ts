@@ -2,6 +2,7 @@ import {Injectable} from '@nestjs/common'
 
 import type {AdminSiteSettings} from '@shop/shared/content'
 
+import {notFound} from '../common/http-errors'
 import {assertUpdated} from '../common/versioned'
 import {PrismaService} from '../prisma/prisma.service'
 
@@ -27,7 +28,9 @@ export class SettingsAdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async get(): Promise<AdminSiteSettings> {
-    return toSettings(await this.prisma.siteSettings.findUniqueOrThrow({where: {id: 1}}))
+    const row = await this.prisma.siteSettings.findUnique({where: {id: 1}})
+    if (!row) throw notFound()
+    return toSettings(row)
   }
 
   update(

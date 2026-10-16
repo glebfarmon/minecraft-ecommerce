@@ -663,7 +663,7 @@ Order matters: databases first, then the API, then the two websites.
 
    Expected: `seed: catalog and roles ready` and `seed: owner invite https://admin.<domain>/…`. Copy the invite link. The invitation is also emailed to `ADMIN_OWNER_EMAIL`.
 
-   **Never run this seed again** on a live shop. After updating to the release that adds the Content pages (site content, 3c), run a different, smaller command once in the same Terminal: `node dist/seed/content-main.js`. Expected: `seed: site content ready`. It only creates the missing brand settings and the first rules edition, and leaves the catalog, roles and everything you edited alone. Without it the Content pages in the admin start empty.
+   **Never run this seed again** on a live shop. Site content (brand settings and the first rules edition) needs no command: `shop-api` creates it by itself at every start when it is missing (its log shows `seed: site content ready`), and never changes what you edited.
 
    Optional: on `shop-web` you can set `CONTENT_REVALIDATE_SECONDS` (a whole number of seconds, default 60). It is how long the site waits before showing a rule or text change you published in the admin.
 

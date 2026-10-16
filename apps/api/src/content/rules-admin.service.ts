@@ -5,6 +5,7 @@ import type {RulesDraft, RulesDraftUpdate, RulesVersionList} from '@shop/shared/
 import {type RulesDocument, RulesDocumentSchema} from '@shop/shared/rules'
 
 import {notFound, stale} from '../common/http-errors'
+import {assertUpdated} from '../common/versioned'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
 
@@ -26,7 +27,9 @@ export class RulesAdminService {
   constructor(private readonly prisma: PrismaService) {}
 
   async draft(): Promise<RulesDraft> {
-    return toDraft(await this.prisma.rulesDraft.findUniqueOrThrow({where: {id: 1}}))
+    const row = await this.prisma.rulesDraft.findUnique({where: {id: 1}})
+    if (!row) throw notFound()
+    return toDraft(row)
   }
 
   save(
@@ -39,7 +42,7 @@ export class RulesAdminService {
         where: {id: 1, revision: input.revision},
         data: {content: json(input.content), revision: {increment: 1}, updatedBy: actorEmail}
       })
-      if (count === 0) throw stale()
+      await assertUpdated(count, async () => (await tx.rulesDraft.count({where: {id: 1}})) > 0)
       onBefore({revision: input.revision})
       return toDraft(await tx.rulesDraft.findUniqueOrThrow({where: {id: 1}}))
     })
@@ -88,7 +91,8 @@ export class RulesAdminService {
     return this.prisma.$transaction(async tx => {
       const version = await tx.rulesVersion.findUnique({where: {id}})
       if (!version) throw notFound()
-      const current = await tx.rulesDraft.findUniqueOrThrow({where: {id: 1}})
+      const current = await tx.rulesDraft.findUnique({where: {id: 1}})
+      if (!current) throw notFound()
       onBefore({revision: current.revision})
       const row = await tx.rulesDraft.update({
         where: {id: 1},

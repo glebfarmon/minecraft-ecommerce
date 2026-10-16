@@ -3,6 +3,7 @@ import {MemoryMailer} from '../src/mailer/memory-mailer'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {seedAccess} from '../src/seed/seed-access'
 import {seedCatalog} from '../src/seed/seed-catalog'
+import {seedContent} from '../src/seed/seed-content'
 import {startDatabase} from './support/database'
 
 jest.setTimeout(120_000)
@@ -80,5 +81,34 @@ describe('seedCatalog', () => {
       delete process.env.ADMIN_OWNER_EMAIL
     }
     expect(await client.invite.count({where: {email: 'owner2@example.com'}})).toBe(1)
+  })
+
+  it('seeds site content once when two api containers start together', async () => {
+    // Each container runs the content seed at start (Dockerfile CMD) on its own connection.
+    const other = new PrismaService()
+    try {
+      for (let round = 0; round < 5; round += 1) {
+        await client.rulesVersion.deleteMany()
+        await client.rulesDraft.deleteMany()
+        await client.siteSettings.deleteMany()
+        await Promise.all([seedContent(client), seedContent(other), seedContent(other)])
+        expect([
+          await client.rulesVersion.count(),
+          await client.rulesDraft.count(),
+          await client.siteSettings.count()
+        ]).toEqual([1, 1, 1])
+      }
+    } finally {
+      await other.$disconnect()
+    }
+  })
+
+  it('never overwrites edited content or adds an edition on a re-run', async () => {
+    await client.siteSettings.update({where: {id: 1}, data: {serverIp: 'edited.example.com'}})
+    await seedContent(client)
+    expect((await client.siteSettings.findUniqueOrThrow({where: {id: 1}})).serverIp).toBe(
+      'edited.example.com'
+    )
+    expect(await client.rulesVersion.count()).toBe(1)
   })
 })

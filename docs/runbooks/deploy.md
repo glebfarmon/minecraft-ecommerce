@@ -103,9 +103,9 @@ node dist/seed/main.js
 
 **First owner.** Before the seed, set `ADMIN_OWNER_EMAIL` on `shop-api`. The seed creates the system roles and invites that address once (skipped if the person exists or has an open invite); the invite link is emailed through Resend and also printed to the seed's output (use it if the mail does not arrive). In production the API and the seed refuse to start without `RESEND_API_KEY` or `SMTP_URL`. Open it, sign in, and enroll TOTP (mandatory for every admin).
 
-**After deploying site content (3c).** Migration `content_write_permission` gives the existing `ADMIN` role `content.write`; it runs automatically like every migration. Run `node dist/seed/content-main.js` once in the `shop-api` Terminal after this deploy. It creates the brand settings row and the first rules edition only when they are missing, and never touches the catalog, roles or anything an admin edited (do not use `main.js` for this). It is needed so the admin Content pages have a settings row and a first edition to start from (the rules page works without them, from built-in fallbacks). Details: ADR 0008.
+**Site content (automatic).** After the migrations, every `shop-api` start runs `node dist/seed/content-main.js` (Dockerfile `CMD`) before the server listens. It creates the brand settings row, the rules draft and the first rules edition only when they are missing, and never touches the catalog, roles or anything an admin edited; it holds a Postgres advisory lock, so containers starting together create them once. A failure stops the container like a failed migration. There is nothing to run by hand for site content (3c); migration `content_write_permission` gives the existing `ADMIN` role `content.write` automatically. Details: ADR 0008.
 
-Never put the seed in the per-deploy command: re-running it would resurrect demo products deleted later through admin editing.
+Never put the full seed (`main.js`) in the per-deploy command and never re-run it: it would resurrect demo products deleted later through admin editing.
 
 CI verifies `/api/health/ready` (database reachable) after the version check, so a missing or wrong `DATABASE_URL` fails the deploy job.
 
