@@ -23,6 +23,7 @@ describe('rate limits', () => {
   let prisma: PrismaService
 
   beforeAll(async () => {
+    process.env.RATE_LIMIT_ORDER = '2'
     ;[db, redis] = await Promise.all([startDatabase(), startRedis()])
     prisma = new PrismaService()
     await seedAccess(prisma, getMailer(), 'http://admin.test')
@@ -130,6 +131,14 @@ describe('rate limits', () => {
     } finally {
       client.disconnect()
     }
+  })
+
+  it('limits order creation per IP without touching other routes', async () => {
+    const statuses: number[] = []
+    for (let i = 0; i < 3; i++)
+      statuses.push((await request(app.getHttpServer()).post('/api/orders').send({})).status)
+    expect(statuses).toEqual([400, 400, 429])
+    await request(app.getHttpServer()).get('/api/catalog?locale=en').expect(200)
   })
 
   it('limits public routes to 100 per minute per IP', async () => {

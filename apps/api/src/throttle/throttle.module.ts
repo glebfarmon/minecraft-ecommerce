@@ -57,7 +57,7 @@ export function adminTracker(req: ThrottledRequest): string {
 
 /**
  * The default limit protects availability, so a Redis outage lets those requests through; the
- * admin limit and every sign-in-code limit fail closed.
+ * admin limit, the order limit and every sign-in-code limit fail closed.
  */
 class FailOpenDefaultStorage implements ThrottlerStorage {
   constructor(private readonly inner: ThrottlerStorageRedisService) {}
