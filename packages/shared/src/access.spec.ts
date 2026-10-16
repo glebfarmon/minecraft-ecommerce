@@ -15,7 +15,8 @@ describe('access contract', () => {
       'admin.invite',
       'audit.read',
       'catalog.write',
-      'server.rcon'
+      'server.rcon',
+      'content.write'
     ])
     expect(SYSTEM_ROLES.SUPPORT).toEqual([])
   })
@@ -47,7 +48,9 @@ describe('access contract', () => {
 
 describe('catalog permissions', () => {
   it('lists the catalog permissions', () => {
-    expect(PERMISSIONS).toEqual(expect.arrayContaining(['catalog.write', 'server.rcon']))
+    expect(PERMISSIONS).toEqual(
+      expect.arrayContaining(['catalog.write', 'server.rcon', 'content.write'])
+    )
     expect(SYSTEM_ROLES.SUPPORT).toEqual([])
   })
 })

@@ -1,4 +1,4 @@
-import {parseInline} from '@/features/rules/lib/inline-markdown'
+import {parseInline} from '@shop/shared/rules'
 
 import {RULES_EN} from './rules.en'
 import {RULES_PL} from './rules.pl'

@@ -260,7 +260,8 @@
                               "role.write",
                               "audit.read",
                               "catalog.write",
-                              "server.rcon"
+                              "server.rcon",
+                              "content.write"
                             ],
                             "type": "string"
                           }
@@ -276,7 +277,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
@@ -1001,7 +1003,8 @@
                             "role.write",
                             "audit.read",
                             "catalog.write",
-                            "server.rcon"
+                            "server.rcon",
+                            "content.write"
                           ],
                           "type": "string"
                         }
@@ -1043,7 +1046,8 @@
                         "role.write",
                         "audit.read",
                         "catalog.write",
-                        "server.rcon"
+                        "server.rcon",
+                        "content.write"
                       ],
                       "type": "string"
                     }
@@ -1080,7 +1084,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
@@ -1139,7 +1144,8 @@
                         "role.write",
                         "audit.read",
                         "catalog.write",
-                        "server.rcon"
+                        "server.rcon",
+                        "content.write"
                       ],
                       "type": "string"
                     }
@@ -1176,7 +1182,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
