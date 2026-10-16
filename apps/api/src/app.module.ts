@@ -8,6 +8,7 @@ import {CatalogModule} from './catalog/catalog.module'
 import {ContentModule} from './content/content.module'
 import {HealthModule} from './health/health.module'
 import {MailerModule} from './mailer/mailer.module'
+import {PaymentsModule} from './payments/payments.module'
 import {PrismaModule} from './prisma/prisma.module'
 import {RedisModule} from './redis/redis.module'
 import {StatusModule} from './status/status.module'
@@ -19,6 +20,7 @@ import {ThrottleModule} from './throttle/throttle.module'
     PrismaModule,
     RedisModule,
     MailerModule,
+    PaymentsModule,
     AuthModule,
     AccessModule,
     AuditModule,
