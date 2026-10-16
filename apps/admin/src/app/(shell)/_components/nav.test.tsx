@@ -2,7 +2,8 @@ import {render, screen} from '@testing-library/react'
 
 import {Nav} from './nav'
 
-jest.mock('next/navigation', () => ({usePathname: () => '/team'}))
+let mockPath = '/team'
+jest.mock('next/navigation', () => ({usePathname: () => mockPath}))
 
 const me = (permissions: string[]) =>
   ({
@@ -28,8 +29,10 @@ describe('Nav', () => {
     expect(screen.getByRole('link', {name: 'Catalog'})).toBeInTheDocument()
   })
   it('shows Content with content.write and marks it for its sub-pages', () => {
+    mockPath = '/content/texts'
     render(<Nav me={me(['content.write'])} />)
-    expect(screen.getByRole('link', {name: 'Content'})).toBeInTheDocument()
+    expect(screen.getByRole('link', {name: 'Content'})).toHaveAttribute('aria-current', 'page')
+    mockPath = '/team'
   })
   it('hides Content without content.write', () => {
     render(<Nav me={me([])} />)

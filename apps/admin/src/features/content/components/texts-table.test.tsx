@@ -122,4 +122,42 @@ describe('TextsTable', () => {
       expect(urls.some(u => u.includes('locale=pl'))).toBe(true)
     })
   })
+
+  it('shows the other locale texts after switching, and saves the PL value to the PL URL', async () => {
+    const puts: {url: string; body: unknown}[] = []
+    jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      if (req.method === 'PUT') {
+        puts.push({url: req.url, body: await req.json()})
+        return Response.json({})
+      }
+      const pl = new URL(req.url).searchParams.get('locale') === 'pl'
+      return Response.json([
+        {key: 'hero.title', namespace: 'hero', default: 'Welcome', override: pl ? 'Cześć' : 'Hello'}
+      ])
+    })
+    renderWithStore(<TextsTable />)
+    expect(await screen.findByLabelText('Override for hero.title')).toHaveValue('Hello')
+    fireEvent.mouseDown(screen.getByRole('tab', {name: 'PL'}), {button: 0})
+    await waitFor(() => {
+      expect(screen.getByLabelText('Override for hero.title')).toHaveValue('Cześć')
+    })
+    fireEvent.change(screen.getByLabelText('Override for hero.title'), {
+      target: {value: 'Cześć!'}
+    })
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    await waitFor(() => {
+      expect(puts).toHaveLength(1)
+    })
+    expect(puts[0].url).toMatch(/\/pl\/hero\.title$/)
+    expect(puts[0].body).toEqual({value: 'Cześć!'})
+  })
+
+  it('puts the search box before the first table', async () => {
+    mockApi(() => Response.json({}))
+    renderWithStore(<TextsTable />)
+    const search = screen.getByLabelText('Search texts')
+    const [table] = await screen.findAllByRole('table')
+    expect(search.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
 })

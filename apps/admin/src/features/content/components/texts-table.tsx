@@ -26,21 +26,16 @@ export function TextsTable() {
   const [search, setSearch] = useState('')
 
   return (
-    <div className="flex flex-col gap-4">
+    <Tabs
+      value={locale}
+      onValueChange={v => {
+        setLocale(v as Locale)
+      }}>
       <div className="flex flex-wrap items-end gap-4">
-        <Tabs
-          value={locale}
-          onValueChange={v => {
-            setLocale(v as Locale)
-          }}>
-          <TabsList aria-label="Language">
-            <TabsTrigger value="en">EN</TabsTrigger>
-            <TabsTrigger value="pl">PL</TabsTrigger>
-          </TabsList>
-          <TabsContent value={locale}>
-            <Messages locale={locale} search={search} />
-          </TabsContent>
-        </Tabs>
+        <TabsList aria-label="Language">
+          <TabsTrigger value="en">EN</TabsTrigger>
+          <TabsTrigger value="pl">PL</TabsTrigger>
+        </TabsList>
         <div className="flex flex-col gap-1">
           <Label htmlFor="texts-search">Search texts</Label>
           <Input
@@ -53,17 +48,21 @@ export function TextsTable() {
           />
         </div>
       </div>
-    </div>
+      <TabsContent value={locale}>
+        <Messages key={locale} locale={locale} search={search} />
+      </TabsContent>
+    </Tabs>
   )
 }
 
 function Messages({locale, search}: {locale: Locale; search: string}) {
   const messages = useListContentMessagesQuery({locale})
-  if (messages.isLoading) return <p>Loading texts…</p>
-  if (!messages.data) return <p role="alert">Could not load the texts. Refresh the page.</p>
-
+  // currentData, not data: while another locale loads, data still holds the previous one.
+  const data = messages.currentData
+  if (messages.isError) return <p role="alert">Could not load the texts. Refresh the page.</p>
+  if (!data) return <p>Loading texts…</p>
   const q = search.trim().toLowerCase()
-  const shown = messages.data.filter(
+  const shown = data.filter(
     m =>
       !q ||
       m.key.toLowerCase().includes(q) ||
