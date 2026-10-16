@@ -149,15 +149,15 @@ describe('TextsTable', () => {
     await waitFor(() => {
       expect(puts).toHaveLength(1)
     })
-    expect(puts[0].url).toMatch(/\/pl\/hero\.title$/)
-    expect(puts[0].body).toEqual({value: 'Cześć!'})
+    expect(puts[0]?.url).toMatch(/\/pl\/hero\.title$/)
+    expect(puts[0]?.body).toEqual({value: 'Cześć!'})
   })
 
   it('puts the search box before the first table', async () => {
     mockApi(() => Response.json({}))
     renderWithStore(<TextsTable />)
     const search = screen.getByLabelText('Search texts')
-    const [table] = await screen.findAllByRole('table')
+    const table = (await screen.findAllByRole('table'))[0] as HTMLElement
     expect(search.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })
