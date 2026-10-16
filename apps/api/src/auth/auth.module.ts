@@ -15,7 +15,8 @@ export const JSON_BODY_LIMIT = '2mb'
     BetterAuthModule.forRoot({
       auth,
       middleware: stampClientIp,
-      bodyParser: {json: {limit: JSON_BODY_LIMIT}}
+      // rawBody: Stripe webhook signatures are computed over the exact bytes received.
+      bodyParser: {json: {limit: JSON_BODY_LIMIT}, rawBody: true}
     })
   ]
 })

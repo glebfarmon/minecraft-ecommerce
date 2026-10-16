@@ -8,12 +8,13 @@ import {PrismaService} from '../prisma/prisma.service'
 import {priceLines} from './order-pricing'
 import {localePrefix, toPublicOrder} from './order-view'
 import {newPublicId} from './public-id'
+import {publicWebOrigin} from './public-origin'
 import {TURNSTILE, type TurnstileVerifier} from './turnstile'
 
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
-  /** Where Stripe returns the buyer; empty env counts as unset. */
+  /** Where Stripe returns the buyer. */
   private readonly origin: string
 
   constructor(
@@ -21,10 +22,7 @@ export class OrdersService {
     @Inject(PAYMENTS_GATEWAY) private readonly gateway: PaymentsGateway,
     @Inject(TURNSTILE) private readonly turnstile: TurnstileVerifier
   ) {
-    const configured = process.env.PUBLIC_WEB_ORIGIN || undefined
-    if (!configured && process.env.NODE_ENV === 'production')
-      throw new Error('PUBLIC_WEB_ORIGIN must be set in production')
-    this.origin = configured ?? 'http://shop.localhost'
+    this.origin = publicWebOrigin()
   }
 
   async create(req: CreateOrderRequest, ip: string): Promise<CreateOrderResponse> {
