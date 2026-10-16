@@ -19,11 +19,15 @@ const KEY = 'audit'
 export const Audited = (action: string, entityType: string) =>
   SetMetadata(KEY, {action, entityType} satisfies Meta)
 
-/** The Express request seen through the Node type: handlers that change a row set `auditBefore` first. */
+/**
+ * The Express request seen through the Node type: handlers that change a row set `auditBefore` first,
+ * and `auditEntityId` when the row has no `:id` in the path or `id` in the response.
+ */
 export type AuditableRequest = AdminRequest & {
   params?: Record<string, string | undefined>
   originalUrl?: string
   auditBefore?: unknown
+  auditEntityId?: string
 }
 
 @Injectable()
@@ -43,7 +47,11 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(body => {
         const path = (req.originalUrl ?? req.url ?? '').split('?')[0] ?? ''
-        const id = req.params?.id ?? (body as {id?: string} | null | undefined)?.id
+        const bodyId = (body as {id?: string | number} | null | undefined)?.id
+        const id =
+          req.auditEntityId ??
+          req.params?.id ??
+          (typeof bodyId === 'string' || typeof bodyId === 'number' ? String(bodyId) : undefined)
         this.audit
           .record({
             actorId: req.admin?.userId ?? null,

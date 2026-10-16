@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@shop/messages": "workspace:*",
     "@shop/shared": "workspace:*",
     "@shop/ui": "workspace:*",
     "lucide-react": "^1.49.0",

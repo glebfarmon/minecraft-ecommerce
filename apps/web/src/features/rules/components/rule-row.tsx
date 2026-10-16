@@ -3,8 +3,9 @@
 import {Highlight} from '@/features/rules/components/highlight'
 import {RichText} from '@/features/rules/components/rich-text'
 import {RuleActions} from '@/features/rules/components/rule-actions'
-import {parseInline, toPlainText} from '@/features/rules/lib/inline-markdown'
 import type {RuleItem} from '@/features/rules/types'
+
+import {parseInline, toPlainText} from '@shop/shared/rules'
 
 export function RuleRow({
   item,

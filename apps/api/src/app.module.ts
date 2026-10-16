@@ -5,6 +5,7 @@ import {AuditModule} from './audit/audit.module'
 import {AuthModule} from './auth/auth.module'
 import {CatalogAdminModule} from './catalog-admin/catalog-admin.module'
 import {CatalogModule} from './catalog/catalog.module'
+import {ContentModule} from './content/content.module'
 import {HealthModule} from './health/health.module'
 import {MailerModule} from './mailer/mailer.module'
 import {PrismaModule} from './prisma/prisma.module'
@@ -25,6 +26,7 @@ import {ThrottleModule} from './throttle/throttle.module'
     StatusModule,
     CatalogModule,
     CatalogAdminModule,
+    ContentModule,
     TeamModule,
     ThrottleModule
   ]

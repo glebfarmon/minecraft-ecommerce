@@ -1,9 +1,18 @@
 import {DEFAULT_SITE_SETTINGS, type SiteSettings} from '@/config/site'
+import {loadContent} from '@/lib/content-fetch'
+import {cache} from 'react'
+
+import {SiteSettingsSchema} from '@shop/shared/content'
 
 /**
- * Brand settings. Phase 1 returns the defaults; phase 2 fetches `/api/content/settings` behind
- * `'use cache'` and falls back to `DEFAULT_SITE_SETTINGS` (spec §6.2), keeping this signature.
+ * Brand settings from `/api/content/settings` (ADR 0007/0008); `DEFAULT_SITE_SETTINGS` when the API cannot answer.
+ * `cache`: one fetch per request (the timeout signal turns off Next's own fetch dedupe).
  */
-export function getSiteSettings(): Promise<SiteSettings> {
-  return Promise.resolve(DEFAULT_SITE_SETTINGS)
-}
+export const getSiteSettings = cache((): Promise<SiteSettings> =>
+  loadContent(
+    '/api/content/settings',
+    SiteSettingsSchema,
+    'content-settings',
+    DEFAULT_SITE_SETTINGS
+  )
+)

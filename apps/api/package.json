@@ -52,6 +52,7 @@
     "@prisma/client": "^7.10.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
+    "@shop/messages": "workspace:*",
     "@shop/shared": "workspace:*",
     "@thallesp/nestjs-better-auth": "^2.8.0",
     "@valibot/to-json-schema": "^1.8.0",

@@ -38,6 +38,34 @@ describe('AuditInterceptor', () => {
     })
   })
 
+  it('prefers an entity id the handler set over the path id', async () => {
+    const record = jest.fn(() => Promise.resolve())
+    const interceptor = new AuditInterceptor(
+      {record} as never,
+      {getAllAndOverride: () => ({action: 'message.reset', entityType: 'message'})} as never
+    )
+    await lastValueFrom(
+      interceptor.intercept(
+        ctx({
+          method: 'DELETE',
+          params: {locale: 'pl', key: 'hero.title'},
+          headers: {},
+          socket: {remoteAddress: '::1'},
+          admin: {userId: 'u1'},
+          auditEntityId: 'pl:hero.title',
+          auditBefore: {locale: 'pl', key: 'hero.title', value: 'Old'}
+        }),
+        {handle: () => of(undefined)}
+      )
+    )
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 'pl:hero.title',
+        before: {locale: 'pl', key: 'hero.title', value: 'Old'}
+      })
+    )
+  })
+
   it('names unannotated handlers after the method and path', async () => {
     const record = jest.fn(() => Promise.resolve())
     const interceptor = new AuditInterceptor(
@@ -106,6 +134,22 @@ describe('AuditInterceptor', () => {
       delete process.env.TRUST_CF_CONNECTING_IP
       expect(await recordedIp({})).toBe('172.18.0.2')
     })
+  })
+
+  it('takes entityId from the response body: numbers become strings, other values are ignored', async () => {
+    const run = async (body: unknown) => {
+      const record = jest.fn(() => Promise.resolve())
+      const interceptor = new AuditInterceptor(
+        {record} as never,
+        {getAllAndOverride: () => ({action: 'x.y', entityType: 'x'})} as never
+      )
+      const req = {method: 'POST', params: {}, headers: {}, socket: {}, admin: {userId: 'u1'}}
+      await lastValueFrom(interceptor.intercept(ctx(req), {handle: () => of(body)}))
+      return (record.mock.calls[0] as unknown as [{entityId?: string}])[0].entityId
+    }
+    expect(await run({id: 7})).toBe('7')
+    expect(await run({id: null})).toBeUndefined()
+    expect(await run({id: {a: 1}})).toBeUndefined()
   })
 
   it('skips reads', async () => {

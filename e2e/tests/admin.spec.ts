@@ -145,7 +145,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     await page.reload()
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
 
-    // The storefront caches the catalog for up to 60 s.
+    // The e2e stack sets CATALOG_REVALIDATE_SECONDS=1; allow for the stale-while-revalidate turnover under CI load.
     const shop = await page.context().newPage()
     await expect
       .poll(
@@ -153,7 +153,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
           await shop.goto(`${WEB}/`)
           return shop.getByRole('button', {name: /^(Elite|Probe Rank|Legend)$/}).allTextContents()
         },
-        {timeout: 90_000, intervals: [5_000]}
+        {timeout: 30_000, intervals: [2_000]}
       )
       .toEqual(['Elite', 'Probe Rank', 'Legend'])
   } finally {
@@ -172,6 +172,117 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
       await page.getByRole('button', {name: 'Delete'}).click()
       await page.getByRole('button', {name: 'Confirm delete'}).click()
       await expect(page).toHaveURL(/\/catalog$/)
+    }
+  }
+})
+
+/** Signs the owner in with an email code and a fresh TOTP code, up to the dashboard. */
+async function signInOwner(page: Page) {
+  await page.goto(`${ADMIN}/login`)
+  await signInWithCode(page, OWNER)
+  await page.getByLabel('Code from the app').fill(await ownerCode(page))
+  await page.getByRole('button', {name: 'Verify'}).click()
+  await expect(page.getByRole('heading', {name: /^Welcome/})).toBeVisible()
+}
+
+test('the owner publishes a rule edit and the rules page shows it', async ({page}) => {
+  test.setTimeout(180_000)
+  const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
+  const probe = `Probe rule ${String(Date.now())}`
+  await signInOwner(page)
+  await page.getByRole('link', {name: 'Content', exact: true}).click()
+  await page.getByRole('link', {name: 'Rules', exact: true}).click()
+  const field = page.getByLabel('Rule 1.1 (EN)')
+  await expect(field).toBeVisible()
+  const original = await field.inputValue()
+  expect(original).not.toBe('')
+
+  // From the first published probe the site shows it: always restore the seeded text and publish
+  // it again, so rules.spec.ts finds the content it expects.
+  try {
+    await field.fill(probe)
+    await page.getByRole('button', {name: 'Save draft'}).click()
+    await expect(page.getByText('Unsaved changes')).toHaveCount(0)
+    await page.getByRole('button', {name: 'Publish', exact: true}).click()
+    await page.getByRole('button', {name: 'Publish now'}).click()
+    await expect(
+      page.getByText('Published. Visible on the site within about a minute.')
+    ).toBeVisible()
+
+    const shop = await page.context().newPage()
+    await expect
+      .poll(
+        async () => {
+          await shop.goto(`${WEB}/rules`)
+          return shop.getByText(probe).count()
+        },
+        {timeout: 30_000, intervals: [2_000]}
+      )
+      .toBeGreaterThan(0)
+    await shop.close()
+  } finally {
+    await page.goto(`${ADMIN}/content/rules`)
+    const restore = page.getByLabel('Rule 1.1 (EN)')
+    await expect(restore).toBeVisible()
+    if ((await restore.inputValue()) !== original) {
+      await restore.fill(original)
+      await page.getByRole('button', {name: 'Save draft'}).click()
+      await expect(page.getByText('Unsaved changes')).toHaveCount(0)
+    }
+    await page.getByRole('button', {name: 'Publish', exact: true}).click()
+    await page.getByRole('button', {name: 'Publish now'}).click()
+    await expect(
+      page.getByText('Published. Visible on the site within about a minute.')
+    ).toBeVisible()
+  }
+})
+
+test('the owner overrides the hero title and the home page shows it', async ({page}) => {
+  test.setTimeout(180_000)
+  const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
+  await signInOwner(page)
+  await page.getByRole('link', {name: 'Content', exact: true}).click()
+  await page.getByRole('link', {name: 'Texts', exact: true}).click()
+  await page.getByLabel('Search texts').fill('hero.title')
+  const row = page.getByRole('row').filter({has: page.getByLabel('Override for hero.title')})
+  const original = (await row.getByRole('cell').nth(1).innerText()).trim()
+  expect(original).not.toBe('')
+  // Plain words change; placeholders ({count}) and tags (<b>) stay as they are.
+  const next = original
+    .split(/(<[^>]*>|\{[^}]*\})/)
+    .map((part, i) => (i % 2 === 0 ? part.replace(/[\p{L}]+/gu, 'Probe') : part))
+    .join('')
+  expect(next).not.toBe(original)
+
+  const input = page.getByLabel('Override for hero.title')
+  try {
+    await input.fill(next)
+    await row.getByRole('button', {name: 'Save'}).click()
+    await expect(row.getByText('changed')).toBeVisible()
+
+    const shop = await page.context().newPage()
+    await expect
+      .poll(
+        async () => {
+          await shop.goto(`${WEB}/`)
+          return (await shop.locator('h1 .sr-only').textContent()) ?? ''
+        },
+        {timeout: 30_000, intervals: [2_000]}
+      )
+      .toBe(next)
+    await shop.close()
+  } finally {
+    await page.goto(`${ADMIN}/content/texts`)
+    await page.getByLabel('Search texts').fill('hero.title')
+    const reset = page
+      .getByRole('row')
+      .filter({has: page.getByLabel('Override for hero.title')})
+      .getByRole('button', {
+        name: 'Reset'
+      })
+    if ((await reset.count()) > 0) {
+      await reset.click()
+      await expect(reset).toHaveCount(0)
     }
   }
 })

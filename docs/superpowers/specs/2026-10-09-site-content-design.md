@@ -297,4 +297,4 @@ Phase 1 ships a finished `/rules` page; phase 2 changes only function bodies on 
 
 ## 12. ADR to write
 
-**ADR 0008: Site content in the database.** Brand values move from `config/site.ts` (ADR 0005) to the DB with `DEFAULT_SITE_SETTINGS` as fallback; rules as versioned JSON documents; UI texts as allowlisted overrides on top of next-intl files; caching via `'use cache'` + `cacheLife('content')` without on-demand revalidation. ADR 0005 stays valid for everything else in `config/`.
+**ADR 0008: Site content in the database.** Brand values move from `config/site.ts` (ADR 0005) to the DB with `DEFAULT_SITE_SETTINGS` as fallback; rules as versioned JSON documents; UI texts as allowlisted overrides on top of next-intl files; caching via `fetch` with `revalidate` and tags (ADR 0007, env `CONTENT_REVALIDATE_SECONDS`; superseding the earlier `'use cache'` plan) without on-demand revalidation. ADR 0005 stays valid for everything else in `config/`.

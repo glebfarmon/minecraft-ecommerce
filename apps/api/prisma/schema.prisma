@@ -260,3 +260,48 @@ model AuditLog {
   @@index([actorId, createdAt(sort: Desc)])
   @@map("audit_logs")
 }
+
+model RulesDraft {
+  id        Int      @id @default(1)
+  content   Json
+  revision  Int      @default(0)
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  @@map("rules_drafts")
+}
+
+model RulesVersion {
+  id          Int      @id @default(autoincrement())
+  content     Json
+  publishedAt DateTime @default(now())
+  publishedBy String
+
+  @@index([publishedAt])
+  @@map("rules_versions")
+}
+
+model MessageOverride {
+  locale    Locale
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  @@id([locale, key])
+  @@map("message_overrides")
+}
+
+model SiteSettings {
+  id             Int      @id @default(1)
+  siteNamePlain  String
+  siteNameAccent String
+  serverIp       String
+  discordUrl     String
+  supportEmail   String
+  version        Int      @default(1)
+  updatedAt      DateTime @updatedAt
+  updatedBy      String
+
+  @@map("site_settings")
+}

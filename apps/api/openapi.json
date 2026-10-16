@@ -260,7 +260,8 @@
                               "role.write",
                               "audit.read",
                               "catalog.write",
-                              "server.rcon"
+                              "server.rcon",
+                              "content.write"
                             ],
                             "type": "string"
                           }
@@ -276,7 +277,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
@@ -1001,7 +1003,8 @@
                             "role.write",
                             "audit.read",
                             "catalog.write",
-                            "server.rcon"
+                            "server.rcon",
+                            "content.write"
                           ],
                           "type": "string"
                         }
@@ -1043,7 +1046,8 @@
                         "role.write",
                         "audit.read",
                         "catalog.write",
-                        "server.rcon"
+                        "server.rcon",
+                        "content.write"
                       ],
                       "type": "string"
                     }
@@ -1080,7 +1084,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
@@ -1139,7 +1144,8 @@
                         "role.write",
                         "audit.read",
                         "catalog.write",
-                        "server.rcon"
+                        "server.rcon",
+                        "content.write"
                       ],
                       "type": "string"
                     }
@@ -1176,7 +1182,8 @@
                           "role.write",
                           "audit.read",
                           "catalog.write",
-                          "server.rcon"
+                          "server.rcon",
+                          "content.write"
                         ],
                         "type": "string"
                       }
@@ -4615,6 +4622,1181 @@
           }
         },
         "tags": ["Catalog admin"]
+      }
+    },
+    "/api/content/rules": {
+      "get": {
+        "operationId": "getPublicRules",
+        "summary": "The published rules in one language",
+        "description": "The latest published edition, localized, with the date it was published. No session needed. Never cached by the browser.",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": ["en", "pl"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The published rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "string",
+                                "description": "Text in the language below"
+                              },
+                              "lang": {
+                                "enum": ["en", "pl"],
+                                "type": "string",
+                                "description": "Language of value (EN fallback)"
+                              }
+                            },
+                            "required": ["value", "lang"]
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "string",
+                                      "description": "Text in the language below"
+                                    },
+                                    "lang": {
+                                      "enum": ["en", "pl"],
+                                      "type": "string",
+                                      "description": "Language of value (EN fallback)"
+                                    }
+                                  },
+                                  "required": ["value", "lang"]
+                                }
+                              },
+                              "required": ["id", "text"]
+                            }
+                          }
+                        },
+                        "required": ["id", "title", "items"]
+                      }
+                    }
+                  },
+                  "required": ["publishedAt", "sections"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unsupported locale"
+          },
+          "404": {
+            "description": "`not_published`: no edition has been published yet"
+          }
+        },
+        "tags": ["Content"]
+      }
+    },
+    "/api/content/messages": {
+      "get": {
+        "operationId": "getPublicMessages",
+        "summary": "Message overrides in one language",
+        "description": "Only the texts an admin overrode, by key; every other key uses the built-in default. No session needed. Never cached by the browser.",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": ["en", "pl"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Overrides by message key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unsupported locale"
+          }
+        },
+        "tags": ["Content"]
+      }
+    },
+    "/api/content/settings": {
+      "get": {
+        "operationId": "getPublicSettings",
+        "summary": "Site name, server address and contacts",
+        "description": "No session needed. Never cached by the browser.",
+        "responses": {
+          "200": {
+            "description": "Site settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteName": {
+                      "type": "object",
+                      "properties": {
+                        "plain": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Plain part of the site name"
+                        },
+                        "accent": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Accent-coloured part of the site name"
+                        }
+                      },
+                      "required": ["plain", "accent"]
+                    },
+                    "serverIp": {
+                      "type": "string",
+                      "pattern": "^(?=.{1,253}$)((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?::\\d{1,5})?$",
+                      "description": "Minecraft server address shown to players, optionally with :port"
+                    },
+                    "discordUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://",
+                      "description": "Discord invite link (https://)"
+                    },
+                    "supportEmail": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Support contact address"
+                    }
+                  },
+                  "required": ["siteName", "serverIp", "discordUrl", "supportEmail"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: the settings row does not exist yet (the api creates it at start)"
+          }
+        },
+        "tags": ["Content"]
+      }
+    },
+    "/api/admin/content/rules/draft": {
+      "get": {
+        "operationId": "getRulesDraft",
+        "summary": "The rules draft",
+        "description": "The working copy of the rules with its `revision`; it is invisible to players until published. Needs `content.write`.",
+        "responses": {
+          "200": {
+            "description": "The draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "object",
+                      "properties": {
+                        "sections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9-]{1,60}$",
+                                "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                              },
+                              "title": {
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                  },
+                                  "pl": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "description": "Polish text; the English text is shown when empty"
+                                  }
+                                },
+                                "required": ["en"]
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-z0-9-]{1,60}$",
+                                      "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                                    },
+                                    "text": {
+                                      "type": "object",
+                                      "properties": {
+                                        "en": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2000,
+                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                        },
+                                        "pl": {
+                                          "type": "string",
+                                          "maxLength": 2000,
+                                          "description": "Polish text; the English text is shown when empty"
+                                        }
+                                      },
+                                      "required": ["en"]
+                                    }
+                                  },
+                                  "required": ["id", "text"]
+                                },
+                                "maxItems": 100
+                              }
+                            },
+                            "required": ["id", "title", "items"]
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "required": ["sections"]
+                    },
+                    "revision": {
+                      "type": "number"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["content", "revision", "updatedAt", "updatedBy"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          }
+        },
+        "tags": ["Content admin"]
+      },
+      "put": {
+        "operationId": "saveRulesDraft",
+        "summary": "Save the rules draft",
+        "description": "Replaces the draft; send the `revision` you read. Players see nothing until you publish. Needs `content.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "object",
+                    "properties": {
+                      "sections": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9-]{1,60}$",
+                              "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                            },
+                            "title": {
+                              "type": "object",
+                              "properties": {
+                                "en": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120,
+                                  "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                },
+                                "pl": {
+                                  "type": "string",
+                                  "maxLength": 120,
+                                  "description": "Polish text; the English text is shown when empty"
+                                }
+                              },
+                              "required": ["en"]
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9-]{1,60}$",
+                                    "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                                  },
+                                  "text": {
+                                    "type": "object",
+                                    "properties": {
+                                      "en": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 2000,
+                                        "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                      },
+                                      "pl": {
+                                        "type": "string",
+                                        "maxLength": 2000,
+                                        "description": "Polish text; the English text is shown when empty"
+                                      }
+                                    },
+                                    "required": ["en"]
+                                  }
+                                },
+                                "required": ["id", "text"]
+                              },
+                              "maxItems": 100
+                            }
+                          },
+                          "required": ["id", "title", "items"]
+                        },
+                        "maxItems": 50
+                      }
+                    },
+                    "required": ["sections"]
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647,
+                    "description": "The draft revision this edit was made from"
+                  }
+                },
+                "required": ["content", "revision"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved draft with its new revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "object",
+                      "properties": {
+                        "sections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9-]{1,60}$",
+                                "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                              },
+                              "title": {
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                  },
+                                  "pl": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "description": "Polish text; the English text is shown when empty"
+                                  }
+                                },
+                                "required": ["en"]
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-z0-9-]{1,60}$",
+                                      "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                                    },
+                                    "text": {
+                                      "type": "object",
+                                      "properties": {
+                                        "en": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2000,
+                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                        },
+                                        "pl": {
+                                          "type": "string",
+                                          "maxLength": 2000,
+                                          "description": "Polish text; the English text is shown when empty"
+                                        }
+                                      },
+                                      "required": ["en"]
+                                    }
+                                  },
+                                  "required": ["id", "text"]
+                                },
+                                "maxItems": 100
+                              }
+                            },
+                            "required": ["id", "title", "items"]
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "required": ["sections"]
+                    },
+                    "revision": {
+                      "type": "number"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["content", "revision", "updatedAt", "updatedBy"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid document, or a link that is not safe"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          },
+          "409": {
+            "description": "`stale`: the draft changed since you read it (send the current value)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/rules/publish": {
+      "post": {
+        "operationId": "publishRules",
+        "summary": "Publish the draft as a new edition",
+        "description": "Stores the draft as a new version; send the draft `revision` you read, so an edit you have not seen is never published. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647,
+                    "description": "The draft revision being published; 409 `stale` if someone saved since"
+                  }
+                },
+                "required": ["revision"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "number"
+                    },
+                    "publishedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "publishedAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid `revision`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          },
+          "409": {
+            "description": "`stale`: the draft changed since you read it (send the current value)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/rules/versions": {
+      "get": {
+        "operationId": "listRulesVersions",
+        "summary": "Published editions, newest first",
+        "description": "Pass the previous page's `nextCursor` as `cursor` for older editions. Needs `content.write`.",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "nextCursor of the previous page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of editions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "publishedAt": {
+                            "type": "string"
+                          },
+                          "publishedBy": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "publishedAt", "publishedBy"]
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["versions", "nextCursor"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cursor (not a positive integer up to 2147483647)"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/rules/versions/{id}/restore": {
+      "post": {
+        "operationId": "restoreRulesVersion",
+        "summary": "Copy an old edition into the draft",
+        "description": "Overwrites the draft with the chosen edition; nothing goes live until you publish. Needs `content.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The draft after the restore",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "object",
+                      "properties": {
+                        "sections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9-]{1,60}$",
+                                "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                              },
+                              "title": {
+                                "type": "object",
+                                "properties": {
+                                  "en": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                  },
+                                  "pl": {
+                                    "type": "string",
+                                    "maxLength": 120,
+                                    "description": "Polish text; the English text is shown when empty"
+                                  }
+                                },
+                                "required": ["en"]
+                              },
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[a-z0-9-]{1,60}$",
+                                      "description": "Stable id: 1–60 of a–z, 0–9 and \"-\""
+                                    },
+                                    "text": {
+                                      "type": "object",
+                                      "properties": {
+                                        "en": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 2000,
+                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                        },
+                                        "pl": {
+                                          "type": "string",
+                                          "maxLength": 2000,
+                                          "description": "Polish text; the English text is shown when empty"
+                                        }
+                                      },
+                                      "required": ["en"]
+                                    }
+                                  },
+                                  "required": ["id", "text"]
+                                },
+                                "maxItems": 100
+                              }
+                            },
+                            "required": ["id", "title", "items"]
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "required": ["sections"]
+                    },
+                    "revision": {
+                      "type": "number"
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["content", "revision", "updatedAt", "updatedBy"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such edition, or no draft yet (`not_found`)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/messages": {
+      "get": {
+        "operationId": "listContentMessages",
+        "summary": "Every editable message in one language",
+        "description": "Each message with its default, current text and whether it is overridden. Needs `content.write`.",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": ["en", "pl"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "namespace": {
+                        "type": "string"
+                      },
+                      "default": {
+                        "type": "string",
+                        "description": "Built-in text"
+                      },
+                      "override": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Edited text, null when not overridden"
+                      },
+                      "stale": {
+                        "type": "boolean",
+                        "description": "The override no longer has the placeholders or tags of the default (changed by a deploy); the site shows the default until it is fixed"
+                      }
+                    },
+                    "required": ["key", "namespace", "default", "override", "stale"]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unsupported locale"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/messages/{locale}/{key}": {
+      "put": {
+        "operationId": "setContentMessage",
+        "summary": "Override one message",
+        "description": "Sets the text for a key and language; it must keep the placeholders of the default. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000,
+                    "description": "Replacement text, 1–2000 chars after trimming"
+                  }
+                },
+                "required": ["value"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The message with its new text",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "namespace": {
+                      "type": "string"
+                    },
+                    "default": {
+                      "type": "string",
+                      "description": "Built-in text"
+                    },
+                    "override": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Edited text, null when not overridden"
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "The override no longer has the placeholders or tags of the default (changed by a deploy); the site shows the default until it is fixed"
+                    }
+                  },
+                  "required": ["key", "namespace", "default", "override", "stale"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`unknown_key`, `invalid_locale`, or Validation failed (invalid body, or a blank text: reset instead)"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "422": {
+            "description": "`placeholder_mismatch`: the text must use exactly the placeholders of the default; `issues.expected` lists them and `issues.found` the ones sent"
+          }
+        },
+        "tags": ["Content admin"]
+      },
+      "delete": {
+        "operationId": "resetContentMessage",
+        "summary": "Reset one message to its default",
+        "description": "Removes the override; the built-in text applies again. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reset"
+          },
+          "400": {
+            "description": "`unknown_key` or `invalid_locale`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Content admin"]
+      }
+    },
+    "/api/admin/content/settings": {
+      "get": {
+        "operationId": "getContentSettings",
+        "summary": "Site settings with their version",
+        "description": "Site name, server address and contacts. Needs `content.write`.",
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteName": {
+                      "type": "object",
+                      "properties": {
+                        "plain": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Plain part of the site name"
+                        },
+                        "accent": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Accent-coloured part of the site name"
+                        }
+                      },
+                      "required": ["plain", "accent"]
+                    },
+                    "serverIp": {
+                      "type": "string",
+                      "pattern": "^(?=.{1,253}$)((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?::\\d{1,5})?$",
+                      "description": "Minecraft server address shown to players, optionally with :port"
+                    },
+                    "discordUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://",
+                      "description": "Discord invite link (https://)"
+                    },
+                    "supportEmail": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Support contact address"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647,
+                      "description": "Row version for optimistic locking"
+                    }
+                  },
+                  "required": ["siteName", "serverIp", "discordUrl", "supportEmail", "version"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          }
+        },
+        "tags": ["Content admin"]
+      },
+      "put": {
+        "operationId": "updateContentSettings",
+        "summary": "Update the site settings",
+        "description": "Send the `version` you read. Needs `content.write`. The storefront caches this content for up to a minute, so the change is live within a minute.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteName": {
+                    "type": "object",
+                    "properties": {
+                      "plain": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 24,
+                        "description": "Plain part of the site name"
+                      },
+                      "accent": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 24,
+                        "description": "Accent-coloured part of the site name"
+                      }
+                    },
+                    "required": ["plain", "accent"]
+                  },
+                  "serverIp": {
+                    "type": "string",
+                    "pattern": "^(?=.{1,253}$)((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?::\\d{1,5})?$",
+                    "description": "Minecraft server address shown to players, optionally with :port"
+                  },
+                  "discordUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://",
+                    "description": "Discord invite link (https://)"
+                  },
+                  "supportEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Support contact address"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647,
+                    "description": "Row version for optimistic locking"
+                  }
+                },
+                "required": ["siteName", "serverIp", "discordUrl", "supportEmail", "version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "siteName": {
+                      "type": "object",
+                      "properties": {
+                        "plain": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Plain part of the site name"
+                        },
+                        "accent": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "description": "Accent-coloured part of the site name"
+                        }
+                      },
+                      "required": ["plain", "accent"]
+                    },
+                    "serverIp": {
+                      "type": "string",
+                      "pattern": "^(?=.{1,253}$)((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?::\\d{1,5})?$",
+                      "description": "Minecraft server address shown to players, optionally with :port"
+                    },
+                    "discordUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://",
+                      "description": "Discord invite link (https://)"
+                    },
+                    "supportEmail": {
+                      "type": "string",
+                      "format": "email",
+                      "description": "Support contact address"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 2147483647,
+                      "description": "Row version for optimistic locking"
+                    }
+                  },
+                  "required": ["siteName", "serverIp", "discordUrl", "supportEmail", "version"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: the content rows do not exist yet (the api creates them at start)"
+          },
+          "409": {
+            "description": "`stale`: the settings changed since you read it (send the current value)"
+          }
+        },
+        "tags": ["Content admin"]
       }
     }
   }
