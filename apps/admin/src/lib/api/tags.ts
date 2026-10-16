@@ -12,6 +12,10 @@ type Tag =
   | 'CatalogServers'
   | 'CatalogCategories'
   | 'CatalogProducts'
+  | 'RulesDraft'
+  | 'RulesVersions'
+  | 'ContentMessages'
+  | 'ContentSettings'
 
 /**
  * Invalidate only when the mutation succeeded. A rejected update (409 stale) must not refetch:
@@ -31,7 +35,11 @@ export const enhancedApi = api.enhanceEndpoints({
     'Audit',
     'CatalogServers',
     'CatalogCategories',
-    'CatalogProducts'
+    'CatalogProducts',
+    'RulesDraft',
+    'RulesVersions',
+    'ContentMessages',
+    'ContentSettings'
   ],
   endpoints: {
     getApiAdminAdmins: {providesTags: ['Admins']},
@@ -78,6 +86,16 @@ export const enhancedApi = api.enhanceEndpoints({
     deleteCatalogProduct: {
       invalidatesTags: ['CatalogProducts', 'CatalogServers', 'CatalogCategories', 'Audit']
     },
-    orderCatalogProducts: {invalidatesTags: ['CatalogProducts', 'Audit']}
+    orderCatalogProducts: {invalidatesTags: ['CatalogProducts', 'Audit']},
+    getRulesDraft: {providesTags: ['RulesDraft']},
+    saveRulesDraft: {invalidatesTags: onSuccess(['RulesDraft', 'Audit'])},
+    publishRules: {invalidatesTags: ['RulesVersions', 'Audit']},
+    listRulesVersions: {providesTags: ['RulesVersions']},
+    restoreRulesVersion: {invalidatesTags: onSuccess(['RulesDraft', 'Audit'])},
+    listContentMessages: {providesTags: ['ContentMessages']},
+    setContentMessage: {invalidatesTags: onSuccess(['ContentMessages', 'Audit'])},
+    resetContentMessage: {invalidatesTags: ['ContentMessages', 'Audit']},
+    getContentSettings: {providesTags: ['ContentSettings']},
+    updateContentSettings: {invalidatesTags: onSuccess(['ContentSettings', 'Audit'])}
   }
 })

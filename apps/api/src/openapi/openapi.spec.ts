@@ -90,6 +90,26 @@ describe('OpenAPI document', () => {
     )
   })
 
+  it('explains every content operation and response', () => {
+    const ops = Object.entries(doc.paths)
+      .filter(([p]) => p.startsWith('/api/content') || p.startsWith('/api/admin/content'))
+      .flatMap(([p, methods]) =>
+        Object.entries(methods).map(([m, op]) => ({where: `${m} ${p}`, p, op}))
+      )
+    expect(ops.length).toBe(13)
+    const gaps = ops.flatMap(({where, p, op}) => [
+      ...(/^[a-z]\w+$/.test(op.operationId ?? '') ? [] : [`${where}: operationId`]),
+      ...(op.tags?.join() === (p.startsWith('/api/admin') ? 'Content admin' : 'Content')
+        ? []
+        : [`${where}: tags`]),
+      ...(op.description?.trim() ? [] : [`${where}: description`]),
+      ...Object.entries(op.responses)
+        .filter(([, r]) => !r.description.trim())
+        .map(([c]) => `${where}: ${c}`)
+    ])
+    expect(gaps).toEqual([])
+  })
+
   it('matches the committed openapi.json (run `pnpm --filter @shop/api openapi` after changing schemas)', () => {
     const committed: unknown = JSON.parse(
       readFileSync(path.join(__dirname, '../../openapi.json'), 'utf8')

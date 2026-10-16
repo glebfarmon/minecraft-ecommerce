@@ -236,6 +236,63 @@ const injectedRtkApi = api.injectEndpoints({
         method: 'PUT',
         body: queryArg.body
       })
+    }),
+    getRulesDraft: build.query<GetRulesDraftApiResponse, GetRulesDraftApiArg>({
+      query: () => ({url: `/api/admin/content/rules/draft`})
+    }),
+    saveRulesDraft: build.mutation<SaveRulesDraftApiResponse, SaveRulesDraftApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/rules/draft`,
+        method: 'PUT',
+        body: queryArg.body
+      })
+    }),
+    publishRules: build.mutation<PublishRulesApiResponse, PublishRulesApiArg>({
+      query: () => ({url: `/api/admin/content/rules/publish`, method: 'POST'})
+    }),
+    listRulesVersions: build.query<ListRulesVersionsApiResponse, ListRulesVersionsApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/rules/versions`,
+        params: {
+          cursor: queryArg.cursor
+        }
+      })
+    }),
+    restoreRulesVersion: build.mutation<RestoreRulesVersionApiResponse, RestoreRulesVersionApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/rules/versions/${queryArg.id}/restore`,
+        method: 'POST'
+      })
+    }),
+    listContentMessages: build.query<ListContentMessagesApiResponse, ListContentMessagesApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/messages`,
+        params: {
+          locale: queryArg.locale
+        }
+      })
+    }),
+    setContentMessage: build.mutation<SetContentMessageApiResponse, SetContentMessageApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/messages/${queryArg.locale}/${queryArg.key}`,
+        method: 'PUT',
+        body: queryArg.body
+      })
+    }),
+    resetContentMessage: build.mutation<ResetContentMessageApiResponse, ResetContentMessageApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/content/messages/${queryArg.locale}/${queryArg.key}`,
+        method: 'DELETE'
+      })
+    }),
+    getContentSettings: build.query<GetContentSettingsApiResponse, GetContentSettingsApiArg>({
+      query: () => ({url: `/api/admin/content/settings`})
+    }),
+    updateContentSettings: build.mutation<
+      UpdateContentSettingsApiResponse,
+      UpdateContentSettingsApiArg
+    >({
+      query: queryArg => ({url: `/api/admin/content/settings`, method: 'PUT', body: queryArg.body})
     })
   }),
   overrideExisting: false
@@ -1082,6 +1139,218 @@ export type OrderCatalogProductsApiArg = {
     base: string[]
   }
 }
+export type GetRulesDraftApiResponse = /** status 200 The draft */ {
+  content: {
+    sections: {
+      /** Stable id: 1–60 of a–z, 0–9 and "-" */
+      id: string
+      title: {
+        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        en: string
+        /** Polish text; the English text is shown when empty */
+        pl?: string
+      }
+      items: {
+        /** Stable id: 1–60 of a–z, 0–9 and "-" */
+        id: string
+        text: {
+          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          en: string
+          /** Polish text; the English text is shown when empty */
+          pl?: string
+        }
+      }[]
+    }[]
+  }
+  revision: number
+  updatedAt: string
+  updatedBy: string
+}
+export type GetRulesDraftApiArg = void
+export type SaveRulesDraftApiResponse = /** status 200 The saved draft with its new revision */ {
+  content: {
+    sections: {
+      /** Stable id: 1–60 of a–z, 0–9 and "-" */
+      id: string
+      title: {
+        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        en: string
+        /** Polish text; the English text is shown when empty */
+        pl?: string
+      }
+      items: {
+        /** Stable id: 1–60 of a–z, 0–9 and "-" */
+        id: string
+        text: {
+          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          en: string
+          /** Polish text; the English text is shown when empty */
+          pl?: string
+        }
+      }[]
+    }[]
+  }
+  revision: number
+  updatedAt: string
+  updatedBy: string
+}
+export type SaveRulesDraftApiArg = {
+  body: {
+    content: {
+      sections: {
+        /** Stable id: 1–60 of a–z, 0–9 and "-" */
+        id: string
+        title: {
+          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          en: string
+          /** Polish text; the English text is shown when empty */
+          pl?: string
+        }
+        items: {
+          /** Stable id: 1–60 of a–z, 0–9 and "-" */
+          id: string
+          text: {
+            /** English text; **bold**, *italic* and [label](https://… or /path) links */
+            en: string
+            /** Polish text; the English text is shown when empty */
+            pl?: string
+          }
+        }[]
+      }[]
+    }
+    /** The draft revision this edit was made from */
+    revision: number
+  }
+}
+export type PublishRulesApiResponse = /** status 201 The new version */ {
+  id: number
+  publishedAt: string
+}
+export type PublishRulesApiArg = void
+export type ListRulesVersionsApiResponse = /** status 200 A page of editions */ {
+  versions: {
+    id: number
+    publishedAt: string
+    publishedBy: string
+  }[]
+  nextCursor: number | null
+}
+export type ListRulesVersionsApiArg = {
+  cursor?: string
+}
+export type RestoreRulesVersionApiResponse = /** status 201 The draft after the restore */ {
+  content: {
+    sections: {
+      /** Stable id: 1–60 of a–z, 0–9 and "-" */
+      id: string
+      title: {
+        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        en: string
+        /** Polish text; the English text is shown when empty */
+        pl?: string
+      }
+      items: {
+        /** Stable id: 1–60 of a–z, 0–9 and "-" */
+        id: string
+        text: {
+          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          en: string
+          /** Polish text; the English text is shown when empty */
+          pl?: string
+        }
+      }[]
+    }[]
+  }
+  revision: number
+  updatedAt: string
+  updatedBy: string
+}
+export type RestoreRulesVersionApiArg = {
+  id: string
+}
+export type ListContentMessagesApiResponse = /** status 200 Messages */ {
+  key: string
+  namespace: string
+  /** Built-in text */
+  default: string
+  /** Edited text, null when not overridden */
+  override: string | null
+}[]
+export type ListContentMessagesApiArg = {
+  locale: 'en' | 'pl'
+}
+export type SetContentMessageApiResponse = /** status 200 The message with its new text */ {
+  key: string
+  namespace: string
+  /** Built-in text */
+  default: string
+  /** Edited text, null when not overridden */
+  override: string | null
+}
+export type SetContentMessageApiArg = {
+  locale: string
+  key: string
+  body: {
+    /** Replacement text, up to 2000 chars */
+    value: string
+  }
+}
+export type ResetContentMessageApiResponse = unknown
+export type ResetContentMessageApiArg = {
+  locale: string
+  key: string
+}
+export type GetContentSettingsApiResponse = /** status 200 Settings */ {
+  siteName: {
+    /** Plain part of the site name */
+    plain: string
+    /** Accent-coloured part of the site name */
+    accent: string
+  }
+  /** Minecraft server address shown to players, optionally with :port */
+  serverIp: string
+  /** Discord invite link (https://) */
+  discordUrl: string
+  /** Support contact address */
+  supportEmail: string
+  /** Row version for optimistic locking */
+  version: number
+}
+export type GetContentSettingsApiArg = void
+export type UpdateContentSettingsApiResponse = /** status 200 The saved settings */ {
+  siteName: {
+    /** Plain part of the site name */
+    plain: string
+    /** Accent-coloured part of the site name */
+    accent: string
+  }
+  /** Minecraft server address shown to players, optionally with :port */
+  serverIp: string
+  /** Discord invite link (https://) */
+  discordUrl: string
+  /** Support contact address */
+  supportEmail: string
+  /** Row version for optimistic locking */
+  version: number
+}
+export type UpdateContentSettingsApiArg = {
+  body: {
+    siteName: {
+      /** Plain part of the site name */
+      plain: string
+      /** Accent-coloured part of the site name */
+      accent: string
+    }
+    /** Minecraft server address shown to players, optionally with :port */
+    serverIp: string
+    /** Discord invite link (https://) */
+    discordUrl: string
+    /** Support contact address */
+    supportEmail: string
+    /** Row version for optimistic locking */
+    version: number
+  }
+}
 export const {
   useGetApiInviteLookupByTokenQuery,
   useGetApiAdminMeQuery,
@@ -1116,5 +1385,15 @@ export const {
   useGetCatalogProductQuery,
   useUpdateCatalogProductMutation,
   useDeleteCatalogProductMutation,
-  useOrderCatalogProductsMutation
+  useOrderCatalogProductsMutation,
+  useGetRulesDraftQuery,
+  useSaveRulesDraftMutation,
+  usePublishRulesMutation,
+  useListRulesVersionsQuery,
+  useRestoreRulesVersionMutation,
+  useListContentMessagesQuery,
+  useSetContentMessageMutation,
+  useResetContentMessageMutation,
+  useGetContentSettingsQuery,
+  useUpdateContentSettingsMutation
 } = injectedRtkApi
