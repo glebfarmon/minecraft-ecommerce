@@ -40,4 +40,21 @@ describe('createPaymentsGateway', () => {
   it('refuses an unknown gateway', () => {
     expect(() => createPaymentsGateway({PAYMENTS_GATEWAY: 'paypal'})).toThrow(/PAYMENTS_GATEWAY/)
   })
+  it('treats an empty PAYMENTS_GATEWAY as unset outside production', () => {
+    expect(createPaymentsGateway({PAYMENTS_GATEWAY: ''}).name).toBe('fake')
+  })
+  it('treats an empty PAYMENTS_GATEWAY as unset in production', () => {
+    expect(() => createPaymentsGateway({NODE_ENV: 'production', PAYMENTS_GATEWAY: ''})).toThrow(
+      /PAYMENTS_GATEWAY/
+    )
+  })
+  it('treats an empty STRIPE_SECRET_KEY as missing', () => {
+    expect(() =>
+      createPaymentsGateway({
+        PAYMENTS_GATEWAY: 'stripe',
+        STRIPE_SECRET_KEY: '',
+        STRIPE_WEBHOOK_SECRET: 'whsec_x'
+      })
+    ).toThrow(/STRIPE_SECRET_KEY/)
+  })
 })

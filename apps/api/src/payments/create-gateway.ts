@@ -6,7 +6,10 @@ import {StripeGateway} from './stripe-gateway'
  * `PAYMENTS_GATEWAY`: `stripe` or `fake` (default `fake` outside production). Production refuses
  * the fake unless `PAYMENTS_ALLOW_FAKE=true` (the e2e image runs with NODE_ENV=production).
  */
-export function createPaymentsGateway(env: Partial<Record<string, string>>): PaymentsGateway {
+export function createPaymentsGateway(raw: Partial<Record<string, string>>): PaymentsGateway {
+  // `.env.example` ships these empty; an empty value means unset.
+  const env: Partial<Record<string, string>> = {}
+  for (const [key, value] of Object.entries(raw)) if (value) env[key] = value
   const prod = env.NODE_ENV === 'production'
   const kind = env.PAYMENTS_GATEWAY ?? (prod ? undefined : 'fake')
   if (kind === 'stripe') {

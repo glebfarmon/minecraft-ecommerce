@@ -56,7 +56,9 @@ export class FakeGateway implements PaymentsGateway {
     try {
       return toPaymentEvent(Stripe.webhooks.constructEvent(rawBody, signature, this.webhookSecret))
     } catch (error) {
-      throw new InvalidSignatureError(error instanceof Error ? error.message : 'invalid signature')
+      if (error instanceof Stripe.errors.StripeSignatureVerificationError)
+        throw new InvalidSignatureError(error.message)
+      throw error
     }
   }
 }
