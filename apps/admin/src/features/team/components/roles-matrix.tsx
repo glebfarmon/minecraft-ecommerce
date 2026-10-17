@@ -68,12 +68,12 @@ export function RolesMatrix({
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm text-muted-foreground">
         Changing a role signs out everyone who has it. You can only give out permissions you hold.
         System roles are read-only.
       </p>
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
@@ -198,7 +198,7 @@ export function RolesMatrix({
               {...register('name')}
             />
             {errors.name && (
-              <p id="role-name-error" role="alert" className="text-destructive text-sm">
+              <p id="role-name-error" role="alert" className="text-sm text-destructive">
                 {errors.name.message}
               </p>
             )}

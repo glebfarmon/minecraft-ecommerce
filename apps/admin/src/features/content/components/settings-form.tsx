@@ -123,7 +123,7 @@ function Field({
       <Label htmlFor={`settings-${name}`}>{label}</Label>
       {children}
       {error && (
-        <p id={`settings-${name}-error`} className="text-destructive text-xs">
+        <p id={`settings-${name}-error`} className="text-xs text-destructive">
           {error}
         </p>
       )}

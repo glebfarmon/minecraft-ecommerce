@@ -57,7 +57,7 @@ export function AdminsTable({
   return (
     <div className="flex flex-col gap-3">
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
@@ -80,7 +80,7 @@ export function AdminsTable({
               <TableRow key={admin.id}>
                 <TableCell>
                   <div>{admin.email}</div>
-                  <div className="text-muted-foreground text-xs">{admin.name}</div>
+                  <div className="text-xs text-muted-foreground">{admin.name}</div>
                 </TableCell>
                 <TableCell>
                   {canChangeRoles && !isOwner && !disabled ? (

@@ -8,7 +8,7 @@ import {OrderStatusBadge} from './order-status-badge'
 function Row({label, children}: {label: string; children: React.ReactNode}) {
   return (
     <>
-      <dt className="text-muted-foreground text-sm">{label}</dt>
+      <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd>{children}</dd>
     </>
   )

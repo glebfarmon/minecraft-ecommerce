@@ -82,7 +82,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
             {...register('email')}
           />
           {errors.email && (
-            <p id="invite-email-error" role="alert" className="text-destructive text-sm">
+            <p id="invite-email-error" role="alert" className="text-sm text-destructive">
               {errors.email.message}
             </p>
           )}
@@ -108,7 +108,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
       </form>
       {notice && <p className="text-sm">{notice}</p>}
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}

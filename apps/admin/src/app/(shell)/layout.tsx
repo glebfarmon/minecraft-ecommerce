@@ -10,7 +10,7 @@ export default async function ShellLayout({children}: {children: ReactNode}) {
       <aside className="flex flex-col gap-6 border-r p-4">
         <p className="text-sm font-semibold">Shop Admin</p>
         <Nav me={me} />
-        <p className="text-muted-foreground mt-auto text-xs">
+        <p className="mt-auto text-xs text-muted-foreground">
           {me.email} · {me.role.name}
         </p>
       </aside>

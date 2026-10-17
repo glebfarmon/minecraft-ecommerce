@@ -18,7 +18,7 @@ export function ContentTabs({
           key={t.href}
           href={t.href}
           aria-current={t.href === current ? 'page' : undefined}
-          className="text-muted-foreground rounded-md px-3 py-1 text-sm hover:bg-accent hover:text-foreground aria-[current=page]:bg-accent aria-[current=page]:text-foreground">
+          className="rounded-md px-3 py-1 text-sm text-muted-foreground hover:bg-card-raised hover:text-foreground aria-[current=page]:bg-card-raised aria-[current=page]:text-foreground">
           {t.label}
         </Link>
       ))}

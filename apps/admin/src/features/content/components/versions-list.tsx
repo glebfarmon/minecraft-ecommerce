@@ -39,7 +39,7 @@ export function VersionsList() {
         Published editions
       </h2>
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
@@ -48,10 +48,10 @@ export function VersionsList() {
           Restored to the draft above. Publish it to show it on the site.
         </p>
       )}
-      {first.isLoading && <p className="text-muted-foreground text-sm">Loading editions…</p>}
+      {first.isLoading && <p className="text-sm text-muted-foreground">Loading editions…</p>}
       {first.isError && <p role="alert">Could not load the editions. Refresh the page.</p>}
       {first.data?.versions.length === 0 && (
-        <p className="text-muted-foreground text-sm">Nothing published yet.</p>
+        <p className="text-sm text-muted-foreground">Nothing published yet.</p>
       )}
       {first.data && first.data.versions.length > 0 && (
         // A new publish changes the newest edition: start again from the first page.
@@ -130,7 +130,7 @@ function Row({version, busy, onRestore}: {version: Version; busy: boolean; onRes
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <div className="mr-auto flex flex-col">
         <span className="font-medium">{editionDate(version.publishedAt)}</span>
-        <span className="text-muted-foreground text-xs">{`by ${version.publishedBy}`}</span>
+        <span className="text-xs text-muted-foreground">{`by ${version.publishedBy}`}</span>
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2">

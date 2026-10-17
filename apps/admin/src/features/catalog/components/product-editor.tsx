@@ -162,7 +162,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       noValidate
       className="flex max-w-3xl flex-col gap-6">
       {incomplete && (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
         </p>
       )}
@@ -301,7 +301,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           />
           <Label htmlFor={fieldId('isActive')}>Enabled</Label>
           {activeError && (
-            <p id={`${fieldId('isActive')}-error`} className="text-destructive w-full text-xs">
+            <p id={`${fieldId('isActive')}-error`} className="w-full text-xs text-destructive">
               {activeError}
             </p>
           )}
@@ -418,9 +418,9 @@ function Field({
     <div className="flex flex-col gap-1">
       <Label htmlFor={fieldId(name)}>{label}</Label>
       {children}
-      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p id={`${fieldId(name)}-error`} className="text-destructive text-xs">
+        <p id={`${fieldId(name)}-error`} className="text-xs text-destructive">
           {error}
         </p>
       )}

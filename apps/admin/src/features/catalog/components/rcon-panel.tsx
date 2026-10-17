@@ -166,9 +166,9 @@ function Field({
     <div className="flex flex-col gap-1">
       <Label htmlFor={id}>{label}</Label>
       {children}
-      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p id={`${id}-error`} className="text-destructive text-xs">
+        <p id={`${id}-error`} className="text-xs text-destructive">
           {error}
         </p>
       )}

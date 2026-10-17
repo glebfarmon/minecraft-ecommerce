@@ -30,7 +30,7 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
     <button
       type="button"
       aria-label={`Move ${label}`}
-      className="text-muted-foreground cursor-grab touch-none rounded px-1 hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
+      className="cursor-grab touch-none rounded px-1 text-muted-foreground hover:bg-card-raised focus-visible:ring-2 focus-visible:outline-none"
       {...handle}>
       ⠿
     </button>
@@ -92,7 +92,7 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
       </div>
       {tabs.error && <p role="alert">{tabs.error}</p>}
       {selected && <ServerColumn key={selected.id} server={selected} canEdit={canEdit} />}
-      <p className="text-muted-foreground text-sm">Changes are live on the site within a minute.</p>
+      <p className="text-sm text-muted-foreground">Changes are live on the site within a minute.</p>
     </div>
   )
 }
@@ -230,9 +230,9 @@ function ProductList({
     order({serverId, categoryId, body: {ids, base}})
   )
   if (status === 'loading')
-    return <p className="text-muted-foreground text-sm">Loading products…</p>
+    return <p className="text-sm text-muted-foreground">Loading products…</p>
   if (status === 'failed') return null
-  if (products.length === 0) return <p className="text-muted-foreground text-sm">No products.</p>
+  if (products.length === 0) return <p className="text-sm text-muted-foreground">No products.</p>
   return (
     <>
       {list.error && <p role="alert">{list.error}</p>}
@@ -243,9 +243,9 @@ function ProductList({
         className="flex flex-col gap-1"
         onMove={ids => void list.move(ids)}>
         {(p, handle) => (
-          <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent">
+          <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-card-raised">
             {canEdit && <Handle label={p.name} handle={handle} />}
-            <span className="text-muted-foreground w-12 truncate text-xs">
+            <span className="w-12 truncate text-xs text-muted-foreground">
               {p.mark === p.name ? null : p.mark}
             </span>
             <Link href={`/catalog/products/${p.id}`} className="font-medium hover:underline">
@@ -254,7 +254,7 @@ function ProductList({
             <span className="ml-auto text-sm">
               {p.prices.EUR === null ? '—' : `${fromMinor(p.prices.EUR)} €`}
             </span>
-            {!p.isActive && <span className="bg-muted rounded px-1.5 text-xs">Disabled</span>}
+            {!p.isActive && <span className="rounded bg-muted px-1.5 text-xs">Disabled</span>}
             {p.missing.length > 0 && (
               <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-900">Incomplete</span>
             )}

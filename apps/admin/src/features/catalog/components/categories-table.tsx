@@ -144,7 +144,7 @@ export function CategoriesTable({canEdit}: {canEdit: boolean}) {
                 {...register(field)}
               />
               {errors[field] && (
-                <p id={`new-${field}-error`} className="text-destructive text-xs">
+                <p id={`new-${field}-error`} className="text-xs text-destructive">
                   {errors[field].message}
                 </p>
               )}
@@ -198,7 +198,7 @@ function EditRow({
             {...register(name)}
           />
           {errors[name] && (
-            <p id={`edit-${category.id}-${name}-error`} className="text-destructive mt-1 text-xs">
+            <p id={`edit-${category.id}-${name}-error`} className="mt-1 text-xs text-destructive">
               {errors[name].message}
             </p>
           )}

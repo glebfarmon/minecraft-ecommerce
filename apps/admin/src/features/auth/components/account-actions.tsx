@@ -47,7 +47,7 @@ export function AccountActions() {
         Sign out everywhere
       </Button>
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}

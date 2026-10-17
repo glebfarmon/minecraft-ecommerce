@@ -46,12 +46,12 @@ export function TotpChallenge() {
         {...form.register('code')}
       />
       {errors.code && (
-        <p id="code-error" role="alert" className="text-destructive text-sm">
+        <p id="code-error" role="alert" className="text-sm text-destructive">
           {errors.code.message}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}
