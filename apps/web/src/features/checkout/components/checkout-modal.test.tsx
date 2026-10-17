@@ -139,6 +139,11 @@ describe('CheckoutModal', () => {
     expect(screen.queryByRole('button', {name: 'promo.toggle'})).toBeNull()
   })
 
+  it('shows the test card hint under the pay button', () => {
+    setup()
+    expect(screen.getByText('payHint')).toBeInTheDocument()
+  })
+
   it('links the terms and the privacy policy to the legal PDFs in a new tab', () => {
     setup()
     const terms = screen.getByRole('link', {name: 'terms-link'})

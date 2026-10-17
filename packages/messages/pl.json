@@ -51,7 +51,7 @@
     "deliveringTo": "Dostawa dla",
     "total": "Razem",
     "pay": "Zapłać {total}",
-    "payHint": "Sklep demonstracyjny: płatności nie są jeszcze podłączone.",
+    "payHint": "Tryb testowy: zapłać kartą 4242 4242 4242 4242, dowolna przyszła data i dowolny CVC. Żadne prawdziwe pieniądze nie są pobierane.",
     "errors": {
       "nick": "Użyj 3–16 liter, cyfr lub podkreślników.",
       "email": "Podaj poprawny adres e-mail.",
