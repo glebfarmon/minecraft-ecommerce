@@ -10,7 +10,8 @@ export const CLIENT_NAMESPACES = [
   'hero',
   'ip',
   'consent',
-  'rules'
+  'rules',
+  'order'
 ] as const
 
 export function pickClientMessages(messages: AbstractIntlMessages): AbstractIntlMessages {

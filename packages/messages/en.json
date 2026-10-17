@@ -220,5 +220,21 @@
     "save": "Save choice",
     "acceptAll": "Accept all"
   },
-  "skip": "Skip to shop"
+  "skip": "Skip to shop",
+  "order": {
+    "title": "Order {publicId}",
+    "paid": {
+      "title": "Paid — thank you!",
+      "body": "Items are delivered to the game server shortly. A receipt is on its way to {email}."
+    },
+    "pending": {
+      "title": "Waiting for the payment…",
+      "slow": "The payment is still being processed. You will get an email as soon as it goes through."
+    },
+    "expired": {
+      "title": "The payment was not completed",
+      "back": "Back to the shop"
+    },
+    "total": "Total"
+  }
 }
