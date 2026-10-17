@@ -1,7 +1,7 @@
 # Checkout and payments (4a)
 
 - Date: 2026-10-16
-- Status: Draft, awaiting owner review
+- Status: Implemented
 - Parent: `2026-10-01-minecraft-donation-shop-design.md` §9.1, roadmap row 4. Sub-project 4 is split: **4a** (this spec) orders, Stripe, webhooks, receipt, order status page, admin order view; **4b** promo codes (admin CRUD, reservation at order time, release on expiry).
 - Amends the parent: order creation runs Turnstile from 4a on; deliveries, grants and case keys are created by the webhook in sub-projects 5 and 7, not here.
 
@@ -116,3 +116,16 @@ Every route is documented in `apps/api/src/openapi/` (`operationId`, `tags`, `su
 - ADR 0010 "Payments gateway seam and webhook idempotency".
 - `CLAUDE.md`: an orders bullet (module, gateway seam, webhook rule, `order.read`).
 - Parent spec roadmap row 4: "split: 4a checkout, 4b promo codes".
+
+## 12. Rulings during planning and execution
+
+Planning:
+
+1. Order lines travel as `{server, slug, quantity}`; prices are never sent by the browser.
+2. The Turnstile site key is read at request time (`TURNSTILE_SITE_KEY` on the web service), not baked into the image.
+3. Deleting a product that an order references answers 409 `in_use`.
+
+Execution:
+
+4. `REFUNDED` and `DISPUTED` orders show a neutral "order is closed" view on the status page.
+5. The status page clears the cart only for the order this browser just paid: the checkout form stores the `publicId` in `localStorage` (`checkout:pending-order`) and the page compares it.

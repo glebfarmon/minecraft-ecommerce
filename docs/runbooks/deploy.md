@@ -125,6 +125,18 @@ CI verifies `/api/health/ready` (database reachable) after the version check, so
 
 Create a GitHub environment `production` and move these secrets into it.
 
+### Payments (Stripe test mode) and Turnstile
+
+The owner pastes these values in Dokploy and never sends them to the assistant.
+
+1. Stripe (test mode) → Developers → API keys → the secret key goes into `STRIPE_SECRET_KEY` on `shop-api`.
+2. Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`. Its signing secret goes into `STRIPE_WEBHOOK_SECRET` on `shop-api`.
+3. Optional: Settings → Payment methods → enable BLIK and Przelewy24 for PLN.
+4. Cloudflare → Turnstile → add a widget for `<domain>`. The site key goes into `TURNSTILE_SITE_KEY` on `shop-web` (read at runtime); the secret goes into `TURNSTILE_SECRET_KEY` on `shop-api`.
+5. On `shop-api` also set `PAYMENTS_GATEWAY=stripe` and `PUBLIC_WEB_ORIGIN=https://<domain>`. Never set `PAYMENTS_ALLOW_FAKE` in production.
+
+A paid event whose amount or currency does not match the order, or whose session is unknown, is logged and acknowledged with 200 (Stripe will not retry it). Find it in the `shop-api` logs and resolve it by hand in the Stripe dashboard (refund or fix the order).
+
 ## 7. Verify
 
 ```bash

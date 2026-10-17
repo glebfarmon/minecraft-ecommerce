@@ -619,7 +619,20 @@ ADMIN_OWNER_EMAIL=<your email: the first admin>
 TRUST_CF_CONNECTING_IP=true
 GOOGLE_CLIENT_ID=<from part 11, or omit the line>
 GOOGLE_CLIENT_SECRET=<from part 11, or omit the line>
+PAYMENTS_GATEWAY=stripe
+STRIPE_SECRET_KEY=<sk_test_… from Stripe: Developers → API keys>
+STRIPE_WEBHOOK_SECRET=<whsec_… from Stripe: Developers → Webhooks, see below>
+TURNSTILE_SECRET_KEY=<secret of the Cloudflare Turnstile widget, see below>
+PUBLIC_WEB_ORIGIN=https://<domain>
 ```
+
+You paste these values into Dokploy yourself. Never send them to the assistant or anyone else.
+
+**Stripe (test mode).** Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`; its signing secret is `STRIPE_WEBHOOK_SECRET`. Optionally enable BLIK and Przelewy24 for PLN under Settings → Payment methods.
+
+**Turnstile.** Cloudflare → Turnstile → add a widget for `<domain>`. The secret goes to `shop-api` (`TURNSTILE_SECRET_KEY`); the site key goes to `shop-web` as `TURNSTILE_SITE_KEY` (below).
+
+If a paid event does not match its order (wrong amount or currency) or names an unknown session, the API logs it and answers 200, so Stripe does not retry. Find it in the `shop-api` logs and resolve it by hand in the Stripe dashboard.
 
 Optional: `MC_SERVER_ADDRESS=play.example.org:25565` — the Minecraft server whose online count the site shows.
 
@@ -631,6 +644,7 @@ Optional: `MC_SERVER_ADDRESS=play.example.org:25565` — the Minecraft server wh
 
 ```
 API_ORIGIN=http://shop-api-k3j9x2:4000
+TURNSTILE_SITE_KEY=<site key of the Turnstile widget>
 ```
 
 `shop-admin`:
