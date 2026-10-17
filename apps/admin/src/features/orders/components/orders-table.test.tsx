@@ -44,7 +44,7 @@ describe('OrdersTable', () => {
     expect(row).toHaveTextContent('nick-o1')
     expect(row).toHaveTextContent('o1@x.io')
     expect(row).toHaveTextContent('€12.50')
-    expect(row).toHaveTextContent('PAID')
+    expect(row).toHaveTextContent('Paid')
   })
 
   it('searches with q on submit', async () => {

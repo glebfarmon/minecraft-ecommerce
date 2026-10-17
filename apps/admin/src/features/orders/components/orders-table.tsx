@@ -1,6 +1,8 @@
 'use client'
 
+import {StatusDot} from '@/components/status-dot'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
+import {formatMoney, formatTime} from '@/lib/format'
 import Link from 'next/link'
 import {useState} from 'react'
 
@@ -10,9 +12,6 @@ import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 import {Select} from '@shop/ui/select'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@shop/ui/table'
-
-import {formatMoney, formatTime} from '../lib/format'
-import {OrderStatusBadge} from './order-status-badge'
 
 type Query = Omit<ListAdminOrdersApiArg, 'cursor'>
 
@@ -66,7 +65,7 @@ function PageRows({
           <TableCell>{o.email}</TableCell>
           <TableCell>{formatMoney(o.totalMinor, o.currency)}</TableCell>
           <TableCell>
-            <OrderStatusBadge status={o.status} />
+            <StatusDot status={o.status} />
           </TableCell>
         </TableRow>
       ))}

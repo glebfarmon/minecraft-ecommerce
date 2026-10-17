@@ -1,9 +1,10 @@
 'use client'
 
+import {StatusDot} from '@/components/status-dot'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
+import {formatMoney, formatTime} from '@/lib/format'
 
-import {formatMoney, formatTime, stripeSessionUrl} from '../lib/format'
-import {OrderStatusBadge} from './order-status-badge'
+import {stripeSessionUrl} from '../lib/format'
 
 function Row({label, children}: {label: string; children: React.ReactNode}) {
   return (
@@ -31,7 +32,7 @@ export function OrderDetails({id}: {id: string}) {
       <dl className="grid max-w-xl grid-cols-[10rem_1fr] gap-x-4 gap-y-2">
         <Row label="Order">{order.publicId}</Row>
         <Row label="Status">
-          <OrderStatusBadge status={order.status} />
+          <StatusDot status={order.status} />
         </Row>
         <Row label="Nick">{order.nick}</Row>
         <Row label="Email">{order.email}</Row>
