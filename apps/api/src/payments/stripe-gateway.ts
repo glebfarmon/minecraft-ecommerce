@@ -3,7 +3,8 @@ import Stripe from 'stripe'
 import {toPaymentEvent} from './payment-events'
 import {InvalidSignatureError, type PaymentsGateway, type SessionRequest} from './payments-gateway'
 
-const SESSION_TTL_S = 30 * 60
+// Stripe requires at least 30 minutes; the extra minute absorbs clock skew and request latency.
+const SESSION_TTL_S = 31 * 60
 
 export class StripeGateway implements PaymentsGateway {
   readonly name = 'stripe'
