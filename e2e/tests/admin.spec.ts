@@ -88,6 +88,11 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   await setUpTotp(page)
   await expect(page.getByRole('link', {name: 'Home'})).toBeVisible()
   await expect(page.getByRole('link', {name: 'Audit log'})).toHaveCount(0)
+  // SUPPORT holds order.read; assert the page and its search, not rows (checkout specs run in parallel).
+  await expect(page.getByRole('link', {name: 'Orders'})).toBeVisible()
+  await page.getByRole('link', {name: 'Orders'}).click()
+  await expect(page.getByRole('heading', {name: 'Orders'})).toBeVisible()
+  await expect(page.getByLabel('Search by nick, email or order number')).toBeVisible()
   const res = await page.goto(`${ADMIN}/audit`)
   expect(res?.status()).toBe(404)
 })
