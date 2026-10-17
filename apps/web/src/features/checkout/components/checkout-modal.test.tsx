@@ -1,13 +1,43 @@
-import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
+import {DEFAULT_CURRENCY} from '@/config/currencies'
+import {ShopProvider, useCart, useCartActions} from '@/features/cart/shop-provider'
 import {CatalogProvider} from '@/features/catalog/catalog-provider'
 import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {createOrder} from '@/features/checkout/api/create-order'
+import {redirectTo} from '@/features/checkout/lib/redirect'
 import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
+import {useEffect} from 'react'
 import type {ReactNode} from 'react'
 
 import type {CatalogProduct} from '@shop/shared/catalog'
 
+import {TurnstileKeyProvider} from '../turnstile-key'
 import {CheckoutModal} from './checkout-modal'
+
+jest.mock('@/features/checkout/api/create-order')
+jest.mock('@/features/checkout/lib/redirect')
+const createOrderMock = jest.mocked(createOrder)
+
+// The widget solves itself on mount, unless a test turns that off and clicks the stand-in button.
+const mockReset = jest.fn()
+let mockAutoSolve = true
+jest.mock('@marsidev/react-turnstile', () => ({
+  Turnstile: ({onSuccess, ref}: {onSuccess: (token: string) => void; ref?: {current: unknown}}) => {
+    useEffect(() => {
+      if (ref) ref.current = {reset: mockReset}
+      if (mockAutoSolve) onSuccess('tok')
+    }, [onSuccess, ref])
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          onSuccess('tok')
+        }}>
+        solve-captcha
+      </button>
+    )
+  }
+}))
 
 jest.mock('next-intl', () => {
   const t = Object.assign((key: string) => key, {
@@ -45,12 +75,19 @@ function Fill() {
   )
 }
 
+function LineCount() {
+  return <output data-testid="line-count">{useCart().lines.length}</output>
+}
+
 function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
   const ui = (isOpen: boolean) => (
-    <ShopProvider>
-      <Fill />
-      <CheckoutModal open={isOpen} layoutId="cart" onBack={onBack} onClose={onClose} />
-    </ShopProvider>
+    <TurnstileKeyProvider siteKey="site-key">
+      <ShopProvider>
+        <Fill />
+        <LineCount />
+        <CheckoutModal open={isOpen} layoutId="cart" onBack={onBack} onClose={onClose} />
+      </ShopProvider>
+    </TurnstileKeyProvider>
   )
   const view = renderWithCatalog(ui(open))
   return {
@@ -63,6 +100,11 @@ function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
     }
   }
 }
+
+beforeEach(() => {
+  jest.resetAllMocks()
+  mockAutoSolve = true
+})
 
 const type = (label: string, value: string) => {
   fireEvent.change(screen.getByLabelText(label), {target: {value}})
@@ -91,28 +133,10 @@ describe('CheckoutModal', () => {
     for (const pay of pays) expect(pay).toHaveAttribute('type', 'submit')
   })
 
-  describe('promo code', () => {
-    it('stays behind a toggle until asked for', () => {
-      setup()
-      expect(screen.queryByLabelText('promo.label')).toBeNull()
-      const toggle = screen.getByRole('button', {name: 'promo.toggle'})
-      expect(toggle).toHaveAttribute('aria-expanded', 'false')
-      fireEvent.click(toggle)
-      expect(screen.getByLabelText('promo.label')).toHaveFocus()
-      expect(screen.queryByRole('button', {name: 'promo.toggle'})).toBeNull()
-    })
-
-    it('opens by itself when a code was already entered, so it is never hidden with a value in it', async () => {
-      const {rerenderWith} = setup()
-      fireEvent.click(screen.getByRole('button', {name: 'promo.toggle'}))
-      type('promo.label', 'SPRING')
-      rerenderWith(false)
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).toBeNull()
-      })
-      rerenderWith(true)
-      expect(screen.getByLabelText('promo.label')).toHaveValue('SPRING')
-    })
+  // 4a hides the promo field; 4b brings the toggle and the field back.
+  it('does not render the promo toggle', () => {
+    setup()
+    expect(screen.queryByRole('button', {name: 'promo.toggle'})).toBeNull()
   })
 
   it('links the terms and the privacy policy to the legal PDFs in a new tab', () => {
@@ -181,5 +205,118 @@ describe('CheckoutModal', () => {
     rerenderWith(true)
     expect(screen.getByLabelText('nick.label')).toHaveValue('Steve_42')
     expect(screen.getByLabelText('email.label')).toHaveValue('steve@example.com')
+  })
+  describe('paying', () => {
+    const fillValid = () => {
+      fireEvent.click(screen.getByRole('button', {name: 'fill-cart'}))
+      type('nick.label', 'Steve_42')
+      type('email.label', 'steve@example.com')
+      fireEvent.click(screen.getByRole('checkbox', {name: /delivery/}))
+      fireEvent.click(screen.getByRole('checkbox', {name: /terms/}))
+    }
+    const pay = () => {
+      const [button] = screen.getAllByRole('button', {name: /pay/})
+      if (!button) throw new Error('no pay button')
+      return button
+    }
+    const submit = async () => {
+      await waitFor(() => {
+        expect(pay()).toBeEnabled()
+      })
+      fireEvent.click(pay())
+    }
+
+    it('enables pay only once the form is valid and the captcha is solved', async () => {
+      mockAutoSolve = false
+      setup()
+      fillValid()
+      await waitFor(() => {
+        expect(screen.getByLabelText('email.label')).toHaveValue('steve@example.com')
+      })
+      expect(pay()).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', {name: 'solve-captcha'}))
+      await waitFor(() => {
+        expect(pay()).toBeEnabled()
+      })
+    })
+
+    it('stays disabled with a solved captcha but an invalid form', () => {
+      setup()
+      expect(pay()).toBeDisabled()
+    })
+
+    it('sends the order and goes to the payment page', async () => {
+      createOrderMock.mockResolvedValue({ok: true, redirectUrl: 'https://pay.example/x'})
+      setup()
+      fillValid()
+      await submit()
+      await waitFor(() => {
+        expect(redirectTo).toHaveBeenCalledWith('https://pay.example/x')
+      })
+      expect(createOrderMock).toHaveBeenCalledWith({
+        lines: [{server: product.server, slug: product.slug, quantity: 2}],
+        currency: DEFAULT_CURRENCY,
+        locale: 'en',
+        nick: 'Steve_42',
+        email: 'steve@example.com',
+        deliveryConsent: true,
+        termsAccepted: true,
+        turnstileToken: 'tok'
+      })
+    })
+
+    it('shows the busy label and disables pay while the request runs', async () => {
+      createOrderMock.mockReturnValue(new Promise(() => undefined))
+      setup()
+      fillValid()
+      await submit()
+      await waitFor(() => {
+        expect(screen.getAllByRole('button', {name: 'paying'}).length).toBeGreaterThan(0)
+      })
+      for (const busy of screen.getAllByRole('button', {name: 'paying'}))
+        expect(busy).toBeDisabled()
+    })
+
+    it('offers to remove exactly the unavailable lines', async () => {
+      createOrderMock.mockResolvedValue({
+        ok: false,
+        error: 'unavailable',
+        lines: [{server: product.server, slug: product.slug}]
+      })
+      setup()
+      fillValid()
+      await submit()
+      expect(await screen.findByRole('alert')).toHaveTextContent('errors.unavailable')
+      expect(screen.getByTestId('line-count')).toHaveTextContent('1')
+      fireEvent.click(screen.getByRole('button', {name: 'removeUnavailable'}))
+      expect(screen.getByTestId('line-count')).toHaveTextContent('0')
+    })
+
+    it('resets the widget after a failed captcha', async () => {
+      createOrderMock.mockResolvedValue({ok: false, error: 'turnstile'})
+      setup()
+      fillValid()
+      await submit()
+      expect(await screen.findByRole('alert')).toHaveTextContent('errors.turnstile')
+      expect(mockReset).toHaveBeenCalled()
+    })
+
+    it.each([
+      ['rate_limited', 'errors.rateLimited'],
+      ['unavailable_payments', 'errors.payments'],
+      ['invalid', 'errors.invalid']
+    ] as const)('shows %s as %s', async (error, message) => {
+      createOrderMock.mockResolvedValue({ok: false, error})
+      setup()
+      fillValid()
+      await submit()
+      expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      // The token is spent: pay waits for the widget to hand out a new one.
+      expect(pay()).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', {name: 'solve-captcha'}))
+      await waitFor(() => {
+        expect(pay()).toBeEnabled()
+      })
+    })
   })
 })

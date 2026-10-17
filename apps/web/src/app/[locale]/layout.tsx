@@ -1,9 +1,11 @@
 import {Navbar} from '@/app/[locale]/_components/navbar'
+import {TURNSTILE_TEST_SITE_KEY} from '@/config/turnstile'
 import {loadCart} from '@/features/cart/api/load-cart'
 import {CartTabSync} from '@/features/cart/components/cart-tab-sync'
 import {ShopProvider} from '@/features/cart/shop-provider'
 import {loadCatalog} from '@/features/catalog/api/get-catalog'
 import {CatalogProvider} from '@/features/catalog/catalog-provider'
+import {TurnstileKeyProvider} from '@/features/checkout/turnstile-key'
 import {CookieBanner} from '@/features/consent/components/cookie-banner'
 import {getSiteSettings} from '@/features/site-settings/api/get-site-settings'
 import {StatusProvider} from '@/features/status/status-provider'
@@ -61,6 +63,8 @@ export default async function LocaleLayout({
   const messages = await getMessages()
   const [settings, catalog] = await Promise.all([getSiteSettings(), loadCatalog(locale)])
   const cart = await loadCart(catalog)
+  // Read per request (after `connection()`), so one image serves every environment; empty counts as unset.
+  const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY || TURNSTILE_TEST_SITE_KEY
 
   return (
     <html
@@ -75,13 +79,18 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <CatalogProvider servers={catalog?.servers ?? null}>
             <StatusProvider>
-              {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
-              <ShopProvider key={locale} initialLines={cart.lines} initialCurrency={cart.currency}>
-                <CartTabSync />
-                <Navbar siteName={settings.siteName} />
-                {children}
-                <CookieBanner />
-              </ShopProvider>
+              <TurnstileKeyProvider siteKey={turnstileSiteKey}>
+                {/* Keyed by locale: a locale switch remounts it with lines named in the new locale. */}
+                <ShopProvider
+                  key={locale}
+                  initialLines={cart.lines}
+                  initialCurrency={cart.currency}>
+                  <CartTabSync />
+                  <Navbar siteName={settings.siteName} />
+                  {children}
+                  <CookieBanner />
+                </ShopProvider>
+              </TurnstileKeyProvider>
             </StatusProvider>
           </CatalogProvider>
         </NextIntlClientProvider>

@@ -56,8 +56,16 @@
       "nick": "Użyj 3–16 liter, cyfr lub podkreślników.",
       "email": "Podaj poprawny adres e-mail.",
       "delivery": "Potwierdź natychmiastową dostawę, aby kontynuować.",
-      "terms": "Zaakceptuj Regulamin i Politykę prywatności, aby kontynuować."
-    }
+      "terms": "Zaakceptuj Regulamin i Politykę prywatności, aby kontynuować.",
+      "unavailable": "Niektóre produkty nie są już dostępne.",
+      "turnstile": "Potwierdź, że nie jesteś robotem, i spróbuj ponownie.",
+      "rateLimited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie.",
+      "payments": "Płatność jest chwilowo niedostępna. Spróbuj ponownie za kilka minut.",
+      "invalid": "Sprawdź formularz i spróbuj ponownie."
+    },
+    "paying": "Przekierowanie do płatności…",
+    "removeUnavailable": "Usuń niedostępne produkty",
+    "unavailableLine": "Niedostępny"
   },
   "hero": {
     "left1": "twój",

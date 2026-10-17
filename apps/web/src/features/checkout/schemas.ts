@@ -14,7 +14,6 @@ const mustBeTrue = (message: string) =>
 export const checkoutSchema = v.object({
   nick: v.pipe(v.string(), v.trim(), v.regex(NICK_PATTERN, 'nick')),
   email: v.pipe(v.string(), v.trim(), v.email('email')),
-  promo: v.pipe(v.string(), v.trim()),
   delivery: mustBeTrue('delivery'),
   terms: mustBeTrue('terms')
 })

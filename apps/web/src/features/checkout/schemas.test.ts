@@ -5,7 +5,6 @@ import {checkoutSchema} from './schemas'
 const valid = {
   nick: 'Steve_42',
   email: 'steve@example.com',
-  promo: '',
   delivery: true,
   terms: true
 }
@@ -35,11 +34,6 @@ describe('checkoutSchema', () => {
 
   it.each(['', 'steve', 'steve@', 'steve@example'])('rejects email %j', email => {
     expect(issueMessages({...valid, email})).toEqual(['email'])
-  })
-
-  it('keeps the promo optional and trims it', () => {
-    const result = v.safeParse(checkoutSchema, {...valid, promo: '  SPRING  '})
-    expect(result.success && result.output.promo).toBe('SPRING')
   })
 
   it('requires both consents', () => {

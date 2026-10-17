@@ -56,8 +56,16 @@
       "nick": "Use 3–16 letters, digits or underscores.",
       "email": "Enter a valid email address.",
       "delivery": "Confirm immediate delivery to continue.",
-      "terms": "Accept the Terms and Privacy Policy to continue."
-    }
+      "terms": "Accept the Terms and Privacy Policy to continue.",
+      "unavailable": "Some items are no longer available.",
+      "turnstile": "Please confirm you are not a robot and try again.",
+      "rateLimited": "Too many attempts. Wait a minute and try again.",
+      "payments": "Payment is temporarily unavailable. Try again in a few minutes.",
+      "invalid": "Check the form and try again."
+    },
+    "paying": "Redirecting to payment…",
+    "removeUnavailable": "Remove unavailable items",
+    "unavailableLine": "Unavailable"
   },
   "hero": {
     "left1": "your",
