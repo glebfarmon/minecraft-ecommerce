@@ -1,5 +1,6 @@
 import {Module} from '@nestjs/common'
 
+import {FakePaymentController} from '../payments/fake-payment.controller'
 import {OrdersController} from './orders.controller'
 import {OrdersService} from './orders.service'
 import {PaymentEventsService} from './payment-events.service'
@@ -7,7 +8,7 @@ import {TURNSTILE, createTurnstile} from './turnstile'
 import {WebhookController} from './webhook.controller'
 
 @Module({
-  controllers: [OrdersController, WebhookController],
+  controllers: [OrdersController, WebhookController, FakePaymentController],
   providers: [
     OrdersService,
     PaymentEventsService,
