@@ -102,23 +102,23 @@ describe('admin orders', () => {
     await admin.get('/api/admin/orders/nope').expect(404)
   })
 
-  it('lists items grouped by server in insert order, even after a row was rewritten', async () => {
+  it('groups items by server in item id order, as the public view does', async () => {
     const admin = await ctx.admin('SUPPORT')
     const product = await ctx.prisma.product.findFirstOrThrow({include: {server: true}})
     const order = await make('Grouped', 'grouped@example.com')
-    const item = (serverName: string, productName: string) => ({
+    const item = (id: string, serverName: string) => ({
+      id,
       orderId: order.id,
       productId: product.id,
       serverId: product.serverId,
       quantity: 1,
       unitAmountMinor: 100,
-      productName,
+      productName: `Item ${id}`,
       serverName
     })
-    const first = await ctx.prisma.orderItem.create({data: item('Alpha', 'One')})
-    await ctx.prisma.orderItem.create({data: item('Beta', 'Two')})
-    // an UPDATE writes a new row version, so an unordered scan returns this item last
-    await ctx.prisma.orderItem.update({where: {id: first.id}, data: {quantity: 2}})
+    // inserted in the opposite order to their ids, so only an explicit ORDER BY id passes
+    await ctx.prisma.orderItem.create({data: item('item-b', 'Beta')})
+    await ctx.prisma.orderItem.create({data: item('item-a', 'Alpha')})
     const res = await admin.get(`/api/admin/orders/${order.id}`).expect(200)
     const body = res.body as {servers: {serverName: string}[]}
     expect(body.servers.map(s => s.serverName)).toEqual(['Alpha', 'Beta'])

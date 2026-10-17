@@ -47,7 +47,10 @@ export class OrdersAdminService {
   }
 
   async get(id: string): Promise<AdminOrder> {
-    const order = await this.prisma.order.findUnique({where: {id}, include: {items: true}})
+    const order = await this.prisma.order.findUnique({
+      where: {id},
+      include: {items: {orderBy: {id: 'asc'}}}
+    })
     if (!order) throw notFound()
     return toAdminOrder(order)
   }
