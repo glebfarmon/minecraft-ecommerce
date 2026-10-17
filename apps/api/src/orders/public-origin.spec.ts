@@ -18,4 +18,19 @@ describe('publicWebOrigin', () => {
       /PUBLIC_WEB_ORIGIN/
     )
   })
+
+  it('strips trailing slashes', () => {
+    expect(publicWebOrigin({PUBLIC_WEB_ORIGIN: 'https://x.com/'})).toBe('https://x.com')
+    expect(publicWebOrigin({PUBLIC_WEB_ORIGIN: 'https://x.com//'})).toBe('https://x.com')
+  })
+
+  it('refuses an unparsable or non-http origin in production', () => {
+    for (const bad of ['shop.example.com', 'ftp://x.com', 'not a url'])
+      expect(() => publicWebOrigin({NODE_ENV: 'production', PUBLIC_WEB_ORIGIN: bad})).toThrow(
+        /PUBLIC_WEB_ORIGIN/
+      )
+    expect(publicWebOrigin({NODE_ENV: 'production', PUBLIC_WEB_ORIGIN: 'https://x.com/'})).toBe(
+      'https://x.com'
+    )
+  })
 })
