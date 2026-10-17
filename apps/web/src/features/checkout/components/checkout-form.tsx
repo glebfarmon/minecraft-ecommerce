@@ -1,3 +1,4 @@
+import {PENDING_ORDER_KEY} from '@/config/order'
 import {legalPath} from '@/config/site'
 import {toCartLine} from '@/features/cart/lib/cart-cookie'
 import {useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
@@ -80,6 +81,12 @@ export function CheckoutForm({form, titleId, onBack}: Props) {
       turnstileToken: token
     })
     if (result.ok) {
+      // The status page clears the cart only for the order this browser just started.
+      try {
+        localStorage.setItem(PENDING_ORDER_KEY, result.publicId)
+      } catch {
+        // Private mode: the cart simply stays after payment.
+      }
       redirectTo(result.redirectUrl)
       return
     }

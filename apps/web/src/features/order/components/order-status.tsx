@@ -1,6 +1,6 @@
 'use client'
 
-import {ORDER_POLL_LIMIT_MS, ORDER_POLL_MS} from '@/config/order'
+import {ORDER_POLL_LIMIT_MS, ORDER_POLL_MS, PENDING_ORDER_KEY} from '@/config/order'
 import {clearCart} from '@/features/order/lib/clear-cart'
 import {Link} from '@/i18n/navigation'
 import {formatPrice} from '@/lib/catalog'
@@ -21,12 +21,21 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
   const cleared = useRef(false)
   const {publicId, status} = order
 
+  const paid = status === 'PAID' || status === 'DELIVERED'
+
   useEffect(() => {
-    if (status !== 'PAID' || cleared.current) return
+    if (!paid || cleared.current) return
     cleared.current = true
+    // Only the order this browser just sent to the payment page spends the cart; an old link must not.
+    try {
+      if (localStorage.getItem(PENDING_ORDER_KEY) !== publicId) return
+      localStorage.removeItem(PENDING_ORDER_KEY)
+    } catch {
+      return
+    }
     clearCart()
     router.refresh()
-  }, [status, router])
+  }, [paid, publicId, router])
 
   useEffect(() => {
     if (status !== 'PENDING') return
@@ -55,7 +64,7 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
   return (
     <div>
       <div aria-live="polite">
-        {status === 'PAID' && (
+        {paid && (
           <>
             <h2 className="font-display text-3xl uppercase">{t('paid.title')}</h2>
             <p className="mt-3 text-muted">{t('paid.body', {email: order.email})}</p>
@@ -67,7 +76,7 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
             {slow && <p className="mt-3 text-muted">{t('pending.slow')}</p>}
           </>
         )}
-        {status !== 'PAID' && status !== 'PENDING' && (
+        {status === 'EXPIRED' && (
           <>
             <h2 className="font-display text-3xl uppercase">{t('expired.title')}</h2>
             <Link href="/" className="mt-4 inline-block underline">
@@ -75,15 +84,23 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
             </Link>
           </>
         )}
+        {(status === 'REFUNDED' || status === 'DISPUTED') && (
+          <>
+            <h2 className="font-display text-3xl uppercase">{t('closed.title')}</h2>
+            <p className="mt-3 text-muted">{t('closed.body')}</p>
+          </>
+        )}
       </div>
 
       <div className="mt-10 space-y-8">
-        {order.servers.map(server => (
-          <section key={server.serverName}>
+        {order.servers.map((server, i) => (
+          <section key={`${String(i)}-${server.serverName}`}>
             <h3 className="font-display text-xl uppercase">{server.serverName}</h3>
             <ul className="mt-3 divide-y divide-line">
-              {server.items.map(item => (
-                <li key={item.productName} className="flex justify-between gap-4 py-2">
+              {server.items.map((item, j) => (
+                <li
+                  key={`${String(j)}-${item.productName}`}
+                  className="flex justify-between gap-4 py-2">
                   <span>
                     {item.productName} × {item.quantity}
                   </span>

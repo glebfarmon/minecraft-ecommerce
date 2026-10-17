@@ -235,6 +235,10 @@
       "title": "The payment was not completed",
       "back": "Back to the shop"
     },
-    "total": "Total"
+    "total": "Total",
+    "closed": {
+      "title": "This order is closed",
+      "body": "Contact support if you have questions about it."
+    }
   }
 }

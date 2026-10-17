@@ -32,6 +32,7 @@ describe('createOrder', () => {
     const fetchFn = reply(201, {publicId: 'abc', redirectUrl: 'https://pay.example/x'})
     expect(await createOrder(body, fetchFn)).toEqual({
       ok: true,
+      publicId: 'abc',
       redirectUrl: 'https://pay.example/x'
     })
   })

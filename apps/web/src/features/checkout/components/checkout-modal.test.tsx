@@ -1,4 +1,5 @@
 import {DEFAULT_CURRENCY} from '@/config/currencies'
+import {PENDING_ORDER_KEY} from '@/config/order'
 import {ShopProvider, useCart, useCartActions} from '@/features/cart/shop-provider'
 import {CatalogProvider} from '@/features/catalog/catalog-provider'
 import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
@@ -251,13 +252,18 @@ describe('CheckoutModal', () => {
     })
 
     it('sends the order and goes to the payment page', async () => {
-      createOrderMock.mockResolvedValue({ok: true, redirectUrl: 'https://pay.example/x'})
+      createOrderMock.mockResolvedValue({
+        ok: true,
+        publicId: 'ABCDEFGHJKLMNOPQRSTUVW',
+        redirectUrl: 'https://pay.example/x'
+      })
       setup()
       fillValid()
       await submit()
       await waitFor(() => {
         expect(redirectTo).toHaveBeenCalledWith('https://pay.example/x')
       })
+      expect(localStorage.getItem(PENDING_ORDER_KEY)).toBe('ABCDEFGHJKLMNOPQRSTUVW')
       expect(createOrderMock).toHaveBeenCalledWith({
         lines: [{server: product.server, slug: product.slug, quantity: 2}],
         currency: DEFAULT_CURRENCY,

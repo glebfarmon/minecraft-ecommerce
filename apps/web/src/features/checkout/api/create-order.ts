@@ -4,7 +4,7 @@ import {CreateOrderResponseSchema} from '@shop/shared/orders'
 import type {CreateOrderRequest} from '@shop/shared/orders'
 
 export type CreateOrderResult =
-  | {ok: true; redirectUrl: string}
+  | {ok: true; publicId: string; redirectUrl: string}
   | {ok: false; error: 'unavailable'; lines: {server: string; slug: string}[]}
   | {ok: false; error: 'turnstile' | 'rate_limited' | 'unavailable_payments' | 'invalid'}
 
@@ -39,7 +39,7 @@ export async function createOrder(
   if (res.status === 201) {
     const parsed = v.safeParse(CreateOrderResponseSchema, await readJson(res))
     return parsed.success
-      ? {ok: true, redirectUrl: parsed.output.redirectUrl}
+      ? {ok: true, publicId: parsed.output.publicId, redirectUrl: parsed.output.redirectUrl}
       : {ok: false, error: 'unavailable_payments'}
   }
   if (res.status === 409) {

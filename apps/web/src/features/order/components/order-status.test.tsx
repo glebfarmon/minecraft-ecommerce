@@ -1,3 +1,4 @@
+import {PENDING_ORDER_KEY} from '@/config/order'
 import {clearCart} from '@/features/order/lib/clear-cart'
 import {act, render, screen} from '@testing-library/react'
 
@@ -18,7 +19,7 @@ jest.mock('@/i18n/navigation', () => ({
 jest.mock('@/features/order/lib/clear-cart', () => ({clearCart: jest.fn()}))
 
 const base: PublicOrder = {
-  publicId: 'ABCDEFGHJK',
+  publicId: 'ABCDEFGHJKLMNOPQRSTUVW',
   status: 'PAID',
   nick: 'Steve',
   email: 'a***@example.com',
@@ -39,6 +40,8 @@ beforeEach(() => {
   fetchMock.mockReset()
   ;(clearCart as jest.Mock).mockClear()
   global.fetch = fetchMock
+  localStorage.clear()
+  localStorage.setItem(PENDING_ORDER_KEY, base.publicId)
 })
 afterEach(() => jest.useRealTimers())
 
@@ -64,7 +67,7 @@ describe('OrderStatus', () => {
     expect(clearCart).not.toHaveBeenCalled()
     respond({...base})
     await tick(2000)
-    expect(fetchMock).toHaveBeenCalledWith('/api/orders/ABCDEFGHJK', expect.anything())
+    expect(fetchMock).toHaveBeenCalledWith('/api/orders/ABCDEFGHJKLMNOPQRSTUVW', expect.anything())
     expect(screen.getByRole('heading', {name: 'order.paid.title'})).toBeInTheDocument()
     expect(clearCart).toHaveBeenCalledTimes(1)
     await tick(10_000)
@@ -79,6 +82,44 @@ describe('OrderStatus', () => {
     const calls = fetchMock.mock.calls.length
     await tick(20_000)
     expect(fetchMock.mock.calls.length).toBe(calls)
+  })
+
+  it('removes the stored id once the cart is cleared', () => {
+    render(<OrderStatus initial={{...base}} />)
+    expect(localStorage.getItem(PENDING_ORDER_KEY)).toBeNull()
+  })
+
+  it.each([
+    ['no stored id', null],
+    ['another order id', 'ZZZZZZZZZZZZZZZZZZZZZZ']
+  ])('keeps the cart of a paid order with %%s', (_name, stored) => {
+    localStorage.clear()
+    if (stored) localStorage.setItem(PENDING_ORDER_KEY, stored)
+    render(<OrderStatus initial={{...base}} />)
+    expect(clearCart).not.toHaveBeenCalled()
+  })
+
+  it('does not crash or clear when storage throws', () => {
+    const spy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied')
+    })
+    render(<OrderStatus initial={{...base}} />)
+    expect(screen.getByRole('heading', {name: 'order.paid.title'})).toBeInTheDocument()
+    expect(clearCart).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('treats DELIVERED as paid and clears the cart', () => {
+    render(<OrderStatus initial={{...base, status: 'DELIVERED'}} />)
+    expect(screen.getByRole('heading', {name: 'order.paid.title'})).toBeInTheDocument()
+    expect(clearCart).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['REFUNDED', 'DISPUTED'] as const)('shows a closed view for %%s', status => {
+    render(<OrderStatus initial={{...base, status}} />)
+    expect(screen.getByRole('heading', {name: 'order.closed.title'})).toBeInTheDocument()
+    expect(screen.getByText('order.closed.body')).toBeInTheDocument()
+    expect(clearCart).not.toHaveBeenCalled()
   })
 
   it('shows an expired order with a link home and keeps the cart', () => {

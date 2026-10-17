@@ -235,6 +235,10 @@
       "title": "Płatność nie została ukończona",
       "back": "Wróć do sklepu"
     },
-    "total": "Razem"
+    "total": "Razem",
+    "closed": {
+      "title": "To zamówienie jest zamknięte",
+      "body": "Skontaktuj się z pomocą, jeśli masz pytania."
+    }
   }
 }
