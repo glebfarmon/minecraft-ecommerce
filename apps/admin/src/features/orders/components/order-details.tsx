@@ -60,8 +60,8 @@ export function OrderDetails({id}: {id: string}) {
         <section key={s.serverName} className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold">{s.serverName}</h2>
           <ul className="flex flex-col gap-1">
-            {s.items.map(item => (
-              <li key={item.productName}>
+            {s.items.map((item, i) => (
+              <li key={`${String(i)}-${item.productName}`}>
                 {item.productName} × {item.quantity} — {money(item.unitAmountMinor)} each
               </li>
             ))}
