@@ -38,4 +38,12 @@ describe('Nav', () => {
     render(<Nav me={me([])} />)
     expect(screen.queryByRole('link', {name: 'Content'})).not.toBeInTheDocument()
   })
+  it('shows Orders with order.read', () => {
+    render(<Nav me={me(['order.read'])} />)
+    expect(screen.getByRole('link', {name: 'Orders'})).toBeInTheDocument()
+  })
+  it('hides Orders without order.read', () => {
+    render(<Nav me={me([])} />)
+    expect(screen.queryByRole('link', {name: 'Orders'})).not.toBeInTheDocument()
+  })
 })
