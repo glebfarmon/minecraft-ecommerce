@@ -6329,6 +6329,189 @@
         },
         "tags": ["Orders admin"]
       }
+    },
+    "/api/admin/stats/orders": {
+      "get": {
+        "operationId": "getOrderStats",
+        "summary": "Order and revenue statistics for the dashboard",
+        "description": "Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none.",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["7d", "30d"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistics for the range",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "range": {
+                      "enum": ["7d", "30d"],
+                      "type": "string"
+                    },
+                    "from": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "to": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "revenue": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "currency": {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          "totalMinor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "previousMinor": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": ["currency", "totalMinor", "previousMinor"]
+                      }
+                    },
+                    "paidCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "previousPaidCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "expiredCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "conversion": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "byStatus": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "enum": [
+                              "PENDING",
+                              "PAID",
+                              "DELIVERED",
+                              "EXPIRED",
+                              "REFUNDED",
+                              "DISPUTED"
+                            ],
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": ["status", "count"]
+                      }
+                    },
+                    "daily": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "currency": {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          "totalMinor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "paidCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": ["day", "currency", "totalMinor", "paidCount"]
+                      }
+                    },
+                    "topProducts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "productId": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": ["productId", "name", "serverName", "quantity"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "range",
+                    "from",
+                    "to",
+                    "revenue",
+                    "paidCount",
+                    "previousPaidCount",
+                    "expiredCount",
+                    "conversion",
+                    "byStatus",
+                    "daily",
+                    "topProducts"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown range"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Orders admin"]
+      }
     }
   }
 }
