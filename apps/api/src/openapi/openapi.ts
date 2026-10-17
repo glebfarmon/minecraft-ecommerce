@@ -28,6 +28,7 @@ import {
   protectedOwner,
   schema
 } from './helpers'
+import {ordersPaths} from './orders-paths'
 
 export type {OpenApiDocument} from './helpers'
 
@@ -211,7 +212,8 @@ export function buildOpenApiDocument(): OpenApiDocument {
         }
       },
       ...catalogAdminPaths,
-      ...contentPaths
+      ...contentPaths,
+      ...ordersPaths
     }
   }
 }

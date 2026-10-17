@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@marsidev/react-turnstile": "^1.6.2",
     "@shop/messages": "workspace:*",
     "@shop/shared": "workspace:*",
     "@shop/ui": "workspace:*",

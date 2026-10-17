@@ -27,6 +27,8 @@ const SESSION_COOKIE = /(?:^|;\s*)(?:__Secure-)?better-auth\.session_token=([^;]
 
 const ADMIN_PATH = /^\/api\/admin(?:[/?#]|$)/i
 
+const ORDER_CREATE_PATH = /^\/api\/orders\/?(?:[?#]|$)/i
+
 const RCON_TEST_PATH = /^\/api\/admin\/catalog\/servers\/[^/]+\/rcon\/test\/?(?:[?#]|$)/i
 
 /** Express routes case-insensitively, so `/API/Admin/...` reaches admin handlers too. */
@@ -55,7 +57,7 @@ export function adminTracker(req: ThrottledRequest): string {
 
 /**
  * The default limit protects availability, so a Redis outage lets those requests through; the
- * admin limit and every sign-in-code limit fail closed.
+ * admin limit, the order limit and every sign-in-code limit fail closed.
  */
 class FailOpenDefaultStorage implements ThrottlerStorage {
   constructor(private readonly inner: ThrottlerStorageRedisService) {}
@@ -117,6 +119,18 @@ const adminRequest = (ctx: ExecutionContext) => ctx.switchToHttp().getRequest<Th
               skipIf: ctx =>
                 !RCON_TEST_PATH.test(adminRequest(ctx).originalUrl ?? adminRequest(ctx).url ?? ''),
               getTracker: req => adminTracker(req as ThrottledRequest)
+            },
+            // Order creation: each one opens a payment session (parent spec §7.5).
+            {
+              name: 'order',
+              ttl: 60_000,
+              limit: limits.order,
+              skipIf: ctx => {
+                const req = adminRequest(ctx) as ThrottledRequest & {method?: string}
+                return (
+                  req.method !== 'POST' || !ORDER_CREATE_PATH.test(req.originalUrl ?? req.url ?? '')
+                )
+              }
             }
           ],
           getTracker: req => ipTracker(req as ThrottledRequest),

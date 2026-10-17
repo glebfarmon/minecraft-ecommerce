@@ -51,13 +51,21 @@
     "deliveringTo": "Delivering to",
     "total": "Total",
     "pay": "Pay {total}",
-    "payHint": "Demo shop: payment is not connected yet.",
+    "payHint": "Test mode: pay with card 4242 4242 4242 4242, any future date and any CVC. No real money is taken.",
     "errors": {
       "nick": "Use 3–16 letters, digits or underscores.",
       "email": "Enter a valid email address.",
       "delivery": "Confirm immediate delivery to continue.",
-      "terms": "Accept the Terms and Privacy Policy to continue."
-    }
+      "terms": "Accept the Terms and Privacy Policy to continue.",
+      "unavailable": "Some items are no longer available.",
+      "turnstile": "Please confirm you are not a robot and try again.",
+      "rateLimited": "Too many attempts. Wait a minute and try again.",
+      "payments": "Payment is temporarily unavailable. Try again in a few minutes.",
+      "invalid": "Check the form and try again."
+    },
+    "paying": "Redirecting to payment…",
+    "removeUnavailable": "Remove unavailable items",
+    "unavailableLine": "Unavailable"
   },
   "hero": {
     "left1": "your",
@@ -212,5 +220,25 @@
     "save": "Save choice",
     "acceptAll": "Accept all"
   },
-  "skip": "Skip to shop"
+  "skip": "Skip to shop",
+  "order": {
+    "title": "Order {publicId}",
+    "paid": {
+      "title": "Paid — thank you!",
+      "body": "Items are delivered to the game server shortly. A receipt is on its way to {email}."
+    },
+    "pending": {
+      "title": "Waiting for the payment…",
+      "slow": "The payment is still being processed. You will get an email as soon as it goes through."
+    },
+    "expired": {
+      "title": "The payment was not completed",
+      "back": "Back to the shop"
+    },
+    "total": "Total",
+    "closed": {
+      "title": "This order is closed",
+      "body": "Contact support if you have questions about it."
+    }
+  }
 }

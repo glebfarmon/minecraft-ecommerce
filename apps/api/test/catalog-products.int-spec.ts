@@ -201,6 +201,41 @@ describe('catalog products API', () => {
     await editor.get(`/api/admin/catalog/products/${created.id}`).expect(404)
   })
 
+  it('refuses to delete a product that an order references', async () => {
+    const created = (await editor.post('/api/admin/catalog/products').send(draft()).expect(201))
+      .body as ProductBody
+    const product = await ctx.prisma.product.findUniqueOrThrow({
+      where: {id: created.id},
+      include: {server: true}
+    })
+    await ctx.prisma.order.create({
+      data: {
+        publicId: `d${String(Date.now()).padStart(21, '0')}`,
+        nick: 'Steve',
+        email: 'steve@example.com',
+        locale: 'en',
+        currency: 'EUR',
+        subtotalMinor: 499,
+        totalMinor: 499,
+        deliveryConsentAt: new Date(),
+        items: {
+          create: {
+            productId: product.id,
+            serverId: product.serverId,
+            quantity: 1,
+            unitAmountMinor: 499,
+            productName: 'VIP',
+            serverName: product.server.name
+          }
+        }
+      }
+    })
+    const res = await editor
+      .delete(`/api/admin/catalog/products/${created.id}?version=${String(created.version)}`)
+      .expect(409)
+    expect(res.body).toMatchObject({message: 'in_use', issues: {orders: 1}})
+  })
+
   it('lists products of one server and category in order for any admin', async () => {
     const support = await ctx.admin('SUPPORT')
     const res = await support

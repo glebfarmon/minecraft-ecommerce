@@ -261,7 +261,8 @@
                               "audit.read",
                               "catalog.write",
                               "server.rcon",
-                              "content.write"
+                              "content.write",
+                              "order.read"
                             ],
                             "type": "string"
                           }
@@ -278,7 +279,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }
@@ -1004,7 +1006,8 @@
                             "audit.read",
                             "catalog.write",
                             "server.rcon",
-                            "content.write"
+                            "content.write",
+                            "order.read"
                           ],
                           "type": "string"
                         }
@@ -1047,7 +1050,8 @@
                         "audit.read",
                         "catalog.write",
                         "server.rcon",
-                        "content.write"
+                        "content.write",
+                        "order.read"
                       ],
                       "type": "string"
                     }
@@ -1085,7 +1089,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }
@@ -1145,7 +1150,8 @@
                         "audit.read",
                         "catalog.write",
                         "server.rcon",
-                        "content.write"
+                        "content.write",
+                        "order.read"
                       ],
                       "type": "string"
                     }
@@ -1183,7 +1189,8 @@
                           "audit.read",
                           "catalog.write",
                           "server.rcon",
-                          "content.write"
+                          "content.write",
+                          "order.read"
                         ],
                         "type": "string"
                       }
@@ -5797,6 +5804,530 @@
           }
         },
         "tags": ["Content admin"]
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "operationId": "createOrder",
+        "summary": "Start a checkout: price the cart and get the payment page URL",
+        "description": "Prices the lines from the database (the client sends only server, slug and quantity), stores a pending order and opens a hosted payment session. Redirect the browser to `redirectUrl`. Needs a Turnstile token. No session needed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "server": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9-]{1,40}$"
+                        },
+                        "slug": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9-]{1,40}$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 99
+                        }
+                      },
+                      "required": ["server", "slug", "quantity"],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 30
+                  },
+                  "currency": {
+                    "enum": ["EUR", "PLN"],
+                    "type": "string"
+                  },
+                  "locale": {
+                    "enum": ["en", "pl"],
+                    "type": "string"
+                  },
+                  "nick": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_]{3,16}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 254,
+                    "format": "email"
+                  },
+                  "deliveryConsent": {
+                    "const": true
+                  },
+                  "termsAccepted": {
+                    "const": true
+                  },
+                  "turnstileToken": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2048
+                  }
+                },
+                "required": [
+                  "lines",
+                  "currency",
+                  "locale",
+                  "nick",
+                  "email",
+                  "deliveryConsent",
+                  "termsAccepted",
+                  "turnstileToken"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The order was created; send the buyer to `redirectUrl`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicId": {
+                      "type": "string"
+                    },
+                    "redirectUrl": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["publicId", "redirectUrl"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `turnstile_failed`: the bot check did not pass (ask the buyer to retry)"
+          },
+          "409": {
+            "description": "`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug)"
+          },
+          "429": {
+            "description": "Too many orders from this address; try again later"
+          },
+          "502": {
+            "description": "`payments_unavailable`: the payment provider could not open a session; nothing was charged"
+          }
+        },
+        "tags": ["Orders"]
+      }
+    },
+    "/api/orders/{publicId}": {
+      "get": {
+        "operationId": "getPublicOrder",
+        "summary": "Status and contents of one order, for the buyer’s return page",
+        "description": "Looked up by the unguessable public id from the order link. The email is masked. No session needed. Never cached.",
+        "parameters": [
+          {
+            "name": "publicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicId": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["PENDING", "PAID", "DELIVERED", "EXPIRED", "REFUNDED", "DISPUTED"],
+                      "type": "string"
+                    },
+                    "nick": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "enum": ["EUR", "PLN"],
+                      "type": "string"
+                    },
+                    "totalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "productName": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "number"
+                                },
+                                "unitAmountMinor": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": ["productName", "quantity", "unitAmountMinor"]
+                            }
+                          }
+                        },
+                        "required": ["serverName", "items"]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "publicId",
+                    "status",
+                    "nick",
+                    "email",
+                    "currency",
+                    "totalMinor",
+                    "servers",
+                    "createdAt",
+                    "paidAt"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such order, or the id is malformed"
+          }
+        },
+        "tags": ["Orders"]
+      }
+    },
+    "/api/webhooks/stripe": {
+      "post": {
+        "operationId": "stripeWebhook",
+        "summary": "Stripe payment events",
+        "description": "Called by Stripe. Verifies `Stripe-Signature` against the raw body; replays and duplicates are acknowledged with 200 and change nothing.",
+        "responses": {
+          "200": {
+            "description": "Event accepted (or already applied)"
+          },
+          "400": {
+            "description": "`invalid_signature`: missing or wrong `Stripe-Signature`"
+          }
+        },
+        "tags": ["Payments"]
+      }
+    },
+    "/api/admin/orders": {
+      "get": {
+        "operationId": "listAdminOrders",
+        "summary": "Orders, newest first, 50 per page",
+        "description": "Needs `order.read`. `q` matches a nick prefix (any case), an exact email (any case) or an exact public id. `status` narrows by order status. Pass the returned `nextCursor` as `cursor` for the next page.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["PENDING", "PAID", "DELIVERED", "EXPIRED", "REFUNDED", "DISPUTED"],
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "publicId": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "nick": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          "totalMinor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "status": {
+                            "enum": [
+                              "PENDING",
+                              "PAID",
+                              "DELIVERED",
+                              "EXPIRED",
+                              "REFUNDED",
+                              "DISPUTED"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "publicId",
+                          "createdAt",
+                          "nick",
+                          "email",
+                          "currency",
+                          "totalMinor",
+                          "status"
+                        ]
+                      }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["orders", "nextCursor"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter, for example an unknown status"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["Orders admin"]
+      }
+    },
+    "/api/admin/orders/{id}": {
+      "get": {
+        "operationId": "getAdminOrder",
+        "summary": "One order with the full email and payment details",
+        "description": "Needs `order.read`. Includes the unmasked email, the payment session id, the time the buyer consented to delivery, and the subtotal and discount.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicId": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["PENDING", "PAID", "DELIVERED", "EXPIRED", "REFUNDED", "DISPUTED"],
+                      "type": "string"
+                    },
+                    "nick": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "enum": ["EUR", "PLN"],
+                      "type": "string"
+                    },
+                    "totalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "productName": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "number"
+                                },
+                                "unitAmountMinor": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": ["productName", "quantity", "unitAmountMinor"]
+                            }
+                          }
+                        },
+                        "required": ["serverName", "items"]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "enum": ["en", "pl"],
+                      "type": "string"
+                    },
+                    "stripeSessionId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryConsentAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "subtotalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "discountMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "publicId",
+                    "status",
+                    "nick",
+                    "email",
+                    "currency",
+                    "totalMinor",
+                    "servers",
+                    "createdAt",
+                    "paidAt",
+                    "id",
+                    "locale",
+                    "stripeSessionId",
+                    "deliveryConsentAt",
+                    "subtotalMinor",
+                    "discountMinor"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: no such order"
+          }
+        },
+        "tags": ["Orders admin"]
       }
     }
   }

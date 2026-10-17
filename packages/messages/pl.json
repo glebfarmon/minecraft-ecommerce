@@ -51,13 +51,21 @@
     "deliveringTo": "Dostawa dla",
     "total": "Razem",
     "pay": "Zapłać {total}",
-    "payHint": "Sklep demonstracyjny: płatności nie są jeszcze podłączone.",
+    "payHint": "Tryb testowy: zapłać kartą 4242 4242 4242 4242, dowolna przyszła data i dowolny CVC. Żadne prawdziwe pieniądze nie są pobierane.",
     "errors": {
       "nick": "Użyj 3–16 liter, cyfr lub podkreślników.",
       "email": "Podaj poprawny adres e-mail.",
       "delivery": "Potwierdź natychmiastową dostawę, aby kontynuować.",
-      "terms": "Zaakceptuj Regulamin i Politykę prywatności, aby kontynuować."
-    }
+      "terms": "Zaakceptuj Regulamin i Politykę prywatności, aby kontynuować.",
+      "unavailable": "Niektóre produkty nie są już dostępne.",
+      "turnstile": "Potwierdź, że nie jesteś robotem, i spróbuj ponownie.",
+      "rateLimited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie.",
+      "payments": "Płatność jest chwilowo niedostępna. Spróbuj ponownie za kilka minut.",
+      "invalid": "Sprawdź formularz i spróbuj ponownie."
+    },
+    "paying": "Przekierowanie do płatności…",
+    "removeUnavailable": "Usuń niedostępne produkty",
+    "unavailableLine": "Niedostępny"
   },
   "hero": {
     "left1": "twój",
@@ -212,5 +220,25 @@
     "save": "Zapisz wybór",
     "acceptAll": "Akceptuj wszystko"
   },
-  "skip": "Przejdź do sklepu"
+  "skip": "Przejdź do sklepu",
+  "order": {
+    "title": "Zamówienie {publicId}",
+    "paid": {
+      "title": "Opłacone — dziękujemy!",
+      "body": "Przedmioty trafią na serwer gry wkrótce. Potwierdzenie wysłaliśmy na {email}."
+    },
+    "pending": {
+      "title": "Czekamy na płatność…",
+      "slow": "Płatność jest jeszcze przetwarzana. Wyślemy e-mail, gdy tylko zostanie potwierdzona."
+    },
+    "expired": {
+      "title": "Płatność nie została ukończona",
+      "back": "Wróć do sklepu"
+    },
+    "total": "Razem",
+    "closed": {
+      "title": "To zamówienie jest zamknięte",
+      "body": "Skontaktuj się z pomocą, jeśli masz pytania."
+    }
+  }
 }

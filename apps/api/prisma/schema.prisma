@@ -47,6 +47,7 @@ model Server {
   version         Int              @default(1)
   categories      ServerCategory[]
   products        Product[]
+  orderItems      OrderItem[]
 
   @@map("servers")
 }
@@ -102,6 +103,7 @@ model Product {
   category       Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   translations   ProductTranslation[]
   prices         Price[]
+  orderItems     OrderItem[]
 
   @@unique([serverId, slug])
   @@index([categoryId])
@@ -304,4 +306,63 @@ model SiteSettings {
   updatedBy      String
 
   @@map("site_settings")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  DELIVERED
+  EXPIRED
+  REFUNDED
+  DISPUTED
+}
+
+model Order {
+  id                String      @id @default(cuid())
+  publicId          String      @unique
+  nick              String
+  email             String
+  locale            Locale
+  currency          Currency
+  subtotalMinor     Int
+  discountMinor     Int         @default(0)
+  totalMinor        Int
+  status            OrderStatus @default(PENDING)
+  stripeSessionId   String?     @unique
+  deliveryConsentAt DateTime
+  paidAt            DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  items             OrderItem[]
+
+  @@index([email])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  productId       String
+  serverId        String
+  quantity        Int
+  unitAmountMinor Int
+  productName     String
+  serverName      String
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  server          Server  @relation(fields: [serverId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model ProcessedWebhookEvent {
+  stripeEventId String   @id
+  type          String
+  createdAt     DateTime @default(now())
+
+  @@map("processed_webhook_events")
 }

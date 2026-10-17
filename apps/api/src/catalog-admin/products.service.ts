@@ -11,7 +11,7 @@ import {
   missingForActive
 } from '@shop/shared/catalog-admin'
 
-import {badRequest, conflict, notFound, stale} from '../common/http-errors'
+import {badRequest, conflict, inUse, notFound, stale} from '../common/http-errors'
 import {assertUpdated} from '../common/versioned'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
@@ -174,12 +174,17 @@ export class ProductsService {
     return this.list({serverId, categoryId})
   }
 
-  /** Nothing references products yet; orders (sub-project 4) add their count here as `in_use`. */
+  /** A product that order items reference cannot be deleted (409 `in_use` with the order count). */
   async remove(id: string, version: number, before: (p: AdminProduct) => void): Promise<void> {
     const current = await this.prisma.product.findUnique({where: {id}, include: productInclude})
     if (!current) throw notFound()
     before(toAdminProduct(current))
-    const {count} = await this.prisma.product.deleteMany({where: {id, version}})
+    const {count} = await this.prisma.product
+      .deleteMany({where: {id, version}})
+      .catch(async (error: unknown) => {
+        if (!isPrismaError(error, 'P2003')) throw error
+        throw inUse({orders: await this.prisma.orderItem.count({where: {productId: id}})})
+      })
     if (count === 0) throw stale()
   }
 }

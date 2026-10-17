@@ -297,6 +297,19 @@ const injectedRtkApi = api.injectEndpoints({
       UpdateContentSettingsApiArg
     >({
       query: queryArg => ({url: `/api/admin/content/settings`, method: 'PUT', body: queryArg.body})
+    }),
+    listAdminOrders: build.query<ListAdminOrdersApiResponse, ListAdminOrdersApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/orders`,
+        params: {
+          q: queryArg.q,
+          status: queryArg.status,
+          cursor: queryArg.cursor
+        }
+      })
+    }),
+    getAdminOrder: build.query<GetAdminOrderApiResponse, GetAdminOrderApiArg>({
+      query: queryArg => ({url: `/api/admin/orders/${queryArg.id}`})
     })
   }),
   overrideExisting: false
@@ -324,10 +337,17 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -452,7 +472,13 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -461,7 +487,13 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -474,6 +506,7 @@ export type PostApiAdminRolesApiArg = {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
 }
@@ -482,7 +515,13 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
   name: string
   isSystem: boolean
   permissions: (
-    'admin.invite' | 'role.write' | 'audit.read' | 'catalog.write' | 'server.rcon' | 'content.write'
+    | 'admin.invite'
+    | 'role.write'
+    | 'audit.read'
+    | 'catalog.write'
+    | 'server.rcon'
+    | 'content.write'
+    | 'order.read'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -496,6 +535,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'catalog.write'
       | 'server.rcon'
       | 'content.write'
+      | 'order.read'
     )[]
   }
 }
@@ -1364,6 +1404,51 @@ export type UpdateContentSettingsApiArg = {
     version: number
   }
 }
+export type ListAdminOrdersApiResponse = /** status 200 A page of orders */ {
+  orders: {
+    id: string
+    publicId: string
+    createdAt: string
+    nick: string
+    email: string
+    currency: 'EUR' | 'PLN'
+    totalMinor: number
+    status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+  }[]
+  nextCursor: string | null
+}
+export type ListAdminOrdersApiArg = {
+  q?: string
+  status?: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+  cursor?: string
+}
+export type GetAdminOrderApiResponse = /** status 200 The order */ {
+  publicId: string
+  status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+  nick: string
+  email: string
+  currency: 'EUR' | 'PLN'
+  totalMinor: number
+  servers: {
+    serverName: string
+    items: {
+      productName: string
+      quantity: number
+      unitAmountMinor: number
+    }[]
+  }[]
+  createdAt: string
+  paidAt: string | null
+  id: string
+  locale: 'en' | 'pl'
+  stripeSessionId: string | null
+  deliveryConsentAt: string
+  subtotalMinor: number
+  discountMinor: number
+}
+export type GetAdminOrderApiArg = {
+  id: string
+}
 export const {
   useGetApiInviteLookupByTokenQuery,
   useGetApiAdminMeQuery,
@@ -1408,5 +1493,7 @@ export const {
   useSetContentMessageMutation,
   useResetContentMessageMutation,
   useGetContentSettingsQuery,
-  useUpdateContentSettingsMutation
+  useUpdateContentSettingsMutation,
+  useListAdminOrdersQuery,
+  useGetAdminOrderQuery
 } = injectedRtkApi

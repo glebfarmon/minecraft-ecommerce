@@ -27,7 +27,7 @@ export function CheckoutModal({open, layoutId, onBack, onClose}: Props) {
   const form = useForm<CheckoutInput, unknown, CheckoutValues>({
     resolver: valibotResolver(checkoutSchema),
     mode: 'onTouched',
-    defaultValues: {nick: '', email: '', promo: '', delivery: false, terms: false}
+    defaultValues: {nick: '', email: '', delivery: false, terms: false}
   })
 
   return (

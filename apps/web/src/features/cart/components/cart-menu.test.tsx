@@ -1,5 +1,6 @@
 import {ShopProvider, useCartActions} from '@/features/cart/shop-provider'
 import {TEST_CATALOG, renderWithCatalog} from '@/features/catalog/test-catalog'
+import {TurnstileKeyProvider} from '@/features/checkout/turnstile-key'
 import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
 
@@ -15,6 +16,8 @@ jest.mock('next-intl', () => ({
     return Object.assign((key: string) => name(key), {rich: (key: string) => name(key)})
   }
 }))
+// The captcha widget loads Cloudflare's script; the checkout modal in these tests does not need it.
+jest.mock('@marsidev/react-turnstile', () => ({Turnstile: () => null}))
 // jsdom never finishes the shared-layout exit; unmount at once.
 jest.mock('motion/react', () => ({
   ...jest.requireActual<object>('motion/react'),
@@ -47,10 +50,12 @@ function AddProduct() {
 
 const setup = () =>
   renderWithCatalog(
-    <ShopProvider>
-      <AddProduct />
-      <CartMenu />
-    </ShopProvider>
+    <TurnstileKeyProvider siteKey="site-key">
+      <ShopProvider>
+        <AddProduct />
+        <CartMenu />
+      </ShopProvider>
+    </TurnstileKeyProvider>
   )
 const open = () => {
   fireEvent.click(screen.getByRole('button', {name: 'label'}))

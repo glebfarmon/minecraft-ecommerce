@@ -43,6 +43,16 @@ services:
       # parallel workers it passes 100 requests/min, a 429 keeps the stale page and the e2e that
       # waits for an admin edit on the storefront times out.
       RATE_LIMIT_DEFAULT: '10000'
+      # Parallel workers create orders from one IP; the production limit would trip them.
+      RATE_LIMIT_ORDER: '1000'
+      # The e2e pays through the fake gateway, which signs real Stripe-format events.
+      PAYMENTS_GATEWAY: fake
+      PAYMENTS_ALLOW_FAKE: 'true'
+      # e2e only: signs fake events, never used anywhere else.
+      STRIPE_WEBHOOK_SECRET: whsec_e2e_throwaway
+      PUBLIC_WEB_ORIGIN: http://shop.localhost
+      # Cloudflare's documented always-pass Turnstile test secret.
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
       # e2e only: a throwaway key, never used anywhere else.
       RCON_ENCRYPTION_KEY: MEUuxU2yK9jLs4j3q7S+m6vFcpMJynMOdcvcUMTkKQs=
     depends_on:
@@ -60,6 +70,8 @@ services:
       CONTENT_REVALIDATE_SECONDS: '1'
       # Same for the catalog, so a product the e2e just enabled shows on the storefront within seconds.
       CATALOG_REVALIDATE_SECONDS: '1'
+      # Cloudflare's documented always-pass Turnstile test site key.
+      TURNSTILE_SITE_KEY: 1x00000000000000000000AA
     depends_on:
       api: {condition: service_healthy}
 

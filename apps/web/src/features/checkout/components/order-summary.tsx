@@ -22,16 +22,25 @@ function groupByServer(lines: Line[], findServer: (slug: string) => CatalogServe
 export const orderTotal = (lines: Line[], currency: Currency) =>
   lines.reduce((sum, l) => sum + l.product.prices[currency] * l.qty, 0)
 
-/** Stays disabled until the orders API exists; the form around it already validates. */
-function PayButton({total, className}: {total: string; className: string}) {
+function PayButton({
+  total,
+  className,
+  disabled,
+  busy
+}: {
+  total: string
+  className: string
+  disabled: boolean
+  busy: boolean
+}) {
   const t = useTranslations('checkout')
   return (
     <button
       type="submit"
-      disabled
+      disabled={disabled || busy}
       className={`flex h-14 items-center justify-center gap-2 rounded-full bg-accent font-semibold text-on-accent transition-[filter] hover:brightness-110 disabled:pointer-events-none disabled:opacity-40 ${className}`}>
       <Lock className="size-5 shrink-0" aria-hidden="true" />
-      {t('pay', {total})}
+      {busy ? t('paying') : t('pay', {total})}
     </button>
   )
 }
@@ -40,7 +49,17 @@ function PayButton({total, className}: {total: string; className: string}) {
  * Phones only: on a long form the Pay button would sit a scroll away, so the total and the button
  * stay pinned to the bottom of the modal (same pinning as the product modal's buy bar).
  */
-export function PayBar({total, currency}: {total: number; currency: Currency}) {
+export function PayBar({
+  total,
+  currency,
+  disabled,
+  busy
+}: {
+  total: number
+  currency: Currency
+  disabled: boolean
+  busy: boolean
+}) {
   const t = useTranslations('checkout')
   const locale = useLocale()
   const money = formatPrice(total, currency, locale)
@@ -51,7 +70,7 @@ export function PayBar({total, currency}: {total: number; currency: Currency}) {
           <p className="text-sm text-muted">{t('total')}</p>
           <p className="tabular mt-1 font-display text-3xl leading-none font-semibold">{money}</p>
         </div>
-        <PayButton total={money} className="min-w-0 flex-1" />
+        <PayButton total={money} className="min-w-0 flex-1" disabled={disabled} busy={busy} />
       </div>
     </div>
   )
@@ -61,12 +80,22 @@ export function OrderSummary({
   lines,
   currency,
   total,
-  nick
+  nick,
+  disabled,
+  busy,
+  unavailable,
+  errorId
 }: {
   lines: Line[]
   currency: Currency
   total: number
   nick: string
+  disabled: boolean
+  busy: boolean
+  /** `server/slug` of the lines the API refused; marked in the list. */
+  unavailable: ReadonlySet<string>
+  /** The form's error alert, when one is showing. */
+  errorId: string | undefined
 }) {
   const t = useTranslations('checkout')
   const locale = useLocale()
@@ -76,6 +105,7 @@ export function OrderSummary({
   return (
     <aside
       aria-label={t('summary')}
+      aria-describedby={errorId}
       // md:mt-11 drops the panel below the close button, level with the "Checkout" heading (the Back button above it is h-11).
       className="flex flex-col rounded-[var(--radius-inner)] bg-card p-5 md:sticky md:top-0 md:mt-11 md:self-start">
       <h3 className="text-lg font-semibold">{t('summary')}</h3>
@@ -103,7 +133,14 @@ export function OrderSummary({
                     {product.name}
                     {qty > 1 && <span className="tabular ml-1.5 text-muted">×{qty}</span>}
                   </span>
-                  <span className="tabular shrink-0">{money(product.prices[currency] * qty)}</span>
+                  {unavailable.has(`${product.server}/${product.slug}`) && (
+                    <span className="shrink-0 text-xs font-semibold text-danger">
+                      {t('unavailableLine')}
+                    </span>
+                  )}
+                  <span className="tabular ml-auto shrink-0">
+                    {money(product.prices[currency] * qty)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -119,7 +156,12 @@ export function OrderSummary({
       </div>
 
       {/* On phones the pinned bar carries the button. */}
-      <PayButton total={money(total)} className="mt-5 w-full max-md:hidden" />
+      <PayButton
+        total={money(total)}
+        className="mt-5 w-full max-md:hidden"
+        disabled={disabled}
+        busy={busy}
+      />
       <p className="mt-3 text-center text-xs text-muted">{t('payHint')}</p>
     </aside>
   )

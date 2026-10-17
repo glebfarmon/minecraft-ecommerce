@@ -7,7 +7,8 @@ export const PERMISSIONS = [
   'audit.read',
   'catalog.write',
   'server.rcon',
-  'content.write'
+  'content.write',
+  'order.read'
 ] as const
 export type Permission = (typeof PERMISSIONS)[number]
 export const PermissionSchema = v.picklist(PERMISSIONS)
@@ -16,8 +17,15 @@ export type SystemRoleName = 'OWNER' | 'ADMIN' | 'SUPPORT'
 /** Seeded roles. OWNER always has every permission, whatever the table says. */
 export const SYSTEM_ROLES: Record<SystemRoleName, readonly Permission[]> = {
   OWNER: PERMISSIONS,
-  ADMIN: ['admin.invite', 'audit.read', 'catalog.write', 'server.rcon', 'content.write'],
-  SUPPORT: []
+  ADMIN: [
+    'admin.invite',
+    'audit.read',
+    'catalog.write',
+    'server.rcon',
+    'content.write',
+    'order.read'
+  ],
+  SUPPORT: ['order.read']
 }
 
 export const hasPermission = (granted: readonly Permission[], needed: Permission): boolean =>

@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   NotFoundException,
@@ -13,6 +14,8 @@ export const conflict = (message: string, issues?: Record<string, unknown>) =>
 
 export const badRequest = (message: string, issues?: Record<string, unknown>) =>
   new BadRequestException({statusCode: 400, message, ...(issues && {issues})})
+
+export const badGateway = (message: string) => new BadGatewayException({statusCode: 502, message})
 
 export const serviceUnavailable = (message: string) =>
   new ServiceUnavailableException({statusCode: 503, message})
