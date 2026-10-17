@@ -51,10 +51,10 @@ Contract types in `@shop/shared/orders` (Valibot): `CreateOrderRequest`, `Create
 
 ### `POST /api/orders` (anonymous)
 
-Body: `{lines: [{productId, quantity}], currency, locale, nick, email, deliveryConsent: true, termsAccepted: true, turnstileToken}`. 1–50 lines, quantity 1–99, nick `^[A-Za-z0-9_]{3,16}$`.
+Body: `{lines: [{server, slug, quantity}], currency, locale, nick, email, deliveryConsent: true, termsAccepted: true, turnstileToken}`. 1–30 lines, quantity 1–99, nick `^[A-Za-z0-9_]{3,16}$`.
 
 1. Verify Turnstile → 400 `turnstile_failed`.
-2. Load products with prices in `currency`; any line inactive, missing or without a price → 409 `{code: 'unavailable', productIds}`.
+2. Load products with prices in `currency`; any line inactive, missing or without a price → 409 `{statusCode, message: 'unavailable', issues: {lines: [{server, slug}]}}`.
 3. Transaction: create the order `PENDING` with items; call `gateway.createSession`; store `stripeSessionId`. A gateway failure rolls back → 502 `payments_unavailable`.
 4. Respond `{publicId, redirectUrl}`.
 
@@ -90,13 +90,13 @@ Every route is documented in `apps/api/src/openapi/` (`operationId`, `tags`, `su
 
 ## 8. Configuration
 
-`.env.example`: `PAYMENTS_GATEWAY`, `PAYMENTS_ALLOW_FAKE`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_WEB_ORIGIN`, `RATE_LIMIT_ORDER`. `compose.e2e.yaml`: fake gateway, a throwaway webhook secret, Turnstile test keys. Runbook `docs/runbooks/deploy.md`: create the Stripe test-mode keys, add the webhook endpoint `https://<domain>/api/webhooks/stripe` with the five event types, create the Turnstile widget, paste the values into Dokploy. The owner enters the secrets; they are never sent to the assistant.
+`.env.example`: `PAYMENTS_GATEWAY`, `PAYMENTS_ALLOW_FAKE`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TURNSTILE_SECRET_KEY`, `TURNSTILE_SITE_KEY` (read by web at request time, not baked into the image), `PUBLIC_WEB_ORIGIN`, `RATE_LIMIT_ORDER`. `compose.e2e.yaml`: fake gateway, a throwaway webhook secret, Turnstile test keys. Runbook `docs/runbooks/deploy.md`: create the Stripe test-mode keys, add the webhook endpoint `https://<domain>/api/webhooks/stripe` with the four event types (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`), create the Turnstile widget, paste the values into Dokploy. The owner enters the secrets; they are never sent to the assistant.
 
 ## 9. Errors and edge cases
 
 | Case                                                        | Behavior                                      |
 | ----------------------------------------------------------- | --------------------------------------------- |
-| Product disabled or price removed between cart and order    | 409 with ids; nothing created                 |
+| Product disabled or price removed between cart and order    | 409 with the lines; nothing created           |
 | Same webhook event twice / two concurrently                 | One status change, one receipt                |
 | `completed` with `payment_status = 'unpaid'` (async method) | Ignored; `async_payment_succeeded` pays later |
 | `expired` after `completed`                                 | Ignored (`WHERE status = 'PENDING'`)          |
