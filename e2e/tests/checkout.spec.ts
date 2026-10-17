@@ -22,9 +22,11 @@ async function fillCheckout(page: Page) {
   await page.getByLabel('Minecraft nickname').fill('E2e_Buyer')
   await page.getByLabel('Email', {exact: true}).fill(EMAIL)
   // The inputs are visually hidden; a player ticks them through the label (away from the links).
-  await page.getByText('I agree to immediate delivery').click({position: {x: 4, y: 4}})
-  await page.getByText('I accept the').click({position: {x: 4, y: 4}})
-  for (const box of await page.getByRole('checkbox').all()) await expect(box).toBeChecked()
+  const dialog = page.getByRole('dialog', {name: 'Checkout', exact: true})
+  await dialog.getByText('I agree to immediate delivery').click({position: {x: 4, y: 4}})
+  await dialog.getByText('I accept the').click({position: {x: 4, y: 4}})
+  await expect(dialog.getByRole('checkbox')).toHaveCount(2)
+  for (const box of await dialog.getByRole('checkbox').all()) await expect(box).toBeChecked()
   // The Turnstile test site key always passes; Pay enables once the widget hands over a token.
   await expect(page.getByRole('button', {name: /^Pay/})).toBeEnabled({timeout: 30_000})
 }
