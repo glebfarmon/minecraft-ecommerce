@@ -1570,7 +1570,7 @@ Dashboard layout (`grid gap-4`):
 4. Row `grid gap-4 xl:grid-cols-2`: Card "Top products" (ordered list: rank, name, server, quantity; empty state "No sales in this range."); Card "Latest orders" with action link "All orders" → `/orders`, showing first 5 rows of `useListAdminOrdersQuery({})` in a compact `DataTable` (Order number mono, Nick, Total, Status).
    Loading: `Skeleton` blocks with the same grid shapes. Error: `role="alert"` card "Could not load statistics. Try again." with a Retry button calling `refetch`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```tsx
 import {renderWithStore} from '@/test/render-with-store'
@@ -1674,8 +1674,8 @@ describe('Dashboard', () => {
 
 Add one page-level test (`apps/admin/src/app/(shell)/page.test.tsx`, mocking `@/lib/session` `requireMe`) asserting that a user without `order.read` sees the `Welcome` heading and quick-link cards and no `Dashboard` (no `region` named "Revenue EUR"), covering Review Focus 2.
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
-- [ ] **Step 5: Gate and commit** — `feat(admin): dashboard with order statistics`.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
+- [x] **Step 5: Gate and commit** — `feat(admin): dashboard with order statistics`.
 
 ---
 
