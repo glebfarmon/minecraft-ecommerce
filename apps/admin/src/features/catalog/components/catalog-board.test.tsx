@@ -82,7 +82,19 @@ function mockApi(
       return Promise.resolve(
         Response.json([server('s1', 'Survival', [ranks, kits, tools]), server('s2', 'Anarchy', [])])
       )
-    if (url.pathname === '/api/admin/catalog/categories') return Promise.resolve(Response.json([]))
+    if (url.pathname === '/api/admin/catalog/categories')
+      return Promise.resolve(
+        Response.json([
+          {
+            id: 'c-extra',
+            slug: 'extra',
+            names: {en: 'Extra', pl: 'Ekstra'},
+            version: 1,
+            productCount: 0,
+            servers: []
+          }
+        ])
+      )
     if (products) return products()
     return Promise.resolve(
       Response.json([
@@ -138,7 +150,55 @@ describe('CatalogBoard', () => {
     mockApi()
     renderWithStore(<CatalogBoard canEdit />)
     fireEvent.click(await screen.findByRole('tab', {name: /Anarchy/}))
-    expect(await screen.findByText('No categories yet. Attach one below.')).toBeInTheDocument()
+    expect(await screen.findByText('No categories on Anarchy yet.')).toBeInTheDocument()
+  })
+
+  it('a server with no categories shows the attach form and a Create category link in the empty state', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    fireEvent.click(await screen.findByRole('tab', {name: /Anarchy/}))
+    const empty = (await screen.findByText('No categories on Anarchy yet.'))
+      .parentElement as HTMLElement
+    expect(within(empty).getByLabelText('Attach category')).toBeInTheDocument()
+    expect(within(empty).getByRole('link', {name: 'Create category'})).toHaveAttribute(
+      'href',
+      '/catalog/categories'
+    )
+  })
+
+  it('clicking the server plate selects it and does not navigate', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    const tab = await screen.findByRole('tab', {name: /Anarchy/})
+    expect(tab.closest('a')).toBeNull()
+    fireEvent.click(tab)
+    expect(tab).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('the pencil links to the server editor', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    expect(await screen.findByRole('link', {name: 'Edit Survival'})).toHaveAttribute(
+      'href',
+      '/catalog/servers/s1'
+    )
+  })
+
+  it('the category pencil links to its edit form', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    expect(await screen.findByRole('link', {name: 'Edit Ranks'})).toHaveAttribute(
+      'href',
+      '/catalog/categories?edit=c-ranks'
+    )
+  })
+
+  it('product cards are links over the whole card, with the drag handle on top', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    const list = await screen.findByRole('list', {name: 'Products in Ranks'})
+    expect(within(list).getByRole('link', {name: 'VIP'}).className).toMatch(/after:inset-0/)
+    expect(within(list).getByRole('button', {name: 'Move VIP'}).className).toMatch(/z-10/)
   })
 
   it('explains why a category cannot be detached', async () => {
@@ -225,5 +285,6 @@ describe('CatalogBoard', () => {
     await screen.findByRole('list', {name: 'Servers'})
     expect(screen.queryByRole('link', {name: /^\+ /})).not.toBeInTheDocument()
     expect(screen.queryByRole('button', {name: /^Detach/})).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', {name: /^Edit /})).not.toBeInTheDocument()
   })
 })

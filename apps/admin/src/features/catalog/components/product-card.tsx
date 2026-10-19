@@ -36,7 +36,7 @@ export function ProductCard({
   handle?: DragHandleProps
 }) {
   return (
-    <article className="group relative flex h-full flex-col gap-3 rounded-card bg-card p-3">
+    <article className="group relative flex h-full flex-col gap-3 rounded-card bg-card p-3 transition-colors hover:bg-card-raised">
       <div
         className="relative grid aspect-[16/10] place-items-center rounded-plate"
         style={{
@@ -54,7 +54,7 @@ export function ProductCard({
         {href ? (
           <Link
             href={href}
-            className="truncate rounded-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+            className="truncate rounded-sm font-semibold group-hover:underline after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent">
             {product.name}
           </Link>
         ) : (
@@ -73,7 +73,7 @@ export function ProductCard({
         <DragHandle
           label={product.name}
           handle={handle}
-          className="absolute top-2 right-2 bg-card/80 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+          className="absolute top-2 right-2 z-10 bg-card/80 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
         />
       )}
     </article>
