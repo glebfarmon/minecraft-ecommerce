@@ -258,3 +258,68 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/*
+ * Rich text field. The selection toolbar (a Tiptap BubbleMenu) rises 4 px and scales in from
+ * its anchor; its buttons cascade 20 ms apart; it fades out faster than it came.
+ */
+.rich-toolbar-wrap {
+  transition:
+    opacity 100ms cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 100ms;
+}
+.rich-toolbar-wrap[style*='visibility: visible'] {
+  transition:
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s;
+}
+.rich-toolbar {
+  transform-origin: bottom center;
+}
+.rich-toolbar[data-state='open'] {
+  animation: rich-toolbar-in 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rich-toolbar[data-state='closed'] {
+  animation: rich-toolbar-out 100ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.rich-toolbar[data-state='open'] > * {
+  animation: rich-toolbar-item 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rich-toolbar[data-state='open'] > :nth-child(2) {
+  animation-delay: 20ms;
+}
+.rich-toolbar[data-state='open'] > :nth-child(3) {
+  animation-delay: 40ms;
+}
+@keyframes rich-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+@keyframes rich-toolbar-out {
+  to {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+}
+@keyframes rich-toolbar-item {
+  from {
+    opacity: 0;
+  }
+}
+.rich-field p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+.rich-field a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-field u {
+  text-underline-offset: 2px;
+}

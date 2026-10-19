@@ -1,0 +1,139 @@
+import {act, render as rtlRender, screen, waitFor} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import type {Editor} from '@tiptap/core'
+import type {ReactElement} from 'react'
+
+import {TooltipProvider} from '@shop/ui/tooltip'
+
+import {RichTextField} from './rich-text-field'
+
+const render = (ui: ReactElement) => rtlRender(ui, {wrapper: TooltipProvider})
+
+describe('RichTextField', () => {
+  it('renders marks inside a textbox named by its label', async () => {
+    render(
+      <>
+        <span id="label">Description</span>
+        <RichTextField id="f" value="**Hi** there" onChange={jest.fn()} aria-labelledby="label" />
+      </>
+    )
+    const box = await screen.findByRole('textbox', {name: 'Description'})
+    await waitFor(() => {
+      expect(box.querySelector('strong')).toHaveTextContent('Hi')
+    })
+  })
+
+  it('shows an outside value change', async () => {
+    const {rerender} = render(<RichTextField id="f" value="one" onChange={jest.fn()} />)
+    expect(await screen.findByText('one')).toBeInTheDocument()
+    rerender(<RichTextField id="f" value="two ++u++" onChange={jest.fn()} />)
+    await waitFor(() => {
+      expect(screen.getByRole('textbox').querySelector('u')).toHaveTextContent('u')
+    })
+    expect(screen.queryByText('one')).not.toBeInTheDocument()
+  })
+
+  it('bolds the selected word with Mod-b and reports markdown', async () => {
+    const onChange = jest.fn()
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value="make bold now"
+        onChange={onChange}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByText('make bold now')
+    act(() => {
+      editor?.chain().focus().setTextSelection({from: 6, to: 10}).run()
+    })
+    // Tiptap moves focus on the next frame.
+    await waitFor(() => {
+      expect(editor?.isFocused).toBe(true)
+    })
+    await userEvent.keyboard('{Control>}b{/Control}')
+    expect(onChange).toHaveBeenLastCalledWith('make **bold** now')
+  })
+
+  it('swallows Enter in a single-line field and keeps it in a multiline one', async () => {
+    const single = jest.fn()
+    const {unmount} = render(<RichTextField id="s" value="ab" onChange={single} />)
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.keyboard('{Enter}')
+    expect(single).not.toHaveBeenCalled()
+    unmount()
+
+    const multi = jest.fn()
+    render(<RichTextField id="m" value="ab" multiline onChange={multi} />)
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.keyboard('{Enter}')
+    expect(multi).toHaveBeenCalled()
+  })
+
+  it('has no formatting commands beyond bold, italic and underline', async () => {
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        onChange={jest.fn()}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    const names = Object.keys(editor?.schema.marks ?? {})
+    expect(names.sort()).toEqual(['bold', 'italic', 'underline'])
+    expect(Object.keys(editor?.schema.nodes ?? {}).sort()).toEqual(['doc', 'paragraph', 'text'])
+  })
+
+  it('shows links only when links are on', async () => {
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        links
+        onChange={jest.fn()}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    expect(Object.keys(editor?.schema.marks ?? {})).toContain('link')
+  })
+
+  it('bolds the selection from the toolbar and shows it pressed', async () => {
+    const onChange = jest.fn()
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value="make bold now"
+        onChange={onChange}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByText('make bold now')
+    act(() => {
+      editor?.chain().focus().setTextSelection({from: 6, to: 10}).run()
+    })
+    await waitFor(() => {
+      expect(editor?.isFocused).toBe(true)
+    })
+    const bold = await screen.findByRole('button', {name: 'Bold', hidden: true})
+    expect(bold).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(bold)
+    expect(onChange).toHaveBeenLastCalledWith('make **bold** now')
+    await waitFor(() => {
+      expect(bold).toHaveAttribute('aria-pressed', 'true')
+    })
+  })
+})
