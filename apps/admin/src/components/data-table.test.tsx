@@ -175,6 +175,15 @@ describe('DataTable', () => {
       expect(push).not.toHaveBeenCalled()
     })
 
+    it('a click on the open menu padding (portalled) does not navigate', async () => {
+      const user = userEvent.setup()
+      const t = linked()
+      await user.click(t.getByRole('button', {name: 'Actions for Alex'}))
+      const menu = await screen.findByRole('menu')
+      fireEvent.click(menu)
+      expect(push).not.toHaveBeenCalled()
+    })
+
     it('does not navigate while text is selected', () => {
       const t = linked()
       const spy = jest

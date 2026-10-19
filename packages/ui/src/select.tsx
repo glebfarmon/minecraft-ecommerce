@@ -12,7 +12,7 @@ type Option = {value: string; label: string}
 /**
  * A designed select on Radix: the list unfolds out of the field and the highlight rolls between
  * options. Keyframes (`select-*`, `check-draw`) live in the app stylesheet. `''` means nothing
- * chosen and shows `placeholder` (Radix reserves the empty string).
+ * chosen and shows `placeholder`; it stays controlled (an option itself may not be `''`).
  */
 function Select({
   id,
@@ -41,7 +41,7 @@ function Select({
   const group = React.useId()
   return (
     <SelectPrimitive.Root
-      value={value === '' ? undefined : value}
+      value={value}
       onValueChange={onValueChange}
       disabled={disabled}
       onOpenChange={open => {

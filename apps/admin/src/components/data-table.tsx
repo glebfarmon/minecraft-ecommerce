@@ -56,6 +56,8 @@ export function DataTable<T>({
   /** Ignores clicks meant for something inside the row, modified clicks and text selection. */
   const onClick = (r: T) => (e: MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+    // React bubbles events out of portals (menus, selects); only clicks really inside the row count.
+    if (!e.currentTarget.contains(e.target as Node)) return
     if ((e.target as Element).closest('a, button, input, textarea, [role=menuitem]')) return
     if (window.getSelection()?.toString()) return
     // The row's own link does the navigation, so it stays a client-side transition.

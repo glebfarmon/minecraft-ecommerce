@@ -30,7 +30,47 @@ function Field({onChange = jest.fn(), initial = ''}: {onChange?: jest.Mock; init
   )
 }
 
+function Resettable({onChange}: {onChange: jest.Mock}) {
+  const [v, setV] = useState('')
+  return (
+    <>
+      <Label htmlFor="role">Role</Label>
+      <Select
+        id="role"
+        value={v}
+        placeholder="Choose…"
+        options={ROLES}
+        onValueChange={next => {
+          setV(next)
+          onChange(next)
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          setV('')
+        }}>
+        Reset
+      </button>
+    </>
+  )
+}
+
 describe('Select', () => {
+  it('after the parent resets to empty it shows the placeholder and the same option can be picked again', async () => {
+    const user = userEvent.setup()
+    const onChange = jest.fn()
+    render(<Resettable onChange={onChange} />)
+    const trigger = screen.getByRole('combobox', {name: 'Role'})
+    await user.click(trigger)
+    await user.click(await screen.findByRole('option', {name: 'SUPPORT'}))
+    await user.click(screen.getByRole('button', {name: 'Reset'}))
+    expect(trigger).toHaveTextContent('Choose…')
+    await user.click(trigger)
+    await user.click(await screen.findByRole('option', {name: 'SUPPORT'}))
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
   it('the label names the trigger', () => {
     render(<Field />)
     expect(screen.getByRole('combobox', {name: 'Role'})).toBeInTheDocument()
