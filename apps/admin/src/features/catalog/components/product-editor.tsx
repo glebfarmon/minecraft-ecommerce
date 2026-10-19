@@ -511,7 +511,10 @@ function Field({
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-1', className)}>
-      <Label id={`${fieldId(name)}-label`} htmlFor={fieldId(name)}>
+      <Label
+        id={`${fieldId(name)}-label`}
+        htmlFor={fieldId(name)}
+        onClick={() => document.getElementById(fieldId(name))?.focus()}>
         {label}
       </Label>
       {children}

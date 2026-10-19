@@ -89,6 +89,14 @@ describe('RulesEditor', () => {
     })
   })
 
+  it('focuses the field when its label is clicked', async () => {
+    mockApi()
+    renderWithStore(<RulesEditor />)
+    const field = await screen.findByLabelText('Section 1 title (EN)')
+    fireEvent.click(screen.getByText('Section 1 title (EN)'))
+    expect(field).toHaveFocus()
+  })
+
   it('refuses an unsafe link client-side and shows it at the field', async () => {
     const sent = mockApi()
     renderWithStore(<RulesEditor />)

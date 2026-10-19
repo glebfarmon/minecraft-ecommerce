@@ -9,6 +9,29 @@ import {RichTextField} from './rich-text-field'
 
 const render = (ui: ReactElement) => rtlRender(ui, {wrapper: TooltipProvider})
 
+// jsdom has no clipboard events; ProseMirror only needs these two.
+function installClipboard() {
+  class FakeData {
+    private readonly data = new Map<string, string>()
+    setData(type: string, value: string) {
+      this.data.set(type, value)
+    }
+    getData(type: string) {
+      return this.data.get(type) ?? ''
+    }
+  }
+  Object.assign(globalThis, {
+    DataTransfer: FakeData,
+    ClipboardEvent: class extends Event {
+      clipboardData: unknown
+      constructor(type: string, init?: {clipboardData?: unknown}) {
+        super(type, {cancelable: true})
+        this.clipboardData = init?.clipboardData
+      }
+    }
+  })
+}
+
 describe('RichTextField', () => {
   it('renders marks inside a textbox named by its label', async () => {
     render(
@@ -247,26 +270,7 @@ describe('RichTextField', () => {
       />
     )
     await screen.findByRole('textbox')
-    // jsdom has no clipboard events; ProseMirror only needs these two.
-    class FakeData {
-      private readonly data = new Map<string, string>()
-      setData(type: string, value: string) {
-        this.data.set(type, value)
-      }
-      getData(type: string) {
-        return this.data.get(type) ?? ''
-      }
-    }
-    Object.assign(globalThis, {
-      DataTransfer: FakeData,
-      ClipboardEvent: class extends Event {
-        clipboardData: unknown
-        constructor(type: string, init?: {clipboardData?: unknown}) {
-          super(type, {cancelable: true})
-          this.clipboardData = init?.clipboardData
-        }
-      }
-    })
+    installClipboard()
     const view = editor?.view
     act(() => {
       view?.pasteText('server play.example.net or http://x.com')
@@ -277,5 +281,53 @@ describe('RichTextField', () => {
   it('is not editable while disabled', async () => {
     render(<RichTextField id="f" value="x" disabled onChange={jest.fn()} />)
     expect(await screen.findByRole('textbox')).toHaveAttribute('contenteditable', 'false')
+  })
+
+  it('flattens pasted blocks in a single-line field', async () => {
+    let editor: Editor | undefined
+    const onChange = jest.fn()
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        onChange={onChange}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    installClipboard()
+    const view = editor?.view
+    act(() => {
+      view?.pasteHTML('<h1>Title</h1><ul><li>one</li><li>two</li></ul>')
+    })
+    expect(onChange).toHaveBeenLastCalledWith('Title one two')
+    expect(screen.getByRole('textbox').querySelectorAll('p')).toHaveLength(1)
+  })
+
+  it('does not link a typed [label](href) whose href is unsafe', async () => {
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        links
+        onChange={jest.fn()}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    act(() => {
+      editor?.commands.insertContent('[x](//evil.com')
+    })
+    const view = editor?.view
+    const {from, to} = view?.state.selection ?? {from: 0, to: 0}
+    act(() => {
+      view?.someProp('handleTextInput', f => f(view, from, to, ')', () => view.state.tr))
+    })
+    expect(screen.getByRole('textbox').querySelector('a')).toBeNull()
   })
 })

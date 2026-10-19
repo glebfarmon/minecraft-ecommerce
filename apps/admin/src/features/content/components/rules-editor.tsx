@@ -429,7 +429,10 @@ function TextField({
 
   return (
     <div className={`flex min-w-0 flex-col gap-1 ${className ?? ''}`}>
-      <Label id={`${id}-label`} className={hideLabel ? 'sr-only' : 'text-xs text-muted-foreground'}>
+      <Label
+        id={`${id}-label`}
+        onClick={() => document.getElementById(id)?.focus()}
+        className={hideLabel ? 'sr-only' : 'text-xs text-muted-foreground'}>
         {label}
       </Label>
       <Controller

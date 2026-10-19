@@ -95,6 +95,18 @@ describe('parseRich', () => {
   })
 })
 
+describe('parseRich limits', () => {
+  it('survives deeply nested markup without overflowing the stack', () => {
+    const nested = '*++**'.repeat(2000)
+    expect(() => parseRich(nested)).not.toThrow()
+    expect(toPlainText(parseRich(nested)).length).toBeGreaterThan(0)
+  })
+
+  it('keeps a link without a label literal', () => {
+    expect(parseRich('[](/x)')).toEqual([text('[](/x)')])
+  })
+})
+
 describe('toPlainText', () => {
   it('drops markup and URLs but keeps link labels and unescapes', () => {
     expect(toPlainText(parseRich('**Bold** and [Discord](https://discord.com). \\*b'))).toBe(

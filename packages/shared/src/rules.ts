@@ -10,6 +10,9 @@ const SAFE_HREF = /^(https:\/\/|\/(?![/\\]))/i
 const ESCAPABLE = '\\*+[]()'
 const HREF = /\(([^)\s]+)\)/y
 
+// Deeper nesting is literal text: real rules never nest this far, and the parser recurses.
+const MAX_DEPTH = 20
+
 type Context = 'strong' | 'em' | 'u' | 'link' | null
 type Parsed = {nodes: RichNode[]; end: number}
 
@@ -31,15 +34,20 @@ export function parseRich(source: string, {links = true}: {links?: boolean} = {}
 
   // Parses from `start` until the closer of `context` (or the end of the source for null).
   // Returns null when that closer never comes.
-  function sequence(start: number, context: Context, inLink: boolean): Parsed | null {
-    const key = `${String(start)}:${String(context)}:${String(inLink)}`
+  function sequence(
+    start: number,
+    context: Context,
+    inLink: boolean,
+    depth: number
+  ): Parsed | null {
+    const key = `${String(start)}:${String(context)}:${String(inLink)}:${String(depth)}`
     if (memo.has(key)) return memo.get(key) ?? null
-    const result = scan(start, context, inLink)
+    const result = scan(start, context, inLink, depth)
     memo.set(key, result)
     return result
   }
 
-  function scan(start: number, context: Context, inLink: boolean): Parsed | null {
+  function scan(start: number, context: Context, inLink: boolean, depth: number): Parsed | null {
     const nodes: RichNode[] = []
     let i = start
     while (i < source.length) {
@@ -62,7 +70,8 @@ export function parseRich(source: string, {links = true}: {links?: boolean} = {}
         const mark: 'strong' | 'em' | 'u' | null =
           ch === '+' ? (run >= 2 ? 'u' : null) : run >= 2 ? 'strong' : 'em'
         const width = mark === 'em' ? 1 : 2
-        const inner = mark && canOpen ? sequence(i + width, mark, inLink) : null
+        const inner =
+          mark && canOpen && depth < MAX_DEPTH ? sequence(i + width, mark, inLink, depth + 1) : null
         if (mark && inner) {
           nodes.push({type: mark, children: inner.nodes})
           i = inner.end
@@ -74,9 +83,9 @@ export function parseRich(source: string, {links = true}: {links?: boolean} = {}
         }
         continue
       }
-      if (ch === '[' && links && !inLink) {
-        const label = sequence(i + 1, 'link', true)
-        if (label) {
+      if (ch === '[' && links && !inLink && depth < MAX_DEPTH) {
+        const label = sequence(i + 1, 'link', true, depth + 1)
+        if (label && label.nodes.length > 0) {
           HREF.lastIndex = label.end
           const match = HREF.exec(source)
           const href = match?.[1]
@@ -97,7 +106,7 @@ export function parseRich(source: string, {links = true}: {links?: boolean} = {}
     return context === null ? {nodes, end: i} : null
   }
 
-  return sequence(0, null, false)?.nodes ?? []
+  return sequence(0, null, false, 0)?.nodes ?? []
 }
 
 /** The words a reader sees: what search matches and what "copy text" puts on the clipboard. */

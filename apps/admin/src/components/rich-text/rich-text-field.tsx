@@ -11,6 +11,8 @@ import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import Underline from '@tiptap/extension-underline'
 import {Placeholder, UndoRedo} from '@tiptap/extensions'
+import {Fragment, type Node, Slice} from '@tiptap/pm/model'
+import type {EditorView} from '@tiptap/pm/view'
 import {EditorContent, useEditor, useEditorState} from '@tiptap/react'
 import {BubbleMenu} from '@tiptap/react/menus'
 import {Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon} from 'lucide-react'
@@ -35,7 +37,6 @@ const toggle = (editor: Editor, name: MarkName) => {
 }
 
 // Typing `[label](href)` makes a link, as the rules text did before the editor was visual.
-// The href is not checked here: the rules schema refuses unsafe ones at save.
 // Typed or pasted `_x_` and `*x*` stay literal: Minecraft names contain underscores, and the
 // toolbar and ⌘B/⌘I are how marks are made.
 const PlainBold = Bold.extend({addInputRules: () => [], addPasteRules: () => []})
@@ -53,6 +54,8 @@ const LinkWithMarkdownInput = Link.extend({
         find: /\[([^\]]+)\]\(([^)\s]+)\)$/,
         handler: ({state, range, match}) => {
           const [, label = '', href = ''] = match
+          // An unsafe href stays typed text; the rules schema would refuse it at save anyway.
+          if (!isSafeUri(href)) return null
           const mark = this.type.create({href})
           state.tr.replaceWith(range.from, range.to, state.schema.text(label, [mark]))
         }
@@ -60,6 +63,19 @@ const LinkWithMarkdownInput = Link.extend({
     ]
   }
 })
+
+function flatten(slice: Slice, view: EditorView) {
+  const {schema} = view.state
+  const inline: Node[] = []
+  slice.content.forEach(block => {
+    if (inline.length > 0) inline.push(schema.text(' '))
+    block.descendants(node => {
+      if (node.isText) inline.push(node)
+      else if (node.isLeaf) inline.push(schema.text(' '))
+    })
+  })
+  return new Slice(Fragment.from(inline), 0, 0)
+}
 
 function SelectionToolbar({editor}: {editor: Editor}) {
   const state = useEditorState({
@@ -178,20 +194,14 @@ export function RichTextField({
         ...(ariaLabelledBy ? {'aria-labelledby': ariaLabelledBy} : {}),
         'class': cn(
           'rich-field rounded-plate border border-border bg-surface px-3 py-[7px] text-sm leading-5 text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',
-          multiline ? 'min-h-16 py-2' : 'whitespace-nowrap',
+          multiline && 'min-h-16 py-2',
           ariaInvalid && 'border-bad',
           disabled && 'cursor-not-allowed opacity-50'
         )
       },
       handleKeyDown: (_view, event) => !multiline && event.key === 'Enter',
-      // A single-line field never holds a line break, however it was pasted.
-      ...(multiline
-        ? {}
-        : {
-            transformPastedText: (text: string) => text.replace(/\s*\n\s*/g, ' '),
-            transformPastedHTML: (html: string) =>
-              html.replace(/<\/p>\s*<p[^>]*>|<br\s*\/?>/gi, ' ')
-          })
+      // A single-line field never holds a line break: pasted blocks become one run of text.
+      ...(multiline ? {} : {transformPasted: flatten})
     },
     onUpdate: ({editor: e}) => {
       const markdown = fromDoc(e.getJSON())
