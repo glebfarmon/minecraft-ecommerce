@@ -1,15 +1,39 @@
+'use client'
+
 import * as TabsPrimitive from '@radix-ui/react-tabs'
-import type * as React from 'react'
+import {LayoutGroup, motion} from 'motion/react'
+import * as React from 'react'
 
 import {cn} from './lib/utils'
 
-function Tabs({className, ...props}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+/** The active value, so the trigger that owns it can draw the rolling indicator. */
+const ActiveContext = React.createContext<string | undefined>(undefined)
+
+function Tabs({
+  className,
+  value,
+  defaultValue,
+  onValueChange,
+  children,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  const [inner, setInner] = React.useState(defaultValue)
+  const active = value ?? inner
+  const group = React.useId()
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
       className={cn('flex flex-col gap-4', className)}
-      {...props}
-    />
+      value={active}
+      onValueChange={v => {
+        setInner(v)
+        onValueChange?.(v)
+      }}
+      {...props}>
+      <ActiveContext.Provider value={active}>
+        <LayoutGroup id={group}>{children}</LayoutGroup>
+      </ActiveContext.Provider>
+    </TabsPrimitive.Root>
   )
 }
 
@@ -23,16 +47,33 @@ function TabsList({className, ...props}: React.ComponentProps<typeof TabsPrimiti
   )
 }
 
-function TabsTrigger({className, ...props}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+function TabsTrigger({
+  className,
+  value,
+  children,
+  ...props
+}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  const active = React.useContext(ActiveContext) === value
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
+      value={value}
       className={cn(
-        'data-[state=active]:bg-card-raised inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50 data-[state=active]:text-fg',
+        'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50 data-[state=active]:text-fg',
         className
       )}
-      {...props}
-    />
+      {...props}>
+      {active && (
+        <motion.span
+          data-slot="tabs-indicator"
+          layoutId="tabs-indicator"
+          aria-hidden
+          className="bg-card-raised absolute inset-0 -z-10 rounded-full"
+          transition={{type: 'spring', bounce: 0, duration: 0.35}}
+        />
+      )}
+      {children}
+    </TabsPrimitive.Trigger>
   )
 }
 

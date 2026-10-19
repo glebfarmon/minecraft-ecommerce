@@ -39,6 +39,12 @@ describe('Nav', () => {
     expect(screen.getByRole('link', {name: 'Content'})).toHaveAttribute('aria-current', 'page')
     mockPath = '/team'
   })
+  it('the current rail link contains the rolling indicator', () => {
+    render(<Nav me={me(['admin.invite'])} variant="rail" />)
+    const team = screen.getByRole('link', {name: 'Team'})
+    expect(team.querySelector('[data-slot=rolling-indicator]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-slot=rolling-indicator]')).toHaveLength(1)
+  })
   it('rail links carry no native title', () => {
     render(<Nav me={me([])} variant="rail" />)
     expect(screen.getByRole('link', {name: 'Catalog'})).not.toHaveAttribute('title')
