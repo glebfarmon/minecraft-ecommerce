@@ -1815,7 +1815,7 @@ Rules for this task (no behaviour change):
 - Categories: `PageHeader` "Categories" + `DataTable` (Name EN primary, Name PL, Slug mono, Used by N servers) with row menu (Edit, Delete as danger) mapping to the existing actions; the create form becomes a `FormSection` card above the table.
 - Delete confirmations keep their current flow and button names.
 
-- [ ] **Step 1: Tests first** — add `apps/admin/src/lib/contrast.test.ts`:
+- [x] **Step 1: Tests first** — add `apps/admin/src/lib/contrast.test.ts`:
 
 ```ts
 import {contrastRatio} from './contrast'
@@ -1843,8 +1843,8 @@ export function contrastRatio(a: string, b: string) {
 }
 ```
 
-- [ ] **Step 2: Run** → new cases FAIL. **Step 3: Implement.** **Step 4: Run** `pnpm --filter @shop/admin test` → PASS.
-- [ ] **Step 5: Gate and commit** — `feat(admin): catalog editors in form sections with live preview`.
+- [x] **Step 2: Run** → new cases FAIL. **Step 3: Implement.** **Step 4: Run** `pnpm --filter @shop/admin test` → PASS.
+- [x] **Step 5: Gate and commit** — `feat(admin): catalog editors in form sections with live preview`.
 
 ---
 

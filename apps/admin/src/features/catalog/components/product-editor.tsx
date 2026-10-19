@@ -1,5 +1,7 @@
 'use client'
 
+import {FormSection} from '@/components/form-section'
+import {SkeletonRows} from '@/components/skeleton'
 import {SectionsEditor} from '@/features/catalog/components/sections-editor'
 import {
   emptyProductForm,
@@ -36,9 +38,13 @@ import {Button} from '@shop/ui/button'
 import {Checkbox} from '@shop/ui/checkbox'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
+import {cn} from '@shop/ui/lib/utils'
 import {Select} from '@shop/ui/select'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@shop/ui/tabs'
 import {Textarea} from '@shop/ui/textarea'
+
+import {EditorLayout} from './editor-layout'
+import {ProductCard} from './product-card'
 
 const MISSING_LABEL = {
   'price.EUR': 'EUR price',
@@ -91,7 +97,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   }, [loadedId])
 
   const values = useWatch({control}) as ProductForm
-  const missing = missingForActive(formToCreate({...emptyProductForm(), ...values}))
+  const draft = formToCreate({...emptyProductForm(), ...values})
+  const missing = missingForActive(draft)
   const incomplete = missing.length > 0
   // Never untick Enabled for the admin: a silent untick would take the product off the shop.
   const activeError =
@@ -99,7 +106,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       ? `Fill ${missing.map(m => MISSING_LABEL[m]).join(', ')} or untick Enabled`
       : undefined
 
-  if (id && product.isLoading) return <p>Loading product…</p>
+  if (id && product.isLoading) return <SkeletonRows rows={6} />
   if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
 
   const server = servers.data?.find(s => s.id === values.serverId)
@@ -150,27 +157,69 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     'aria-invalid': errorOf(name) ? true : undefined,
     'aria-describedby': errorOf(name) ? `${fieldId(name)}-error` : undefined
   })
-  const field = (name: FieldPath<ProductForm>, label: string, input: ReactNode, hint?: string) => (
-    <Field name={name} label={label} error={errorOf(name)} hint={hint}>
+  const field = (
+    name: FieldPath<ProductForm>,
+    label: string,
+    input: ReactNode,
+    hint?: string,
+    wide?: boolean
+  ) => (
+    <Field
+      name={name}
+      label={label}
+      error={errorOf(name)}
+      hint={hint}
+      className={wide ? 'md:col-span-2' : undefined}>
       {input}
     </Field>
   )
 
+  const storedName = product.data?.translations.en?.name || product.data?.slug
   return (
-    <form
-      onSubmit={e => void handleSubmit(save, onInvalid)(e)}
-      noValidate
-      className="flex max-w-3xl flex-col gap-6">
-      {incomplete && (
-        <p className="text-sm text-muted-foreground">
-          {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
-        </p>
-      )}
-      {error && <p role="alert">{error}</p>}
-      {saved && <p role="status">Saved. Live on the site within a minute.</p>}
+    <EditorLayout
+      title={id ? storedName || 'Product' : 'New product'}
+      preview={
+        <ProductCard
+          accent={server?.accent ?? 'var(--color-accent)'}
+          product={{
+            name: values.translations.en.name || values.slug || 'New product',
+            mark: values.mark || values.translations.en.name || '',
+            icon: values.icon,
+            kind: values.kind,
+            isActive: values.isActive,
+            // A half-typed price is not a number yet; show it as missing, not NaN.
+            prices: {
+              EUR: Number.isFinite(draft.prices.EUR) ? draft.prices.EUR : null,
+              PLN: Number.isFinite(draft.prices.PLN) ? draft.prices.PLN : null
+            },
+            missing
+          }}
+        />
+      }>
+      <form
+        onSubmit={e => void handleSubmit(save, onInvalid)(e)}
+        noValidate
+        className="flex flex-col gap-4">
+        {incomplete && (
+          <p className="rounded-plate bg-warn-soft px-4 py-3 text-[13px] text-warn">
+            {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
+            {error}
+          </p>
+        )}
+        {saved && (
+          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
+            Saved. Live on the site within a minute.
+          </p>
+        )}
 
-      <fieldset disabled={!canEdit} className="flex flex-col gap-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <FormSection
+          title="Basics"
+          description="Where the product sits and how it is sold."
+          disabled={!canEdit}>
           {field(
             'serverId',
             'Server',
@@ -267,6 +316,39 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
               ))}
             </Select>
           )}
+          <div className="flex flex-wrap items-center gap-2 md:col-span-2">
+            <Controller
+              control={control}
+              name="isActive"
+              render={({field: f}) => (
+                <Checkbox
+                  id={fieldId('isActive')}
+                  ref={f.ref}
+                  checked={f.value}
+                  // An enabled product keeps its checkbox, so it can always be unticked.
+                  disabled={incomplete && !f.value}
+                  aria-invalid={activeError ? true : undefined}
+                  aria-describedby={activeError ? `${fieldId('isActive')}-error` : undefined}
+                  onBlur={f.onBlur}
+                  onCheckedChange={checked => {
+                    f.onChange(checked === true)
+                  }}
+                />
+              )}
+            />
+            <Label htmlFor={fieldId('isActive')}>Enabled</Label>
+            {activeError && (
+              <p id={`${fieldId('isActive')}-error`} className="w-full text-xs text-destructive">
+                {activeError}
+              </p>
+            )}
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Prices"
+          description="Both currencies are needed to enable the product."
+          disabled={!canEdit}>
           {field(
             'prices.EUR',
             'Price EUR',
@@ -277,125 +359,107 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
             'Price PLN',
             <Input inputMode="decimal" {...fieldProps('prices.PLN')} {...register('prices.PLN')} />
           )}
-        </div>
+        </FormSection>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Controller
-            control={control}
-            name="isActive"
-            render={({field: f}) => (
-              <Checkbox
-                id={fieldId('isActive')}
-                ref={f.ref}
-                checked={f.value}
-                // An enabled product keeps its checkbox, so it can always be unticked.
-                disabled={incomplete && !f.value}
-                aria-invalid={activeError ? true : undefined}
-                aria-describedby={activeError ? `${fieldId('isActive')}-error` : undefined}
-                onBlur={f.onBlur}
-                onCheckedChange={checked => {
-                  f.onChange(checked === true)
-                }}
-              />
-            )}
-          />
-          <Label htmlFor={fieldId('isActive')}>Enabled</Label>
-          {activeError && (
-            <p id={`${fieldId('isActive')}-error`} className="w-full text-xs text-destructive">
-              {activeError}
-            </p>
-          )}
-        </div>
-
-        {field(
-          'grant',
-          'Grant commands',
-          <Textarea className="font-mono" {...fieldProps('grant')} {...register('grant')} />,
-          COMMAND_HINT
-        )}
-        {field(
-          'revoke',
-          'Revoke commands',
-          <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
-          COMMAND_HINT
-        )}
-      </fieldset>
-
-      <Tabs
-        value={tab}
-        onValueChange={value => {
-          setTab(value as 'en' | 'pl')
-        }}>
-        <TabsList>
-          {LOCALES.map(({locale, tab: label}) => (
-            <TabsTrigger
-              key={locale}
-              value={locale}
-              onClick={() => {
-                setTab(locale)
-              }}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {LOCALES.map(({locale, tab: label}) => (
-          <TabsContent key={locale} value={locale}>
-            {/* Triggers stay outside the fieldset so a read-only admin can still switch tabs. */}
-            <fieldset disabled={!canEdit} className="flex flex-col gap-4">
-              {field(
-                `translations.${locale}.name`,
-                `Name (${label})`,
-                <Input
-                  {...fieldProps(`translations.${locale}.name`)}
-                  {...register(`translations.${locale}.name`)}
-                />
-              )}
-              {field(
-                `translations.${locale}.description`,
-                `Description (${label})`,
-                <Textarea
-                  {...fieldProps(`translations.${locale}.description`)}
-                  {...register(`translations.${locale}.description`)}
-                />
-              )}
-              <SectionsEditor
-                locale={locale}
-                control={control}
-                register={register}
-                disabled={!canEdit}
-              />
-            </fieldset>
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {canEdit && (
-        <div className="flex gap-2">
-          <Button type="submit" disabled={busy}>
-            Save
-          </Button>
-          {id &&
-            (confirmDelete ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => void onDelete()}>
-                Confirm delete
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setConfirmDelete(true)
-                }}>
-                Delete
-              </Button>
+        <FormSection title="Texts" description="What buyers read, per language.">
+          <Tabs
+            className="md:col-span-2"
+            value={tab}
+            onValueChange={value => {
+              setTab(value as 'en' | 'pl')
+            }}>
+            <TabsList>
+              {LOCALES.map(({locale, tab: label}) => (
+                <TabsTrigger
+                  key={locale}
+                  value={locale}
+                  onClick={() => {
+                    setTab(locale)
+                  }}>
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {LOCALES.map(({locale, tab: label}) => (
+              <TabsContent key={locale} value={locale}>
+                {/* Triggers stay outside the fieldset so a read-only admin can still switch tabs. */}
+                <fieldset disabled={!canEdit} className="flex flex-col gap-4">
+                  {field(
+                    `translations.${locale}.name`,
+                    `Name (${label})`,
+                    <Input
+                      {...fieldProps(`translations.${locale}.name`)}
+                      {...register(`translations.${locale}.name`)}
+                    />
+                  )}
+                  {field(
+                    `translations.${locale}.description`,
+                    `Description (${label})`,
+                    <Textarea
+                      {...fieldProps(`translations.${locale}.description`)}
+                      {...register(`translations.${locale}.description`)}
+                    />
+                  )}
+                  <SectionsEditor
+                    locale={locale}
+                    control={control}
+                    register={register}
+                    disabled={!canEdit}
+                  />
+                </fieldset>
+              </TabsContent>
             ))}
-        </div>
-      )}
-    </form>
+          </Tabs>
+        </FormSection>
+
+        <FormSection
+          title="Commands"
+          description="Run over RCON when the order is delivered or revoked."
+          disabled={!canEdit}>
+          {field(
+            'grant',
+            'Grant commands',
+            <Textarea className="font-mono" {...fieldProps('grant')} {...register('grant')} />,
+            COMMAND_HINT,
+            true
+          )}
+          {field(
+            'revoke',
+            'Revoke commands',
+            <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
+            COMMAND_HINT,
+            true
+          )}
+        </FormSection>
+
+        {canEdit && (
+          <div className="flex gap-2">
+            <Button type="submit" disabled={busy}>
+              Save
+            </Button>
+            {id &&
+              (confirmDelete ? (
+                <Button
+                  type="button"
+                  variant="danger"
+                  disabled={busy}
+                  onClick={() => void onDelete()}>
+                  Confirm delete
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setConfirmDelete(true)
+                  }}>
+                  Delete
+                </Button>
+              ))}
+          </div>
+        )}
+      </form>
+    </EditorLayout>
   )
 }
 
@@ -406,16 +470,18 @@ function Field({
   label,
   error,
   hint,
+  className,
   children
 }: {
   name: string
   label: string
   error?: string
   hint?: string
+  className?: string
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className={cn('flex min-w-0 flex-col gap-1', className)}>
       <Label htmlFor={fieldId(name)}>{label}</Label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}

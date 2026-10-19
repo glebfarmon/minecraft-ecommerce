@@ -225,7 +225,7 @@ function ProductList({
         {(p, handle) => (
           <ProductCard
             product={p}
-            server={server}
+            accent={server.accent}
             href={`/catalog/products/${p.id}`}
             handle={canEdit ? handle : undefined}
           />

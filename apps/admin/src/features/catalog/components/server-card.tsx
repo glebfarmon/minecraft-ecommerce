@@ -17,18 +17,43 @@ function Pill({children}: {children: ReactNode}) {
   )
 }
 
+const CARD = 'flex min-w-56 flex-col items-start gap-3 rounded-card p-4 pr-12 text-left'
+
+/** Without `onSelect` (the editor's live preview) the card is not a tab. */
 export function ServerCard({
   server,
-  selected,
+  selected = false,
   onSelect,
   handle
 }: {
-  server: Server
-  selected: boolean
-  onSelect: () => void
+  server: Pick<
+    Server,
+    'name' | 'accent' | 'onAccent' | 'isActive' | 'productCount' | 'rcon' | 'rconPasswordSet'
+  >
+  selected?: boolean
+  onSelect?: () => void
   handle?: DragHandleProps
 }) {
   const rconReady = server.rconPasswordSet && Boolean(server.rcon?.host)
+  const style = {background: server.accent, color: server.onAccent}
+  const body = (
+    <>
+      <span className="text-[16px] font-semibold">{server.name}</span>
+      <span className="tabular text-[13px] opacity-80">
+        {server.productCount} {server.productCount === 1 ? 'product' : 'products'}
+      </span>
+      <span className="flex flex-wrap gap-1.5">
+        <Pill>{rconReady ? 'RCON ready' : 'RCON not set'}</Pill>
+        {!server.isActive && <Pill>Disabled</Pill>}
+      </span>
+    </>
+  )
+  if (!onSelect)
+    return (
+      <div style={style} className={CARD}>
+        {body}
+      </div>
+    )
   return (
     <div className="relative">
       <button
@@ -36,16 +61,9 @@ export function ServerCard({
         role="tab"
         aria-selected={selected}
         onClick={onSelect}
-        style={{background: server.accent, color: server.onAccent}}
-        className="flex min-w-56 flex-col items-start gap-3 rounded-card p-4 pr-12 text-left ring-offset-2 ring-offset-bg transition-opacity focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none aria-selected:ring-2 aria-selected:ring-fg aria-[selected=false]:opacity-75 aria-[selected=false]:hover:opacity-100">
-        <span className="text-[16px] font-semibold">{server.name}</span>
-        <span className="tabular text-[13px] opacity-80">
-          {server.productCount} {server.productCount === 1 ? 'product' : 'products'}
-        </span>
-        <span className="flex flex-wrap gap-1.5">
-          <Pill>{rconReady ? 'RCON ready' : 'RCON not set'}</Pill>
-          {!server.isActive && <Pill>Disabled</Pill>}
-        </span>
+        style={style}
+        className={`${CARD} ring-offset-2 ring-offset-bg transition-opacity focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none aria-selected:ring-2 aria-selected:ring-fg aria-[selected=false]:opacity-75 aria-[selected=false]:hover:opacity-100`}>
+        {body}
       </button>
       {handle && (
         <DragHandle

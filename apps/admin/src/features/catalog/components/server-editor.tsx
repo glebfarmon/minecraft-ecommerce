@@ -1,5 +1,9 @@
 'use client'
 
+import {Card} from '@/components/card'
+import {FormSection} from '@/components/form-section'
+import {SkeletonRows} from '@/components/skeleton'
+import {ToneDot} from '@/components/status-dot'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
 import {apiErrorMessage} from '@/lib/api/error-message'
@@ -9,6 +13,7 @@ import {
   useGetCatalogServerQuery,
   useUpdateCatalogServerMutation
 } from '@/lib/api/generated'
+import {contrastRatio} from '@/lib/contrast'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useRouter} from 'next/navigation'
 import {type ReactNode, useEffect, useRef, useState} from 'react'
@@ -19,7 +24,12 @@ import {Checkbox} from '@shop/ui/checkbox'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
+import {EditorLayout} from './editor-layout'
+import {ServerCard} from './server-card'
+
 type Props = {id?: string; canEdit: boolean; canRcon: boolean}
+
+const HEX = /^#[0-9a-f]{6}$/i
 
 const EMPTY: ServerForm = {
   slug: '',
@@ -61,7 +71,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   const values = useWatch({control}) as ServerForm
 
-  if (id && server.isLoading) return <p>Loading server…</p>
+  if (id && server.isLoading) return <SkeletonRows rows={4} />
   if (id && !server.data) return <p role="alert">Could not load the server. Refresh the page.</p>
 
   // The slug stays locked while the stored server is enabled.
@@ -111,7 +121,8 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
           type="color"
           aria-hidden
           tabIndex={-1}
-          value={/^#[0-9a-f]{6}$/i.test(values[name]) ? values[name] : '#000000'}
+          className="size-9 shrink-0 cursor-pointer rounded-full border border-border bg-transparent p-0.5"
+          value={HEX.test(values[name]) ? values[name] : '#000000'}
           onChange={e => {
             setValue(name, e.target.value, {shouldDirty: true, shouldValidate: true})
           }}
@@ -120,21 +131,41 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     </Field>
   )
 
+  const lowContrast =
+    HEX.test(values.accent) &&
+    HEX.test(values.onAccent) &&
+    contrastRatio(values.accent, values.onAccent) < 4.5
+
   return (
-    <div className="flex max-w-3xl flex-col gap-8">
-      <form onSubmit={e => void handleSubmit(save)(e)} noValidate className="flex flex-col gap-6">
-        {error && <p role="alert">{error}</p>}
-        {saved && <p role="status">Saved. Live on the site within a minute.</p>}
+    <EditorLayout
+      title={id ? server.data?.name || 'Server' : 'New server'}
+      preview={
+        <ServerCard
+          server={{
+            name: values.name || 'Server',
+            accent: values.accent,
+            onAccent: values.onAccent,
+            isActive: values.isActive,
+            productCount: server.data?.productCount ?? 0,
+            rcon: server.data?.rcon ?? null,
+            rconPasswordSet: server.data?.rconPasswordSet ?? false
+          }}
+        />
+      }>
+      <form onSubmit={e => void handleSubmit(save)(e)} noValidate className="flex flex-col gap-4">
+        {error && (
+          <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
+            {error}
+          </p>
+        )}
+        {saved && (
+          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
+            Saved. Live on the site within a minute.
+          </p>
+        )}
 
-        <span
-          data-testid="tab-preview"
-          className="w-fit rounded px-3 py-1 text-sm font-medium"
-          style={{background: values.accent, color: values.onAccent}}>
-          {values.name || 'Server'}
-        </span>
-
-        <fieldset disabled={!canEdit} className="flex flex-col gap-6">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset disabled={!canEdit} className="min-w-0">
+          <FormSection title="Basics" description="How the server appears in the shop.">
             <Field name="name" label="Name" error={errorOf('name')}>
               <Input {...fieldProps('name')} {...register('name')} />
             </Field>
@@ -147,28 +178,35 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
             </Field>
             {colorField('accent', 'Accent')}
             {colorField('onAccent', 'Text color')}
-          </div>
-
-          {id && (
-            <div className="flex items-center gap-2">
-              <Controller
-                control={control}
-                name="isActive"
-                render={({field: f}) => (
-                  <Checkbox
-                    id="server-isActive"
-                    ref={f.ref}
-                    checked={f.value}
-                    onBlur={f.onBlur}
-                    onCheckedChange={checked => {
-                      f.onChange(checked === true)
-                    }}
-                  />
-                )}
-              />
-              <Label htmlFor="server-isActive">Enabled</Label>
-            </div>
-          )}
+            {lowContrast && (
+              <div className="md:col-span-2">
+                <ToneDot tone="warn" label="Low contrast" />
+                <span className="ml-2 text-[13px] text-muted">
+                  Text on the accent needs a contrast ratio of at least 4.5.
+                </span>
+              </div>
+            )}
+            {id && (
+              <div className="flex items-center gap-2 md:col-span-2">
+                <Controller
+                  control={control}
+                  name="isActive"
+                  render={({field: f}) => (
+                    <Checkbox
+                      id="server-isActive"
+                      ref={f.ref}
+                      checked={f.value}
+                      onBlur={f.onBlur}
+                      onCheckedChange={checked => {
+                        f.onChange(checked === true)
+                      }}
+                    />
+                  )}
+                />
+                <Label htmlFor="server-isActive">Enabled</Label>
+              </div>
+            )}
+          </FormSection>
         </fieldset>
 
         {canEdit && (
@@ -180,7 +218,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
               (confirmDelete ? (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="danger"
                   disabled={busy}
                   onClick={() => void onDelete()}>
                   Confirm delete
@@ -200,12 +238,11 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
       </form>
 
       {canRcon && server.data && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold">RCON</h2>
+        <Card title="RCON">
           <RconPanel server={server.data} />
-        </section>
+        </Card>
       )}
-    </div>
+    </EditorLayout>
   )
 }
 

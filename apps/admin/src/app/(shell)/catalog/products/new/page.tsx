@@ -12,10 +12,5 @@ export default async function NewProductPage({
   const me = await requireMe()
   if (!hasPermission(me.permissions, 'catalog.write')) notFound()
   const {serverId, categoryId} = await searchParams
-  return (
-    <section className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">New product</h1>
-      <ProductEditor serverId={serverId} categoryId={categoryId} canEdit />
-    </section>
-  )
+  return <ProductEditor serverId={serverId} categoryId={categoryId} canEdit />
 }

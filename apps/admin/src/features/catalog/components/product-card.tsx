@@ -1,8 +1,5 @@
 import {ToneDot} from '@/components/status-dot'
-import type {
-  ListCatalogProductsApiResponse,
-  ListCatalogServersApiResponse
-} from '@/lib/api/generated'
+import type {ListCatalogProductsApiResponse} from '@/lib/api/generated'
 import {formatMoney} from '@/lib/format'
 import Link from 'next/link'
 
@@ -13,7 +10,6 @@ import {ProductIcon} from './product-icon'
 import type {DragHandleProps} from './sortable-list'
 
 type Product = ListCatalogProductsApiResponse[number]
-type Server = ListCatalogServersApiResponse[number]
 
 const KIND: Record<Product['kind'], string> = {
   PERMANENT: 'Permanent',
@@ -21,21 +17,22 @@ const KIND: Record<Product['kind'], string> = {
   CASE: 'Case'
 }
 
-function prices(p: Product) {
+function prices(p: Pick<Product, 'prices'>) {
   const eur = p.prices.EUR === null ? '—' : formatMoney(p.prices.EUR, 'EUR')
   const pln = p.prices.PLN === null ? '—' : `${fromMinor(p.prices.PLN)} zł`
   return `${eur} · ${pln}`
 }
 
+/** Without `href` (the editor's live preview) the name is plain text. */
 export function ProductCard({
   product,
-  server,
+  accent,
   href,
   handle
 }: {
-  product: Product
-  server: Server
-  href: string
+  product: Pick<Product, 'name' | 'mark' | 'icon' | 'kind' | 'isActive' | 'prices' | 'missing'>
+  accent: string
+  href?: string
   handle?: DragHandleProps
 }) {
   return (
@@ -43,8 +40,8 @@ export function ProductCard({
       <div
         className="relative grid aspect-[4/3] place-items-center rounded-plate"
         style={{
-          background: `color-mix(in oklab, ${server.accent} 22%, transparent)`,
-          color: server.accent
+          background: `color-mix(in oklab, ${accent} 22%, transparent)`,
+          color: accent
         }}>
         <ProductIcon name={product.icon} className="size-12" />
         {product.mark !== product.name && (
@@ -54,11 +51,15 @@ export function ProductCard({
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-1.5 px-1 pb-1">
-        <Link
-          href={href}
-          className="truncate rounded-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none">
-          {product.name}
-        </Link>
+        {href ? (
+          <Link
+            href={href}
+            className="truncate rounded-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none">
+            {product.name}
+          </Link>
+        ) : (
+          <p className="truncate font-semibold">{product.name}</p>
+        )}
         <p className="tabular text-[13px] text-muted">{prices(product)}</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex h-6 items-center rounded-full bg-card-raised px-2.5 text-[12px] text-muted">

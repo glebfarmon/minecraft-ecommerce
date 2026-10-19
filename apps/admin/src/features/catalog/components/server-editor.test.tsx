@@ -1,5 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ServerEditor} from './server-editor'
 
@@ -31,13 +31,24 @@ function mockApi(
 }
 
 describe('ServerEditor', () => {
-  it('previews the tab in the chosen colors', async () => {
+  it('previews the server card in the chosen colors', async () => {
     mockApi()
     renderWithStore(<ServerEditor id="s1" canEdit canRcon={false} />)
-    const preview = await screen.findByTestId('tab-preview')
+    const region = await screen.findByRole('region', {name: 'Preview'})
+    const preview = within(region).getByText('Survival').parentElement as HTMLElement
     expect(preview).toHaveStyle({background: '#ff6b1a', color: '#000000'})
     fireEvent.change(screen.getByLabelText('Accent'), {target: {value: '#2266ff'}})
     expect(preview).toHaveStyle({background: '#2266ff'})
+  })
+
+  it('warns when the text colour has too little contrast with the accent', async () => {
+    mockApi()
+    renderWithStore(<ServerEditor id="s1" canEdit canRcon={false} />)
+    await screen.findByRole('region', {name: 'Preview'})
+    expect(screen.queryByText('Low contrast')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Accent'), {target: {value: '#ffffff'}})
+    fireEvent.change(screen.getByLabelText('Text color'), {target: {value: '#ffc857'}})
+    expect(await screen.findByText('Low contrast')).toBeInTheDocument()
   })
 
   it('locks the slug while the server is enabled', async () => {

@@ -1,5 +1,6 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import {CategoriesTable} from './categories-table'
 
@@ -16,7 +17,8 @@ describe('CategoriesTable', () => {
   it('lists categories with both names, servers and product counts', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([ranks]))
     renderWithStore(<CategoriesTable canEdit />)
-    const row = (await screen.findByText('Rangi')).closest('tr') as HTMLElement
+    const table = await screen.findByRole('table', {name: 'Categories'})
+    const row = within(table).getByText('Rangi').closest('tr') as HTMLElement
     expect(row).toHaveTextContent('ranks')
     expect(row).toHaveTextContent('Survival')
     expect(row).toHaveTextContent('6')
@@ -48,5 +50,37 @@ describe('CategoriesTable', () => {
     expect(
       await screen.findByText('Use 1–40 lowercase letters, digits or dashes')
     ).toBeInTheDocument()
+  })
+
+  it('deletes from the row menu after a confirmation', async () => {
+    const methods: string[] = []
+    jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      methods.push(req.method)
+      return Promise.resolve(
+        req.method === 'DELETE' ? new Response(null, {status: 204}) : Response.json([ranks])
+      )
+    })
+    const user = userEvent.setup()
+    renderWithStore(<CategoriesTable canEdit />)
+    const table = await screen.findByRole('table', {name: 'Categories'})
+    await user.click(within(table).getByRole('button', {name: 'Actions for Ranks'}))
+    await user.click(await screen.findByRole('menuitem', {name: 'Delete'}))
+    expect(methods).not.toContain('DELETE')
+    await user.click(screen.getByRole('button', {name: 'Confirm delete'}))
+    await waitFor(() => {
+      expect(methods).toContain('DELETE')
+    })
+  })
+
+  it('renames from the row menu', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([ranks]))
+    const user = userEvent.setup()
+    renderWithStore(<CategoriesTable canEdit />)
+    const table = await screen.findByRole('table', {name: 'Categories'})
+    await user.click(within(table).getByRole('button', {name: 'Actions for Ranks'}))
+    await user.click(await screen.findByRole('menuitem', {name: 'Edit'}))
+    expect(screen.getByRole('group', {name: 'Edit Ranks'})).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Rangi')).toBeInTheDocument()
   })
 })
