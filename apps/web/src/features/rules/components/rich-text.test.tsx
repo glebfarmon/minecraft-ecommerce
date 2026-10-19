@@ -34,4 +34,27 @@ describe('RichText', () => {
     )
     expect(container.querySelectorAll('[data-marked]')).toHaveLength(2)
   })
+
+  it('renders underline', () => {
+    const {container} = render(<RichText text="a ++b++" />)
+    expect(container.querySelector('u')).toHaveTextContent('b')
+  })
+
+  it('renders bold inside italic', () => {
+    const {container} = render(<RichText text="*one **two***" />)
+    expect(container.querySelector('em strong')).toHaveTextContent('two')
+  })
+
+  it('highlights a match inside nested marks', () => {
+    const {container} = render(
+      <RichText text="**a *b***" mark={value => <i data-marked>{value}</i>} />
+    )
+    expect(container.querySelector('strong em [data-marked]')).toHaveTextContent('b')
+  })
+
+  it('leaves links literal when links is false', () => {
+    render(<RichText text="[x](/a)" links={false} />)
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByText('[x](/a)')).toBeInTheDocument()
+  })
 })

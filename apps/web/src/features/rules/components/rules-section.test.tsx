@@ -56,4 +56,16 @@ describe('RulesSection', () => {
     await act(() => Promise.resolve())
     expect(writeText).toHaveBeenCalledWith('2.1. Obelgi są zabronione.')
   })
+
+  it('renders formatting in the section title', () => {
+    render(
+      <RulesSection
+        section={{...section, title: {value: 'Czat ++głosowy++', lang: 'pl'}}}
+        query=""
+        locale="pl"
+        rulesPath="/pl/rules"
+      />
+    )
+    expect(screen.getByRole('heading', {level: 2}).querySelector('u')).toHaveTextContent('głosowy')
+  })
 })

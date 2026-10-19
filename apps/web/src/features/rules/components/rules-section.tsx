@@ -1,6 +1,7 @@
 'use client'
 
 import {Highlight} from '@/features/rules/components/highlight'
+import {RichText} from '@/features/rules/components/rich-text'
 import {RuleRow} from '@/features/rules/components/rule-row'
 import type {RuleSection} from '@/features/rules/types'
 import {BookOpen} from 'lucide-react'
@@ -33,7 +34,10 @@ export function RulesSection({
           <span
             lang={section.title.lang === locale ? undefined : section.title.lang}
             className="min-w-0 break-words">
-            <Highlight text={section.title.value} query={query} locale={locale} />
+            <RichText
+              text={section.title.value}
+              mark={value => <Highlight text={value} query={query} locale={locale} />}
+            />
           </span>
         </h2>
         <span className="tabular shrink-0 text-sm text-muted">

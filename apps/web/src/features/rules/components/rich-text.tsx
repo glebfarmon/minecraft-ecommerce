@@ -1,42 +1,57 @@
 import type {ReactNode} from 'react'
 import {Fragment} from 'react'
 
-import {parseInline} from '@shop/shared/rules'
+import {type RichNode, parseRich} from '@shop/shared/rules'
 
 const identity = (value: string): ReactNode => value
 
-/** Renders rule mini-markdown. `mark` wraps each text run, so search can highlight inside bold or links. */
-export function RichText({
-  text,
-  mark = identity
-}: {
-  text: string
-  mark?: (value: string) => ReactNode
-}) {
-  return parseInline(text).map((token, i) => {
-    switch (token.type) {
+function render(nodes: RichNode[], mark: (value: string) => ReactNode): ReactNode {
+  return nodes.map((node, i) => {
+    switch (node.type) {
       case 'strong':
         return (
           <strong key={i} className="font-semibold text-fg">
-            {mark(token.value)}
+            {render(node.children, mark)}
           </strong>
         )
       case 'em':
-        return <em key={i}>{mark(token.value)}</em>
+        return <em key={i}>{render(node.children, mark)}</em>
+      case 'u':
+        return (
+          <u key={i} className="underline-offset-2">
+            {render(node.children, mark)}
+          </u>
+        )
       case 'link': {
-        const external = token.href.startsWith('https://')
+        const external = node.href.startsWith('https://')
         return (
           <a
             key={i}
-            href={token.href}
+            href={node.href}
             className="text-accent underline underline-offset-2 hover:text-fg"
             {...(external ? {target: '_blank', rel: 'noopener noreferrer'} : {})}>
-            {mark(token.value)}
+            {render(node.children, mark)}
           </a>
         )
       }
-      default:
-        return <Fragment key={i}>{mark(token.value)}</Fragment>
+      case 'text':
+        return <Fragment key={i}>{mark(node.value)}</Fragment>
     }
   })
+}
+
+/**
+ * Renders mini-markdown (rules, product descriptions). `mark` wraps each text run, so search can
+ * highlight inside bold or links. `links` is off for descriptions: `[a](b)` stays literal there.
+ */
+export function RichText({
+  text,
+  mark = identity,
+  links = true
+}: {
+  text: string
+  mark?: (value: string) => ReactNode
+  links?: boolean
+}) {
+  return render(parseRich(text, {links}), mark)
 }

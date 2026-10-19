@@ -46,3 +46,17 @@ describe('ProductDetail add to cart', () => {
     expect(flyToCart).not.toHaveBeenCalled()
   })
 })
+
+describe('ProductDetail description', () => {
+  it('renders marks and keeps line breaks, but not links', () => {
+    const formatted = {...product, description: '**Fast** delivery\nall day [x](/a)'}
+    const {container} = renderWithCatalog(
+      <ProductDetail product={formatted} server={server} titleId="t" onAdded={jest.fn()} />
+    )
+    expect(container.querySelector('strong')).toHaveTextContent('Fast')
+    const paragraph = container.querySelector('strong')?.parentElement
+    expect(paragraph).toHaveClass('whitespace-pre-line')
+    expect(paragraph?.textContent).toBe('Fast delivery\nall day [x](/a)')
+    expect(screen.queryByRole('link', {name: 'x'})).toBeNull()
+  })
+})
