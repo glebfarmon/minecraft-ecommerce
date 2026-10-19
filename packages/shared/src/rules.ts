@@ -1,41 +1,129 @@
 import * as v from 'valibot'
 
-export type Inline =
-  {type: 'text' | 'strong' | 'em'; value: string} | {type: 'link'; value: string; href: string}
+export type RichNode =
+  | {type: 'text'; value: string}
+  | {type: 'strong' | 'em' | 'u'; children: RichNode[]}
+  | {type: 'link'; href: string; children: RichNode[]}
 
-// **bold** | *italic* | [label](href). Non-greedy, no nesting: rule texts are short sentences.
-const TOKEN = /\*\*(.+?)\*\*|\*(.+?)\*|\[([^\]]+)\]\(([^)\s]+)\)/g
 // https:// or a site path; `//host` and `/\host` (browsers read `\` as `/`) would leave the site.
 const SAFE_HREF = /^(https:\/\/|\/(?![/\\]))/i
+const ESCAPABLE = '\\*+[]()'
+const HREF = /\(([^)\s]+)\)/y
 
-/** Mini-markdown used by rules: bold, italic and safe links. Anything else stays literal text. */
-export function parseInline(source: string): Inline[] {
-  const out: Inline[] = []
-  let last = 0
-  for (const match of source.matchAll(TOKEN)) {
-    const start = match.index
-    if (start > last) out.push({type: 'text', value: source.slice(last, start)})
-    const [, strong, em, label, href] = match
-    if (strong !== undefined) out.push({type: 'strong', value: strong})
-    else if (em !== undefined) out.push({type: 'em', value: em})
-    else if (label !== undefined && href !== undefined)
-      out.push(
-        SAFE_HREF.test(href) ? {type: 'link', value: label, href} : {type: 'text', value: label}
-      )
-    last = start + match[0].length
+type Context = 'strong' | 'em' | 'u' | 'link' | null
+type Parsed = {nodes: RichNode[]; end: number}
+
+const isSpace = (ch: string | undefined) => ch === undefined || /\s/.test(ch)
+
+function pushText(nodes: RichNode[], value: string) {
+  const last = nodes.at(-1)
+  if (last?.type === 'text') nodes[nodes.length - 1] = {type: 'text', value: last.value + value}
+  else nodes.push({type: 'text', value})
+}
+
+/**
+ * Mini-markdown used by rules and product descriptions: `**bold**`, `*italic*`, `++underline++`
+ * and (with `links`) `[label](href)`; `\` escapes any of `\ * + [ ] ( )`. Marks nest. An opener
+ * without a closer stays literal text, so a stray `**` never swallows the rest of the string.
+ */
+export function parseRich(source: string, {links = true}: {links?: boolean} = {}): RichNode[] {
+  const memo = new Map<string, Parsed | null>()
+
+  // Parses from `start` until the closer of `context` (or the end of the source for null).
+  // Returns null when that closer never comes.
+  function sequence(start: number, context: Context, inLink: boolean): Parsed | null {
+    const key = `${String(start)}:${String(context)}:${String(inLink)}`
+    if (memo.has(key)) return memo.get(key) ?? null
+    const result = scan(start, context, inLink)
+    memo.set(key, result)
+    return result
   }
-  if (last < source.length) out.push({type: 'text', value: source.slice(last)})
-  return out
+
+  function scan(start: number, context: Context, inLink: boolean): Parsed | null {
+    const nodes: RichNode[] = []
+    let i = start
+    while (i < source.length) {
+      const ch = source.charAt(i)
+      const next = source.charAt(i + 1)
+      if (ch === '\\' && next !== '' && ESCAPABLE.includes(next)) {
+        pushText(nodes, next)
+        i += 2
+        continue
+      }
+      if (ch === ']' && context === 'link') return {nodes, end: i + 1}
+      if (ch === '*' || ch === '+') {
+        let run = 1
+        while (source.charAt(i + run) === ch) run++
+        const canClose = i > start && !isSpace(source[i - 1])
+        const canOpen = !isSpace(source[i + run])
+        if (ch === '*' && context === 'strong' && run >= 2 && canClose) return {nodes, end: i + 2}
+        if (ch === '*' && context === 'em' && run !== 2 && canClose) return {nodes, end: i + 1}
+        if (ch === '+' && context === 'u' && run >= 2 && canClose) return {nodes, end: i + 2}
+        const mark: 'strong' | 'em' | 'u' | null =
+          ch === '+' ? (run >= 2 ? 'u' : null) : run >= 2 ? 'strong' : 'em'
+        const width = mark === 'em' ? 1 : 2
+        const inner = mark && canOpen ? sequence(i + width, mark, inLink) : null
+        if (mark && inner) {
+          nodes.push({type: mark, children: inner.nodes})
+          i = inner.end
+        } else {
+          // Failed opener: a long run retries one character later, a short one is literal.
+          const take = run >= 3 && canOpen ? 1 : run
+          pushText(nodes, ch.repeat(take))
+          i += take
+        }
+        continue
+      }
+      if (ch === '[' && links && !inLink) {
+        const label = sequence(i + 1, 'link', true)
+        if (label) {
+          HREF.lastIndex = label.end
+          const match = HREF.exec(source)
+          const href = match?.[1]
+          if (match && href !== undefined) {
+            if (SAFE_HREF.test(href)) nodes.push({type: 'link', href, children: label.nodes})
+            else
+              for (const node of label.nodes)
+                if (node.type === 'text') pushText(nodes, node.value)
+                else nodes.push(node)
+            i = label.end + match[0].length
+            continue
+          }
+        }
+      }
+      pushText(nodes, ch)
+      i++
+    }
+    return context === null ? {nodes, end: i} : null
+  }
+
+  return sequence(0, null, false)?.nodes ?? []
 }
 
 /** The words a reader sees: what search matches and what "copy text" puts on the clipboard. */
-export const toPlainText = (tokens: Inline[]) => tokens.map(token => token.value).join('')
+export const toPlainText = (nodes: RichNode[]): string =>
+  nodes.map(node => (node.type === 'text' ? node.value : toPlainText(node.children))).join('')
+
+const MARK = {strong: '**', em: '*', u: '++'} as const
+
+/** Inverse of `parseRich`: escapes markup characters in text; edge spaces stay outside a mark. */
+export function toMarkdown(nodes: RichNode[]): string {
+  return nodes
+    .map(node => {
+      if (node.type === 'text') return node.value.replace(/[\\*+[\]()]/g, '\\$&')
+      const inner = toMarkdown(node.children)
+      if (node.type === 'link') return `[${inner}](${node.href})`
+      const [, lead = '', body = '', trail = ''] = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner) ?? []
+      return body === '' ? inner : `${lead}${MARK[node.type]}${body}${MARK[node.type]}${trail}`
+    })
+    .join('')
+}
 
 const LINK = /\[[^\]]+\]\(([^)\s]+)\)/g
 
-/** Every [label](href) in the text points to https: or a site path (spec §5). */
+/** Every [label](href) in the text points to https: or a site path (spec §5). Escaped brackets are text. */
 export const hasOnlySafeLinks = (text: string): boolean =>
-  [...text.matchAll(LINK)].every(m => SAFE_HREF.test(m[1] ?? ''))
+  [...text.replace(/\\[\\*+[\]()]/g, 'xx').matchAll(LINK)].every(m => SAFE_HREF.test(m[1] ?? ''))
 
 const SAFE_LINKS = 'Links must start with https:// or /'
 const RuleText = (max: number) =>
@@ -46,7 +134,9 @@ const RuleText = (max: number) =>
       v.minLength(1, 'Enter the English text'),
       v.maxLength(max),
       v.check(hasOnlySafeLinks, SAFE_LINKS),
-      v.description('English text; **bold**, *italic* and [label](https://… or /path) links')
+      v.description(
+        'English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )'
+      )
     ),
     pl: v.optional(
       v.pipe(
