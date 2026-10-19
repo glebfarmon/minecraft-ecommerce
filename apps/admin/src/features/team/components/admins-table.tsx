@@ -78,22 +78,20 @@ export function AdminsTable({
               aria-label={`Role of ${target.email}`}
               className="max-w-xs"
               value={pending.roleId ?? target.role.id}
-              onChange={e => {
+              options={[
+                ...(assignable.some(r => r.id === target.role.id)
+                  ? []
+                  : [{value: target.role.id, label: target.role.name}]),
+                ...assignable.map(r => ({value: r.id, label: r.name}))
+              ]}
+              onValueChange={v => {
                 setPending({
                   adminId: target.id,
                   kind: 'role',
-                  roleId: e.target.value === target.role.id ? undefined : e.target.value
+                  roleId: v === target.role.id ? undefined : v
                 })
-              }}>
-              {!assignable.some(r => r.id === target.role.id) && (
-                <option value={target.role.id}>{target.role.name}</option>
-              )}
-              {assignable.map(r => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
+              }}
+            />
           )}
           <p className="text-[13px]">
             {pending.kind === 'remove' &&

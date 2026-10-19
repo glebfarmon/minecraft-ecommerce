@@ -120,3 +120,68 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Select: the list unfolds out of the field, options follow in a short cascade, the check draws. */
+.select-content {
+  transform-origin: var(--radix-select-content-transform-origin);
+  animation: select-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.select-content[data-side='top'] {
+  animation-name: select-in-top;
+}
+.select-content[data-state='closed'] {
+  animation: select-out 120ms ease-in both;
+}
+.select-content[data-state='open'] .select-item {
+  animation: select-item-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 18ms), 126ms);
+}
+.check-draw {
+  stroke-dasharray: 1;
+  animation: check-draw 160ms ease-out 80ms both;
+}
+
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    clip-path: inset(0 0 100% 0 round 14px);
+  }
+  to {
+    clip-path: inset(0 round 14px);
+  }
+}
+
+@keyframes select-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    clip-path: inset(100% 0 0 0 round 14px);
+  }
+  to {
+    clip-path: inset(0 round 14px);
+  }
+}
+
+@keyframes select-out {
+  to {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes select-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

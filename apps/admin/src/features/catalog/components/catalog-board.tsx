@@ -118,16 +118,10 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
         <Select
           id="attach-category"
           value={attach}
-          onChange={e => {
-            setAttach(e.target.value)
-          }}>
-          <option value="">Choose…</option>
-          {unattached.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.names.en}
-            </option>
-          ))}
-        </Select>
+          placeholder="Choose…"
+          options={unattached.map(c => ({value: c.id, label: c.names.en}))}
+          onValueChange={setAttach}
+        />
       </div>
       <Button type="submit" disabled={!attach}>
         Attach

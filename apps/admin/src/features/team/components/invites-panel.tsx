@@ -105,15 +105,9 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
             <Select
               id="invite-role"
               value={chosenRole}
-              onChange={e => {
-                setRoleId(e.target.value)
-              }}>
-              {assignable.map(r => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </Select>
+              options={assignable.map(r => ({value: r.id, label: r.name}))}
+              onValueChange={setRoleId}
+            />
           </div>
           <div className="md:col-span-2">
             <Button type="submit" disabled={creating || !chosenRole}>
