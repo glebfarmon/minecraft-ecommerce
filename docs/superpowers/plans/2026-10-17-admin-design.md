@@ -1,6 +1,6 @@
 # Admin visual design and order stats Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Give the admin one dark, dense visual system (tokens, shared components, rail shell), a dashboard with order statistics, and restyle every existing admin screen on it.
 
@@ -51,7 +51,7 @@ Each item has a test in the owning task (Tasks 1, 7, 5, 5, 9).
 
 - Produces: `OrderStatsQuerySchema`, `OrderStatsSchema`, types `OrderStats`, `OrderStatsQuery`, `STATS_RANGES` in `@shop/shared/orders`; route `GET /api/admin/stats/orders?range=7d|30d`, `operationId: getOrderStats`; admin hook `useGetOrderStatsQuery({range})`.
 
-- [ ] **Step 1: Add the contract** (append to `packages/shared/src/orders.ts`)
+- [x] **Step 1: Add the contract** (append to `packages/shared/src/orders.ts`)
 
 ```ts
 export const STATS_RANGES = ['7d', '30d'] as const
@@ -88,7 +88,7 @@ export type OrderStats = v.InferOutput<typeof OrderStatsSchema>
 
 Build shared: `pnpm --filter @shop/shared build`.
 
-- [ ] **Step 2: Write the failing int-spec** `apps/api/test/orders-stats.int-spec.ts`
+- [x] **Step 2: Write the failing int-spec** `apps/api/test/orders-stats.int-spec.ts`
 
 Use `startOrdersApp` like `orders-admin.int-spec.ts`. The service's `stats(query, now = new Date())` takes `now` as a parameter; the spec computes expectations relative to `new Date()` by creating orders at `now - k days` (UTC day boundaries computed in the spec).
 
@@ -292,12 +292,12 @@ describe('order stats', () => {
 
 If the seeded catalog has fewer than six products for the first server, the expectation slice keeps the test valid; if the `orderItem` model's field names differ from those above, read `apps/api/prisma/schema.prisma` (`model OrderItem`) and match them.
 
-- [ ] **Step 3: Run it, watch it fail**
+- [x] **Step 3: Run it, watch it fail**
 
 Run: `pnpm --filter @shop/api test:int -- orders-stats`
 Expected: FAIL with 404 on `/api/admin/stats/orders`.
 
-- [ ] **Step 4: Implement** `apps/api/src/orders/orders-stats.service.ts`
+- [x] **Step 4: Implement** `apps/api/src/orders/orders-stats.service.ts`
 
 ```ts
 import {Injectable} from '@nestjs/common'
@@ -451,17 +451,17 @@ OpenAPI (`orders-paths.ts`):
   }
 ```
 
-- [ ] **Step 5: Run the int-spec and the route-doc spec**
+- [x] **Step 5: Run the int-spec and the route-doc spec**
 
 Run: `pnpm --filter @shop/api test:int -- orders-stats && pnpm --filter @shop/api test -- admin-routes`
 Expected: PASS.
 
-- [ ] **Step 6: Regenerate OpenAPI and admin client**
+- [x] **Step 6: Regenerate OpenAPI and admin client**
 
 Run: `pnpm --filter @shop/api openapi && pnpm --filter @shop/admin codegen`
 Expected: `generated.ts` exports `useGetOrderStatsQuery`.
 
-- [ ] **Step 7: Gate and commit**
+- [x] **Step 7: Gate and commit**
 
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
@@ -486,7 +486,7 @@ git commit -m "feat(api): order stats endpoint for the admin dashboard"
 - Produces Tailwind colour utilities used by every later task: `bg-bg`, `bg-surface`, `bg-card`, `bg-card-raised`, `border-line`, `border-border`, `text-fg`, `text-muted`, `bg-accent`, `text-on-accent`, `bg-accent-soft`, `text-ok`/`bg-ok-soft`, `text-warn`/`bg-warn-soft`, `text-bad`/`bg-bad-soft`, `text-idle`/`bg-idle-soft`; radii `rounded-card` (20 px), `rounded-plate` (14 px); fonts `font-sans`, `font-mono`. Legacy shadcn names (`primary`, `background`, `foreground`, `input`, `muted-foreground`, `destructive`) stay mapped so untouched screens keep working until restyled.
 - `Button` variants: `default` (accent fill), `outline`, `ghost`, `danger`; sizes `default` (h-9), `sm` (h-8), `lg` (h-10), `icon` (size-9).
 
-- [ ] **Step 1: Failing test** `apps/admin/src/test/primitives.test.tsx`
+- [x] **Step 1: Failing test** `apps/admin/src/test/primitives.test.tsx`
 
 ```tsx
 import {render, screen} from '@testing-library/react'
@@ -516,9 +516,9 @@ describe('primitives', () => {
 
 Extend `layout.test.ts` with an assertion that `RootLayout` puts the Inter Tight and JetBrains Mono font variables on `<html>` (follow the file's current pattern of rendering the layout; mock `next/font/google` with `jest.mock('next/font/google', () => ({Inter_Tight: () => ({variable: 'font-inter-tight'}), JetBrains_Mono: () => ({variable: 'font-jetbrains-mono'})}))`).
 
-- [ ] **Step 2: Run** `pnpm --filter @shop/admin test -- primitives layout` → FAIL (no `bg-accent` / variant).
+- [x] **Step 2: Run** `pnpm --filter @shop/admin test -- primitives layout` → FAIL (no `bg-accent` / variant).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `globals.css`:
 
@@ -622,9 +622,9 @@ Delete `packages/ui/src/theme.css` and remove its import (it was only imported b
 
 Install: `pnpm --filter @shop/admin add lucide-react@^1.49.0 @radix-ui/react-dropdown-menu @radix-ui/react-dialog`.
 
-- [ ] **Step 4: Run** `pnpm --filter @shop/admin test` → all PASS (existing tests included).
+- [x] **Step 4: Run** `pnpm --filter @shop/admin test` → all PASS (existing tests included).
 
-- [ ] **Step 5: Gate and commit** — `feat(admin): dark tokens, fonts and restyled primitives`.
+- [x] **Step 5: Gate and commit** — `feat(admin): dark tokens, fonts and restyled primitives`.
 
 ---
 
@@ -644,7 +644,7 @@ Install: `pnpm --filter @shop/admin add lucide-react@^1.49.0 @radix-ui/react-dro
   - `Skeleton({className})` — `aria-hidden` shimmer block; `SkeletonRows({rows = 5})`.
   - `FormSection({title, description?, children})` — card with a two-column grid (`md:grid-cols-2`) of fields.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```tsx
 import {render, screen} from '@testing-library/react'
@@ -708,9 +708,9 @@ describe('layout components', () => {
 })
 ```
 
-- [ ] **Step 2: Run** `pnpm --filter @shop/admin test -- layout-components` → FAIL (modules missing).
+- [x] **Step 2: Run** `pnpm --filter @shop/admin test -- layout-components` → FAIL (modules missing).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```tsx
 // card.tsx
@@ -854,7 +854,7 @@ export function FormSection({
 
 (A `<fieldset>` with `<legend>` has role `group` named by the legend.)
 
-- [ ] **Step 4: Run** → PASS. **Step 5:** gate, commit `feat(admin): card, page header, empty state, skeleton and form section`.
+- [x] **Step 4: Run** → PASS. **Step 5:** gate, commit `feat(admin): card, page header, empty state, skeleton and form section`.
 
 ---
 
@@ -875,7 +875,7 @@ export function FormSection({
   - `Spark({values, label})`, `DayChart({days: {day: string; value: number}[], label, format: (n: number) => string})`, `Ring({value: number | null, label})` — all `role="img"` with `aria-label`.
   - `formatMoney(minor, currency)`, `formatTime(iso)`, `formatPercent(fraction | null)` → `'—'` for null, `formatDelta(fraction)` → `'+12%'` / `'−8%'` / `'0%'`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```tsx
 import {render, screen} from '@testing-library/react'
@@ -944,9 +944,9 @@ describe('data components', () => {
 })
 ```
 
-- [ ] **Step 2: Run** → FAIL.
+- [x] **Step 2: Run** → FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 // lib/format.ts
@@ -1201,7 +1201,7 @@ export function KpiCard({
 
 Replace `OrderStatusBadge` imports (`orders-table.tsx`, `order-details.tsx`) with `StatusDot`; update `features/orders` imports of `formatMoney`/`formatTime` to `@/lib/format`; keep `stripeSessionUrl` in `features/orders/lib/format.ts`. Existing orders tests asserting `'PAID'` text change to `'Paid'`.
 
-- [ ] **Step 4: Run** `pnpm --filter @shop/admin test` → PASS. **Step 5:** gate, commit `feat(admin): status dot, KPI card and SVG charts`.
+- [x] **Step 4: Run** `pnpm --filter @shop/admin test` → PASS. **Step 5:** gate, commit `feat(admin): status dot, KPI card and SVG charts`.
 
 ---
 
@@ -1218,7 +1218,7 @@ Replace `OrderStatusBadge` imports (`orders-table.tsx`, `order-details.tsx`) wit
   - `RowMenu({label: string, items: {label: string; onSelect: () => void; tone?: 'danger'}[]})` — Radix `DropdownMenu`; trigger is a `Button size="icon" variant="ghost"` with `aria-label={label}` showing lucide `MoreHorizontal`.
   - `DataTable<T>({caption, rows: T[], rowKey: (r: T) => string, columns: Column<T>[], menu?: (r: T) => RowMenuItem[], empty?: ReactNode})` where `Column<T> = {header: string; cell: (r: T) => ReactNode; className?: string; primary?: boolean}`. Desktop (`md+`): a real `<table>` whose rows are plates (`bg-card rounded-plate`, `border-separate border-spacing-y-1.5`). Below `md`: a `<ul>` of cards; the `primary` column is the card title, others render as `header: value` lines. Both layouts are in the DOM, toggled with `hidden md:table` / `md:hidden` (CSS only; tests query by role inside the visible container via `within`). Long text cells get `max-w-[16rem] truncate` (desktop) and `break-all` (mobile).
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```tsx
 import {fireEvent, render, screen, within} from '@testing-library/react'
@@ -1315,7 +1315,7 @@ If `@testing-library/user-event` is not installed in admin, add it as a dev depe
 
 The menu label is `Actions for <primary cell text>`: DataTable passes `label` built from the row's `primary` column when it renders to a string; otherwise `Actions`.
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement**
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement**
 
 ```tsx
 // row-menu.tsx
@@ -1465,7 +1465,7 @@ export function DataTable<T>({
 
 Note the mobile `<span className="min-w-0 break-all">` wraps the cell, so the test's `getAllByText(...)[0].className` reads the span — keep the class on the element that directly contains the text.
 
-- [ ] **Step 4: Run** → PASS. **Step 5:** gate, commit `feat(admin): row menu and plate data table`.
+- [x] **Step 4: Run** → PASS. **Step 5:** gate, commit `feat(admin): row menu and plate data table`.
 
 ---
 
