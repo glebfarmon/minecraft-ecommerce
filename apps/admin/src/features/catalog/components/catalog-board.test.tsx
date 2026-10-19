@@ -41,7 +41,7 @@ const server = (
   slug: name.toLowerCase(),
   name,
   accent: '#ff6b1a',
-  onAccent: '#000000',
+  onAccent: '#0e0e10',
   isActive: true,
   sort: 0,
   version: 1,
@@ -104,7 +104,7 @@ describe('CatalogBoard', () => {
     expect(await screen.findByRole('list', {name: 'Servers'})).toHaveTextContent('Survival')
     const ranksList = await screen.findByRole('list', {name: 'Products in Ranks'})
     expect(within(ranksList).getByText('VIP')).toBeInTheDocument()
-    expect(within(ranksList).getByText('4.99 €')).toBeInTheDocument()
+    expect(within(ranksList).getByText(/€4\.99/)).toBeInTheDocument()
     const elite = within(ranksList).getByText('Elite').closest('li') as HTMLElement
     expect(elite).toHaveTextContent('Disabled')
     expect(elite).toHaveTextContent('Incomplete')
@@ -114,10 +114,30 @@ describe('CatalogBoard', () => {
     )
   })
 
+  it('server cards use the server colours and say whether RCON is set', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    const tab = await screen.findByRole('tab', {name: /Anarchy/})
+    expect(tab).toHaveStyle({color: 'rgb(14, 14, 16)'}) // onAccent from the fixture
+    expect(within(tab).getByText(/RCON (ready|not set)/)).toBeInTheDocument()
+  })
+
+  it('product cards link by name and keep the add link per category', async () => {
+    mockApi()
+    renderWithStore(<CatalogBoard canEdit />)
+    const list = await screen.findByRole('list', {name: 'Products in Ranks'})
+    expect(
+      within(list)
+        .getAllByRole('link')
+        .map(l => l.textContent)
+    ).toEqual(['VIP', 'Elite'])
+    expect(screen.getByRole('link', {name: '+ Product in Ranks'})).toBeInTheDocument()
+  })
+
   it('switches server', async () => {
     mockApi()
     renderWithStore(<CatalogBoard canEdit />)
-    fireEvent.click(await screen.findByRole('tab', {name: 'Anarchy'}))
+    fireEvent.click(await screen.findByRole('tab', {name: /Anarchy/}))
     expect(await screen.findByText('No categories yet. Attach one below.')).toBeInTheDocument()
   })
 

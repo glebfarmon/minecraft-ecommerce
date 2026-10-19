@@ -1764,7 +1764,7 @@ Board layout:
 - Selected server: per category a section with `h2` category name, the attach/detach controls as today, and a responsive grid `grid gap-3 sm:grid-cols-2 xl:grid-cols-4` rendered by `SortableList` (keep `label={`Products in ${name}`}` so the list name stays) of `ProductCard`s + `AddCard` with link text `+ Product in {category}` (exact, e2e).
 - `ProductCard`: `rounded-card bg-card p-3 flex flex-col gap-3`; top plate `aspect-[4/3] rounded-plate grid place-items-center` with background `color-mix(in oklab, {server.accent} 22%, transparent)` and the `ProductIcon` at `size-12` in `server.accent`; `mark` as a mono pill in the plate corner; below: product name as the link (`<Link href>` whose accessible name is exactly the product name — e2e reads list links' text), kind pill (`Permanent` / `Timed · {n} d` / `Case`), prices `€x.xx · y zł` (`tabular`, `text-muted`), `Disabled` `ToneDot` (idle) when inactive, `Missing PL` warn pill when translations are missing (data already in the list item if present; skip if not in `AdminProductListItem`). Drag handle `Move {name}` in the card's top-right corner (visible on hover and on focus; always visible on touch via `@media (hover: none)`).
 
-- [ ] **Step 1: Update tests** — keep every existing behavioural case in `catalog-board.test.tsx` (ordering, attach/detach, permissions) and adjust queries only where markup changed. Add:
+- [x] **Step 1: Update tests** — keep every existing behavioural case in `catalog-board.test.tsx` (ordering, attach/detach, permissions) and adjust queries only where markup changed. Add:
 
 ```tsx
 it('server cards use the server colours and say whether RCON is set', async () => {
@@ -1792,8 +1792,8 @@ Adapt fixture values (server names, accent/onAccent, category names) to the ones
 
 Note on the list: if `ProductCard` contains only one link, `within(list).getAllByRole('link')` keeps returning product names in order, as the e2e expects; the `AddCard` must sit outside the `SortableList` `<ul>`.
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
-- [ ] **Step 5: Gate and commit** — `feat(admin): catalog as server and product preview cards`.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** → PASS.
+- [x] **Step 5: Gate and commit** — `feat(admin): catalog as server and product preview cards`.
 
 ---
 

@@ -13,6 +13,7 @@ import {
   SortableContext,
   arrayMove,
   horizontalListSortingStrategy,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy
@@ -31,11 +32,18 @@ type Props<T extends {id: string}> = {
   label: string
   /** New id order, plus the moved item's old and new index (for `useFieldArray().move`). */
   onMove: (ids: string[], from: number, to: number) => void
-  direction?: 'vertical' | 'horizontal'
+  /** `grid` wraps into rows; arrow keys then move by position (left/right within a row). */
+  direction?: 'vertical' | 'horizontal' | 'grid'
   disabled?: boolean
   className?: string
   itemClassName?: string
   children: (item: T, handle: DragHandleProps) => ReactNode
+}
+
+const STRATEGY = {
+  vertical: verticalListSortingStrategy,
+  horizontal: horizontalListSortingStrategy,
+  grid: rectSortingStrategy
 }
 
 export function SortableList<T extends {id: string}>({
@@ -74,12 +82,7 @@ export function SortableList<T extends {id: string}>({
           draggable: `To move an item in ${label}, press space, use the arrow keys, then press space again. Escape cancels.`
         }
       }}>
-      <SortableContext
-        items={ids}
-        disabled={disabled}
-        strategy={
-          direction === 'vertical' ? verticalListSortingStrategy : horizontalListSortingStrategy
-        }>
+      <SortableContext items={ids} disabled={disabled} strategy={STRATEGY[direction]}>
         <ul aria-label={label} className={cn(direction === 'horizontal' && 'flex', className)}>
           {items.map(item => (
             <SortableItem key={item.id} id={item.id} className={itemClassName}>

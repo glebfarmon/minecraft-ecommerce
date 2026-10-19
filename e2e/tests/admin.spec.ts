@@ -135,7 +135,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     await page.getByRole('button', {name: 'Save'}).click()
     await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
 
-    // Keyboard drag: the new product starts last; one step up puts it above Legend.
+    // Keyboard drag: the new product starts last in the card grid; one step left puts it before Legend.
     await page.goto(`${ADMIN}/catalog`)
     const list = page.getByRole('list', {name: 'Products in Ranks'})
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Legend', 'Probe Rank'])
@@ -143,7 +143,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     // dnd-kit attaches its key listeners and measures rects asynchronously: pause between keys.
     await page.keyboard.press('Space')
     await page.waitForTimeout(300)
-    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowLeft')
     await page.waitForTimeout(300)
     await page.keyboard.press('Space')
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
