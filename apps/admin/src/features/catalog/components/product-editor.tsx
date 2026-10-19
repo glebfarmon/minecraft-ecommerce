@@ -43,6 +43,7 @@ import {Select} from '@shop/ui/select'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@shop/ui/tabs'
 import {Textarea} from '@shop/ui/textarea'
 
+import {CommandHelp} from './command-help'
 import {EditorLayout} from './editor-layout'
 import {ProductCard} from './product-card'
 
@@ -53,7 +54,7 @@ const MISSING_LABEL = {
   'translation.pl': 'Polish translation'
 } as const
 
-const COMMAND_HINT = 'One command per line, without /. Use {nick} for the buyer’s name.'
+const COMMAND_HINT = 'One command per line, without /.'
 const LOCALES = [
   {locale: 'en', tab: 'EN'},
   {locale: 'pl', tab: 'PL'}
@@ -106,6 +107,9 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       ? `Fill ${missing.map(m => MISSING_LABEL[m]).join(', ')} or untick Enabled`
       : undefined
 
+  /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
+  const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
+
   if (id && product.isLoading) return <SkeletonRows rows={6} />
   if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
 
@@ -157,6 +161,24 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     'aria-invalid': errorOf(name) ? true : undefined,
     'aria-describedby': errorOf(name) ? `${fieldId(name)}-error` : undefined
   })
+  const commandProps = (name: 'grant' | 'revoke') => ({
+    ...register(name),
+    onFocus: () => {
+      setLastCommand(name)
+    }
+  })
+  function insertToken(token: string) {
+    const el = document.getElementById(fieldId(lastCommand))
+    if (!(el instanceof HTMLTextAreaElement)) return
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const next = el.value.slice(0, start) + token + el.value.slice(end)
+    setValue(lastCommand, next, {shouldDirty: true})
+    el.value = next
+    el.focus()
+    el.setSelectionRange(start + token.length, start + token.length)
+  }
+
   const field = (
     name: FieldPath<ProductForm>,
     label: string,
@@ -419,17 +441,22 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'grant',
             'Grant commands',
-            <Textarea className="font-mono" {...fieldProps('grant')} {...register('grant')} />,
+            <Textarea className="font-mono" {...fieldProps('grant')} {...commandProps('grant')} />,
             COMMAND_HINT,
             true
           )}
           {field(
             'revoke',
             'Revoke commands',
-            <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
+            <Textarea
+              className="font-mono"
+              {...fieldProps('revoke')}
+              {...commandProps('revoke')}
+            />,
             COMMAND_HINT,
             true
           )}
+          <CommandHelp onInsert={insertToken} />
         </FormSection>
 
         {canEdit && (
