@@ -173,7 +173,26 @@ Plans B (rich text), C (reporting currency) and D (Polish UI) follow as separate
 - [ ] **Step 4: Run** — PASS. Check the swatch visually in Chrome and Firefox at `/catalog/servers/new`.
 - [ ] **Step 5: Commit** `feat(admin): filled colour swatch and a {nick} helper for commands`
 
-### Task 8: Brand mark in the rail
+### Task 8: Designed Select instead of the native one
+
+**Files:**
+
+- Rewrite: `packages/ui/src/select.tsx` — shadcn Select on `@radix-ui/react-select` (add dependency). Trigger looks like the current field (`h-9 rounded-plate border border-border bg-surface px-3 text-sm`, `ChevronDown` that rotates 180° when open, `aria-invalid:border-bad`, `ring-accent` focus). Content: `bg-card-raised rounded-plate p-1 shadow-lg`, `position="popper"` `sideOffset={6}`, width = trigger width (`min-w-[var(--radix-select-trigger-width)]`), max height 18rem with scroll; open/close animation reuses `menu-in` (Task 10 defines it; define it here and let Task 10 reuse it). Items: `rounded-[10px] px-3 py-2 text-[13px]`, highlighted `bg-card` + `text-fg`, selected shows a `Check` in the accent.
+- Modify every usage: `product-editor.tsx:230,259,283,311` (server, category, kind, icon — via react-hook-form `Controller`), `catalog-board.tsx:169` (attach category — controlled state), `team/components/admins-table.tsx:77` and `invites-panel.tsx:105` (role).
+- Modify: `e2e/tests/admin.spec.ts:81` (`selectOption` → click the `combobox {name: 'Role'}`, then `option {name: 'SUPPORT'}`).
+- Test: `apps/admin/src/components/select.test.tsx` (admin, since `packages/ui` has no Jest) and the touched component tests.
+
+**Interfaces:**
+
+- Produces: `Select({id, value, onValueChange, placeholder, options, disabled, 'aria-invalid', 'aria-describedby'}: {id?: string; value: string; onValueChange: (v: string) => void; placeholder?: string; options: {value: string; label: string}[]; disabled?: boolean; 'aria-invalid'?: boolean; 'aria-describedby'?: string})` from `@shop/ui/select`. `id` goes on the trigger so existing `<Label htmlFor>` keeps naming it (`combobox` role). Empty value `''` means "nothing chosen" and shows `placeholder` (Radix forbids `''` as an item value — map it to `undefined`).
+
+- [ ] **Step 1: Failing tests** — `opens on click and selects an option` (`user.click(combobox 'Role')`, `user.click(option 'SUPPORT')` → `onValueChange('SUPPORT')`); `the label names the trigger` (`getByRole('combobox', {name: 'Role'})`); `shows the placeholder when value is empty`; `keyboard: Enter opens, ArrowDown + Enter selects`. Radix Select needs `hasPointerCapture`/`scrollIntoView` stubs in `jest.setup` — add them there.
+- [ ] **Step 2: Run** — FAIL.
+- [ ] **Step 3: Implement** the primitive and migrate the six usages; update their tests from `fireEvent.change`/`selectOptions` to the combobox flow.
+- [ ] **Step 4: Run** admin tests and typecheck — PASS. Check at 390 px that the list fits the screen.
+- [ ] **Step 5: Commit** `feat(ui): designed select replaces the native one`
+
+### Task 9: Brand mark in the rail
 
 **Files:**
 
@@ -191,7 +210,7 @@ Plans B (rich text), C (reporting currency) and D (Polish UI) follow as separate
 - [ ] **Step 4: Run** — PASS.
 - [ ] **Step 5: Commit** `feat(admin): brand mark from site settings`
 
-### Task 9: Motion — page entry, charts, KPIs, menus
+### Task 10: Motion — page entry, charts, KPIs, menus
 
 **Files:**
 
@@ -215,7 +234,7 @@ Plans B (rich text), C (reporting currency) and D (Polish UI) follow as separate
 - [ ] **Step 4: Run** admin tests — PASS. Open `/`, `/orders`, `/catalog`, `/content/rules` in the browser and screenshot mid-animation and settled at 1440 and 390 px; no horizontal scroll at 390.
 - [ ] **Step 5: Commit** `feat(admin): page, chart and menu motion`
 
-### Task 10: E2E and the full gate
+### Task 11: E2E and the full gate
 
 **Files:**
 
