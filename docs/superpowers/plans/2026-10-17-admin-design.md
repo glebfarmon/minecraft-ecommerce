@@ -1486,7 +1486,7 @@ Layout (desktop): `grid min-h-screen grid-cols-[auto_1fr] gap-4 p-4`; rail `stic
 
 Mobile duplication caution: both the rail and the sheet render nav links; the sheet's links exist only while open, and the rail is `hidden` (display:none) below `md`, so `getByRole('link', {name: 'Orders'})` resolves to one visible link at any width.
 
-- [ ] **Step 1: Failing test** `shell.test.tsx`
+- [x] **Step 1: Failing test** `shell.test.tsx`
 
 ```tsx
 import {fireEvent, render, screen, within} from '@testing-library/react'
@@ -1541,9 +1541,9 @@ describe('shell', () => {
 
 Update `nav.test.tsx` to pass `variant="rail"` (or fold its cases into `shell.test.tsx` and delete it).
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement** as described above (Radix `Dialog.Root` controlled with `useState`; `Dialog.Content` `fixed inset-y-0 left-0 w-72 bg-surface p-4`; `Dialog.Overlay` `fixed inset-0 bg-black/60`). **Step 4: Run** → PASS.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement** as described above (Radix `Dialog.Root` controlled with `useState`; `Dialog.Content` `fixed inset-y-0 left-0 w-72 bg-surface p-4`; `Dialog.Overlay` `fixed inset-0 bg-black/60`). **Step 4: Run** → PASS.
 
-- [ ] **Step 5: Gate and commit** — `feat(admin): rail shell with search and mobile menu`.
+- [x] **Step 5: Gate and commit** — `feat(admin): rail shell with search and mobile menu`.
 
 ---
 
