@@ -17,6 +17,7 @@ export function DataTable<T>({
   caption,
   rows,
   rowKey,
+  rowLabel,
   columns,
   menu,
   empty
@@ -24,6 +25,8 @@ export function DataTable<T>({
   caption: string
   rows: T[]
   rowKey: (r: T) => string
+  /** Names the row's menu button when the primary cell is not plain text (e.g. a link). */
+  rowLabel?: (r: T) => string
   columns: Column<T>[]
   menu?: (r: T) => RowMenuItem[]
   empty?: ReactNode
@@ -31,6 +34,7 @@ export function DataTable<T>({
   if (rows.length === 0) return <>{empty}</>
   const primary = columns.find(c => c.primary) ?? columns[0]
   const menuLabel = (r: T) => {
+    if (rowLabel) return `Actions for ${rowLabel(r)}`
     const v = primary?.cell(r)
     return typeof v === 'string' ? `Actions for ${v}` : 'Actions'
   }

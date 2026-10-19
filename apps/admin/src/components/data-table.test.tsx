@@ -83,6 +83,21 @@ describe('DataTable', () => {
     expect(trigger).toHaveFocus()
   })
 
+  it('names the row menu with rowLabel when the primary cell is not a string', () => {
+    render(
+      <DataTable
+        caption="Orders"
+        rows={rows}
+        rowKey={r => r.id}
+        rowLabel={r => r.nick}
+        columns={[{header: 'Nick', cell: r => <a href={`/${r.id}`}>{r.nick}</a>, primary: true}]}
+        menu={() => [{label: 'Open', onSelect: jest.fn()}]}
+      />
+    )
+    const table = screen.getByRole('table')
+    expect(within(table).getByRole('button', {name: 'Actions for Alex'})).toBeInTheDocument()
+  })
+
   it('shows the empty slot when there are no rows', () => {
     render(
       <DataTable

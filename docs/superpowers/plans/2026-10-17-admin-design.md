@@ -1700,7 +1700,7 @@ Orders page: `PageHeader` title `Orders`, description `Every checkout, newest fi
 
 Order details: `PageHeader` title `Order {publicId}` with `StatusDot` and a `Back to orders` ghost link; grid `lg:grid-cols-[2fr_1fr]`: left Card "Items" grouped by server (server name as a small heading, rows name × qty, unit price, line total, then subtotal / discount / total rows); right column Card "Buyer" (nick, email with copy button, locale) and Card "Payment" (total, currency, Stripe session link via `stripeSessionUrl`, consent time) and Card "Timeline" (created, paid, current status) as a vertical list with dots. Keep every text the current `order-details.test.tsx` asserts, except status words (now `Paid` etc.).
 
-- [ ] **Step 1: Update tests first** — in `orders-table.test.tsx`: rows are found with `within(screen.getByRole('table', {name: 'Orders'}))`; status text `Paid`; add:
+- [x] **Step 1: Update tests first** — in `orders-table.test.tsx`: rows are found with `within(screen.getByRole('table', {name: 'Orders'}))`; status text `Paid`; add:
 
 ```tsx
 it('filters by the status tab', async () => {
@@ -1740,8 +1740,8 @@ it('copies the order number from the row menu', async () => {
 
 (The primary column renders a link, not a string, so `DataTable`'s menu label would be `Actions`; pass the primary column's `cell` as the link and give `DataTable` an optional `rowLabel?: (r: T) => string` prop — add it in this task with a one-line test in `data-table.test.tsx` — and use `rowLabel={o => o.publicId}`.)
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** `pnpm --filter @shop/admin test` → PASS.
-- [ ] **Step 5: Gate and commit** — `feat(admin): order list with status tabs, row menu and new order page`.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** `pnpm --filter @shop/admin test` → PASS.
+- [x] **Step 5: Gate and commit** — `feat(admin): order list with status tabs, row menu and new order page`.
 
 ---
 
