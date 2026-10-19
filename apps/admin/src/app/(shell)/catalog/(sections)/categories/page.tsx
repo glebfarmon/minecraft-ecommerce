@@ -3,7 +3,18 @@ import {requireMe} from '@/lib/session'
 
 import {hasPermission} from '@shop/shared/access'
 
-export default async function CategoriesPage() {
+export default async function CategoriesPage({
+  searchParams
+}: {
+  searchParams: Promise<{edit?: string}>
+}) {
   const me = await requireMe()
-  return <CategoriesTable canEdit={hasPermission(me.permissions, 'catalog.write')} />
+  const {edit} = await searchParams
+  return (
+    <CategoriesTable
+      key={edit}
+      canEdit={hasPermission(me.permissions, 'catalog.write')}
+      initialEdit={edit}
+    />
+  )
 }

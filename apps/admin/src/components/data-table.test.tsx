@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 
 import {DataTable} from './data-table'
 
+const push = jest.fn()
+
 type Row = {id: string; nick: string; email: string}
 const rows: Row[] = [
   {id: '1', nick: 'Steve', email: `${'a'.repeat(240)}@example.com`},
@@ -125,5 +127,78 @@ describe('DataTable', () => {
     )
     expect(screen.getByText('No orders found.')).toBeInTheDocument()
     fireEvent.click(document.body)
+  })
+
+  describe('whole-row clicks', () => {
+    beforeEach(() => {
+      // The row forwards its click to the primary cell's link; record where that link points.
+      jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+        this: HTMLAnchorElement
+      ) {
+        push(this.getAttribute('href'))
+      })
+    })
+
+    function linked(onRowClick?: (r: Row) => void) {
+      push.mockClear()
+      render(
+        <DataTable
+          caption="Orders"
+          rows={rows}
+          rowKey={r => r.id}
+          rowLabel={r => r.nick}
+          {...(onRowClick ? {onRowClick} : {rowHref: (r: Row) => `/orders/${r.id}`})}
+          columns={[
+            {header: 'Nick', cell: r => r.nick, primary: true},
+            {header: 'Email', cell: r => r.email}
+          ]}
+          menu={() => [{label: 'Open', onSelect: jest.fn()}]}
+        />
+      )
+      return within(screen.getByRole('table'))
+    }
+
+    it('clicking a cell navigates to rowHref', () => {
+      fireEvent.click(linked().getByText('alex@example.com'))
+      expect(push).toHaveBeenCalledWith('/orders/2')
+    })
+
+    it('a mobile card click navigates too', () => {
+      linked()
+      const list = within(screen.getByRole('list', {name: 'Orders'}))
+      fireEvent.click(list.getByText('alex@example.com'))
+      expect(push).toHaveBeenCalledWith('/orders/2')
+    })
+
+    it('clicking the row menu does not navigate', () => {
+      fireEvent.click(linked().getByRole('button', {name: 'Actions for Alex'}))
+      expect(push).not.toHaveBeenCalled()
+    })
+
+    it('does not navigate while text is selected', () => {
+      const t = linked()
+      const spy = jest
+        .spyOn(window, 'getSelection')
+        .mockReturnValue({toString: () => 'abc'} as Selection)
+      fireEvent.click(t.getByText('alex@example.com'))
+      expect(push).not.toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
+    it('ctrl-click does not push', () => {
+      fireEvent.click(linked().getByText('alex@example.com'), {ctrlKey: true})
+      expect(push).not.toHaveBeenCalled()
+    })
+
+    it('the primary cell is a link to rowHref', () => {
+      expect(linked().getByRole('link', {name: 'Alex'})).toHaveAttribute('href', '/orders/2')
+    })
+
+    it('onRowClick runs for a cell click', () => {
+      const onRowClick = jest.fn()
+      fireEvent.click(linked(onRowClick).getByText('alex@example.com'))
+      expect(onRowClick).toHaveBeenCalledWith(rows[1])
+      expect(push).not.toHaveBeenCalled()
+    })
   })
 })

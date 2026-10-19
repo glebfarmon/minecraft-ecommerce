@@ -42,6 +42,7 @@ describe('OrdersTable', () => {
     const link = within(table).getByRole('link', {name: 'SHOP-o1'})
     expect(link).toHaveAttribute('href', '/orders/o1')
     const row = link.closest('tr') as HTMLElement
+    expect(row.className).toMatch(/cursor-pointer/)
     expect(row).toHaveTextContent('2026-10-12 09:30 UTC')
     expect(row).toHaveTextContent('nick-o1')
     expect(row).toHaveTextContent('o1@x.io')
