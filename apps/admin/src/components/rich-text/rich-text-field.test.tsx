@@ -163,4 +163,15 @@ describe('RichTextField', () => {
     expect(onChange).toHaveBeenLastCalledWith('see [rules](/rules)')
     expect(screen.getByRole('textbox').querySelector('a')).toHaveAttribute('href', '/rules')
   })
+
+  it('does not report a value that only arrived from outside', async () => {
+    const onChange = jest.fn()
+    const {rerender} = render(<RichTextField id="f" value="" onChange={onChange} />)
+    await screen.findByRole('textbox')
+    rerender(<RichTextField id="f" value="++loaded++" onChange={onChange} />)
+    await waitFor(() => {
+      expect(screen.getByRole('textbox').querySelector('u')).toHaveTextContent('loaded')
+    })
+    expect(onChange).not.toHaveBeenCalled()
+  })
 })

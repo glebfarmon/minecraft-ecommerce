@@ -126,11 +126,11 @@ export function RichTextField({
 }) {
   const options = useMemo(() => ({multiline, links}), [multiline, links])
   const latest = useRef({onChange, onReady})
-  // The markdown the form last saw; Tiptap also fires `update` for no-op normalisation.
+  // The markdown the editor last held. The editor is created from the first render's value and
+  // fires `update` once while mounting; that is not an edit, so it must not reach the form.
   const known = useRef(value)
   useEffect(() => {
     latest.current = {onChange, onReady}
-    known.current = value
   })
 
   const editor = useEditor({
@@ -200,8 +200,10 @@ export function RichTextField({
 
   // A form reset or a tab switch changes `value` from outside; typing never trips this.
   useEffect(() => {
-    if (editor && fromDoc(editor.getJSON()) !== value)
+    if (editor && fromDoc(editor.getJSON()) !== value) {
+      known.current = value
       editor.commands.setContent(toDoc(value, options), {emitUpdate: false})
+    }
   }, [editor, value, options])
 
   return (

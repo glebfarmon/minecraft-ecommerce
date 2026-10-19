@@ -128,6 +128,29 @@ describe('ProductEditor', () => {
       ])
     })
 
+    it('shows the stored formatting of a description when the product loads', async () => {
+      const formatted = {
+        ...enabled,
+        translations: {
+          ...enabled.translations,
+          en: {...enabled.translations.en, description: '++Probe++ it'}
+        }
+      }
+      jest.spyOn(global, 'fetch').mockImplementation(input => {
+        const req = input instanceof Request ? input : new Request(String(input))
+        const path = new URL(req.url).pathname
+        if (path === '/api/admin/catalog/servers') return Promise.resolve(Response.json(servers))
+        if (path === '/api/admin/catalog/products/p1')
+          return Promise.resolve(Response.json(formatted))
+        return Promise.resolve(Response.json([]))
+      })
+      renderWithStore(<ProductEditor id="p1" canEdit />)
+      const description = await screen.findByLabelText('Description (EN)')
+      await waitFor(() => {
+        expect(description.querySelector('u')).toHaveTextContent('Probe')
+      })
+    })
+
     it('will not save while enabled and incomplete, and says how to fix it', async () => {
       const sent = mockEnabled()
       renderWithStore(<ProductEditor id="p1" canEdit />)

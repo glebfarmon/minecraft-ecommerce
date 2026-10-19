@@ -127,7 +127,18 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
   const description = page.getByLabel('Description (EN)')
   await description.fill('Probe')
   await description.dblclick({position: {x: 20, y: 18}})
+  // ProseMirror takes the DOM selection a moment after the double-click; the shortcut needs it.
+  await expect
+    .poll(() =>
+      description.evaluate(
+        el =>
+          (el as HTMLElement & {editor: {state: {selection: {empty: boolean}}}}).editor.state
+            .selection.empty
+      )
+    )
+    .toBe(false)
   await page.keyboard.press('ControlOrMeta+u')
+  await expect(description.locator('u')).toHaveText('Probe')
   await page.getByRole('tab', {name: 'PL'}).click()
   await page.getByLabel('Name (PL)').fill('Ranga Próbna')
   await page.getByLabel('Grant commands').fill('lp user {nick} parent add probe')
