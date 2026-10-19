@@ -112,12 +112,85 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+/*
+ * Motion. No prefers-reduced-motion opt-out: the owner asked for animations to always run.
+ * Page entry: each block of a page rises in, one after another (capped at the eighth).
+ */
+.page-enter > * > * {
+  animation: enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 7) * 40ms);
+}
+.page-enter > * > :nth-child(1) {
+  --i: 0;
+}
+.page-enter > * > :nth-child(2) {
+  --i: 1;
+}
+.page-enter > * > :nth-child(3) {
+  --i: 2;
+}
+.page-enter > * > :nth-child(4) {
+  --i: 3;
+}
+.page-enter > * > :nth-child(5) {
+  --i: 4;
+}
+.page-enter > * > :nth-child(6) {
+  --i: 5;
+}
+.page-enter > * > :nth-child(7) {
+  --i: 6;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Charts: bars grow from the baseline, sparklines draw left to right. */
+.bar-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-grow 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+.line-draw {
+  stroke-dasharray: 1;
+  animation: line-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Row menus pop from their trigger. */
+.menu-content {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: menu-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu-content[data-state='closed'] {
+  animation: menu-out 100ms ease-in both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
   }
 }
 

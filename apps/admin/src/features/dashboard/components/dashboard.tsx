@@ -47,6 +47,7 @@ function RevenueKpi({stats, currency}: {stats: Stats; currency: Currency}) {
     <KpiCard
       label={`Revenue ${currency}`}
       value={formatMoney(r.totalMinor, currency)}
+      count={{to: r.totalMinor, format: n => formatMoney(n, currency)}}
       delta={change}
       hint={change === null ? 'No sales in the previous period' : 'vs previous period'}
       tone={currency === 'EUR' ? 'accent' : 'default'}
@@ -224,6 +225,7 @@ export function Dashboard() {
             <KpiCard
               label="Paid orders"
               value={String(stats.data.paidCount)}
+              count={{to: stats.data.paidCount, format: String}}
               delta={paidChange}
               hint={
                 paidChange === null ? 'No paid orders in the previous period' : 'vs previous period'

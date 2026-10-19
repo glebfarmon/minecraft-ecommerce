@@ -21,6 +21,8 @@ export function Spark({
       className={className ?? 'h-8 w-24'}>
       <polyline
         points={points}
+        pathLength={1}
+        className="line-draw"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"

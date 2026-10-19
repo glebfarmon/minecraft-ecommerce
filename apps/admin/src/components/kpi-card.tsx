@@ -1,3 +1,6 @@
+'use client'
+
+import {useCountUp} from '@/hooks/use-count-up'
 import {formatDelta} from '@/lib/format'
 import {useId} from 'react'
 
@@ -11,7 +14,8 @@ export function KpiCard({
   delta,
   hint,
   tone = 'default',
-  spark
+  spark,
+  count
 }: {
   label: string
   value: string
@@ -19,6 +23,8 @@ export function KpiCard({
   hint?: string
   tone?: 'default' | 'accent'
   spark?: number[]
+  /** Counts the shown number up to `to`; `value` stays the text screen readers and search get. */
+  count?: {to: number; format: (n: number) => string}
 }) {
   const id = useId()
   return (
@@ -33,7 +39,7 @@ export function KpiCard({
       </h2>
       <div className="flex items-end justify-between gap-3">
         <p className="tabular truncate text-[32px] leading-none font-semibold tracking-[-0.02em]">
-          {value}
+          {count ? <CountUp value={value} {...count} /> : value}
         </p>
         {spark && (
           <Spark
@@ -61,5 +67,23 @@ export function KpiCard({
         </p>
       ) : null}
     </section>
+  )
+}
+
+/**
+ * The running number is drawn from `data-count` by CSS, so the DOM text is only the settled value:
+ * screen readers hear it once and text queries find it once.
+ */
+function CountUp({value, to, format}: {value: string; to: number; format: (n: number) => string}) {
+  const n = useCountUp(to)
+  return (
+    <>
+      <span className="sr-only">{value}</span>
+      <span
+        aria-hidden
+        data-count={format(Math.round(n))}
+        className="after:content-[attr(data-count)]"
+      />
+    </>
   )
 }
