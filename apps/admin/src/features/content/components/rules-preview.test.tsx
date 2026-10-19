@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, within} from '@testing-library/react'
+import {render, screen, within} from '@testing-library/react'
 
 import type {RulesDocument} from '@shop/shared/rules'
 
@@ -20,7 +20,7 @@ const content: RulesDocument = {
 
 describe('RulesPreview', () => {
   it('numbers sections and items and falls back to EN in the PL view', () => {
-    render(<RulesPreview content={content} />)
+    const {rerender} = render(<RulesPreview content={content} locale="en" />)
     const preview = screen.getByRole('region', {name: 'Preview'})
     expect(within(preview).getByRole('heading', {name: '1. General'})).toBeInTheDocument()
     expect(within(preview).getByRole('heading', {name: '2. Chat'})).toBeInTheDocument()
@@ -29,8 +29,7 @@ describe('RulesPreview', () => {
     expect(within(preview).getByText('2.1')).toBeInTheDocument()
     expect(within(preview).getByText('Be kind.')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', {name: 'PL'}))
-    expect(screen.getByRole('button', {name: 'PL'})).toHaveAttribute('aria-pressed', 'true')
+    rerender(<RulesPreview content={content} locale="pl" />)
     expect(within(preview).getByRole('heading', {name: '1. Ogólne'})).toBeInTheDocument()
     expect(within(preview).getByText('Bądź miły.')).toBeInTheDocument()
     expect(within(preview).queryByText('Be kind.')).not.toBeInTheDocument()
@@ -41,9 +40,15 @@ describe('RulesPreview', () => {
     expect(within(preview).getAllByTitle('Uses the English text')).toHaveLength(3)
   })
 
+  it('has no language toggle of its own', () => {
+    render(<RulesPreview content={content} locale="en" />)
+    expect(screen.queryByRole('group', {name: 'Preview language'})).not.toBeInTheDocument()
+  })
+
   it('renders [x](javascript:…) as plain text', () => {
     render(
       <RulesPreview
+        locale="en"
         content={{
           sections: [
             {

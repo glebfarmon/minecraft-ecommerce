@@ -1,9 +1,8 @@
 'use client'
 
-import {Fragment, useState} from 'react'
+import {Fragment} from 'react'
 
 import {type RulesDocument, parseInline} from '@shop/shared/rules'
-import {cn} from '@shop/ui/lib/utils'
 
 type Locale = 'en' | 'pl'
 type Text = {en: string; pl?: string}
@@ -58,35 +57,11 @@ function Localized({text, locale}: {text: Text; locale: Locale}) {
   )
 }
 
-/** How the rules page will number and render the document, in EN or PL. */
-export function RulesPreview({content}: {content: RulesDocument}) {
-  const [locale, setLocale] = useState<Locale>('en')
-
+/** How the rules page will number and render the document in the editor's language. */
+export function RulesPreview({content, locale}: {content: RulesDocument; locale: Locale}) {
   return (
     <section aria-label="Preview" className="flex flex-col gap-4 rounded-card bg-card p-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[15px] font-semibold">Preview</h2>
-        <div
-          role="group"
-          aria-label="Preview language"
-          className="flex gap-1 rounded-full bg-surface p-1">
-          {(['en', 'pl'] as const).map(l => (
-            <button
-              key={l}
-              type="button"
-              aria-pressed={locale === l}
-              onClick={() => {
-                setLocale(l)
-              }}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-[12px] font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',
-                locale === l ? 'bg-card-raised text-fg' : 'text-muted hover:text-fg'
-              )}>
-              {l.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h2 className="text-[15px] font-semibold">Preview · {locale.toUpperCase()}</h2>
       {content.sections.length === 0 && (
         <p className="text-sm text-muted-foreground">No sections yet.</p>
       )}

@@ -255,7 +255,7 @@ export function RulesEditor() {
         </Tabs>
       </form>
       <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
-        <RulesPreview content={values} />
+        <RulesPreview content={values} locale={tab} />
       </aside>
     </div>
   )
