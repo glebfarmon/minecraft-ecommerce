@@ -77,4 +77,20 @@ describe('RulesPreview', () => {
     expect(within(preview).getByText('Bold').tagName).toBe('STRONG')
     expect(within(preview).getByText('italic').tagName).toBe('EM')
   })
+
+  it('renders ++underline++ and nested marks', () => {
+    const marked: RulesDocument = {
+      sections: [
+        {
+          id: 'a',
+          title: {en: 'A'},
+          items: [{id: 'a-1', text: {en: 'Mind ++the gap++ and **bold *both*** [x](/y)'}}]
+        }
+      ]
+    }
+    const {container} = render(<RulesPreview content={marked} locale="en" />)
+    expect(container.querySelector('u')).toHaveTextContent('the gap')
+    expect(container.querySelector('strong em')).toHaveTextContent('both')
+    expect(screen.getByRole('link', {name: 'x'})).toHaveAttribute('href', '/y')
+  })
 })
