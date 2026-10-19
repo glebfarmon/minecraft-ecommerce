@@ -1917,8 +1917,8 @@ test('the owner sees the dashboard and can open an order row menu with the keybo
 
 The e2e checkout spec creates paid orders in the same stack only when it runs before; the row-menu block is guarded so the test does not depend on spec order. Existing admin tests must keep passing unchanged except where Tasks 6–11 changed a selector (record each change in the commit message body).
 
-- [ ] **Step 1:** Write the test. **Step 2:** Run the e2e stack locally per `docs/runbooks/` / CI notes using the `shop-e2e` project only (`docker compose -p shop-e2e -f compose.e2e.yaml up -d --build --wait`, then `pnpm --filter e2e exec playwright test admin`), never `down -v` on the default project. Expected: admin specs PASS. **Step 3:** Tear down with `docker compose -p shop-e2e -f compose.e2e.yaml down -v`.
-- [ ] **Step 4: Gate and commit** — `test(e2e): admin dashboard, row menu and mobile layout`.
+- [x] **Step 1:** Write the test. **Step 2:** Run the e2e stack locally per `docs/runbooks/` / CI notes using the `shop-e2e` project only (`docker compose -p shop-e2e -f compose.e2e.yaml up -d --build --wait`, then `pnpm --filter e2e exec playwright test admin`), never `down -v` on the default project. Expected: admin specs PASS. **Step 3:** Tear down with `docker compose -p shop-e2e -f compose.e2e.yaml down -v`.
+- [x] **Step 4: Gate and commit** — `test(e2e): admin dashboard, row menu and mobile layout`.
 
 ---
 

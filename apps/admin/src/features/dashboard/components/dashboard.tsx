@@ -136,7 +136,7 @@ function LatestOrders() {
       title="Latest orders"
       action={
         <Link href="/orders" className={LINK}>
-          All orders
+          View all
         </Link>
       }>
       {page.isLoading ? (
