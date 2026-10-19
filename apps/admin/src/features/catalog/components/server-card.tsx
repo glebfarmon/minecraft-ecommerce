@@ -39,7 +39,7 @@ export function ServerCard({
   const body = (
     <>
       <span className="text-[16px] font-semibold">{server.name}</span>
-      <span className="tabular text-[13px] opacity-80">
+      <span className="tabular text-[13px]">
         {server.productCount} {server.productCount === 1 ? 'product' : 'products'}
       </span>
       <span className="flex flex-wrap gap-1.5">
@@ -62,7 +62,7 @@ export function ServerCard({
         aria-selected={selected}
         onClick={onSelect}
         style={style}
-        className={`${CARD} ring-offset-2 ring-offset-bg transition-opacity focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none aria-selected:ring-2 aria-selected:ring-fg aria-[selected=false]:opacity-75 aria-[selected=false]:hover:opacity-100`}>
+        className={`${CARD} ring-offset-2 ring-offset-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-selected:ring-2 aria-selected:ring-fg`}>
         {body}
       </button>
       {handle && (

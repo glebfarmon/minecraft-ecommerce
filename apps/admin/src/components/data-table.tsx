@@ -84,13 +84,13 @@ export function DataTable<T>({
         {rows.map(r => (
           <li key={rowKey(r)} className="flex items-start gap-3 rounded-plate bg-card p-4">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <div className="font-semibold break-all">{primary?.cell(r)}</div>
+              <div className="font-semibold [overflow-wrap:anywhere]">{primary?.cell(r)}</div>
               {columns
                 .filter(c => c !== primary)
                 .map(c => (
                   <div key={c.header} className="flex gap-2 text-[13px]">
                     <span className="w-20 shrink-0 text-muted">{c.header}</span>
-                    <span className="min-w-0 break-all">{c.cell(r)}</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{c.cell(r)}</span>
                   </div>
                 ))}
             </div>

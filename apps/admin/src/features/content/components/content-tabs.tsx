@@ -18,7 +18,7 @@ export function ContentTabs({
           key={t.href}
           href={t.href}
           aria-current={t.href === current ? 'page' : undefined}
-          className="inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none aria-[current=page]:bg-card-raised aria-[current=page]:text-fg">
+          className="inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-[current=page]:bg-card-raised aria-[current=page]:text-fg">
           {t.label}
         </Link>
       ))}

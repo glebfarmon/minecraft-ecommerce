@@ -5,8 +5,8 @@ import {DataTable} from '@/components/data-table'
 import {DayChart} from '@/components/day-chart'
 import {EmptyState} from '@/components/empty-state'
 import {KpiCard} from '@/components/kpi-card'
-import {Ring} from '@/components/ring'
 import {Skeleton, SkeletonRows} from '@/components/skeleton'
+import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
 import {
   type GetOrderStatsApiResponse,
@@ -26,7 +26,7 @@ type Range = '7d' | '30d'
 type Stats = GetOrderStatsApiResponse
 
 const LINK =
-  'text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--color-accent] rounded-full'
+  'text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full'
 
 function dailyFor(stats: Stats, currency: Currency) {
   return stats.daily
@@ -42,12 +42,13 @@ function paidPerDay(stats: Stats) {
 
 function RevenueKpi({stats, currency}: {stats: Stats; currency: Currency}) {
   const r = stats.revenue.find(x => x.currency === currency) ?? {totalMinor: 0, previousMinor: 0}
+  const change = delta(r.totalMinor, r.previousMinor)
   return (
     <KpiCard
       label={`Revenue ${currency}`}
       value={formatMoney(r.totalMinor, currency)}
-      delta={delta(r.totalMinor, r.previousMinor)}
-      hint="vs previous period"
+      delta={change}
+      hint={change === null ? 'No sales in the previous period' : 'vs previous period'}
       tone={currency === 'EUR' ? 'accent' : 'default'}
       spark={dailyFor(stats, currency).map(d => d.value)}
     />
@@ -91,7 +92,7 @@ function StatusCard({stats}: {stats: Stats}) {
         <EmptyState icon={ReceiptText} title="No orders in this range." />
       ) : (
         <div className="flex flex-wrap items-center gap-6">
-          <Ring value={stats.conversion} label="Conversion" />
+          <StatusDonut counts={statuses} />
           <ul className="flex flex-col gap-2">
             {statuses.map(s => (
               <li key={s.status} className="flex items-center gap-3">
@@ -189,6 +190,7 @@ function Loading() {
 export function Dashboard() {
   const [range, setRange] = useState<Range>('7d')
   const stats = useGetOrderStatsQuery({range})
+  const paidChange = stats.data ? delta(stats.data.paidCount, stats.data.previousPaidCount) : null
   return (
     <div className="grid gap-4">
       <div className="flex justify-end">
@@ -222,8 +224,10 @@ export function Dashboard() {
             <KpiCard
               label="Paid orders"
               value={String(stats.data.paidCount)}
-              delta={delta(stats.data.paidCount, stats.data.previousPaidCount)}
-              hint="vs previous period"
+              delta={paidChange}
+              hint={
+                paidChange === null ? 'No paid orders in the previous period' : 'vs previous period'
+              }
               spark={paidPerDay(stats.data)}
             />
             <KpiCard

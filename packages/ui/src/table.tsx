@@ -4,7 +4,8 @@ import {cn} from './lib/utils'
 
 function Table({className, ...props}: React.ComponentProps<'table'>) {
   return (
-    <div className="w-full overflow-x-auto">
+    // relative: an sr-only (absolute) label inside a cell would otherwise escape the scroll box.
+    <div className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}

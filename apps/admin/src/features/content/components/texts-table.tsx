@@ -90,10 +90,9 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Key</TableHead>
+                <TableHead className="hidden md:table-cell">Key</TableHead>
                 <TableHead>Default</TableHead>
                 <TableHead>Override</TableHead>
-                <TableHead className="sr-only">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,10 +139,16 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
 
   return (
     <TableRow>
-      <TableCell className="align-top font-mono text-[12px] text-muted">{message.key}</TableCell>
-      <TableCell className="max-w-xs align-top whitespace-pre-wrap">{message.default}</TableCell>
-      <TableCell>
-        <div className="flex flex-col gap-1">
+      <TableCell className="hidden align-top font-mono text-[12px] text-muted md:table-cell">
+        {message.key}
+      </TableCell>
+      <TableCell className="max-w-xs align-top whitespace-pre-wrap">
+        {/* Below md the key column is hidden; the key rides above the default text instead. */}
+        <span className="mb-1 block font-mono text-[11px] text-muted md:hidden">{message.key}</span>
+        {message.default}
+      </TableCell>
+      <TableCell className="min-w-40 align-top">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor={fieldProps.id} className="sr-only">
             Override for {message.key}
           </Label>
@@ -167,21 +172,19 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
               {error}
             </p>
           )}
-        </div>
-      </TableCell>
-      <TableCell className="align-top">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            disabled={busy || draft.trim() === '' || draft === (message.override ?? '')}
-            onClick={() => void onSave()}>
-            Save
-          </Button>
-          {message.override !== null && (
-            <Button variant="outline" disabled={busy} onClick={() => void onReset()}>
-              Reset
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={busy || draft.trim() === '' || draft === (message.override ?? '')}
+              onClick={() => void onSave()}>
+              Save
             </Button>
-          )}
+            {message.override !== null && (
+              <Button variant="outline" disabled={busy} onClick={() => void onReset()}>
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
       </TableCell>
     </TableRow>

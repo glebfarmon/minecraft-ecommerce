@@ -17,7 +17,7 @@ export function QuickLinks({me}: {me: Me}) {
           <li key={item.href}>
             <Link
               href={item.href}
-              className="group flex items-center gap-4 rounded-card bg-card p-5 transition-colors hover:bg-card-raised focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none">
+              className="group flex items-center gap-4 rounded-card bg-card p-5 transition-colors hover:bg-card-raised focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
               <span className="grid size-11 place-items-center rounded-full bg-card-raised text-muted group-hover:bg-surface">
                 <Icon aria-hidden className="size-5" />
               </span>

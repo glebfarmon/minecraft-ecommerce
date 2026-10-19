@@ -27,7 +27,7 @@ export function GlobalSearch() {
         onChange={e => {
           setQ(e.target.value)
         }}
-        className="h-10 w-full rounded-full bg-surface pr-4 pl-10 text-sm text-fg placeholder:text-muted focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none"
+        className="h-10 w-full rounded-full bg-surface pr-4 pl-10 text-sm text-fg placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
       />
     </form>
   )

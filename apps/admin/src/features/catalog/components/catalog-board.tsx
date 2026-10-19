@@ -220,7 +220,7 @@ function ProductList({
         disabled={!canEdit}
         items={list.items}
         direction="grid"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
         onMove={ids => void list.move(ids)}>
         {(p, handle) => (
           <ProductCard

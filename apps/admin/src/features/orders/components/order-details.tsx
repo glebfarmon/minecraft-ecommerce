@@ -22,7 +22,7 @@ function Row({label, children}: {label: string; children: ReactNode}) {
   return (
     <>
       <dt className="text-muted">{label}</dt>
-      <dd className="flex min-w-0 items-center gap-2 break-all">{children}</dd>
+      <dd className="flex min-w-0 items-center gap-2 [overflow-wrap:anywhere]">{children}</dd>
     </>
   )
 }
@@ -56,7 +56,11 @@ export function OrderDetails({id}: {id: string}) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`Order ${order.publicId}`}
+        title={
+          <>
+            Order <span className="font-mono">{order.publicId}</span>
+          </>
+        }
         actions={
           <div className="flex items-center gap-3">
             <StatusDot status={order.status} />

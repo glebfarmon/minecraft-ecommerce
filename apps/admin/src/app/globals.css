@@ -41,6 +41,21 @@
   --radius-plate: 14px;
 }
 
+/* Dark-only admin: native selects, date pickers, checkboxes and scrollbars follow the ground. */
+html {
+  color-scheme: dark;
+  accent-color: var(--color-accent);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-fg);
@@ -53,8 +68,11 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.label-caps {
-  @apply text-[11px] font-semibold tracking-[0.12em] text-muted uppercase;
+/* In the components layer so a utility (e.g. text-on-accent/70 on an accent card) can recolour it. */
+@layer components {
+  .label-caps {
+    @apply text-[11px] font-semibold tracking-[0.12em] text-muted uppercase;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

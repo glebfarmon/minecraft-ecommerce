@@ -15,7 +15,7 @@
 - Visual world: dark base, Inter Tight, JetBrains Mono for ids, one sage-green accent; dense 13–14 px body; no decoration (spec §2.1–2.3).
 - At most one accent-filled card per screen. Status colours never reuse the accent; status is never colour-only (dot + text label).
 - Desktop first; at 390 px wide no horizontal page scroll on any admin screen.
-- WCAG 2.2 AA: visible focus ring on every control (`focus-visible:ring-2 ring-[--color-accent]`), keyboard-operable menus and sheet.
+- WCAG 2.2 AA: visible focus ring on every control (`focus-visible:ring-2 ring-accent`), keyboard-operable menus and sheet.
 - Behaviour, permissions and API contracts unchanged except the new stats endpoint. Keep every accessible name the e2e uses: links `Home`, `Orders`, `Catalog`, `Content`, `Team`, `Audit log`, `Account`; heading `/^Welcome/` on `/`; heading `Orders`; label `Search by nick, email or order number`; catalog link `+ Product in <Category>`, list `Products in <Category>` whose links are product names, buttons `Move <name>`; all editor field labels and button names.
 - No chart library: charts are hand-written SVG.
 - Do not bump ESLint (9) or TypeScript (6) majors. New dependencies allowed: `lucide-react` (same range as web, `^1.49.0`), `@radix-ui/react-dropdown-menu`, `@radix-ui/react-dialog` — admin only.

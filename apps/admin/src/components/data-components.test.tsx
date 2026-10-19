@@ -5,8 +5,8 @@ import {ORDER_STATUSES} from '@shop/shared/orders'
 import {formatDelta, formatMoney, formatPercent} from '../lib/format'
 import {DayChart} from './day-chart'
 import {KpiCard} from './kpi-card'
-import {Ring} from './ring'
 import {Spark} from './spark'
+import {StatusDonut} from './status-donut'
 import {STATUS_TONE, StatusDot} from './status-dot'
 
 describe('data components', () => {
@@ -53,12 +53,27 @@ describe('data components', () => {
             {day: '2026-10-17', value: 1200}
           ]}
         />
-        <Ring value={null} label="Conversion" />
+        <StatusDonut counts={[]} />
       </>
     )
     expect(screen.getByRole('img', {name: 'Paid per day: 0 → 0'})).toBeInTheDocument()
     expect(screen.getByRole('img', {name: /Revenue per day.*€12\.00/})).toBeInTheDocument()
-    expect(screen.getByRole('img', {name: 'Conversion: —'})).toBeInTheDocument()
+    expect(screen.getByRole('img', {name: 'Orders by status: none'})).toBeInTheDocument()
     expect(document.querySelector('svg [d*="NaN"]')).toBeNull()
+  })
+
+  it('splits the status donut by count and names every status', () => {
+    render(
+      <StatusDonut
+        counts={[
+          {status: 'PAID', count: 3},
+          {status: 'PENDING', count: 1},
+          {status: 'EXPIRED', count: 0}
+        ]}
+      />
+    )
+    const donut = screen.getByRole('img', {name: 'Orders by status: Paid 3, Pending 1'})
+    expect(donut.querySelectorAll('circle')).toHaveLength(3) // track + 2 segments
+    expect(donut).toHaveTextContent('4')
   })
 })

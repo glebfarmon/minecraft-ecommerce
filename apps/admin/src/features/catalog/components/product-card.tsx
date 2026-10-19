@@ -38,12 +38,12 @@ export function ProductCard({
   return (
     <article className="group relative flex h-full flex-col gap-3 rounded-card bg-card p-3">
       <div
-        className="relative grid aspect-[4/3] place-items-center rounded-plate"
+        className="relative grid aspect-[16/10] place-items-center rounded-plate"
         style={{
           background: `color-mix(in oklab, ${accent} 22%, transparent)`,
           color: accent
         }}>
-        <ProductIcon name={product.icon} className="size-12" />
+        <ProductIcon name={product.icon} className="size-10" />
         {product.mark !== product.name && (
           <span className="absolute bottom-2 left-2 max-w-[70%] truncate rounded-full bg-bg/70 px-2 py-0.5 font-mono text-[11px] text-fg">
             {product.mark}
@@ -54,7 +54,7 @@ export function ProductCard({
         {href ? (
           <Link
             href={href}
-            className="truncate rounded-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none">
+            className="truncate rounded-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
             {product.name}
           </Link>
         ) : (

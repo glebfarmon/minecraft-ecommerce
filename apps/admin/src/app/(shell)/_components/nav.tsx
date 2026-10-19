@@ -11,7 +11,7 @@ function isCurrent(pathname: string, base: string) {
   return pathname === base || (base !== '/' && pathname.startsWith(`${base}/`))
 }
 
-const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--color-accent]'
+const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
 
 export function Nav({
   me,

@@ -79,7 +79,7 @@ export function RulesPreview({content}: {content: RulesDocument}) {
                 setLocale(l)
               }}
               className={cn(
-                'rounded-full px-2.5 py-0.5 text-[12px] font-medium focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none',
+                'rounded-full px-2.5 py-0.5 text-[12px] font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',
                 locale === l ? 'bg-card-raised text-fg' : 'text-muted hover:text-fg'
               )}>
               {l.toUpperCase()}

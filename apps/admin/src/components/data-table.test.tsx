@@ -50,7 +50,7 @@ describe('DataTable', () => {
     const mobile = within(screen.getByRole('list', {name: 'Orders'}))
       .getAllByText(/a{240}@example\.com/)
       .at(0)
-    expect(mobile?.className).toMatch(/break-all/)
+    expect(mobile?.className).toMatch(/overflow-wrap:anywhere/)
   })
 
   it('opens the row menu from the keyboard and runs the item', async () => {
