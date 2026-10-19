@@ -1929,7 +1929,7 @@ The e2e checkout spec creates paid orders in the same stack only when it runs be
 - Create: `DESIGN.md` admin section (via the impeccable documenter), `.impeccable/review/admin-*.png` (gitignored if the folder is ignored; otherwise do not commit screenshots)
 - Modify: `CLAUDE.md` (one bullet: admin UI uses `apps/admin/src/components/` + tokens; see DESIGN.md)
 
-- [ ] **Step 1:** Run admin + api + seed locally (or the `shop-e2e` stack) and capture desktop 1440 and mobile 390 screenshots of `/`, `/orders`, `/orders/[id]`, `/catalog`, a product editor, `/team`. Compare once against the spec §2–4 and the owner references in `references-admin/` (local only). Fix everything found in one batch; one confirmation round; stop.
-- [ ] **Step 2:** Dispatch the shipped `impeccable-finish-reviewer` with the surface brief `apps/admin/.impeccable/surfaces/apps-admin.md` and the screenshots; apply material fixes it lists (one batch).
-- [ ] **Step 3:** Dispatch `impeccable-documenter` to write the admin section of `DESIGN.md` from the built code (tokens, components, rules: one accent card per screen, status = dot + label, plate rows, preview cards).
-- [ ] **Step 4:** Add the CLAUDE.md bullet. Gate, commit `docs: admin design system`.
+- [x] **Step 1:** Run admin + api + seed locally (or the `shop-e2e` stack) and capture desktop 1440 and mobile 390 screenshots of `/`, `/orders`, `/orders/[id]`, `/catalog`, a product editor, `/team`. Compare once against the spec §2–4 and the owner references in `references-admin/` (local only). Fix everything found in one batch; one confirmation round; stop.
+- [x] **Step 2:** Dispatch the shipped `impeccable-finish-reviewer` with the surface brief `apps/admin/.impeccable/surfaces/apps-admin.md` and the screenshots; apply material fixes it lists (one batch).
+- [x] **Step 3:** Dispatch `impeccable-documenter` to write the admin section of `DESIGN.md` from the built code (tokens, components, rules: one accent card per screen, status = dot + label, plate rows, preview cards).
+- [x] **Step 4:** Add the CLAUDE.md bullet. Gate, commit `docs: admin design system`.

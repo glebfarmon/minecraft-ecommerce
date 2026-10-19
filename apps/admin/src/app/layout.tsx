@@ -7,7 +7,7 @@ import {Providers} from './providers'
 
 const interTight = Inter_Tight({
   subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '700'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-inter-tight',
   display: 'swap'
 })
