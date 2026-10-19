@@ -1,8 +1,10 @@
 'use client'
 
+import {Hint} from '@/components/hint'
 import {NAV} from '@/config/nav'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
+import {Fragment} from 'react'
 
 import {type Me, hasPermission} from '@shop/shared/access'
 import {cn} from '@shop/ui/lib/utils'
@@ -32,14 +34,12 @@ export function Nav({
         item => {
           const Icon = item.icon
           const current = isCurrent(pathname, item.match ?? item.href)
-          return (
+          const link = (
             <Link
-              key={item.href}
               href={item.href}
               onClick={onNavigate}
               aria-current={current ? 'page' : undefined}
               aria-label={rail ? item.label : undefined}
-              title={rail ? item.label : undefined}
               className={cn(
                 FOCUS,
                 rail
@@ -50,6 +50,13 @@ export function Nav({
               <Icon aria-hidden className="size-5 shrink-0" />
               {!rail && item.label}
             </Link>
+          )
+          return rail ? (
+            <Hint key={item.href} label={item.label} side="right">
+              {link}
+            </Hint>
+          ) : (
+            <Fragment key={item.href}>{link}</Fragment>
           )
         }
       )}

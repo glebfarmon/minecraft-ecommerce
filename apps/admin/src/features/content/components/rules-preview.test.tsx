@@ -1,8 +1,12 @@
-import {render, screen, within} from '@testing-library/react'
+import {render as rtlRender, screen, within} from '@testing-library/react'
+import type {ReactElement} from 'react'
 
 import type {RulesDocument} from '@shop/shared/rules'
+import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {RulesPreview} from './rules-preview'
+
+const render = (ui: ReactElement) => rtlRender(ui, {wrapper: TooltipProvider})
 
 const content: RulesDocument = {
   sections: [
@@ -37,7 +41,7 @@ describe('RulesPreview', () => {
     expect(within(preview).getByRole('heading', {name: /^2\. Chat/})).toBeInTheDocument()
     expect(within(preview).getByText('No cheating.')).toBeInTheDocument()
     expect(within(preview).getByText('No spam.')).toBeInTheDocument()
-    expect(within(preview).getAllByTitle('Uses the English text')).toHaveLength(3)
+    expect(within(preview).getAllByLabelText('EN: Uses the English text')).toHaveLength(3)
   })
 
   it('has no language toggle of its own', () => {

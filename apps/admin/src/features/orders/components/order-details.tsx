@@ -1,6 +1,7 @@
 'use client'
 
 import {Card} from '@/components/card'
+import {Hint} from '@/components/hint'
 import {PageHeader} from '@/components/page-header'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
@@ -105,16 +106,18 @@ export function OrderDetails({id}: {id: string}) {
               <Row label="Nick">{order.nick}</Row>
               <Row label="Email">
                 <span>{order.email}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Copy email"
-                  className="size-7 shrink-0"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(order.email)
-                  }}>
-                  <Copy aria-hidden className="size-3.5" />
-                </Button>
+                <Hint label="Copy email">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Copy email"
+                    className="size-7 shrink-0"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(order.email)
+                    }}>
+                    <Copy aria-hidden className="size-3.5" />
+                  </Button>
+                </Hint>
               </Row>
               <Row label="Locale">{order.locale}</Row>
             </Fields>

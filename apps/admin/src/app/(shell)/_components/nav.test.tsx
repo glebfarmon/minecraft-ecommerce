@@ -1,6 +1,11 @@
-import {render, screen} from '@testing-library/react'
+import {render as rtlRender, screen} from '@testing-library/react'
+import type {ReactElement} from 'react'
+
+import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {Nav} from './nav'
+
+const render = (ui: ReactElement) => rtlRender(<TooltipProvider>{ui}</TooltipProvider>)
 
 let mockPath = '/team'
 jest.mock('next/navigation', () => ({usePathname: () => mockPath}))
@@ -33,6 +38,10 @@ describe('Nav', () => {
     render(<Nav me={me(['content.write'])} variant="rail" />)
     expect(screen.getByRole('link', {name: 'Content'})).toHaveAttribute('aria-current', 'page')
     mockPath = '/team'
+  })
+  it('rail links carry no native title', () => {
+    render(<Nav me={me([])} variant="rail" />)
+    expect(screen.getByRole('link', {name: 'Catalog'})).not.toHaveAttribute('title')
   })
   it('hides Content without content.write', () => {
     render(<Nav me={me([])} variant="rail" />)

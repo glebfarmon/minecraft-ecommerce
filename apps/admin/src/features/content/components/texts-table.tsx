@@ -2,6 +2,7 @@
 
 import {Card} from '@/components/card'
 import {EmptyState} from '@/components/empty-state'
+import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {apiErrorMessage} from '@/lib/api/error-message'
@@ -25,6 +26,8 @@ type Locale = 'en' | 'pl'
 type Message = ListContentMessagesApiResponse[number]
 
 const LONG_TEXT = 80
+const STALE_HINT =
+  'The default text changed its placeholders or tags. The site shows the default until you save a matching text.'
 
 export function TextsTable() {
   const [locale, setLocale] = useState<Locale>('en')
@@ -161,9 +164,14 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
             <span className="flex flex-wrap gap-1.5">
               {message.override !== null && <ToneDot tone="ok" label="changed" />}
               {message.stale && (
-                <span title="The default text changed its placeholders or tags. The site shows the default until you save a matching text.">
-                  <ToneDot tone="warn" label="needs update" />
-                </span>
+                <Hint label={STALE_HINT}>
+                  <span
+                    tabIndex={0}
+                    aria-description={STALE_HINT}
+                    className="rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+                    <ToneDot tone="warn" label="needs update" />
+                  </span>
+                </Hint>
               )}
             </span>
           )}

@@ -1,5 +1,6 @@
 'use client'
 
+import {Hint} from '@/components/hint'
 import {Fragment} from 'react'
 
 import {type RulesDocument, parseInline} from '@shop/shared/rules'
@@ -47,11 +48,14 @@ function Localized({text, locale}: {text: Text; locale: Locale}) {
     <>
       <RichText text={locale === 'pl' && pl ? pl : text.en} />
       {fallback && (
-        <span
-          title={FALLBACK}
-          className="ml-2 rounded border px-1 align-middle text-[10px] font-medium text-muted-foreground">
-          EN
-        </span>
+        <Hint label={FALLBACK}>
+          <span
+            tabIndex={0}
+            aria-label={`EN: ${FALLBACK}`}
+            className="ml-2 rounded border px-1 align-middle text-[10px] font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+            EN
+          </span>
+        </Hint>
       )}
     </>
   )
