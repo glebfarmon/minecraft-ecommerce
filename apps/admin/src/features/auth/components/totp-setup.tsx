@@ -57,12 +57,12 @@ export function TotpSetup() {
 
   if (loadError) {
     return (
-      <p role="alert" className="text-destructive text-sm">
+      <p role="alert" className="text-sm text-destructive">
         Could not start two-factor setup. Reload the page to try again.
       </p>
     )
   }
-  if (!enrollment) return <p className="text-muted-foreground text-sm">Preparing setup…</p>
+  if (!enrollment) return <p className="text-sm text-muted-foreground">Preparing setup…</p>
 
   if (confirmed) {
     return (
@@ -95,7 +95,7 @@ export function TotpSetup() {
         aria-label="QR code for your authenticator app"
         className="bg-white p-2"
       />
-      <p className="text-muted-foreground text-xs">
+      <p className="text-xs text-muted-foreground">
         Cannot scan? Enter this key:{' '}
         <code data-testid="totp-secret">{secretOf(enrollment.totpURI)}</code>
       </p>
@@ -109,12 +109,12 @@ export function TotpSetup() {
         {...form.register('code')}
       />
       {errors.code && (
-        <p id="code-error" role="alert" className="text-destructive text-sm">
+        <p id="code-error" role="alert" className="text-sm text-destructive">
           {errors.code.message}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
       )}

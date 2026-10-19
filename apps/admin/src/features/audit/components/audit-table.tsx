@@ -1,12 +1,16 @@
 'use client'
 
+import {DataTable} from '@/components/data-table'
+import {EmptyState} from '@/components/empty-state'
+import {SkeletonRows} from '@/components/skeleton'
 import {type GetApiAdminAuditApiArg, useGetApiAdminAuditQuery} from '@/lib/api/generated'
+import {formatTime} from '@/lib/format'
+import {ScrollText} from 'lucide-react'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@shop/ui/table'
 
 type Filters = {action: string; from: string; to: string}
 const NO_FILTERS: Filters = {action: '', from: '', to: ''}
@@ -20,74 +24,74 @@ function toQuery(f: Filters): Omit<GetApiAdminAuditApiArg, 'cursor'> {
   }
 }
 
-const formatTime = (iso: string) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`
-
 function PageRows({
   query,
   cursor,
+  isFirst,
   isLast,
   onMore
 }: {
   query: Omit<GetApiAdminAuditApiArg, 'cursor'>
   cursor: string | undefined
+  isFirst: boolean
   isLast: boolean
   onMore: (cursor: string) => void
 }) {
   const page = useGetApiAdminAuditQuery({...query, cursor})
-  if (page.isLoading)
-    return (
-      <TableRow>
-        <TableCell colSpan={5}>Loading…</TableCell>
-      </TableRow>
-    )
+  if (page.isLoading) return <SkeletonRows />
   if (page.isError || !page.data)
     return (
-      <TableRow>
-        <TableCell colSpan={5} role="alert">
-          {(page.error as {status?: unknown} | undefined)?.status === 403
-            ? 'You do not have permission to read the audit log.'
-            : 'Could not load the audit log. Try again.'}
-        </TableCell>
-      </TableRow>
+      <p role="alert" className="rounded-card bg-card p-5">
+        {(page.error as {status?: unknown} | undefined)?.status === 403
+          ? 'You do not have permission to read the audit log.'
+          : 'Could not load the audit log. Try again.'}
+      </p>
     )
   const next = page.data.nextCursor
   return (
     <>
-      {page.data.entries.map(entry => (
-        <TableRow key={entry.id}>
-          <TableCell>{formatTime(entry.createdAt)}</TableCell>
-          <TableCell>{entry.actor?.email ?? 'System'}</TableCell>
-          <TableCell>{entry.action}</TableCell>
-          <TableCell>
-            {entry.entityType ? `${entry.entityType} ${entry.entityId ?? ''}`.trim() : '—'}
-          </TableCell>
-          <TableCell>
-            <details>
-              <summary className="cursor-pointer text-sm">Before / after</summary>
-              <pre className="mt-2 max-w-md overflow-x-auto text-xs">
-                {JSON.stringify(
-                  {before: entry.before as unknown, after: entry.after as unknown, ip: entry.ip},
-                  null,
-                  2
-                )}
-              </pre>
-            </details>
-          </TableCell>
-        </TableRow>
-      ))}
+      <DataTable
+        caption="Audit log"
+        rows={page.data.entries}
+        rowKey={e => e.id}
+        columns={[
+          {header: 'Action', primary: true, cell: e => e.action, className: 'font-mono'},
+          {header: 'Time', cell: e => formatTime(e.createdAt), className: 'tabular text-muted'},
+          {header: 'Actor', cell: e => e.actor?.email ?? 'System'},
+          {
+            header: 'Entity',
+            cell: e => (e.entityType ? `${e.entityType} ${e.entityId ?? ''}`.trim() : '—')
+          },
+          {
+            header: 'Details',
+            cell: e => (
+              <details>
+                <summary className="cursor-pointer text-muted hover:text-fg">
+                  Before / after
+                </summary>
+                <pre className="mt-2 overflow-x-auto rounded-plate bg-card-raised p-3 font-mono text-[11px] whitespace-pre">
+                  {JSON.stringify(
+                    {before: e.before as unknown, after: e.after as unknown, ip: e.ip},
+                    null,
+                    2
+                  )}
+                </pre>
+              </details>
+            )
+          }
+        ]}
+        empty={isFirst ? <EmptyState icon={ScrollText} title="Nothing logged yet." /> : null}
+      />
       {isLast && next && (
-        <TableRow>
-          <TableCell colSpan={5}>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onMore(next)
-              }}>
-              Load more
-            </Button>
-          </TableCell>
-        </TableRow>
+        <Button
+          type="button"
+          variant="outline"
+          className="self-center"
+          onClick={() => {
+            onMore(next)
+          }}>
+          Load more
+        </Button>
       )}
     </>
   )
@@ -102,7 +106,7 @@ export function AuditTable() {
   return (
     <div className="flex flex-col gap-4">
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="flex flex-wrap items-end gap-3 rounded-card bg-card p-4"
         onSubmit={e => {
           e.preventDefault()
           setApplied(draft)
@@ -143,30 +147,20 @@ export function AuditTable() {
         </div>
         <Button type="submit">Apply filters</Button>
       </form>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Time</TableHead>
-            <TableHead>Actor</TableHead>
-            <TableHead>Action</TableHead>
-            <TableHead>Entity</TableHead>
-            <TableHead>Details</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {cursors.map((cursor, i) => (
-            <PageRows
-              key={cursor ?? 'first'}
-              query={query}
-              cursor={cursor}
-              isLast={i === cursors.length - 1}
-              onMore={next => {
-                setCursors(c => [...c, next])
-              }}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <div className="flex flex-col gap-2">
+        {cursors.map((cursor, i) => (
+          <PageRows
+            key={cursor ?? 'first'}
+            query={query}
+            cursor={cursor}
+            isFirst={i === 0}
+            isLast={i === cursors.length - 1}
+            onMore={next => {
+              setCursors(c => [...c, next])
+            }}
+          />
+        ))}
+      </div>
     </div>
   )
 }

@@ -91,7 +91,7 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   // SUPPORT holds order.read; assert the page and its search, not rows (checkout specs run in parallel).
   await expect(page.getByRole('link', {name: 'Orders'})).toBeVisible()
   await page.getByRole('link', {name: 'Orders'}).click()
-  await expect(page.getByRole('heading', {name: 'Orders'})).toBeVisible()
+  await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
   await expect(page.getByLabel('Search by nick, email or order number')).toBeVisible()
   const res = await page.goto(`${ADMIN}/audit`)
   expect(res?.status()).toBe(404)
@@ -135,7 +135,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     await page.getByRole('button', {name: 'Save'}).click()
     await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
 
-    // Keyboard drag: the new product starts last; one step up puts it above Legend.
+    // Keyboard drag: the new product starts last in the card grid; one step left puts it before Legend.
     await page.goto(`${ADMIN}/catalog`)
     const list = page.getByRole('list', {name: 'Products in Ranks'})
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Legend', 'Probe Rank'])
@@ -143,7 +143,7 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
     // dnd-kit attaches its key listeners and measures rects asynchronously: pause between keys.
     await page.keyboard.press('Space')
     await page.waitForTimeout(300)
-    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowLeft')
     await page.waitForTimeout(300)
     await page.keyboard.press('Space')
     await expect(list.getByRole('link')).toHaveText(['VIP', 'Elite', 'Probe Rank', 'Legend'])
@@ -290,4 +290,38 @@ test('the owner overrides the hero title and the home page shows it', async ({pa
       await expect(reset).toHaveCount(0)
     }
   }
+})
+
+test('the owner sees the dashboard and can open an order row menu with the keyboard', async ({
+  page
+}) => {
+  await signInOwner(page)
+  await expect(page.getByRole('region', {name: 'Revenue EUR'})).toBeVisible()
+  await expect(page.getByRole('region', {name: 'Conversion'})).toBeVisible()
+
+  await page.getByRole('link', {name: 'Orders'}).click()
+  await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
+  // Paid orders exist only when the checkout spec ran first; the row menu check needs one.
+  const table = page.getByRole('table', {name: 'Orders'})
+  if ((await table.count()) > 0 && (await table.getByRole('row').count()) > 1) {
+    const trigger = table.getByRole('button', {name: /^Actions for /}).first()
+    await trigger.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('menuitem', {name: 'Open'})).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(trigger).toBeFocused()
+  }
+
+  await page.setViewportSize({width: 390, height: 844})
+  for (const path of ['/', '/orders', '/catalog', '/team', '/audit']) {
+    await page.goto(`${ADMIN}${path}`)
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    )
+    expect(overflow, `horizontal scroll on ${path}`).toBeLessThanOrEqual(0)
+  }
+  await page.getByRole('button', {name: 'Open menu'}).click()
+  await expect(
+    page.getByRole('dialog', {name: 'Menu'}).getByRole('link', {name: 'Orders'})
+  ).toBeVisible()
 })

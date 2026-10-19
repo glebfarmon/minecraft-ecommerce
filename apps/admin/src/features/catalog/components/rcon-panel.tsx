@@ -87,10 +87,22 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
     <form
       onSubmit={e => void handleSubmit(save)(e)}
       noValidate
-      className="flex max-w-xl flex-col gap-4">
-      {error && <p role="alert">{error}</p>}
-      {saved && <p role="status">RCON settings saved.</p>}
-      {message && <p role="status">{message}</p>}
+      className="grid gap-4 md:grid-cols-2">
+      {error && (
+        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad md:col-span-2">
+          {error}
+        </p>
+      )}
+      {saved && (
+        <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok md:col-span-2">
+          RCON settings saved.
+        </p>
+      )}
+      {message && (
+        <p role="status" className="rounded-plate bg-card-raised px-4 py-3 md:col-span-2">
+          {message}
+        </p>
+      )}
 
       <Field id="rcon-host" label="Host">
         <Input id="rcon-host" {...register('host')} />
@@ -117,7 +129,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
         />
       </Field>
       {server.rconPasswordSet && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:col-span-2">
           <Controller
             control={control}
             name="clearPassword"
@@ -137,7 +149,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 md:col-span-2">
         <Button type="submit" disabled={busy}>
           Save RCON
         </Button>
@@ -166,9 +178,9 @@ function Field({
     <div className="flex flex-col gap-1">
       <Label htmlFor={id}>{label}</Label>
       {children}
-      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
-        <p id={`${id}-error`} className="text-destructive text-xs">
+        <p id={`${id}-error`} className="text-xs text-destructive">
           {error}
         </p>
       )}

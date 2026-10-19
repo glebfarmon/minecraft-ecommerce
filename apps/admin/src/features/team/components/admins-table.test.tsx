@@ -1,5 +1,6 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import {AdminsTable} from './admins-table'
 
@@ -59,21 +60,29 @@ function mutations(fetchMock: jest.SpyInstance) {
     .filter((req): req is Request => req instanceof Request && req.method !== 'GET')
 }
 
+/** Opens the row menu of `email` and picks `item`. */
+async function choose(email: string, item: string) {
+  const user = userEvent.setup()
+  const table = await screen.findByRole('table', {name: 'Admins'})
+  await user.click(within(table).getByRole('button', {name: `Actions for ${email}`}))
+  await user.click(await screen.findByRole('menuitem', {name: item}))
+}
+
 describe('AdminsTable', () => {
   it('lists admins and protects the owner row', async () => {
     mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
-    expect(await screen.findByText('ann@x.io')).toBeInTheDocument()
-    const ownerRow = screen.getByText('owner@x.io').closest('tr') as HTMLElement
-    expect(ownerRow).not.toHaveTextContent('Remove')
-    expect(ownerRow).not.toHaveTextContent('Reset 2FA')
+    const table = await screen.findByRole('table', {name: 'Admins'})
+    expect(within(table).getByText('ann@x.io')).toBeInTheDocument()
+    const ownerRow = within(table).getByText('owner@x.io').closest('tr') as HTMLElement
+    expect(within(ownerRow).queryByRole('button')).toBeNull()
     expect(screen.queryByRole('combobox', {name: 'Role of owner@x.io'})).not.toBeInTheDocument()
   })
 
   it('removes an admin after confirmation', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Remove ann@x.io'}))
+    await choose('ann@x.io', 'Remove')
     expect(screen.getByText(/signed out everywhere/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', {name: 'Remove'}))
     await waitFor(() => {
@@ -84,16 +93,17 @@ describe('AdminsTable', () => {
   it('does not remove anyone before the confirmation', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Remove ann@x.io'}))
+    await choose('ann@x.io', 'Remove')
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}))
     expect(mutations(fetchMock).map(r => r.method + r.url)).toEqual([])
-    expect(screen.getByRole('button', {name: 'Remove ann@x.io'})).toBeInTheDocument()
+    expect(screen.queryByText(/signed out everywhere/)).not.toBeInTheDocument()
   })
 
   it('changes a role after confirmation', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
-    const picker = await screen.findByRole('combobox', {name: 'Role of ann@x.io'})
+    await choose('ann@x.io', 'Change role')
+    const picker = screen.getByRole('combobox', {name: 'Role of ann@x.io'})
     fireEvent.change(picker, {target: {value: 'r2'}})
     expect(screen.getByText(/to SUPPORT\? They are signed out everywhere/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', {name: 'Change role'}))
@@ -110,7 +120,7 @@ describe('AdminsTable', () => {
   it('resets two-factor after confirmation', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Reset 2FA ann@x.io'}))
+    await choose('ann@x.io', 'Reset 2FA')
     fireEvent.click(screen.getByRole('button', {name: 'Reset'}))
     await waitFor(() => {
       const post = mutations(fetchMock).find(req => req.method === 'POST')
@@ -118,17 +128,21 @@ describe('AdminsTable', () => {
     })
   })
 
-  it('hides the role picker without role.write', async () => {
+  it('offers no role change without role.write', async () => {
     mockApi()
+    const user = userEvent.setup()
     renderWithStore(<AdminsTable canChangeRoles={false} />)
-    await screen.findByText('ann@x.io')
-    expect(screen.queryByRole('combobox', {name: 'Role of ann@x.io'})).not.toBeInTheDocument()
+    const table = await screen.findByRole('table', {name: 'Admins'})
+    await user.click(within(table).getByRole('button', {name: 'Actions for ann@x.io'}))
+    await screen.findByRole('menuitem', {name: 'Remove'})
+    expect(screen.queryByRole('menuitem', {name: 'Change role'})).not.toBeInTheDocument()
   })
 
   it('offers only roles the viewer could hand out and never OWNER', async () => {
     mockApi()
     renderWithStore(<AdminsTable canChangeRoles held={['admin.invite', 'audit.read']} />)
-    const picker = await screen.findByRole('combobox', {name: 'Role of ann@x.io'})
+    await choose('ann@x.io', 'Change role')
+    const picker = screen.getByRole('combobox', {name: 'Role of ann@x.io'})
     const names = Array.from(picker.querySelectorAll('option')).map(o => o.textContent)
     expect(names).toEqual(['ADMIN', 'SUPPORT', 'Auditor'])
   })
@@ -136,7 +150,7 @@ describe('AdminsTable', () => {
   it('shows a clear message when the API refuses', async () => {
     mockApi({status: 400, message: 'owner_protected'})
     renderWithStore(<AdminsTable canChangeRoles />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Remove ann@x.io'}))
+    await choose('ann@x.io', 'Remove')
     fireEvent.click(screen.getByRole('button', {name: 'Remove'}))
     expect(await screen.findByRole('alert')).toHaveTextContent(/cannot be changed/)
   })

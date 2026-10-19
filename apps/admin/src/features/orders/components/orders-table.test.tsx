@@ -1,9 +1,10 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
-
-import {ORDER_STATUSES} from '@shop/shared/orders'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import {OrdersTable} from './orders-table'
+
+jest.mock('next/navigation', () => ({useRouter: () => ({push: jest.fn()})}))
 
 const order = (id: string, status: string) => ({
   id,
@@ -37,20 +38,21 @@ describe('OrdersTable', () => {
   it('shows each order with date, link, nick, email, money and status', async () => {
     mockApi()
     renderWithStore(<OrdersTable />)
-    const link = await screen.findByRole('link', {name: 'SHOP-o1'})
+    const table = await screen.findByRole('table', {name: 'Orders'})
+    const link = within(table).getByRole('link', {name: 'SHOP-o1'})
     expect(link).toHaveAttribute('href', '/orders/o1')
     const row = link.closest('tr') as HTMLElement
     expect(row).toHaveTextContent('2026-10-12 09:30 UTC')
     expect(row).toHaveTextContent('nick-o1')
     expect(row).toHaveTextContent('o1@x.io')
     expect(row).toHaveTextContent('€12.50')
-    expect(row).toHaveTextContent('PAID')
+    expect(row).toHaveTextContent('Paid')
   })
 
   it('searches with q on submit', async () => {
     const fetchMock = mockApi()
     renderWithStore(<OrdersTable />)
-    await screen.findByText('SHOP-o1')
+    await screen.findByRole('table', {name: 'Orders'})
     fireEvent.change(screen.getByLabelText('Search by nick, email or order number'), {
       target: {value: 'steve'}
     })
@@ -60,24 +62,46 @@ describe('OrdersTable', () => {
     })
   })
 
-  it('filters by status', async () => {
+  it('filters by the status tab', async () => {
     const fetchMock = mockApi()
     renderWithStore(<OrdersTable />)
-    await screen.findByText('SHOP-o1')
-    const select = screen.getByLabelText<HTMLSelectElement>('Status')
-    expect(Array.from(select.options).map(o => o.text)).toEqual(['All', ...ORDER_STATUSES])
-    fireEvent.change(select, {target: {value: 'PAID'}})
+    await screen.findAllByText('SHOP-o1')
+    fireEvent.mouseDown(screen.getByRole('tab', {name: 'Expired'}))
+    fireEvent.click(screen.getByRole('tab', {name: 'Expired'}))
     await waitFor(() => {
-      expect(requestedUrls(fetchMock).some(u => u.searchParams.get('status') === 'PAID')).toBe(true)
+      expect(requestedUrls(fetchMock).some(u => u.searchParams.get('status') === 'EXPIRED')).toBe(
+        true
+      )
     })
+  })
+
+  it('starts with the query from the URL', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<OrdersTable initialQ="steve" />)
+    expect(screen.getByLabelText('Search by nick, email or order number')).toHaveValue('steve')
+    await waitFor(() => {
+      expect(requestedUrls(fetchMock).some(u => u.searchParams.get('q') === 'steve')).toBe(true)
+    })
+  })
+
+  it('copies the order number from the row menu', async () => {
+    mockApi()
+    // userEvent.setup() installs its own clipboard stub, so spy on it afterwards.
+    const user = userEvent.setup()
+    const writeText = jest.spyOn(navigator.clipboard, 'writeText')
+    renderWithStore(<OrdersTable />)
+    const table = await screen.findByRole('table', {name: 'Orders'})
+    await user.click(within(table).getByRole('button', {name: 'Actions for SHOP-o1'}))
+    await user.click(await screen.findByRole('menuitem', {name: 'Copy order number'}))
+    expect(writeText).toHaveBeenCalledWith('SHOP-o1')
   })
 
   it('loads more with the cursor', async () => {
     const fetchMock = mockApi()
     renderWithStore(<OrdersTable />)
     fireEvent.click(await screen.findByRole('button', {name: 'Load more'}))
-    expect(await screen.findByText('SHOP-o3')).toBeInTheDocument()
-    expect(screen.getByText('SHOP-o1')).toBeInTheDocument()
+    expect((await screen.findAllByText('SHOP-o3')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('SHOP-o1').length).toBeGreaterThan(0)
     expect(requestedUrls(fetchMock).some(u => u.searchParams.get('cursor') === 'c1')).toBe(true)
   })
 

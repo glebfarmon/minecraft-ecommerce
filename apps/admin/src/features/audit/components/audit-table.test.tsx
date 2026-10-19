@@ -37,11 +37,17 @@ function requestedUrls(fetchMock: jest.SpyInstance) {
   )
 }
 
+/** The desktop table row holding `text` (the mobile list repeats it). */
+async function rowOf(text: string) {
+  const hits = await screen.findAllByText(text)
+  return hits.map(h => h.closest('tr')).find(Boolean) as HTMLElement
+}
+
 describe('AuditTable', () => {
   it('shows actor, action, entity and time for each entry', async () => {
     mockApi()
     renderWithStore(<AuditTable />)
-    const row = (await screen.findByText('admin.role_changed')).closest('tr') as HTMLElement
+    const row = await rowOf('admin.role_changed')
     expect(row).toHaveTextContent('ann@x.io')
     expect(row).toHaveTextContent('admin a1')
     expect(row).toHaveTextContent('2026-10-12 09:30 UTC')
@@ -50,14 +56,14 @@ describe('AuditTable', () => {
   it('shows System when there is no actor', async () => {
     mockApi()
     renderWithStore(<AuditTable />)
-    const row = (await screen.findByText('invite.created')).closest('tr') as HTMLElement
+    const row = await rowOf('invite.created')
     expect(row).toHaveTextContent('System')
   })
 
   it('keeps before and after collapsed until opened', async () => {
     mockApi()
     renderWithStore(<AuditTable />)
-    const row = (await screen.findByText('admin.role_changed')).closest('tr') as HTMLElement
+    const row = await rowOf('admin.role_changed')
     const details = row.querySelector('details') as HTMLDetailsElement
     expect(details.open).toBe(false)
     expect(details).toHaveTextContent('"role": "ADMIN"')
@@ -67,8 +73,8 @@ describe('AuditTable', () => {
     const fetchMock = mockApi()
     renderWithStore(<AuditTable />)
     fireEvent.click(await screen.findByRole('button', {name: 'Load more'}))
-    expect(await screen.findByText('role.deleted')).toBeInTheDocument()
-    expect(screen.getByText('admin.role_changed')).toBeInTheDocument()
+    expect((await screen.findAllByText('role.deleted')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('admin.role_changed').length).toBeGreaterThan(0)
     expect(requestedUrls(fetchMock).some(u => u.searchParams.get('cursor') === 'c1')).toBe(true)
     expect(screen.queryByRole('button', {name: 'Load more'})).not.toBeInTheDocument()
   })
@@ -76,7 +82,7 @@ describe('AuditTable', () => {
   it('filters by action prefix', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AuditTable />)
-    await screen.findByText('admin.role_changed')
+    await screen.findAllByText('admin.role_changed')
     fireEvent.change(screen.getByLabelText('Action starts with'), {target: {value: 'role.'}})
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
     await waitFor(() => {
@@ -89,7 +95,7 @@ describe('AuditTable', () => {
   it('filters by date range covering whole days in UTC', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AuditTable />)
-    await screen.findByText('admin.role_changed')
+    await screen.findAllByText('admin.role_changed')
     fireEvent.change(screen.getByLabelText('From'), {target: {value: '2026-10-01'}})
     fireEvent.change(screen.getByLabelText('To'), {target: {value: '2026-10-05'}})
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
@@ -108,11 +114,11 @@ describe('AuditTable', () => {
     mockApi()
     renderWithStore(<AuditTable />)
     fireEvent.click(await screen.findByRole('button', {name: 'Load more'}))
-    await screen.findByText('role.deleted')
+    await screen.findAllByText('role.deleted')
     fireEvent.change(screen.getByLabelText('Action starts with'), {target: {value: 'invite.'}})
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
     await waitFor(() => {
-      expect(screen.queryByText('role.deleted')).not.toBeInTheDocument()
+      expect(screen.queryAllByText('role.deleted')).toHaveLength(0)
     })
   })
 
@@ -122,5 +128,18 @@ describe('AuditTable', () => {
       .mockResolvedValue(Response.json({statusCode: 403, message: 'forbidden'}, {status: 403}))
     renderWithStore(<AuditTable />)
     expect(await screen.findByRole('alert')).toHaveTextContent(/permission/)
+  })
+
+  it('shows the entries as a list on narrow screens', async () => {
+    mockApi()
+    renderWithStore(<AuditTable />)
+    const list = await screen.findByRole('list', {name: 'Audit log'})
+    expect(list).toHaveTextContent('admin.role_changed')
+  })
+
+  it('says when nothing is logged', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json({entries: [], nextCursor: null}))
+    renderWithStore(<AuditTable />)
+    expect(await screen.findByText('Nothing logged yet.')).toBeInTheDocument()
   })
 })

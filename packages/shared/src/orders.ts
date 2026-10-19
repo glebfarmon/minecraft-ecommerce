@@ -112,3 +112,34 @@ export const AdminOrderSchema = v.object({
   discountMinor: Minor
 })
 export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
+
+export const STATS_RANGES = ['7d', '30d'] as const
+export const OrderStatsQuerySchema = v.object({
+  range: v.optional(v.picklist(STATS_RANGES), '7d')
+})
+export type OrderStatsQuery = v.InferOutput<typeof OrderStatsQuerySchema>
+
+const Count = v.pipe(v.number(), v.integer(), v.minValue(0))
+export const OrderStatsSchema = v.object({
+  range: v.picklist(STATS_RANGES),
+  from: Iso,
+  to: Iso,
+  revenue: v.array(v.object({currency: CurrencySchema, totalMinor: Minor, previousMinor: Minor})),
+  paidCount: Count,
+  previousPaidCount: Count,
+  expiredCount: Count,
+  conversion: v.nullable(v.pipe(v.number(), v.minValue(0), v.maxValue(1))),
+  byStatus: v.array(v.object({status: OrderStatusSchema, count: Count})),
+  daily: v.array(
+    v.object({
+      day: v.pipe(v.string(), v.isoDate()),
+      currency: CurrencySchema,
+      totalMinor: Minor,
+      paidCount: Count
+    })
+  ),
+  topProducts: v.array(
+    v.object({productId: v.string(), name: v.string(), serverName: v.string(), quantity: Count})
+  )
+})
+export type OrderStats = v.InferOutput<typeof OrderStatsSchema>

@@ -1,5 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ProductEditor} from './product-editor'
 
@@ -121,6 +121,15 @@ describe('ProductEditor', () => {
       expect(sent).toEqual([])
       expect(screen.getByLabelText('Enabled')).toBeChecked()
     })
+  })
+
+  it('updates the preview card as the name is typed', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const name = await screen.findByLabelText('Name (EN)')
+    fireEvent.change(name, {target: {value: 'Probe Deluxe'}})
+    const preview = screen.getByRole('region', {name: 'Preview'})
+    expect(await within(preview).findByText('Probe Deluxe')).toBeInTheDocument()
   })
 
   it('refuses a command with another placeholder before saving', async () => {

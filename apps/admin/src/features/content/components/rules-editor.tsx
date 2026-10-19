@@ -198,7 +198,7 @@ export function RulesEditor() {
               ))}
             </TabsList>
             <div className="flex flex-wrap items-center gap-2">
-              {isDirty && <span className="text-muted-foreground text-xs">Unsaved changes</span>}
+              {isDirty && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
               <Button type="submit" disabled={busy}>
                 Save draft
               </Button>
@@ -217,7 +217,7 @@ export function RulesEditor() {
           </div>
 
           {confirmPublish && !isDirty && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-card bg-card p-4">
               <p className="mr-auto text-sm">
                 {`Publish as the edition of ${editionDate(new Date())}?`}
               </p>
@@ -235,16 +235,16 @@ export function RulesEditor() {
             </div>
           )}
           {error && (
-            <p role="alert" className="text-destructive text-sm">
+            <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
               {error}
             </p>
           )}
           {status && (
-            <p role="status" className="text-sm">
+            <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
               {status}
             </p>
           )}
-          {rootError && <p className="text-destructive text-sm">{rootError}</p>}
+          {rootError && <p className="text-sm text-destructive">{rootError}</p>}
 
           <TabsContent value={tab}>
             {/* Tab triggers stay outside the fieldset, so the language can switch while saving. */}
@@ -273,7 +273,7 @@ function Sections({locale, control, register}: EditorProps) {
   return (
     <div className="flex flex-col gap-4">
       {fields.length === 0 && (
-        <p className="text-muted-foreground text-sm">No sections yet. Add the first one.</p>
+        <p className="text-sm text-muted-foreground">No sections yet. Add the first one.</p>
       )}
       <SortableList
         items={fields}
@@ -330,7 +330,7 @@ function Section({
   const tag = locale.toUpperCase()
 
   return (
-    <div className="bg-card flex flex-col gap-3 rounded-lg border p-4">
+    <div className="flex flex-col gap-3 rounded-card bg-card p-5">
       <div className="flex items-end gap-2">
         <Handle label={name} handle={handle} />
         <TextField
@@ -355,7 +355,7 @@ function Section({
           return (
             <div className="flex items-start gap-2">
               <Handle label={`rule ${number}`} handle={ruleHandle} />
-              <span className="text-muted-foreground w-9 shrink-0 pt-2 text-sm tabular-nums">
+              <span className="w-9 shrink-0 pt-2 text-sm text-muted-foreground tabular-nums">
                 {number}
               </span>
               <TextField
@@ -377,7 +377,7 @@ function Section({
           )
         }}
       </SortableList>
-      {tooMany && <p className="text-destructive text-sm">{ITEMS_LIMIT}</p>}
+      {tooMany && <p className="text-sm text-destructive">{ITEMS_LIMIT}</p>}
       <Button
         type="button"
         variant="outline"
@@ -396,7 +396,7 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
     <button
       type="button"
       aria-label={`Move ${label}`}
-      className="text-muted-foreground cursor-grab touch-none self-start rounded px-1 py-1.5 hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
+      className="cursor-grab touch-none self-start rounded px-1 py-1.5 text-muted-foreground hover:bg-card-raised focus-visible:ring-2 focus-visible:outline-none"
       {...handle}>
       ⠿
     </button>
@@ -436,17 +436,17 @@ function TextField({
 
   return (
     <div className={`flex min-w-0 flex-col gap-1 ${className ?? ''}`}>
-      <Label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-muted-foreground text-xs'}>
+      <Label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-xs text-muted-foreground'}>
         {label}
       </Label>
       {multiline ? <Textarea rows={2} className="min-h-16" {...props} /> : <Input {...props} />}
       {hint && (
-        <p id={`${id}-hint`} className="text-muted-foreground text-xs">
+        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="text-destructive text-xs">
+        <p id={`${id}-error`} className="text-xs text-destructive">
           {error}
         </p>
       )}

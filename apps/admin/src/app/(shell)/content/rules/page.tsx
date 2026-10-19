@@ -1,3 +1,4 @@
+import {PageHeader} from '@/components/page-header'
 import {ContentTabs} from '@/features/content/components/content-tabs'
 import {RulesEditor} from '@/features/content/components/rules-editor'
 import {VersionsList} from '@/features/content/components/versions-list'
@@ -11,7 +12,10 @@ export default async function ContentRulesPage() {
   if (!hasPermission(me.permissions, 'content.write')) notFound()
   return (
     <section className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Rules</h1>
+      <PageHeader
+        title="Content"
+        description="Rules shown on the site, with drafts and published editions."
+      />
       <ContentTabs current="/content/rules" />
       <RulesEditor />
       <VersionsList />

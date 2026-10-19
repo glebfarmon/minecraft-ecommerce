@@ -1,5 +1,6 @@
 'use client'
 
+import {SkeletonRows} from '@/components/skeleton'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
   type ListCatalogProductsApiResponse,
@@ -14,28 +15,19 @@ import {
 import Link from 'next/link'
 import {useState} from 'react'
 
-import {fromMinor} from '@shop/shared/catalog-admin'
 import {Button} from '@shop/ui/button'
 import {Label} from '@shop/ui/label'
 import {Select} from '@shop/ui/select'
 
 import {useOptimisticOrder} from '../lib/optimistic-order'
-import {type DragHandleProps, SortableList} from './sortable-list'
+import {AddCard} from './add-card'
+import {DragHandle} from './drag-handle'
+import {ProductCard} from './product-card'
+import {ServerCard} from './server-card'
+import {SortableList} from './sortable-list'
 
 type Server = ListCatalogServersApiResponse[number]
 type Product = ListCatalogProductsApiResponse[number]
-
-function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
-  return (
-    <button
-      type="button"
-      aria-label={`Move ${label}`}
-      className="text-muted-foreground cursor-grab touch-none rounded px-1 hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
-      {...handle}>
-      ⠿
-    </button>
-  )
-}
 
 export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   const servers = useListCatalogServersQuery()
@@ -45,54 +37,39 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  if (servers.isLoading) return <p>Loading catalog…</p>
+  if (servers.isLoading) return <SkeletonRows rows={4} />
   if (servers.isError) return <p role="alert">Could not load the catalog. Refresh the page.</p>
   const selected = tabs.items.find(s => s.id === selectedId) ?? tabs.items[0]
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex gap-3 overflow-x-auto p-1 pb-2">
         <div role="tablist" aria-label="Server">
           <SortableList
             label="Servers"
             direction="horizontal"
             disabled={!canEdit}
             items={tabs.items}
-            className="gap-2"
+            className="gap-3"
             onMove={ids => void tabs.move(ids)}>
             {(s, handle) => (
-              <span className="flex items-center gap-1 rounded-md border px-2 py-1">
-                {canEdit && <Handle label={s.name} handle={handle} />}
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={s.id === selected?.id}
-                  onClick={() => {
-                    setSelectedId(s.id)
-                  }}
-                  className="rounded px-2 py-1 text-sm aria-selected:font-semibold"
-                  style={
-                    s.id === selected?.id ? {background: s.accent, color: s.onAccent} : undefined
-                  }>
-                  {s.name}
-                  {!s.isActive && <span className="ml-1 text-xs">(disabled)</span>}
-                </button>
-              </span>
+              <ServerCard
+                server={s}
+                selected={s.id === selected?.id}
+                onSelect={() => {
+                  setSelectedId(s.id)
+                }}
+                handle={canEdit ? handle : undefined}
+              />
             )}
           </SortableList>
         </div>
         {canEdit && (
-          <Link href="/catalog/servers/new" className="text-sm underline">
-            + Server
-          </Link>
+          <AddCard href="/catalog/servers/new" label="+ Server" className="min-w-40 shrink-0" />
         )}
-        <Link href="/catalog/categories" className="ml-auto text-sm underline">
-          Manage categories
-        </Link>
       </div>
       {tabs.error && <p role="alert">{tabs.error}</p>}
       {selected && <ServerColumn key={selected.id} server={selected} canEdit={canEdit} />}
-      <p className="text-muted-foreground text-sm">Changes are live on the site within a minute.</p>
     </div>
   )
 }
@@ -122,39 +99,35 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
   )
 
   return (
-    <section aria-label={server.name} className="flex flex-col gap-4">
+    <section aria-label={server.name} className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold">{server.name}</h2>
-        <Link href={`/catalog/servers/${server.id}`} className="text-sm underline">
-          Server settings
-        </Link>
+        <h2 className="text-[20px] font-semibold">{server.name}</h2>
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/catalog/servers/${server.id}`}>Server settings</Link>
+        </Button>
       </div>
       {(error ?? categories.error) && <p role="alert">{error ?? categories.error}</p>}
       {products.isError && <p role="alert">Could not load products. Refresh the page.</p>}
       {categories.items.length === 0 ? (
-        <p className="text-muted-foreground">No categories yet. Attach one below.</p>
+        <p className="text-muted">No categories yet. Attach one below.</p>
       ) : (
         <SortableList
           label={`Categories of ${server.name}`}
           disabled={!canEdit}
           items={categories.items}
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-8"
           onMove={ids => void categories.move(ids)}>
           {(category, handle) => (
-            <div className="rounded-lg border p-3">
-              <div className="mb-2 flex items-center gap-2">
-                {canEdit && <Handle label={category.name} handle={handle} />}
-                <h3 className="font-medium">{category.name}</h3>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                {canEdit && <DragHandle label={category.name} handle={handle} />}
+                <h3 className="text-[15px] font-semibold">{category.name}</h3>
                 {canEdit && (
                   <>
-                    <Link
-                      href={`/catalog/products/new?serverId=${server.id}&categoryId=${category.id}`}
-                      aria-label={`+ Product in ${category.name}`}
-                      className="ml-auto text-sm underline">
-                      + Product
-                    </Link>
                     <Button
-                      variant="outline"
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto"
                       aria-label={`Detach ${category.name}`}
                       onClick={() =>
                         void save(categories.items.filter(c => c.id !== category.id).map(c => c.id))
@@ -165,20 +138,27 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                 )}
               </div>
               <ProductList
-                serverId={server.id}
+                server={server}
                 categoryId={category.id}
                 categoryName={category.name}
                 products={(products.data ?? []).filter(p => p.categoryId === category.id)}
                 status={products.isLoading ? 'loading' : products.isError ? 'failed' : 'ready'}
                 canEdit={canEdit}
               />
+              {canEdit && (
+                <AddCard
+                  href={`/catalog/products/new?serverId=${server.id}&categoryId=${category.id}`}
+                  label={`+ Product in ${category.name}`}
+                  className="h-12"
+                />
+              )}
             </div>
           )}
         </SortableList>
       )}
       {canEdit && unattached.length > 0 && (
         <form
-          className="flex items-end gap-2"
+          className="flex flex-wrap items-end gap-2"
           onSubmit={e => {
             e.preventDefault()
             if (attach) void save([...categories.items.map(c => c.id), attach])
@@ -210,14 +190,14 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
 }
 
 function ProductList({
-  serverId,
+  server,
   categoryId,
   categoryName,
   products,
   status,
   canEdit
 }: {
-  serverId: string
+  server: Server
   categoryId: string
   categoryName: string
   products: Product[]
@@ -227,12 +207,11 @@ function ProductList({
 }) {
   const [order] = useOrderCatalogProductsMutation()
   const list = useOptimisticOrder(products, (ids, base) =>
-    order({serverId, categoryId, body: {ids, base}})
+    order({serverId: server.id, categoryId, body: {ids, base}})
   )
-  if (status === 'loading')
-    return <p className="text-muted-foreground text-sm">Loading products…</p>
+  if (status === 'loading') return <p className="text-[13px] text-muted">Loading products…</p>
   if (status === 'failed') return null
-  if (products.length === 0) return <p className="text-muted-foreground text-sm">No products.</p>
+  if (products.length === 0) return <p className="text-[13px] text-muted">No products.</p>
   return (
     <>
       {list.error && <p role="alert">{list.error}</p>}
@@ -240,25 +219,16 @@ function ProductList({
         label={`Products in ${categoryName}`}
         disabled={!canEdit}
         items={list.items}
-        className="flex flex-col gap-1"
+        direction="grid"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
         onMove={ids => void list.move(ids)}>
         {(p, handle) => (
-          <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent">
-            {canEdit && <Handle label={p.name} handle={handle} />}
-            <span className="text-muted-foreground w-12 truncate text-xs">
-              {p.mark === p.name ? null : p.mark}
-            </span>
-            <Link href={`/catalog/products/${p.id}`} className="font-medium hover:underline">
-              {p.name}
-            </Link>
-            <span className="ml-auto text-sm">
-              {p.prices.EUR === null ? '—' : `${fromMinor(p.prices.EUR)} €`}
-            </span>
-            {!p.isActive && <span className="bg-muted rounded px-1.5 text-xs">Disabled</span>}
-            {p.missing.length > 0 && (
-              <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-900">Incomplete</span>
-            )}
-          </div>
+          <ProductCard
+            product={p}
+            accent={server.accent}
+            href={`/catalog/products/${p.id}`}
+            handle={canEdit ? handle : undefined}
+          />
         )}
       </SortableList>
     </>

@@ -1,9 +1,85 @@
 @import 'tailwindcss';
-@import '@shop/ui/theme.css';
 
 @source '../../../../packages/ui/src';
 
+@theme {
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  --color-bg: #0e0e10;
+  --color-surface: #17171a;
+  --color-card: #1d1d20;
+  --color-card-raised: #26262a;
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-border: rgb(255 255 255 / 0.12);
+  --color-fg: #f2f2f2;
+  --color-muted: #8e8e93;
+
+  --color-accent: #9cc5a1;
+  --color-on-accent: #0e1a10;
+  --color-accent-soft: color-mix(in oklab, #9cc5a1 16%, transparent);
+
+  --color-ok: #3ddc84;
+  --color-ok-soft: color-mix(in oklab, #3ddc84 14%, transparent);
+  --color-warn: #ffc857;
+  --color-warn-soft: color-mix(in oklab, #ffc857 14%, transparent);
+  --color-bad: #ff8a80;
+  --color-bad-soft: color-mix(in oklab, #ff8a80 14%, transparent);
+  --color-idle: #8e8e93;
+  --color-idle-soft: rgb(255 255 255 / 0.06);
+
+  /* legacy names used by screens not yet restyled */
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-on-accent);
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-fg);
+  --color-input: var(--color-border);
+  --color-muted-foreground: var(--color-muted);
+  --color-destructive: var(--color-bad);
+
+  --radius-card: 20px;
+  --radius-plate: 14px;
+}
+
+/* Dark-only admin: native selects, date pickers, checkboxes and scrollbars follow the ground. */
+html {
+  color-scheme: dark;
+  accent-color: var(--color-accent);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+input,
+textarea {
+  caret-color: var(--color-accent);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* In the components layer so a utility (e.g. text-on-accent/70 on an accent card) can recolour it. */
+@layer components {
+  .label-caps {
+    @apply text-[11px] font-semibold tracking-[0.12em] text-muted uppercase;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

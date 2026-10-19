@@ -28,7 +28,7 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
     <button
       type="button"
       aria-label={`Move ${label}`}
-      className="text-muted-foreground cursor-grab touch-none rounded px-1 hover:bg-accent focus-visible:ring-2 focus-visible:outline-none"
+      className="cursor-grab touch-none rounded px-1 text-muted-foreground hover:bg-card-raised focus-visible:ring-2 focus-visible:outline-none"
       {...handle}>
       ⠿
     </button>

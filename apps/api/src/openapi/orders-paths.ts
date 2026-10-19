@@ -4,6 +4,8 @@ import {
   AdminOrderSchema,
   CreateOrderRequestSchema,
   CreateOrderResponseSchema,
+  OrderStatsQuerySchema,
+  OrderStatsSchema,
   PublicOrderSchema
 } from '@shop/shared/orders'
 
@@ -96,6 +98,20 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
       responses: {
         '200': json('The order', AdminOrderSchema),
         '404': {description: '`not_found`: no such order'},
+        ...guarded
+      }
+    })
+  },
+  '/api/admin/stats/orders': {
+    get: adminOp({
+      operationId: 'getOrderStats',
+      summary: 'Order and revenue statistics for the dashboard',
+      description:
+        'Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none.',
+      parameters: [queryParam('range', OrderStatsQuerySchema.entries.range.wrapped)],
+      responses: {
+        '200': json('Statistics for the range', OrderStatsSchema),
+        '400': {description: 'Unknown range'},
         ...guarded
       }
     })

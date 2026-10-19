@@ -81,12 +81,12 @@ export function SignInForm({
             {...emailForm.register('email')}
           />
           {emailErrors.email && (
-            <p id="email-error" role="alert" className="text-destructive text-sm">
+            <p id="email-error" role="alert" className="text-sm text-destructive">
               {emailErrors.email.message}
             </p>
           )}
           {error && (
-            <p role="alert" className="text-destructive text-sm">
+            <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
           )}
@@ -94,7 +94,7 @@ export function SignInForm({
         </form>
       ) : (
         <form onSubmit={event => void signIn(event)} className="flex flex-col gap-3" noValidate>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             We sent a code to {email} if it is allowed to sign in.
           </p>
           <Label htmlFor="code">6-digit code</Label>
@@ -107,12 +107,12 @@ export function SignInForm({
             {...codeForm.register('code')}
           />
           {codeErrors.code && (
-            <p id="code-error" role="alert" className="text-destructive text-sm">
+            <p id="code-error" role="alert" className="text-sm text-destructive">
               {codeErrors.code.message}
             </p>
           )}
           {error && (
-            <p role="alert" className="text-destructive text-sm">
+            <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
           )}

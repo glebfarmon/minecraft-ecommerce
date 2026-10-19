@@ -310,6 +310,14 @@ const injectedRtkApi = api.injectEndpoints({
     }),
     getAdminOrder: build.query<GetAdminOrderApiResponse, GetAdminOrderApiArg>({
       query: queryArg => ({url: `/api/admin/orders/${queryArg.id}`})
+    }),
+    getOrderStats: build.query<GetOrderStatsApiResponse, GetOrderStatsApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/stats/orders`,
+        params: {
+          range: queryArg.range
+        }
+      })
     })
   }),
   overrideExisting: false
@@ -1449,6 +1457,39 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
 export type GetAdminOrderApiArg = {
   id: string
 }
+export type GetOrderStatsApiResponse = /** status 200 Statistics for the range */ {
+  range: '7d' | '30d'
+  from: string
+  to: string
+  revenue: {
+    currency: 'EUR' | 'PLN'
+    totalMinor: number
+    previousMinor: number
+  }[]
+  paidCount: number
+  previousPaidCount: number
+  expiredCount: number
+  conversion: number | null
+  byStatus: {
+    status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+    count: number
+  }[]
+  daily: {
+    day: string
+    currency: 'EUR' | 'PLN'
+    totalMinor: number
+    paidCount: number
+  }[]
+  topProducts: {
+    productId: string
+    name: string
+    serverName: string
+    quantity: number
+  }[]
+}
+export type GetOrderStatsApiArg = {
+  range?: '7d' | '30d'
+}
 export const {
   useGetApiInviteLookupByTokenQuery,
   useGetApiAdminMeQuery,
@@ -1495,5 +1536,6 @@ export const {
   useGetContentSettingsQuery,
   useUpdateContentSettingsMutation,
   useListAdminOrdersQuery,
-  useGetAdminOrderQuery
+  useGetAdminOrderQuery,
+  useGetOrderStatsQuery
 } = injectedRtkApi

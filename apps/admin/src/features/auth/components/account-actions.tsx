@@ -1,5 +1,6 @@
 'use client'
 
+import {Card} from '@/components/card'
 import {BackupCodes} from '@/features/auth/components/backup-codes'
 import {authClient} from '@/lib/auth-client'
 import {useRouter} from 'next/navigation'
@@ -33,21 +34,33 @@ export function AccountActions() {
   }
 
   return (
-    <div className="flex max-w-sm flex-col gap-4">
-      <Button type="button" variant="outline" onClick={() => void regenerate()}>
-        Regenerate backup codes
-      </Button>
-      {codes && (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm">New codes replace the old ones. Save them now.</p>
-          <BackupCodes codes={codes} />
-        </div>
-      )}
-      <Button type="button" variant="outline" onClick={() => void signOutEverywhere()}>
-        Sign out everywhere
-      </Button>
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <Card title="Backup codes">
+        <p className="text-[13px] text-muted">
+          One-time codes for when your authenticator app is not at hand.
+        </p>
+        <Button type="button" variant="outline" className="w-fit" onClick={() => void regenerate()}>
+          Regenerate backup codes
+        </Button>
+        {codes && (
+          <div className="flex flex-col gap-2">
+            <p className="text-[13px]">New codes replace the old ones. Save them now.</p>
+            <BackupCodes codes={codes} />
+          </div>
+        )}
+      </Card>
+      <Card title="Sessions">
+        <p className="text-[13px] text-muted">Signs you out on every device, this one included.</p>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-fit"
+          onClick={() => void signOutEverywhere()}>
+          Sign out everywhere
+        </Button>
+      </Card>
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad lg:col-span-2">
           {error}
         </p>
       )}

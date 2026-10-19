@@ -1,73 +1,166 @@
 'use client'
 
+import {Card} from '@/components/card'
+import {PageHeader} from '@/components/page-header'
+import {SkeletonRows} from '@/components/skeleton'
+import {StatusDot} from '@/components/status-dot'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
+import {formatMoney, formatTime} from '@/lib/format'
+import {ArrowLeft, Copy} from 'lucide-react'
+import Link from 'next/link'
+import type {ReactNode} from 'react'
 
-import {formatMoney, formatTime, stripeSessionUrl} from '../lib/format'
-import {OrderStatusBadge} from './order-status-badge'
+import {Button} from '@shop/ui/button'
 
-function Row({label, children}: {label: string; children: React.ReactNode}) {
+import {stripeSessionUrl} from '../lib/format'
+
+function Fields({children}: {children: ReactNode}) {
+  return <dl className="grid grid-cols-[8.5rem_1fr] gap-x-4 gap-y-3 text-[13px]">{children}</dl>
+}
+
+function Row({label, children}: {label: string; children: ReactNode}) {
   return (
     <>
-      <dt className="text-muted-foreground text-sm">{label}</dt>
-      <dd>{children}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="flex min-w-0 items-center gap-2 [overflow-wrap:anywhere]">{children}</dd>
     </>
+  )
+}
+
+function BackLink() {
+  return (
+    <Button asChild variant="ghost">
+      <Link href="/orders">
+        <ArrowLeft aria-hidden className="size-4" />
+        Back to orders
+      </Link>
+    </Button>
   )
 }
 
 export function OrderDetails({id}: {id: string}) {
   const {data: order, isLoading, error} = useGetAdminOrderQuery({id})
-  if (isLoading) return <p>Loading…</p>
+  if (isLoading) return <SkeletonRows rows={6} />
   if (!order)
     return (
-      <p role="alert">
-        {(error as {status?: unknown} | undefined)?.status === 404
-          ? 'Order not found.'
-          : 'Could not load the order. Try again.'}
-      </p>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Order" actions={<BackLink />} />
+        <p role="alert" className="rounded-card bg-card p-5">
+          {(error as {status?: unknown} | undefined)?.status === 404
+            ? 'Order not found.'
+            : 'Could not load the order. Try again.'}
+        </p>
+      </div>
     )
   const money = (n: number) => formatMoney(n, order.currency)
   return (
     <div className="flex flex-col gap-6">
-      <dl className="grid max-w-xl grid-cols-[10rem_1fr] gap-x-4 gap-y-2">
-        <Row label="Order">{order.publicId}</Row>
-        <Row label="Status">
-          <OrderStatusBadge status={order.status} />
-        </Row>
-        <Row label="Nick">{order.nick}</Row>
-        <Row label="Email">{order.email}</Row>
-        <Row label="Created">{formatTime(order.createdAt)}</Row>
-        <Row label="Paid">{order.paidAt ? formatTime(order.paidAt) : '—'}</Row>
-        <Row label="Delivery consent">{formatTime(order.deliveryConsentAt)}</Row>
-        <Row label="Locale">{order.locale}</Row>
-        <Row label="Stripe session">
-          {order.stripeSessionId ? (
-            <a
-              className="underline"
-              href={stripeSessionUrl(order.stripeSessionId)}
-              target="_blank"
-              rel="noopener noreferrer">
-              {order.stripeSessionId}
-            </a>
-          ) : (
-            '—'
-          )}
-        </Row>
-        <Row label="Subtotal">{money(order.subtotalMinor)}</Row>
-        <Row label="Discount">{money(order.discountMinor)}</Row>
-        <Row label="Total">{money(order.totalMinor)}</Row>
-      </dl>
-      {order.servers.map(s => (
-        <section key={s.serverName} className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">{s.serverName}</h2>
-          <ul className="flex flex-col gap-1">
-            {s.items.map((item, i) => (
-              <li key={`${String(i)}-${item.productName}`}>
-                {item.productName} × {item.quantity} — {money(item.unitAmountMinor)} each
+      <PageHeader
+        title={
+          <>
+            Order <span className="font-mono">{order.publicId}</span>
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <StatusDot status={order.status} />
+            <BackLink />
+          </div>
+        }
+      />
+      <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card title="Items">
+          {order.servers.map(s => (
+            <section key={s.serverName} className="flex flex-col gap-1.5">
+              <h3 className="label-caps">{s.serverName}</h3>
+              <ul className="flex flex-col gap-1.5">
+                {s.items.map((item, i) => (
+                  <li
+                    key={`${String(i)}-${item.productName}`}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-plate bg-card-raised px-4 py-3 text-[13px]">
+                    <span className="min-w-0 flex-1 font-medium">{item.productName}</span>
+                    <span className="tabular text-muted">
+                      × {item.quantity} · {money(item.unitAmountMinor)} each
+                    </span>
+                    <span className="tabular w-20 text-right font-semibold">
+                      {money(item.unitAmountMinor * item.quantity)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          <dl className="tabular ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-2 border-t border-border pt-4 text-[13px]">
+            <dt className="text-muted">Subtotal</dt>
+            <dd className="text-right">{money(order.subtotalMinor)}</dd>
+            <dt className="text-muted">Discount</dt>
+            <dd className="text-right">{money(order.discountMinor)}</dd>
+            <dt className="font-semibold">Total</dt>
+            <dd className="text-right text-[15px] font-semibold">{money(order.totalMinor)}</dd>
+          </dl>
+        </Card>
+        <div className="flex min-w-0 flex-col gap-4">
+          <Card title="Buyer">
+            <Fields>
+              <Row label="Nick">{order.nick}</Row>
+              <Row label="Email">
+                <span>{order.email}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Copy email"
+                  className="size-7 shrink-0"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(order.email)
+                  }}>
+                  <Copy aria-hidden className="size-3.5" />
+                </Button>
+              </Row>
+              <Row label="Locale">{order.locale}</Row>
+            </Fields>
+          </Card>
+          <Card title="Payment">
+            <Fields>
+              <Row label="Currency">{order.currency}</Row>
+              <Row label="Stripe session">
+                {order.stripeSessionId ? (
+                  <a
+                    className="font-mono underline"
+                    href={stripeSessionUrl(order.stripeSessionId)}
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    {order.stripeSessionId}
+                  </a>
+                ) : (
+                  '—'
+                )}
+              </Row>
+              <Row label="Delivery consent">{formatTime(order.deliveryConsentAt)}</Row>
+            </Fields>
+          </Card>
+          <Card title="Timeline">
+            <ol className="flex flex-col gap-3 text-[13px]">
+              <li className="flex items-center gap-3">
+                <span aria-hidden className="size-2 rounded-full bg-idle" />
+                <span className="flex-1">Created</span>
+                <span className="tabular text-muted">{formatTime(order.createdAt)}</span>
               </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+              {order.paidAt && (
+                <li className="flex items-center gap-3">
+                  <span aria-hidden className="size-2 rounded-full bg-ok" />
+                  <span className="flex-1">Paid</span>
+                  <span className="tabular text-muted">{formatTime(order.paidAt)}</span>
+                </li>
+              )}
+              <li className="flex items-center gap-3">
+                <span aria-hidden className="size-2 rounded-full bg-fg" />
+                <span className="flex-1">Now</span>
+                <StatusDot status={order.status} />
+              </li>
+            </ol>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

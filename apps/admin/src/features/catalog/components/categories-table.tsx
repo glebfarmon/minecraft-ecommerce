@@ -1,5 +1,9 @@
 'use client'
 
+import {DataTable} from '@/components/data-table'
+import {EmptyState} from '@/components/empty-state'
+import {FormSection} from '@/components/form-section'
+import {SkeletonRows} from '@/components/skeleton'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
@@ -10,13 +14,13 @@ import {
   useUpdateCatalogCategoryMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {Tags} from 'lucide-react'
 import {useState} from 'react'
-import {useForm, useFormState} from 'react-hook-form'
+import {type FieldErrors, type UseFormRegister, useForm, useFormState} from 'react-hook-form'
 
 import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@shop/ui/table'
 
 export function CategoriesTable({canEdit}: {canEdit: boolean}) {
   const categories = useListCatalogCategoriesQuery()
@@ -32,8 +36,13 @@ export function CategoriesTable({canEdit}: {canEdit: boolean}) {
   })
   const {errors} = useFormState({control})
 
-  if (categories.isLoading) return <p>Loading categories…</p>
-  if (categories.isError) return <p role="alert">Could not load categories. Refresh the page.</p>
+  if (categories.isLoading) return <SkeletonRows />
+  if (categories.isError)
+    return (
+      <p role="alert" className="rounded-card bg-card p-5">
+        Could not load categories. Refresh the page.
+      </p>
+    )
 
   async function run(action: Promise<{error?: unknown}>) {
     setError(null)
@@ -47,127 +56,151 @@ export function CategoriesTable({canEdit}: {canEdit: boolean}) {
       reset()
   })
 
+  const list = categories.data ?? []
+  const editingCategory = list.find(c => c.id === editing)
+  const confirmingCategory = list.find(c => c.id === confirming)
+
   return (
     <div className="flex flex-col gap-4">
-      {error && <p role="alert">{error}</p>}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Slug</TableHead>
-            <TableHead>English</TableHead>
-            <TableHead>Polish</TableHead>
-            <TableHead>Servers</TableHead>
-            <TableHead>Products</TableHead>
-            {canEdit && <TableHead className="sr-only">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(categories.data ?? []).map(c =>
-            editing === c.id ? (
-              <EditRow
-                key={c.id}
-                category={c}
-                onCancel={() => {
-                  setEditing(null)
-                }}
-                onSave={async values => {
-                  if (
-                    await run(
-                      update({
-                        id: c.id,
-                        body: {
-                          slug: values.slug,
-                          names: {en: values.en, pl: values.pl},
-                          version: c.version
-                        }
-                      })
-                    )
-                  )
-                    setEditing(null)
-                }}
-              />
-            ) : (
-              <TableRow key={c.id}>
-                <TableCell className="font-mono text-xs">{c.slug}</TableCell>
-                <TableCell>{c.names.en}</TableCell>
-                <TableCell>{c.names.pl}</TableCell>
-                <TableCell>{c.servers.map(s => s.name).join(', ') || '—'}</TableCell>
-                <TableCell>{c.productCount}</TableCell>
-                {canEdit && (
-                  <TableCell className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditing(c.id)
-                      }}>
-                      Rename
-                    </Button>
-                    {confirming === c.id ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setConfirming(null)
-                          void run(remove({id: c.id, version: String(c.version)}))
-                        }}>
-                        Confirm delete
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setConfirming(c.id)
-                        }}>
-                        Delete
-                      </Button>
-                    )}
-                  </TableCell>
-                )}
-              </TableRow>
-            )
-          )}
-        </TableBody>
-      </Table>
-      {canEdit && (
-        <form
-          onSubmit={e => void onCreate(e)}
-          className="flex flex-wrap items-end gap-3"
-          noValidate>
-          {(['slug', 'en', 'pl'] as const).map(field => (
-            <div key={field} className="flex flex-col gap-1">
-              <Label htmlFor={`new-${field}`}>
-                {{slug: 'Slug', en: 'English name', pl: 'Polish name'}[field]}
-              </Label>
-              <Input
-                id={`new-${field}`}
-                aria-invalid={errors[field] ? true : undefined}
-                aria-describedby={errors[field] ? `new-${field}-error` : undefined}
-                {...register(field)}
-              />
-              {errors[field] && (
-                <p id={`new-${field}-error`} className="text-destructive text-xs">
-                  {errors[field].message}
-                </p>
-              )}
+      {error && (
+        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
+          {error}
+        </p>
+      )}
+      {canEdit && !editingCategory && (
+        <form onSubmit={e => void onCreate(e)} noValidate>
+          <FormSection title="New category">
+            <CategoryFields prefix="new" register={register} errors={errors} />
+            <div className="md:col-span-2">
+              <Button type="submit" disabled={creating}>
+                Add category
+              </Button>
             </div>
-          ))}
-          <Button type="submit" disabled={creating}>
-            Add category
-          </Button>
+          </FormSection>
         </form>
       )}
+      {editingCategory && (
+        <EditForm
+          key={editingCategory.id}
+          category={editingCategory}
+          onCancel={() => {
+            setEditing(null)
+          }}
+          onSave={async values => {
+            if (
+              await run(
+                update({
+                  id: editingCategory.id,
+                  body: {
+                    slug: values.slug,
+                    names: {en: values.en, pl: values.pl},
+                    version: editingCategory.version
+                  }
+                })
+              )
+            )
+              setEditing(null)
+          }}
+        />
+      )}
+      {confirmingCategory && (
+        <div className="flex flex-wrap items-center gap-3 rounded-card bg-card p-4">
+          <p className="flex-1">Delete {confirmingCategory.names.en}?</p>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setConfirming(null)
+              void run(
+                remove({id: confirmingCategory.id, version: String(confirmingCategory.version)})
+              )
+            }}>
+            Confirm delete
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setConfirming(null)
+            }}>
+            Cancel
+          </Button>
+        </div>
+      )}
+      <DataTable
+        caption="Categories"
+        rows={list}
+        rowKey={c => c.id}
+        rowLabel={c => c.names.en}
+        columns={[
+          {header: 'English', primary: true, cell: c => c.names.en},
+          {header: 'Polish', cell: c => c.names.pl},
+          {header: 'Slug', cell: c => c.slug, className: 'font-mono text-muted'},
+          {header: 'Servers', cell: c => c.servers.map(sv => sv.name).join(', ') || '—'},
+          {header: 'Products', cell: c => String(c.productCount), className: 'tabular'}
+        ]}
+        menu={
+          canEdit
+            ? c => [
+                {
+                  label: 'Edit',
+                  onSelect: () => {
+                    setConfirming(null)
+                    setEditing(c.id)
+                  }
+                },
+                {
+                  label: 'Delete',
+                  tone: 'danger',
+                  onSelect: () => {
+                    setEditing(null)
+                    setConfirming(c.id)
+                  }
+                }
+              ]
+            : undefined
+        }
+        empty={<EmptyState icon={Tags} title="No categories yet." />}
+      />
     </div>
   )
 }
 
 type Category = ListCatalogCategoriesApiResponse[number]
 
-const EDIT_FIELDS = [
+const FIELDS = [
   {name: 'slug', label: 'Slug'},
   {name: 'en', label: 'English name'},
   {name: 'pl', label: 'Polish name'}
 ] as const
 
-function EditRow({
+function CategoryFields({
+  prefix,
+  register,
+  errors
+}: {
+  prefix: string
+  register: UseFormRegister<CategoryForm>
+  errors: FieldErrors<CategoryForm>
+}) {
+  return FIELDS.map(({name, label}) => (
+    <div key={name} className="flex min-w-0 flex-col gap-1">
+      <Label htmlFor={`${prefix}-${name}`}>{label}</Label>
+      <Input
+        id={`${prefix}-${name}`}
+        className={name === 'slug' ? 'font-mono' : undefined}
+        aria-invalid={errors[name] ? true : undefined}
+        aria-describedby={errors[name] ? `${prefix}-${name}-error` : undefined}
+        {...register(name)}
+      />
+      {errors[name] && (
+        <p id={`${prefix}-${name}-error`} className="text-xs text-destructive">
+          {errors[name].message}
+        </p>
+      )}
+    </div>
+  ))
+}
+
+function EditForm({
   category,
   onSave,
   onCancel
@@ -181,39 +214,25 @@ function EditRow({
     defaultValues: {slug: category.slug, en: category.names.en, pl: category.names.pl}
   })
   const {errors, isSubmitting} = useFormState({control})
-  const save = handleSubmit(onSave)
 
   return (
-    <TableRow>
-      {EDIT_FIELDS.map(({name, label}) => (
-        <TableCell key={name} className="align-top">
-          <Input
-            aria-label={label}
-            aria-invalid={errors[name] ? true : undefined}
-            aria-describedby={errors[name] ? `edit-${category.id}-${name}-error` : undefined}
-            onKeyDown={e => {
-              if (e.key === 'Enter') void save(e)
-              if (e.key === 'Escape') onCancel()
-            }}
-            {...register(name)}
-          />
-          {errors[name] && (
-            <p id={`edit-${category.id}-${name}-error`} className="text-destructive mt-1 text-xs">
-              {errors[name].message}
-            </p>
-          )}
-        </TableCell>
-      ))}
-      <TableCell>{category.servers.map(s => s.name).join(', ') || '—'}</TableCell>
-      <TableCell>{category.productCount}</TableCell>
-      <TableCell className="flex gap-2">
-        <Button disabled={isSubmitting} onClick={e => void save(e)}>
-          Save
-        </Button>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </TableCell>
-    </TableRow>
+    <form
+      noValidate
+      onSubmit={e => void handleSubmit(onSave)(e)}
+      onKeyDown={e => {
+        if (e.key === 'Escape') onCancel()
+      }}>
+      <FormSection title={`Edit ${category.names.en}`}>
+        <CategoryFields prefix={`edit-${category.id}`} register={register} errors={errors} />
+        <div className="flex gap-2 md:col-span-2">
+          <Button type="submit" disabled={isSubmitting}>
+            Save
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </FormSection>
+    </form>
   )
 }

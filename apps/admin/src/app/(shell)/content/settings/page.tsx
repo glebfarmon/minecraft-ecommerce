@@ -1,3 +1,4 @@
+import {PageHeader} from '@/components/page-header'
 import {ContentTabs} from '@/features/content/components/content-tabs'
 import {SettingsForm} from '@/features/content/components/settings-form'
 import {requireMe} from '@/lib/session'
@@ -10,7 +11,7 @@ export default async function ContentSettingsFormPage() {
   if (!hasPermission(me.permissions, 'content.write')) notFound()
   return (
     <section className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Site settings</h1>
+      <PageHeader title="Content" description="Site name, server address and contact links." />
       <ContentTabs current="/content/settings" />
       <SettingsForm canEdit />
     </section>
