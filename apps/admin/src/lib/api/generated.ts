@@ -1197,7 +1197,7 @@ export type GetRulesDraftApiResponse = /** status 200 The draft */ {
       /** Stable id: 1–60 of a–z, 0–9 and "-" */
       id: string
       title: {
-        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
         en: string
         /** Polish text; the English text is shown when empty */
         pl?: string
@@ -1206,7 +1206,7 @@ export type GetRulesDraftApiResponse = /** status 200 The draft */ {
         /** Stable id: 1–60 of a–z, 0–9 and "-" */
         id: string
         text: {
-          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
           en: string
           /** Polish text; the English text is shown when empty */
           pl?: string
@@ -1225,7 +1225,7 @@ export type SaveRulesDraftApiResponse = /** status 200 The saved draft with its 
       /** Stable id: 1–60 of a–z, 0–9 and "-" */
       id: string
       title: {
-        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
         en: string
         /** Polish text; the English text is shown when empty */
         pl?: string
@@ -1234,7 +1234,7 @@ export type SaveRulesDraftApiResponse = /** status 200 The saved draft with its 
         /** Stable id: 1–60 of a–z, 0–9 and "-" */
         id: string
         text: {
-          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
           en: string
           /** Polish text; the English text is shown when empty */
           pl?: string
@@ -1253,7 +1253,7 @@ export type SaveRulesDraftApiArg = {
         /** Stable id: 1–60 of a–z, 0–9 and "-" */
         id: string
         title: {
-          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
           en: string
           /** Polish text; the English text is shown when empty */
           pl?: string
@@ -1262,7 +1262,7 @@ export type SaveRulesDraftApiArg = {
           /** Stable id: 1–60 of a–z, 0–9 and "-" */
           id: string
           text: {
-            /** English text; **bold**, *italic* and [label](https://… or /path) links */
+            /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
             en: string
             /** Polish text; the English text is shown when empty */
             pl?: string
@@ -1301,7 +1301,7 @@ export type RestoreRulesVersionApiResponse = /** status 201 The draft after the 
       /** Stable id: 1–60 of a–z, 0–9 and "-" */
       id: string
       title: {
-        /** English text; **bold**, *italic* and [label](https://… or /path) links */
+        /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
         en: string
         /** Polish text; the English text is shown when empty */
         pl?: string
@@ -1310,7 +1310,7 @@ export type RestoreRulesVersionApiResponse = /** status 201 The draft after the 
         /** Stable id: 1–60 of a–z, 0–9 and "-" */
         id: string
         text: {
-          /** English text; **bold**, *italic* and [label](https://… or /path) links */
+          /** English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \ escapes * + [ ] ( ) */
           en: string
           /** Polish text; the English text is shown when empty */
           pl?: string

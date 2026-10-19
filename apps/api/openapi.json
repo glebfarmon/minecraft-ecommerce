@@ -4862,7 +4862,7 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 120,
-                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                    "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                   },
                                   "pl": {
                                     "type": "string",
@@ -4889,7 +4889,7 @@
                                           "type": "string",
                                           "minLength": 1,
                                           "maxLength": 2000,
-                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                          "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                         },
                                         "pl": {
                                           "type": "string",
@@ -4970,7 +4970,7 @@
                                   "type": "string",
                                   "minLength": 1,
                                   "maxLength": 120,
-                                  "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                  "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                 },
                                 "pl": {
                                   "type": "string",
@@ -4997,7 +4997,7 @@
                                         "type": "string",
                                         "minLength": 1,
                                         "maxLength": 2000,
-                                        "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                        "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                       },
                                       "pl": {
                                         "type": "string",
@@ -5060,7 +5060,7 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 120,
-                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                    "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                   },
                                   "pl": {
                                     "type": "string",
@@ -5087,7 +5087,7 @@
                                           "type": "string",
                                           "minLength": 1,
                                           "maxLength": 2000,
-                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                          "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                         },
                                         "pl": {
                                           "type": "string",
@@ -5321,7 +5321,7 @@
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 120,
-                                    "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                    "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                   },
                                   "pl": {
                                     "type": "string",
@@ -5348,7 +5348,7 @@
                                           "type": "string",
                                           "minLength": 1,
                                           "maxLength": 2000,
-                                          "description": "English text; **bold**, *italic* and [label](https://… or /path) links"
+                                          "description": "English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )"
                                         },
                                         "pl": {
                                           "type": "string",
