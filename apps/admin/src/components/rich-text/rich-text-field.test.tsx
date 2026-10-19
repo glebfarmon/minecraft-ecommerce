@@ -136,4 +136,31 @@ describe('RichTextField', () => {
       expect(bold).toHaveAttribute('aria-pressed', 'true')
     })
   })
+
+  it('turns typed [label](href) into a link when links are on', async () => {
+    let editor: Editor | undefined
+    const onChange = jest.fn()
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        links
+        onChange={onChange}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    act(() => {
+      editor?.commands.insertContent('see [rules](/rules')
+    })
+    const view = editor?.view
+    const {from, to} = view?.state.selection ?? {from: 0, to: 0}
+    act(() => {
+      view?.someProp('handleTextInput', f => f(view, from, to, ')', () => view.state.tr))
+    })
+    expect(onChange).toHaveBeenLastCalledWith('see [rules](/rules)')
+    expect(screen.getByRole('textbox').querySelector('a')).toHaveAttribute('href', '/rules')
+  })
 })

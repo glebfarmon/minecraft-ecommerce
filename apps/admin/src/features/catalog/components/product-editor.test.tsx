@@ -1,4 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
+import {markdownOf, setMarkdown} from '@/test/rich-field'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ProductEditor} from './product-editor'
@@ -105,6 +106,26 @@ describe('ProductEditor', () => {
         await screen.findByText('Saved. Live on the site within a minute.')
       ).toBeInTheDocument()
       expect(sent).toEqual([expect.objectContaining({isActive: true})])
+    })
+
+    it('saves a formatted multi-line description as markdown', async () => {
+      const sent = mockEnabled()
+      renderWithStore(<ProductEditor id="p1" canEdit />)
+      const description = await screen.findByLabelText('Description (EN)')
+      expect(description).toHaveAttribute('aria-multiline', 'true')
+      setMarkdown(description, '**Fast** delivery\nall ++day++')
+      expect(markdownOf(description)).toBe('**Fast** delivery\nall ++day++')
+      fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+      expect(
+        await screen.findByText('Saved. Live on the site within a minute.')
+      ).toBeInTheDocument()
+      expect(sent).toEqual([
+        expect.objectContaining({
+          translations: expect.objectContaining({
+            en: expect.objectContaining({description: '**Fast** delivery\nall ++day++'})
+          })
+        })
+      ])
     })
 
     it('will not save while enabled and incomplete, and says how to fix it', async () => {

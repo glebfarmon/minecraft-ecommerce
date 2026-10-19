@@ -1,5 +1,6 @@
 'use client'
 
+import {RichTextField} from '@/components/rich-text/rich-text-field'
 import {type DragHandleProps, SortableList} from '@/features/catalog/components/sortable-list'
 import {RulesPreview} from '@/features/content/components/rules-preview'
 import {editionDate} from '@/features/content/lib/edition-date'
@@ -22,10 +23,10 @@ import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useEffect, useRef, useState} from 'react'
 import {
   type Control,
+  Controller,
   type FieldError,
   type FieldErrors,
   type Resolver,
-  type UseFormRegister,
   get,
   useFieldArray,
   useForm,
@@ -35,10 +36,8 @@ import {
 
 import {type RulesDocument, RulesDocumentSchema} from '@shop/shared/rules'
 import {Button} from '@shop/ui/button'
-import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@shop/ui/tabs'
-import {Textarea} from '@shop/ui/textarea'
 
 type Locale = 'en' | 'pl'
 const LOCALES = ['en', 'pl'] as const
@@ -88,7 +87,7 @@ export function RulesEditor() {
     resolver,
     defaultValues: {sections: []}
   })
-  const {control, register, handleSubmit, reset} = form
+  const {control, handleSubmit, reset} = form
   const {isDirty} = useFormState({control})
   const values = useWatch({control}) as RulesForm
 
@@ -249,7 +248,7 @@ export function RulesEditor() {
           <TabsContent value={tab}>
             {/* Tab triggers stay outside the fieldset, so the language can switch while saving. */}
             <fieldset disabled={busy} className="min-w-0">
-              <Sections locale={tab} control={control} register={register} />
+              <Sections locale={tab} control={control} />
             </fieldset>
           </TabsContent>
         </Tabs>
@@ -264,10 +263,9 @@ export function RulesEditor() {
 type EditorProps = {
   locale: Locale
   control: Control<RulesForm, unknown, RulesDocument>
-  register: UseFormRegister<RulesForm>
 }
 
-function Sections({locale, control, register}: EditorProps) {
+function Sections({locale, control}: EditorProps) {
   const {fields, append, remove, move} = useFieldArray({control, name: 'sections'})
 
   return (
@@ -289,7 +287,6 @@ function Sections({locale, control, register}: EditorProps) {
               locale={locale}
               index={index}
               control={control}
-              register={register}
               handle={handle}
               onRemove={() => {
                 remove(index)
@@ -315,7 +312,6 @@ function Section({
   locale,
   index,
   control,
-  register,
   handle,
   onRemove
 }: EditorProps & {index: number; handle: DragHandleProps; onRemove: () => void}) {
@@ -335,7 +331,6 @@ function Section({
         <Handle label={name} handle={handle} />
         <TextField
           control={control}
-          register={register}
           name={textPath(index, locale)}
           label={`Section ${n} title (${tag})`}
           className="flex-1"
@@ -360,7 +355,6 @@ function Section({
               </span>
               <TextField
                 control={control}
-                register={register}
                 name={textPath(index, locale, i)}
                 label={`Rule ${number} (${tag})`}
                 multiline
@@ -405,13 +399,12 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
 
 function TextField({
   control,
-  register,
   name,
   label,
   multiline = false,
   hideLabel = false,
   className
-}: Omit<EditorProps, 'locale'> & {
+}: Pick<EditorProps, 'control'> & {
   name: TextPath
   label: string
   multiline?: boolean
@@ -426,20 +419,29 @@ function TextField({
   // An empty PL text is fine: the site shows the English one (and so does the preview).
   const hint = name.endsWith('.pl') && !(value ?? '').trim() ? FALLBACK : undefined
   const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ')
-  const props = {
-    'id': id,
-    'aria-invalid': error ? true : undefined,
-    'aria-describedby': describedBy || undefined,
-    'placeholder': hint,
-    ...register(name)
-  }
 
   return (
     <div className={`flex min-w-0 flex-col gap-1 ${className ?? ''}`}>
-      <Label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-xs text-muted-foreground'}>
+      <Label id={`${id}-label`} className={hideLabel ? 'sr-only' : 'text-xs text-muted-foreground'}>
         {label}
       </Label>
-      {multiline ? <Textarea rows={2} className="min-h-16" {...props} /> : <Input {...props} />}
+      <Controller
+        control={control}
+        name={name}
+        render={({field}) => (
+          <RichTextField
+            id={id}
+            value={field.value || ''}
+            onChange={field.onChange}
+            multiline={multiline}
+            links
+            placeholder={hint}
+            aria-labelledby={`${id}-label`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy || undefined}
+          />
+        )}
+      />
       {hint && (
         <p id={`${id}-hint`} className="text-xs text-muted-foreground">
           {hint}

@@ -1,7 +1,7 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import type {Editor} from '@tiptap/core'
+import {type Editor, InputRule} from '@tiptap/core'
 import Bold from '@tiptap/extension-bold'
 import Document from '@tiptap/extension-document'
 import HardBreak from '@tiptap/extension-hard-break'
@@ -33,6 +33,23 @@ const toggle = (editor: Editor, name: MarkName) => {
   else if (name === 'italic') chain.toggleItalic().run()
   else chain.toggleUnderline().run()
 }
+
+// Typing `[label](href)` makes a link, as the rules text did before the editor was visual.
+// The href is not checked here: the rules schema refuses unsafe ones at save.
+const LinkWithMarkdownInput = Link.extend({
+  addInputRules() {
+    return [
+      new InputRule({
+        find: /\[([^\]]+)\]\(([^)\s]+)\)$/,
+        handler: ({state, range, match}) => {
+          const [, label = '', href = ''] = match
+          const mark = this.type.create({href})
+          state.tr.replaceWith(range.from, range.to, state.schema.text(label, [mark]))
+        }
+      })
+    ]
+  }
+})
 
 function SelectionToolbar({editor}: {editor: Editor}) {
   const state = useEditorState({
@@ -130,7 +147,13 @@ export function RichTextField({
       Placeholder.configure({placeholder: placeholder ?? ''}),
       ...(multiline ? [HardBreak] : []),
       ...(links
-        ? [Link.configure({openOnClick: false, autolink: false, protocols: ['https']})]
+        ? [
+            LinkWithMarkdownInput.configure({
+              openOnClick: false,
+              autolink: false,
+              protocols: ['https']
+            })
+          ]
         : [])
     ],
     content: toDoc(value, options),

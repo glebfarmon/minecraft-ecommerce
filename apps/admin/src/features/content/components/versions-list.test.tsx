@@ -1,8 +1,11 @@
 import {makeStore} from '@/lib/api/store'
 import {renderWithStore} from '@/test/render-with-store'
+import {markdownOf, setMarkdown} from '@/test/rich-field'
 import {fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import type {ReactNode} from 'react'
 import {Provider} from 'react-redux'
+
+import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {RulesEditor} from './rules-editor'
 import {VersionsList} from './versions-list'
@@ -99,18 +102,18 @@ describe('VersionsList', () => {
       expect.stringContaining('September 1, 2026')
     ])
 
-    expect(await screen.findByLabelText('Rule 1.1 (EN)')).toHaveValue('Be kind.')
+    expect(markdownOf(await screen.findByLabelText('Rule 1.1 (EN)'))).toBe('Be kind.')
     const restoreButtons = within(list).getAllByRole('button', {name: 'Restore to draft'})
     fireEvent.click(restoreButtons[2] as HTMLElement)
     expect(calls.some(c => c.path.endsWith('/restore'))).toBe(false)
     fireEvent.click(within(list).getByRole('button', {name: 'Restore'}))
     await waitFor(() => {
-      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveValue('Be polite.')
+      expect(markdownOf(screen.getByLabelText('Rule 1.1 (EN)'))).toBe('Be polite.')
     })
     expect(calls.filter(c => c.method === 'POST')).toEqual([
       {method: 'POST', path: '/api/admin/content/rules/versions/1/restore', search: '', body: null}
     ])
-    expect(screen.getByLabelText('Section 1 title (EN)')).toHaveValue('Old rules')
+    expect(markdownOf(screen.getByLabelText('Section 1 title (EN)'))).toBe('Old rules')
     expect(
       screen.getByText('Restored to the draft above. Publish it to show it on the site.')
     ).toBeInTheDocument()
@@ -147,10 +150,10 @@ describe('VersionsList', () => {
     const page = (show: boolean): ReactNode => (
       <Provider store={store}>
         {show && (
-          <>
+          <TooltipProvider>
             <RulesEditor />
             <VersionsList />
-          </>
+          </TooltipProvider>
         )}
       </Provider>
     )
@@ -158,11 +161,9 @@ describe('VersionsList', () => {
     fireEvent.click(await screen.findByRole('button', {name: 'Restore to draft'}))
     fireEvent.click(screen.getByRole('button', {name: 'Restore'}))
     await waitFor(() => {
-      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveValue('Be polite.')
+      expect(markdownOf(screen.getByLabelText('Rule 1.1 (EN)'))).toBe('Be polite.')
     })
-    fireEvent.change(screen.getByLabelText('Rule 1.1 (EN)'), {
-      target: {value: 'Be polite, always.'}
-    })
+    setMarkdown(screen.getByLabelText('Rule 1.1 (EN)'), 'Be polite, always.')
     fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
     await waitFor(() => {
       expect(screen.getByRole('button', {name: 'Publish'})).toBeEnabled()
@@ -173,7 +174,7 @@ describe('VersionsList', () => {
     rerender(page(false))
     rerender(page(true))
     await waitFor(() => {
-      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveValue('Be polite, always.')
+      expect(markdownOf(screen.getByLabelText('Rule 1.1 (EN)'))).toBe('Be polite, always.')
     })
     fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
     await waitFor(() => {
