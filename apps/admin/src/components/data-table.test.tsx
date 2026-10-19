@@ -98,6 +98,21 @@ describe('DataTable', () => {
     expect(within(table).getByRole('button', {name: 'Actions for Alex'})).toBeInTheDocument()
   })
 
+  it('leaves out the menu button for rows without actions', () => {
+    render(
+      <DataTable
+        caption="Orders"
+        rows={rows}
+        rowKey={r => r.id}
+        columns={[{header: 'Nick', cell: r => r.nick, primary: true}]}
+        menu={r => (r.id === '1' ? [] : [{label: 'Open', onSelect: jest.fn()}])}
+      />
+    )
+    const table = screen.getByRole('table')
+    expect(within(table).queryByRole('button', {name: 'Actions for Steve'})).toBeNull()
+    expect(within(table).getByRole('button', {name: 'Actions for Alex'})).toBeInTheDocument()
+  })
+
   it('shows the empty slot when there are no rows', () => {
     render(
       <DataTable

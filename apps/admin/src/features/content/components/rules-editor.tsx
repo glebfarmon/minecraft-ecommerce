@@ -217,7 +217,7 @@ export function RulesEditor() {
           </div>
 
           {confirmPublish && !isDirty && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-card bg-card p-4">
               <p className="mr-auto text-sm">
                 {`Publish as the edition of ${editionDate(new Date())}?`}
               </p>
@@ -235,12 +235,12 @@ export function RulesEditor() {
             </div>
           )}
           {error && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
               {error}
             </p>
           )}
           {status && (
-            <p role="status" className="text-sm">
+            <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
               {status}
             </p>
           )}
@@ -330,7 +330,7 @@ function Section({
   const tag = locale.toUpperCase()
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-card bg-card p-5">
       <div className="flex items-end gap-2">
         <Handle label={name} handle={handle} />
         <TextField

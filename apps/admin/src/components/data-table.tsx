@@ -73,7 +73,7 @@ export function DataTable<T>({
               ))}
               {menu && (
                 <td className="rounded-r-plate bg-card px-2 text-right group-hover:bg-card-raised">
-                  <RowMenu label={menuLabel(r)} items={menu(r)} />
+                  <RowActions label={menuLabel(r)} items={menu(r)} />
                 </td>
               )}
             </tr>
@@ -94,10 +94,15 @@ export function DataTable<T>({
                   </div>
                 ))}
             </div>
-            {menu && <RowMenu label={menuLabel(r)} items={menu(r)} />}
+            {menu && <RowActions label={menuLabel(r)} items={menu(r)} />}
           </li>
         ))}
       </ul>
     </>
   )
+}
+
+/** A row with nothing to do (e.g. the owner) gets no menu button at all. */
+function RowActions({label, items}: {label: string; items: RowMenuItem[]}) {
+  return items.length > 0 ? <RowMenu label={label} items={items} /> : null
 }

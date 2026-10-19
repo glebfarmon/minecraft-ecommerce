@@ -1,5 +1,7 @@
 'use client'
 
+import {Card} from '@/components/card'
+import {FormSection} from '@/components/form-section'
 import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/content/schemas'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
@@ -67,42 +69,63 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
     <form
       onSubmit={e => void handleSubmit(save)(e)}
       noValidate
-      className="flex max-w-xl flex-col gap-6">
-      {error && <p role="alert">{error}</p>}
-      {saved && <p role="status">Saved. Live on the site within a minute.</p>}
+      className="grid items-start gap-4 xl:grid-cols-[1fr_20rem]">
+      <div className="flex min-w-0 flex-col gap-4">
+        {error && (
+          <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
+            {error}
+          </p>
+        )}
+        {saved && (
+          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
+            Saved. Live on the site within a minute.
+          </p>
+        )}
 
-      <p data-testid="wordmark-preview" className="text-xl font-semibold">
-        {values.plain}
-        <span data-accent className="text-primary">
-          {values.accent}
-        </span>
-      </p>
+        <FormSection
+          title="Brand"
+          description="The wordmark in the site header."
+          disabled={!canEdit}>
+          <Field name="plain" label="Site name" error={errorOf('plain')}>
+            <Input {...fieldProps('plain')} {...register('plain')} />
+          </Field>
+          <Field name="accent" label="Accent part" error={errorOf('accent')}>
+            <Input {...fieldProps('accent')} {...register('accent')} />
+          </Field>
+        </FormSection>
 
-      <fieldset disabled={!canEdit} className="flex flex-col gap-4">
-        <Field name="plain" label="Site name" error={errorOf('plain')}>
-          <Input {...fieldProps('plain')} {...register('plain')} />
-        </Field>
-        <Field name="accent" label="Accent part" error={errorOf('accent')}>
-          <Input {...fieldProps('accent')} {...register('accent')} />
-        </Field>
-        <Field name="serverIp" label="Server address" error={errorOf('serverIp')}>
-          <Input {...fieldProps('serverIp')} {...register('serverIp')} />
-        </Field>
-        <Field name="discordUrl" label="Discord link" error={errorOf('discordUrl')}>
-          <Input {...fieldProps('discordUrl')} {...register('discordUrl')} />
-        </Field>
-        <Field name="supportEmail" label="Support email" error={errorOf('supportEmail')}>
-          <Input {...fieldProps('supportEmail')} {...register('supportEmail')} />
-        </Field>
-      </fieldset>
+        <FormSection
+          title="Contact"
+          description="Shown in the footer and on the rules page."
+          disabled={!canEdit}>
+          <Field name="serverIp" label="Server address" error={errorOf('serverIp')}>
+            <Input {...fieldProps('serverIp')} {...register('serverIp')} />
+          </Field>
+          <Field name="discordUrl" label="Discord link" error={errorOf('discordUrl')}>
+            <Input {...fieldProps('discordUrl')} {...register('discordUrl')} />
+          </Field>
+          <Field name="supportEmail" label="Support email" error={errorOf('supportEmail')}>
+            <Input {...fieldProps('supportEmail')} {...register('supportEmail')} />
+          </Field>
+        </FormSection>
 
-      {canEdit && (
-        <div>
-          <Button type="submit" disabled={saving}>
-            Save
-          </Button>
-        </div>
-      )}
+        {canEdit && (
+          <div>
+            <Button type="submit" disabled={saving}>
+              Save
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Card title="Preview">
+        <p data-testid="wordmark-preview" className="text-xl font-semibold break-all">
+          {values.plain}
+          <span data-accent className="text-accent">
+            {values.accent}
+          </span>
+        </p>
+      </Card>
     </form>
   )
 }
@@ -119,7 +142,7 @@ function Field({
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={`settings-${name}`}>{label}</Label>
       {children}
       {error && (

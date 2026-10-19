@@ -1,5 +1,8 @@
 'use client'
 
+import {DataTable} from '@/components/data-table'
+import {SkeletonRows} from '@/components/skeleton'
+import {ToneDot} from '@/components/status-dot'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
   useDeleteApiAdminAdminsByIdMutation,
@@ -13,7 +16,6 @@ import {useState} from 'react'
 import {PERMISSIONS, type Permission} from '@shop/shared/access'
 import {Button} from '@shop/ui/button'
 import {Select} from '@shop/ui/select'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@shop/ui/table'
 
 type Pending = {adminId: string; kind: 'remove' | 'reset' | 'role'; roleId?: string}
 
@@ -35,7 +37,7 @@ export function AdminsTable({
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (admins.isLoading) return <p>Loading admins…</p>
+  if (admins.isLoading) return <SkeletonRows rows={3} />
   if (admins.isError) return <p role="alert">Could not load admins. Refresh the page.</p>
 
   const assignable = (roles.data ?? []).filter(
@@ -54,122 +56,124 @@ export function AdminsTable({
     setPending(null)
   }
 
+  const list = admins.data ?? []
+  const target = list.find(a => a.id === pending?.adminId)
+  const newRole = assignable.find(r => r.id === pending?.roleId)
+  const open = (adminId: string, kind: Pending['kind']) => () => {
+    setError(null)
+    setPending({adminId, kind})
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
           {error}
         </p>
       )}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>2FA</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(admins.data ?? []).map(admin => {
-            const isOwner = admin.role.name === OWNER
-            const disabled = admin.disabledAt !== null
-            const mine = pending?.adminId === admin.id ? pending : null
-            const newRole = assignable.find(r => r.id === mine?.roleId)
-            return (
-              <TableRow key={admin.id}>
-                <TableCell>
-                  <div>{admin.email}</div>
-                  <div className="text-xs text-muted-foreground">{admin.name}</div>
-                </TableCell>
-                <TableCell>
-                  {canChangeRoles && !isOwner && !disabled ? (
-                    <Select
-                      aria-label={`Role of ${admin.email}`}
-                      value={mine?.kind === 'role' ? mine.roleId : admin.role.id}
-                      onChange={e => {
-                        setError(null)
-                        setPending(
-                          e.target.value === admin.role.id
-                            ? null
-                            : {adminId: admin.id, kind: 'role', roleId: e.target.value}
-                        )
-                      }}>
-                      {admin.role.id && !assignable.some(r => r.id === admin.role.id) && (
-                        <option value={admin.role.id}>{admin.role.name}</option>
-                      )}
-                      {assignable.map(r => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    admin.role.name
-                  )}
-                </TableCell>
-                <TableCell>{admin.twoFactorEnabled ? 'On' : 'Off'}</TableCell>
-                <TableCell>
-                  {disabled ? (
-                    <span className="text-muted-foreground">Removed</span>
-                  ) : isOwner ? null : mine ? (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-sm">
-                        {mine.kind === 'remove' &&
-                          `Remove ${admin.email}? They lose access and are signed out everywhere.`}
-                        {mine.kind === 'reset' &&
-                          `Reset two-factor for ${admin.email}? They are signed out everywhere and must set it up again.`}
-                        {mine.kind === 'role' &&
-                          `Change ${admin.email} to ${newRole?.name ?? 'this role'}? They are signed out everywhere and must sign in again.`}
-                      </p>
-                      <div className="flex gap-2">
-                        <Button type="button" size="default" onClick={() => void confirm(mine)}>
-                          {mine.kind === 'remove'
-                            ? 'Remove'
-                            : mine.kind === 'reset'
-                              ? 'Reset'
-                              : 'Change role'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setPending(null)
-                          }}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        aria-label={`Reset 2FA ${admin.email}`}
-                        onClick={() => {
-                          setError(null)
-                          setPending({adminId: admin.id, kind: 'reset'})
-                        }}>
-                        Reset 2FA
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        aria-label={`Remove ${admin.email}`}
-                        onClick={() => {
-                          setError(null)
-                          setPending({adminId: admin.id, kind: 'remove'})
-                        }}>
-                        Remove
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
+      {pending && target && (
+        <div className="flex flex-col gap-3 rounded-card bg-card p-4">
+          {pending.kind === 'role' && (
+            <Select
+              aria-label={`Role of ${target.email}`}
+              className="max-w-xs"
+              value={pending.roleId ?? target.role.id}
+              onChange={e => {
+                setPending({
+                  adminId: target.id,
+                  kind: 'role',
+                  roleId: e.target.value === target.role.id ? undefined : e.target.value
+                })
+              }}>
+              {!assignable.some(r => r.id === target.role.id) && (
+                <option value={target.role.id}>{target.role.name}</option>
+              )}
+              {assignable.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
+          )}
+          <p className="text-[13px]">
+            {pending.kind === 'remove' &&
+              `Remove ${target.email}? They lose access and are signed out everywhere.`}
+            {pending.kind === 'reset' &&
+              `Reset two-factor for ${target.email}? They are signed out everywhere and must set it up again.`}
+            {pending.kind === 'role' &&
+              (newRole
+                ? `Change ${target.email} to ${newRole.name}? They are signed out everywhere and must sign in again.`
+                : `Pick the new role for ${target.email}.`)}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={pending.kind === 'role' ? 'default' : 'danger'}
+              disabled={pending.kind === 'role' && !newRole}
+              onClick={() => void confirm(pending)}>
+              {pending.kind === 'remove'
+                ? 'Remove'
+                : pending.kind === 'reset'
+                  ? 'Reset'
+                  : 'Change role'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPending(null)
+              }}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+      <DataTable
+        caption="Admins"
+        rows={list}
+        rowKey={a => a.id}
+        rowLabel={a => a.email}
+        columns={[
+          {
+            header: 'Admin',
+            primary: true,
+            cell: a => (
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{a.email}</span>
+                <span className="truncate text-[12px] text-muted">{a.name}</span>
+              </span>
             )
-          })}
-        </TableBody>
-      </Table>
+          },
+          {header: 'Role', cell: a => a.role.name},
+          {
+            header: '2FA',
+            cell: a => (
+              <ToneDot
+                tone={a.twoFactorEnabled ? 'ok' : 'warn'}
+                label={a.twoFactorEnabled ? 'On' : 'Off'}
+              />
+            )
+          },
+          {
+            header: 'Status',
+            cell: a =>
+              a.disabledAt === null ? (
+                <ToneDot tone="ok" label="Active" />
+              ) : (
+                <ToneDot tone="idle" label="Removed" />
+              )
+          }
+        ]}
+        menu={a =>
+          a.role.name === OWNER || a.disabledAt !== null
+            ? []
+            : [
+                ...(canChangeRoles ? [{label: 'Change role', onSelect: open(a.id, 'role')}] : []),
+                {label: 'Reset 2FA', onSelect: open(a.id, 'reset')},
+                {label: 'Remove', tone: 'danger' as const, onSelect: open(a.id, 'remove')}
+              ]
+        }
+      />
     </div>
   )
 }

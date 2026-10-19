@@ -1,3 +1,4 @@
+import {PageHeader} from '@/components/page-header'
 import {ContentTabs} from '@/features/content/components/content-tabs'
 import {TextsTable} from '@/features/content/components/texts-table'
 import {requireMe} from '@/lib/session'
@@ -10,7 +11,7 @@ export default async function ContentTextsTablePage() {
   if (!hasPermission(me.permissions, 'content.write')) notFound()
   return (
     <section className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Texts</h1>
+      <PageHeader title="Content" description="Override any interface text, per language." />
       <ContentTabs current="/content/texts" />
       <TextsTable />
     </section>

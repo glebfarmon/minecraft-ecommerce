@@ -1,5 +1,10 @@
 'use client'
 
+import {DataTable} from '@/components/data-table'
+import {EmptyState} from '@/components/empty-state'
+import {FormSection} from '@/components/form-section'
+import {SkeletonRows} from '@/components/skeleton'
+import {type Tone, ToneDot} from '@/components/status-dot'
 import {InviteFormSchema} from '@/features/team/schemas'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
@@ -10,6 +15,7 @@ import {
   usePostApiAdminInvitesMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {MailPlus} from 'lucide-react'
 import {useState} from 'react'
 import {useForm, useFormState} from 'react-hook-form'
 
@@ -18,9 +24,16 @@ import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 import {Select} from '@shop/ui/select'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@shop/ui/table'
 
 type InviteRow = {acceptedAt: string | null; revokedAt: string | null; expiresAt: string}
+
+type Status = ReturnType<typeof statusOf>
+const STATUS_TONE: Record<Status, Tone> = {
+  Open: 'warn',
+  Accepted: 'ok',
+  Expired: 'idle',
+  Revoked: 'idle'
+}
 
 function statusOf(invite: InviteRow): 'Accepted' | 'Revoked' | 'Expired' | 'Open' {
   if (invite.acceptedAt) return 'Accepted'
@@ -65,133 +78,133 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
     if (ok) reset()
   })
 
+  const target = invites.data?.find(i => i.id === confirming)
+
   return (
-    <div className="flex flex-col gap-6">
-      <form
-        onSubmit={e => void onSubmit(e)}
-        className="flex flex-wrap items-start gap-3"
-        noValidate>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="invite-email">Email</Label>
-          <Input
-            id="invite-email"
-            type="email"
-            autoComplete="off"
-            aria-invalid={errors.email ? true : undefined}
-            aria-describedby={errors.email ? 'invite-email-error' : undefined}
-            {...register('email')}
-          />
-          {errors.email && (
-            <p id="invite-email-error" role="alert" className="text-sm text-destructive">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="invite-role">Role</Label>
-          <Select
-            id="invite-role"
-            value={chosenRole}
-            onChange={e => {
-              setRoleId(e.target.value)
-            }}>
-            {assignable.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <Button type="submit" className="mt-6" disabled={creating || !chosenRole}>
-          Send invite
-        </Button>
+    <div className="flex flex-col gap-4">
+      <form onSubmit={e => void onSubmit(e)} noValidate>
+        <FormSection title="Invite an admin" description="They get an email with a sign-up link.">
+          <div className="flex min-w-0 flex-col gap-1">
+            <Label htmlFor="invite-email">Email</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              autoComplete="off"
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? 'invite-email-error' : undefined}
+              {...register('email')}
+            />
+            {errors.email && (
+              <p id="invite-email-error" role="alert" className="text-xs text-destructive">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <Label htmlFor="invite-role">Role</Label>
+            <Select
+              id="invite-role"
+              value={chosenRole}
+              onChange={e => {
+                setRoleId(e.target.value)
+              }}>
+              {assignable.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <Button type="submit" disabled={creating || !chosenRole}>
+              Send invite
+            </Button>
+          </div>
+        </FormSection>
       </form>
-      {notice && <p className="text-sm">{notice}</p>}
+      {notice && (
+        <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
+          {notice}
+        </p>
+      )}
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
           {error}
         </p>
       )}
-      {invites.isLoading && <p>Loading invites…</p>}
-      {invites.isError && <p role="alert">Could not load invites. Refresh the page.</p>}
+      {target && (
+        <div className="flex flex-col gap-3 rounded-card bg-card p-4">
+          <p className="text-[13px]">
+            Revoke the invite for {target.email}? The link stops working.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                setConfirming(null)
+                void run(cancel({id: target.id}))
+              }}>
+              Revoke invite
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setConfirming(null)
+              }}>
+              Keep invite
+            </Button>
+          </div>
+        </div>
+      )}
+      {invites.isLoading && <SkeletonRows rows={3} />}
+      {invites.isError && (
+        <p role="alert" className="rounded-card bg-card p-5">
+          Could not load invites. Refresh the page.
+        </p>
+      )}
       {invites.data && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invites.data.map(invite => {
-              const status = statusOf(invite)
-              const closed = status === 'Accepted' || status === 'Revoked'
-              return (
-                <TableRow key={invite.id}>
-                  <TableCell>{invite.email}</TableCell>
-                  <TableCell>{invite.role.name}</TableCell>
-                  <TableCell>{status}</TableCell>
-                  <TableCell>{new Date(invite.expiresAt).toLocaleDateString('en-GB')}</TableCell>
-                  <TableCell>
-                    {!closed &&
-                      (confirming === invite.id ? (
-                        <div className="flex flex-col gap-2">
-                          <p className="text-sm">
-                            Revoke the invite for {invite.email}? The link stops working.
-                          </p>
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                setConfirming(null)
-                                void run(cancel({id: invite.id}))
-                              }}>
-                              Revoke invite
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setConfirming(null)
-                              }}>
-                              Keep invite
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            aria-label={`Resend ${invite.email}`}
-                            onClick={() =>
-                              void run(
-                                resend({id: invite.id}),
-                                `Invite re-sent to ${invite.email}.`
-                              )
-                            }>
-                            Resend
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            aria-label={`Cancel ${invite.email}`}
-                            onClick={() => {
-                              setConfirming(invite.id)
-                            }}>
-                            Cancel
-                          </Button>
-                        </div>
-                      ))}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+        <DataTable
+          caption="Invites"
+          rows={invites.data}
+          rowKey={i => i.id}
+          rowLabel={i => i.email}
+          columns={[
+            {header: 'Email', primary: true, cell: i => i.email},
+            {header: 'Role', cell: i => i.role.name},
+            {
+              header: 'Status',
+              cell: i => {
+                const status = statusOf(i)
+                return <ToneDot tone={STATUS_TONE[status]} label={status} />
+              }
+            },
+            {
+              header: 'Expires',
+              cell: i => new Date(i.expiresAt).toLocaleDateString('en-GB'),
+              className: 'tabular text-muted'
+            }
+          ]}
+          menu={i => {
+            const status = statusOf(i)
+            if (status === 'Accepted' || status === 'Revoked') return []
+            return [
+              {
+                label: 'Resend',
+                onSelect: () => void run(resend({id: i.id}), `Invite re-sent to ${i.email}.`)
+              },
+              {
+                label: 'Revoke',
+                tone: 'danger',
+                onSelect: () => {
+                  setConfirming(i.id)
+                }
+              }
+            ]
+          }}
+          empty={<EmptyState icon={MailPlus} title="No pending invites." />}
+        />
       )}
     </div>
   )

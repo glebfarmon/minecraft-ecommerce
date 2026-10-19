@@ -34,8 +34,10 @@ export function VersionsList() {
   }
 
   return (
-    <section aria-labelledby="rules-versions" className="flex max-w-3xl flex-col gap-3">
-      <h2 id="rules-versions" className="text-lg font-semibold">
+    <section
+      aria-labelledby="rules-versions"
+      className="flex flex-col gap-4 rounded-card bg-card p-5">
+      <h2 id="rules-versions" className="text-[15px] font-semibold">
         Published editions
       </h2>
       {error && (
@@ -48,10 +50,10 @@ export function VersionsList() {
           Restored to the draft above. Publish it to show it on the site.
         </p>
       )}
-      {first.isLoading && <p className="text-sm text-muted-foreground">Loading editions…</p>}
+      {first.isLoading && <p className="text-[13px] text-muted">Loading editions…</p>}
       {first.isError && <p role="alert">Could not load the editions. Refresh the page.</p>}
       {first.data?.versions.length === 0 && (
-        <p className="text-sm text-muted-foreground">Nothing published yet.</p>
+        <p className="text-[13px] text-muted">Nothing published yet.</p>
       )}
       {first.data && first.data.versions.length > 0 && (
         // A new publish changes the newest edition: start again from the first page.
@@ -86,7 +88,7 @@ function Pages({
     <>
       <ul
         aria-label="Published editions"
-        className="divide-y rounded-lg border [&>li]:px-4 [&>li]:py-3">
+        className="flex flex-col gap-1.5 [&>li]:rounded-plate [&>li]:bg-card-raised [&>li]:px-4 [&>li]:py-3">
         {first.versions.map(v => (
           <Row key={v.id} version={v} busy={busy} onRestore={onRestore} />
         ))}
@@ -130,7 +132,7 @@ function Row({version, busy, onRestore}: {version: Version; busy: boolean; onRes
     <li className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <div className="mr-auto flex flex-col">
         <span className="font-medium">{editionDate(version.publishedAt)}</span>
-        <span className="text-xs text-muted-foreground">{`by ${version.publishedBy}`}</span>
+        <span className="text-[12px] text-muted">{`by ${version.publishedBy}`}</span>
       </div>
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2">

@@ -1863,8 +1863,8 @@ Rules (no behaviour change; keep labels, button names, tab names, messages):
 - Auth pages (login, 2FA, invite): centered `Card` (`max-w-sm`, `mx-auto mt-[12vh]`) with the brand mark above; backup codes in `font-mono` grid.
 - Empty states: invites "No pending invites.", audit "Nothing logged yet.", texts filter "No texts match."
 
-- [ ] **Step 1:** Run `pnpm --filter @shop/admin test` on the current tree (baseline green). **Step 2:** For each component, restyle, then update only the queries its tests need (row menus). Add one test: audit table at mobile shows a list (`getByRole('list', {name: 'Audit log'})`) — DataTable caption "Audit log". **Step 3:** Run → PASS.
-- [ ] **Step 4: Gate and commit** — `feat(admin): restyle team, audit, account, content and sign-in screens`.
+- [x] **Step 1:** Run `pnpm --filter @shop/admin test` on the current tree (baseline green). **Step 2:** For each component, restyle, then update only the queries its tests need (row menus). Add one test: audit table at mobile shows a list (`getByRole('list', {name: 'Audit log'})`) — DataTable caption "Audit log". **Step 3:** Run → PASS.
+- [x] **Step 4: Gate and commit** — `feat(admin): restyle team, audit, account, content and sign-in screens`.
 
 ---
 

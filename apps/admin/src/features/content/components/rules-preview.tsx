@@ -27,7 +27,7 @@ function RichText({text}: {text: string}) {
           <a
             key={i}
             href={token.href}
-            className="text-primary underline underline-offset-2"
+            className="text-accent underline underline-offset-2"
             {...(token.href.startsWith('https://')
               ? {target: '_blank', rel: 'noopener noreferrer'}
               : {})}>
@@ -63,13 +63,13 @@ export function RulesPreview({content}: {content: RulesDocument}) {
   const [locale, setLocale] = useState<Locale>('en')
 
   return (
-    <section aria-label="Preview" className="flex flex-col gap-4 rounded-lg border p-4">
+    <section aria-label="Preview" className="flex flex-col gap-4 rounded-card bg-card p-5">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Preview</h2>
+        <h2 className="text-[15px] font-semibold">Preview</h2>
         <div
           role="group"
           aria-label="Preview language"
-          className="flex gap-1 rounded-md border p-1">
+          className="flex gap-1 rounded-full bg-surface p-1">
           {(['en', 'pl'] as const).map(l => (
             <button
               key={l}
@@ -79,8 +79,8 @@ export function RulesPreview({content}: {content: RulesDocument}) {
                 setLocale(l)
               }}
               className={cn(
-                'rounded px-2 py-0.5 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none',
-                locale === l ? 'bg-card-raised' : 'text-muted-foreground hover:bg-card-raised'
+                'rounded-full px-2.5 py-0.5 text-[12px] font-medium focus-visible:ring-2 focus-visible:ring-[--color-accent] focus-visible:outline-none',
+                locale === l ? 'bg-card-raised text-fg' : 'text-muted hover:text-fg'
               )}>
               {l.toUpperCase()}
             </button>

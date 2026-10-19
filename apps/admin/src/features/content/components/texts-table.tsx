@@ -1,5 +1,9 @@
 'use client'
 
+import {Card} from '@/components/card'
+import {EmptyState} from '@/components/empty-state'
+import {SkeletonRows} from '@/components/skeleton'
+import {ToneDot} from '@/components/status-dot'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
   type ListContentMessagesApiResponse,
@@ -7,6 +11,7 @@ import {
   useResetContentMessageMutation,
   useSetContentMessageMutation
 } from '@/lib/api/generated'
+import {SearchX} from 'lucide-react'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
@@ -59,8 +64,13 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
   const messages = useListContentMessagesQuery({locale})
   // currentData, not data: while another locale loads, data still holds the previous one.
   const data = messages.currentData
-  if (messages.isError) return <p role="alert">Could not load the texts. Refresh the page.</p>
-  if (!data) return <p>Loading texts…</p>
+  if (messages.isError)
+    return (
+      <p role="alert" className="rounded-card bg-card p-5">
+        Could not load the texts. Refresh the page.
+      </p>
+    )
+  if (!data) return <SkeletonRows />
   const q = search.trim().toLowerCase()
   const shown = data.filter(
     m =>
@@ -71,13 +81,12 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
   )
   const groups = new Map<string, Message[]>()
   for (const m of shown) groups.set(m.namespace, [...(groups.get(m.namespace) ?? []), m])
-  if (groups.size === 0) return <p>No texts match.</p>
+  if (groups.size === 0) return <EmptyState icon={SearchX} title="No texts match." />
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       {[...groups].map(([namespace, rows]) => (
-        <section key={namespace} className="flex flex-col gap-2">
-          <h3 className="text-lg font-semibold">{namespace}</h3>
+        <Card key={namespace} title={namespace}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -93,7 +102,7 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
               ))}
             </TableBody>
           </Table>
-        </section>
+        </Card>
       ))}
     </div>
   )
@@ -131,8 +140,8 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
 
   return (
     <TableRow>
-      <TableCell className="font-mono text-xs">{message.key}</TableCell>
-      <TableCell className="max-w-xs text-sm whitespace-pre-wrap">{message.default}</TableCell>
+      <TableCell className="align-top font-mono text-[12px] text-muted">{message.key}</TableCell>
+      <TableCell className="max-w-xs align-top whitespace-pre-wrap">{message.default}</TableCell>
       <TableCell>
         <div className="flex flex-col gap-1">
           <Label htmlFor={fieldProps.id} className="sr-only">
@@ -143,14 +152,14 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
           ) : (
             <Input {...fieldProps} />
           )}
-          {message.override !== null && (
-            <span className="w-fit rounded bg-card-raised px-2 py-0.5 text-xs">changed</span>
-          )}
-          {message.stale && (
-            <span
-              className="w-fit rounded border border-current px-2 py-0.5 text-xs text-destructive"
-              title="The default text changed its placeholders or tags. The site shows the default until you save a matching text.">
-              needs update
+          {(message.override !== null || message.stale) && (
+            <span className="flex flex-wrap gap-1.5">
+              {message.override !== null && <ToneDot tone="ok" label="changed" />}
+              {message.stale && (
+                <span title="The default text changed its placeholders or tags. The site shows the default until you save a matching text.">
+                  <ToneDot tone="warn" label="needs update" />
+                </span>
+              )}
             </span>
           )}
           {error && (
@@ -160,7 +169,7 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
           )}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="align-top">
         <div className="flex gap-2">
           <Button
             variant="outline"

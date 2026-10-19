@@ -1,3 +1,4 @@
+import {AuthCard} from '@/features/auth/components/auth-card'
 import {TotpChallenge} from '@/features/auth/components/totp-challenge'
 import {TotpSetup} from '@/features/auth/components/totp-setup'
 import {getMe} from '@/lib/session'
@@ -18,9 +19,8 @@ export default async function TwoFactorPage() {
   if (!res.ok) throw new Error(`GET /api/auth/get-session failed with ${String(res.status)}`)
   const session = (await res.json()) as {user?: {twoFactorEnabled?: boolean}} | null
   return (
-    <section className="mx-auto flex w-full max-w-sm flex-col gap-6 py-24">
-      <h1 className="text-2xl font-semibold">Two-factor authentication</h1>
+    <AuthCard title="Two-factor authentication">
       {session?.user?.twoFactorEnabled ? <TotpChallenge /> : <TotpSetup />}
-    </section>
+    </AuthCard>
   )
 }
