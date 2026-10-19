@@ -11,3 +11,11 @@ globalThis.ResizeObserver = class {
   unobserve() {}
   disconnect() {}
 }
+
+// Radix Select uses pointer capture and scrolls the chosen option into view; jsdom has neither.
+// Suites that run in the node environment have no Element.
+if (typeof Element !== 'undefined') {
+  Element.prototype.hasPointerCapture = () => false
+  Element.prototype.releasePointerCapture = () => undefined
+  Element.prototype.scrollIntoView = () => undefined
+}

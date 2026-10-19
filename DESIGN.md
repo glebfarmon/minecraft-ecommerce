@@ -94,11 +94,23 @@ The storefront's dark world put to work: card modules on a dark ground. Colour t
 4. **Row actions live in `RowMenu`.** `DataTable`'s `menu` prop adds the menu and names it "Actions for {primary}" (or `rowLabel`). A row with no actions gets no button. Destructive actions (remove, reset 2FA, change role) never run from the menu. They open a confirmation panel (`rounded-card bg-card p-4`) **above the table** that spells out the consequence, with a `danger` confirm and an `outline` cancel. Errors show above it as a `bad-soft` plate with `role="alert"`.
 5. **Catalog preview cards use the server's own colours.** `ServerCard` fills with `server.accent` / `server.onAccent`, and `ProductCard` tints its icon well with `color-mix(server accent 22%)`. These are data colours the shop owner picked. They are not the admin accent and don't count toward rule 1. Pills on server cards use `currentColor` at 14% so they read on any accent.
 6. **Live preview from xl up.** `EditorLayout` adds a sticky 20rem preview column at `xl`. Below xl the preview is hidden and the form takes the full width.
-7. **Focus ring is `focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none`**, plus `ring-offset-2 ring-offset-bg` on buttons and server cards. `ring-[--color-accent]` does **not** work in Tailwind 4, so always use the theme utility `ring-accent`. A selected server card shows `ring-fg`.
+7. **Focus ring is `focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none`**, plus `ring-offset-2 ring-offset-bg` on buttons and server cards. `ring-[--color-accent]` does **not** work in Tailwind 4, so always use the theme utility `ring-accent`. A selected server card shows a `ring-fg` ring that rolls between cards (`RollingIndicator`).
 8. **Charts are hand-written SVG** (`Spark`, `DayChart`, `StatusDonut`) with `role="img"` and a full `aria-label`. Do not add a chart library.
 9. **`.label-caps` stays in `@layer components`** so utilities can override its colour and size.
 10. **The shared `Table` scroll box is `relative`.** An `sr-only` label (absolutely positioned) inside a cell would otherwise escape the `overflow-x-auto` box and widen the page at 390px.
-11. Lucide icons only, `aria-hidden`, 16px in buttons and 20px in nav. Icon-only controls carry an `aria-label`.
+11. **Whole plates are the click target.** A `DataTable` row with `rowHref` (or `onRowClick`) opens on a click anywhere except inner buttons, links and text selection; its primary cell stays a real link for keyboard and ⌘-click. Product cards use a stretched link. Server cards are the exception: a click selects the server, the pencil opens its editor.
+12. **No native `title` tooltips.** Icon buttons and badges get `Hint` (`@shop/ui/tooltip`), which also needs a focusable trigger.
+13. **Native `<select>` is not used.** `@shop/ui/select` is the designed Radix select (`combobox` + `option` roles; label it with `htmlFor` or `aria-label`).
+14. Lucide icons only, `aria-hidden`, 16px in buttons and 20px in nav. Icon-only controls carry an `aria-label`.
+
+### Motion
+
+Motion always runs: there is **no `prefers-reduced-motion` opt-out** (the owner's decision). Easing is ease-out (`cubic-bezier(0.16,1,0.3,1)` or `(0.22,1,0.36,1)`), never bounce; exits are faster than entrances.
+
+- **Rolling indicator.** One choice among several (rail, `Tabs`, `SubNav`, server cards, select highlight) shows a pill that slides to the chosen item with a shared Motion `layoutId` (spring, `bounce: 0`, 0.25–0.35 s). Use `RollingIndicator` inside a `LayoutGroup`; `@shop/ui/tabs` has its own.
+- **Page entry.** `(shell)/template.tsx` wraps pages in `.page-enter`: the page root's blocks rise 8 px and fade in, 320 ms, 40 ms apart (capped at the eighth). Sub-navs live in layouts, so switching Rules/Texts/Settings or Products/Categories does not replay the header.
+- **Charts.** `DayChart` bars grow from the baseline (500 ms, 12 ms stagger, replayed on a new range); `Spark` lines draw (600 ms); `StatusDonut` segments sweep in round the ring; `KpiCard` numbers count up (`count` prop, 700 ms) while the DOM text stays the settled value.
+- **Overlays.** Tooltips slide 4 px out of their side (150 ms in, 100 ms out). Row menus scale from their trigger (140 ms). The select list unfolds out of the field with a clip-path (220 ms), its options cascade (18 ms each, ≤126 ms), the check draws, and it closes in 120 ms.
 
 ### Known exceptions
 

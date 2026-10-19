@@ -5,7 +5,7 @@ import 'server-only'
 
 import type {Me} from '@shop/shared/access'
 
-const API_ORIGIN = process.env.API_ORIGIN ?? 'http://localhost:4000'
+import {API_ORIGIN} from './api-origin'
 
 export type MeState = {state: 'ok'; me: Me} | {state: 'signed-out'} | {state: '2fa'}
 

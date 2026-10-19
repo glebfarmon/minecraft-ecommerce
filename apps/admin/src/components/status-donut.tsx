@@ -1,3 +1,7 @@
+'use client'
+
+import {motion} from 'motion/react'
+
 import type {OrderStatus} from '@shop/shared/orders'
 
 import {STATUS_LABEL, STATUS_TONE, type Tone} from './status-dot'
@@ -31,14 +35,21 @@ export function StatusDonut({counts}: {counts: {status: OrderStatus; count: numb
       {shown.map((s, i) => {
         const len = (s.count / total) * c
         return (
-          <circle
+          // Each segment sweeps in from its start, in order round the ring.
+          <motion.circle
             key={s.status}
             cx="20"
             cy="20"
             r={r}
             fill="none"
             strokeWidth="5"
-            strokeDasharray={`${String(Math.max(len - gap, 0.1))} ${String(c)}`}
+            initial={{strokeDasharray: `0 ${String(c)}`}}
+            animate={{strokeDasharray: `${String(Math.max(len - gap, 0.1))} ${String(c)}`}}
+            transition={{
+              duration: 0.6,
+              delay: ((starts[i] ?? 0) / c) * 0.4,
+              ease: [0.22, 1, 0.36, 1]
+            }}
             strokeDashoffset={-(starts[i] ?? 0)}
             transform="rotate(-90 20 20)"
             className={STROKE[STATUS_TONE[s.status]]}

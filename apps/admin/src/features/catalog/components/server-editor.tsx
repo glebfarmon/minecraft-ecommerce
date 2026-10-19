@@ -121,7 +121,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
           type="color"
           aria-hidden
           tabIndex={-1}
-          className="size-9 shrink-0 cursor-pointer rounded-full border border-border bg-transparent p-0.5"
+          className="size-9 shrink-0 cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0 transition-transform hover:scale-105 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0"
           value={HEX.test(values[name]) ? values[name] : '#000000'}
           onChange={e => {
             setValue(name, e.target.value, {shouldDirty: true, shouldValidate: true})

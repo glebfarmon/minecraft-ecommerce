@@ -22,12 +22,13 @@ import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
-export function CategoriesTable({canEdit}: {canEdit: boolean}) {
+/** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
+export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
   const [update] = useUpdateCatalogCategoryMutation()
   const [remove] = useDeleteCatalogCategoryMutation()
-  const [editing, setEditing] = useState<string | null>(null)
+  const [editing, setEditing] = useState<string | null>(initialEdit ?? null)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const {register, handleSubmit, control, reset} = useForm({
@@ -130,6 +131,14 @@ export function CategoriesTable({canEdit}: {canEdit: boolean}) {
         rows={list}
         rowKey={c => c.id}
         rowLabel={c => c.names.en}
+        onRowClick={
+          canEdit
+            ? c => {
+                setConfirming(null)
+                setEditing(c.id)
+              }
+            : undefined
+        }
         columns={[
           {header: 'English', primary: true, cell: c => c.names.en},
           {header: 'Polish', cell: c => c.names.pl},

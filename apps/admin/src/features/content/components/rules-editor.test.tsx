@@ -165,6 +165,19 @@ describe('RulesEditor', () => {
     )
   })
 
+  it('the preview follows the language tab, there and back', async () => {
+    mockApi()
+    renderWithStore(<RulesEditor />)
+    await screen.findByLabelText('Rule 1.1 (EN)')
+    const language = screen.getByRole('tablist', {name: 'Language'})
+    const preview = screen.getByRole('region', {name: 'Preview'})
+    expect(within(preview).getByText('Be kind.')).toBeInTheDocument()
+    fireEvent.mouseDown(within(language).getByRole('tab', {name: 'PL'}), {button: 0})
+    expect(await within(preview).findByText('Bądź miły.')).toBeInTheDocument()
+    fireEvent.mouseDown(within(language).getByRole('tab', {name: 'EN'}), {button: 0})
+    expect(await within(preview).findByText('Be kind.')).toBeInTheDocument()
+  })
+
   it('opens the PL tab when the first error is there and hints at the EN fallback', async () => {
     const sent = mockApi()
     renderWithStore(<RulesEditor />)

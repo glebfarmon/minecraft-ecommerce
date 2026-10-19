@@ -1,4 +1,4 @@
-import {render, screen} from '@testing-library/react'
+import {render, screen, waitFor} from '@testing-library/react'
 
 import {ORDER_STATUSES} from '@shop/shared/orders'
 
@@ -10,6 +10,24 @@ import {StatusDonut} from './status-donut'
 import {STATUS_TONE, StatusDot} from './status-dot'
 
 describe('data components', () => {
+  it('KpiCard with count keeps the real value readable and counts up the visible one', async () => {
+    render(
+      <KpiCard
+        label="Revenue"
+        value="€12.34"
+        count={{to: 1234, format: n => formatMoney(n, 'EUR')}}
+      />
+    )
+    // Screen readers and text queries get the settled value at once.
+    expect(screen.getByText('€12.34')).toBeInTheDocument()
+    const shown = document.querySelector('[data-count]') as HTMLElement
+    expect(shown).toHaveAttribute('aria-hidden', 'true')
+    await screen.findByText('€12.34')
+    await waitFor(() => {
+      expect(shown).toHaveAttribute('data-count', '€12.34')
+    })
+  })
+
   it('StatusDot labels every order status in words and maps a tone', () => {
     for (const s of ORDER_STATUSES) {
       const {unmount} = render(<StatusDot status={s} />)

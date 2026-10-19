@@ -78,7 +78,8 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   await owner.goto(`${ADMIN}/team`)
   await owner.getByRole('tab', {name: 'Invites'}).click()
   await owner.getByLabel('Email', {exact: true}).fill(SUE)
-  await owner.getByLabel('Role', {exact: true}).selectOption({label: 'SUPPORT'})
+  await owner.getByRole('combobox', {name: 'Role', exact: true}).click()
+  await owner.getByRole('option', {name: 'SUPPORT'}).click()
   await owner.getByRole('button', {name: 'Send invite'}).click()
   await expect(owner.getByText(`Invite sent to ${SUE}.`)).toBeVisible()
   await ownerContext.close()
@@ -310,6 +311,10 @@ test('the owner sees the dashboard and can open an order row menu with the keybo
     await expect(page.getByRole('menuitem', {name: 'Open'})).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(trigger).toBeFocused()
+    // A click anywhere on the row (here the date cell) opens the order.
+    await table.getByRole('row').nth(1).getByRole('cell').nth(1).click()
+    await expect(page).toHaveURL(/\/orders\/\w+$/)
+    await page.goBack()
   }
 
   await page.setViewportSize({width: 390, height: 844})
@@ -324,4 +329,41 @@ test('the owner sees the dashboard and can open an order row menu with the keybo
   await expect(
     page.getByRole('dialog', {name: 'Menu'}).getByRole('link', {name: 'Orders'})
   ).toBeVisible()
+})
+
+test('the owner switches sub-navs, opens editors from pencils and the preview follows PL', async ({
+  page
+}) => {
+  test.setTimeout(180_000)
+  await signInOwner(page)
+
+  await page.getByRole('link', {name: 'Content', exact: true}).click()
+  const content = page.getByRole('navigation', {name: 'Content'})
+  await content.getByRole('link', {name: 'Rules'}).click()
+  const preview = page.getByRole('region', {name: 'Preview'})
+  await expect(preview).toBeVisible()
+  await page.getByRole('tablist', {name: 'Language'}).getByRole('tab', {name: 'PL'}).click()
+  await expect(preview.getByRole('heading', {level: 2})).toHaveText('Preview · PL')
+  await page.getByRole('tablist', {name: 'Language'}).getByRole('tab', {name: 'EN'}).click()
+  await expect(preview.getByRole('heading', {level: 2})).toHaveText('Preview · EN')
+
+  await content.getByRole('link', {name: 'Texts'}).click()
+  await expect(content.getByRole('link', {name: 'Texts'})).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByLabel('Search texts')).toBeVisible()
+
+  await page.getByRole('link', {name: 'Catalog', exact: true}).click()
+  const catalog = page.getByRole('navigation', {name: 'Catalog'})
+  await catalog.getByRole('link', {name: 'Categories'}).click()
+  await expect(page.getByRole('table', {name: 'Categories'})).toBeVisible()
+  await catalog.getByRole('link', {name: 'Products'}).click()
+
+  await page.getByRole('link', {name: 'Edit Ranks'}).click()
+  await expect(page.getByText('Edit Ranks')).toBeVisible()
+  await catalog.getByRole('link', {name: 'Products'}).click()
+  await page
+    .getByRole('tablist', {name: 'Server'})
+    .getByRole('link', {name: /^Edit /})
+    .first()
+    .click()
+  await expect(page).toHaveURL(/\/catalog\/servers\/\w+$/)
 })

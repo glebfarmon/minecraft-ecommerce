@@ -1,5 +1,7 @@
 'use client'
 
+import {EmptyState} from '@/components/empty-state'
+import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {apiErrorMessage} from '@/lib/api/error-message'
 import {
@@ -12,6 +14,8 @@ import {
   useOrderCatalogServersMutation,
   useSetCatalogServerCategoriesMutation
 } from '@/lib/api/generated'
+import {Pencil, Tags} from 'lucide-react'
+import {LayoutGroup} from 'motion/react'
 import Link from 'next/link'
 import {useState} from 'react'
 
@@ -45,24 +49,27 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
     <div className="flex flex-col gap-6">
       <div className="flex gap-3 overflow-x-auto p-1 pb-2">
         <div role="tablist" aria-label="Server">
-          <SortableList
-            label="Servers"
-            direction="horizontal"
-            disabled={!canEdit}
-            items={tabs.items}
-            className="gap-3"
-            onMove={ids => void tabs.move(ids)}>
-            {(s, handle) => (
-              <ServerCard
-                server={s}
-                selected={s.id === selected?.id}
-                onSelect={() => {
-                  setSelectedId(s.id)
-                }}
-                handle={canEdit ? handle : undefined}
-              />
-            )}
-          </SortableList>
+          <LayoutGroup id="servers">
+            <SortableList
+              label="Servers"
+              direction="horizontal"
+              disabled={!canEdit}
+              items={tabs.items}
+              className="gap-3"
+              onMove={ids => void tabs.move(ids)}>
+              {(s, handle) => (
+                <ServerCard
+                  server={s}
+                  selected={s.id === selected?.id}
+                  onSelect={() => {
+                    setSelectedId(s.id)
+                  }}
+                  handle={canEdit ? handle : undefined}
+                  editHref={canEdit ? `/catalog/servers/${s.id}` : undefined}
+                />
+              )}
+            </SortableList>
+          </LayoutGroup>
         </div>
         {canEdit && (
           <AddCard href="/catalog/servers/new" label="+ Server" className="min-w-40 shrink-0" />
@@ -98,18 +105,50 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
     c => !server.categories.some(sc => sc.id === c.id)
   )
 
+  const attachForm = (
+    <form
+      className="flex flex-wrap items-end gap-2"
+      onSubmit={e => {
+        e.preventDefault()
+        if (attach) void save([...categories.items.map(c => c.id), attach])
+        setAttach('')
+      }}>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="attach-category">Attach category</Label>
+        <Select
+          id="attach-category"
+          value={attach}
+          placeholder="Choose…"
+          options={unattached.map(c => ({value: c.id, label: c.names.en}))}
+          onValueChange={setAttach}
+        />
+      </div>
+      <Button type="submit" disabled={!attach}>
+        Attach
+      </Button>
+    </form>
+  )
+
   return (
     <section aria-label={server.name} className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <h2 className="text-[20px] font-semibold">{server.name}</h2>
-        <Button asChild variant="ghost" size="sm">
-          <Link href={`/catalog/servers/${server.id}`}>Server settings</Link>
-        </Button>
-      </div>
+      <h2 className="text-[20px] font-semibold">{server.name}</h2>
       {(error ?? categories.error) && <p role="alert">{error ?? categories.error}</p>}
       {products.isError && <p role="alert">Could not load products. Refresh the page.</p>}
       {categories.items.length === 0 ? (
-        <p className="text-muted">No categories yet. Attach one below.</p>
+        <EmptyState
+          icon={Tags}
+          title={`No categories on ${server.name} yet.`}
+          action={
+            canEdit && (
+              <div className="flex flex-col items-center gap-3">
+                {unattached.length > 0 && attachForm}
+                <Button asChild variant="outline">
+                  <Link href="/catalog/categories">Create category</Link>
+                </Button>
+              </div>
+            )
+          }
+        />
       ) : (
         <SortableList
           label={`Categories of ${server.name}`}
@@ -124,6 +163,14 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                 <h3 className="text-[15px] font-semibold">{category.name}</h3>
                 {canEdit && (
                   <>
+                    <Hint label="Edit category">
+                      <Link
+                        href={`/catalog/categories?edit=${category.id}`}
+                        aria-label={`Edit ${category.name}`}
+                        className="grid size-7 place-items-center rounded-full text-muted hover:bg-card-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+                        <Pencil aria-hidden className="size-4" />
+                      </Link>
+                    </Hint>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -156,35 +203,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           )}
         </SortableList>
       )}
-      {canEdit && unattached.length > 0 && (
-        <form
-          className="flex flex-wrap items-end gap-2"
-          onSubmit={e => {
-            e.preventDefault()
-            if (attach) void save([...categories.items.map(c => c.id), attach])
-            setAttach('')
-          }}>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="attach-category">Attach category</Label>
-            <Select
-              id="attach-category"
-              value={attach}
-              onChange={e => {
-                setAttach(e.target.value)
-              }}>
-              <option value="">Choose…</option>
-              {unattached.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.names.en}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <Button type="submit" disabled={!attach}>
-            Attach
-          </Button>
-        </form>
-      )}
+      {canEdit && unattached.length > 0 && categories.items.length > 0 && attachForm}
     </section>
   )
 }

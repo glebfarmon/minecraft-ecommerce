@@ -1,3 +1,5 @@
+import {cn} from '@shop/ui/lib/utils'
+
 export function DayChart({
   days,
   label,
@@ -13,6 +15,8 @@ export function DayChart({
   return (
     <figure className="flex flex-col gap-2">
       <svg
+        // A new range replays the bars growing.
+        key={`${days[0]?.day ?? ''}-${String(days.length)}`}
         role="img"
         aria-label={`${label}: total ${format(total)} over ${String(days.length)} days`}
         viewBox="0 0 100 40"
@@ -28,7 +32,8 @@ export function DayChart({
               width={w * 0.7}
               height={Math.max(h, 0.6)}
               rx="0.8"
-              className={d.value === 0 ? 'fill-card-raised' : 'fill-current'}>
+              style={{animationDelay: `${String(i * 12)}ms`}}
+              className={cn('bar-grow', d.value === 0 ? 'fill-card-raised' : 'fill-current')}>
               <title>{`${d.day}: ${format(d.value)}`}</title>
             </rect>
           )

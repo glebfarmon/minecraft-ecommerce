@@ -132,6 +132,34 @@ describe('ProductEditor', () => {
     expect(await within(preview).findByText('Probe Deluxe')).toBeInTheDocument()
   })
 
+  it('clicking {nick} inserts it at the caret of the grant field', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const grant = await screen.findByLabelText<HTMLTextAreaElement>('Grant commands')
+    fireEvent.change(grant, {target: {value: 'say hi '}})
+    grant.setSelectionRange(7, 7)
+    fireEvent.click(screen.getByRole('button', {name: 'Insert {nick}'}))
+    expect(grant).toHaveValue('say hi {nick}')
+  })
+
+  it('inserts into revoke when revoke was focused last', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const revoke = await screen.findByLabelText<HTMLTextAreaElement>('Revoke commands')
+    fireEvent.change(revoke, {target: {value: 'lp user  parent remove vip'}})
+    fireEvent.focus(revoke)
+    revoke.setSelectionRange(8, 8)
+    fireEvent.click(screen.getByRole('button', {name: 'Insert {nick}'}))
+    expect(revoke).toHaveValue('lp user {nick} parent remove vip')
+  })
+
+  it('shows the example command', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    expect(await screen.findByText('give {nick} diamond 1')).toBeInTheDocument()
+    expect(screen.getByText('The buyer’s nickname')).toBeInTheDocument()
+  })
+
   it('refuses a command with another placeholder before saving', async () => {
     const fetchMock = mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)

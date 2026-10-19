@@ -43,6 +43,7 @@ import {Select} from '@shop/ui/select'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@shop/ui/tabs'
 import {Textarea} from '@shop/ui/textarea'
 
+import {CommandHelp} from './command-help'
 import {EditorLayout} from './editor-layout'
 import {ProductCard} from './product-card'
 
@@ -53,7 +54,7 @@ const MISSING_LABEL = {
   'translation.pl': 'Polish translation'
 } as const
 
-const COMMAND_HINT = 'One command per line, without /. Use {nick} for the buyer’s name.'
+const COMMAND_HINT = 'One command per line, without /.'
 const LOCALES = [
   {locale: 'en', tab: 'EN'},
   {locale: 'pl', tab: 'PL'}
@@ -106,6 +107,9 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       ? `Fill ${missing.map(m => MISSING_LABEL[m]).join(', ')} or untick Enabled`
       : undefined
 
+  /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
+  const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
+
   if (id && product.isLoading) return <SkeletonRows rows={6} />
   if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
 
@@ -157,6 +161,24 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     'aria-invalid': errorOf(name) ? true : undefined,
     'aria-describedby': errorOf(name) ? `${fieldId(name)}-error` : undefined
   })
+  const commandProps = (name: 'grant' | 'revoke') => ({
+    ...register(name),
+    onFocus: () => {
+      setLastCommand(name)
+    }
+  })
+  function insertToken(token: string) {
+    const el = document.getElementById(fieldId(lastCommand))
+    if (!(el instanceof HTMLTextAreaElement)) return
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const next = el.value.slice(0, start) + token + el.value.slice(end)
+    setValue(lastCommand, next, {shouldDirty: true})
+    el.value = next
+    el.focus()
+    el.setSelectionRange(start + token.length, start + token.length)
+  }
+
   const field = (
     name: FieldPath<ProductForm>,
     label: string,
@@ -229,23 +251,16 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
               render={({field: f}) => (
                 <Select
                   {...fieldProps('serverId')}
-                  name={f.name}
-                  ref={f.ref}
                   value={f.value}
-                  onBlur={f.onBlur}
-                  onChange={e => {
-                    f.onChange(e.target.value)
-                    const next = servers.data?.find(s => s.id === e.target.value)
+                  placeholder="Choose a server"
+                  options={(servers.data ?? []).map(s => ({value: s.id, label: s.name}))}
+                  onValueChange={v => {
+                    f.onChange(v)
+                    const next = servers.data?.find(s => s.id === v)
                     if (!next?.categories.some(c => c.id === values.categoryId))
                       setValue('categoryId', '')
-                  }}>
-                  <option value="">Choose a server</option>
-                  {(servers.data ?? []).map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </Select>
+                  }}
+                />
               )}
             />
           )}
@@ -258,20 +273,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
               render={({field: f}) => (
                 <Select
                   {...fieldProps('categoryId')}
-                  name={f.name}
-                  ref={f.ref}
                   value={f.value}
-                  onBlur={f.onBlur}
-                  onChange={e => {
-                    f.onChange(e.target.value)
-                  }}>
-                  <option value="">Choose a category</option>
-                  {(server?.categories ?? []).map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
+                  placeholder="Choose a category"
+                  options={(server?.categories ?? []).map(c => ({value: c.id, label: c.name}))}
+                  onValueChange={f.onChange}
+                />
               )}
             />
           )}
@@ -280,20 +286,22 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'kind',
             'Kind',
-            <Select
-              {...fieldProps('kind')}
-              {...register('kind', {
-                // Duration is hidden for other kinds; a leftover value would fail validation there.
-                onChange: (e: {target: {value: string}}) => {
-                  if (e.target.value !== 'TIMED') setValue('durationDays', '')
-                }
-              })}>
-              {PRODUCT_KINDS.map(k => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </Select>
+            <Controller
+              control={control}
+              name="kind"
+              render={({field: f}) => (
+                <Select
+                  {...fieldProps('kind')}
+                  value={f.value}
+                  options={PRODUCT_KINDS.map(k => ({value: k, label: k}))}
+                  onValueChange={v => {
+                    f.onChange(v)
+                    // Duration is hidden for other kinds; a leftover value would fail validation there.
+                    if (v !== 'TIMED') setValue('durationDays', '')
+                  }}
+                />
+              )}
+            />
           )}
           {values.kind === 'TIMED' &&
             field(
@@ -308,13 +316,18 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'icon',
             'Icon',
-            <Select {...fieldProps('icon')} {...register('icon')}>
-              {PRODUCT_ICONS.map(i => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </Select>
+            <Controller
+              control={control}
+              name="icon"
+              render={({field: f}) => (
+                <Select
+                  {...fieldProps('icon')}
+                  value={f.value}
+                  options={PRODUCT_ICONS.map(i => ({value: i, label: i}))}
+                  onValueChange={f.onChange}
+                />
+              )}
+            />
           )}
           <div className="flex flex-wrap items-center gap-2 md:col-span-2">
             <Controller
@@ -419,17 +432,22 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'grant',
             'Grant commands',
-            <Textarea className="font-mono" {...fieldProps('grant')} {...register('grant')} />,
+            <Textarea className="font-mono" {...fieldProps('grant')} {...commandProps('grant')} />,
             COMMAND_HINT,
             true
           )}
           {field(
             'revoke',
             'Revoke commands',
-            <Textarea className="font-mono" {...fieldProps('revoke')} {...register('revoke')} />,
+            <Textarea
+              className="font-mono"
+              {...fieldProps('revoke')}
+              {...commandProps('revoke')}
+            />,
             COMMAND_HINT,
             true
           )}
+          <CommandHelp onInsert={insertToken} />
         </FormSection>
 
         {canEdit && (

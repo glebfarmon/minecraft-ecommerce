@@ -1,5 +1,11 @@
+import {Hint} from '@/components/hint'
+import {RollingIndicator} from '@/components/rolling-indicator'
 import type {ListCatalogServersApiResponse} from '@/lib/api/generated'
+import {Pencil} from 'lucide-react'
+import Link from 'next/link'
 import type {ReactNode} from 'react'
+
+import {cn} from '@shop/ui/lib/utils'
 
 import {DragHandle} from './drag-handle'
 import type {DragHandleProps} from './sortable-list'
@@ -18,13 +24,20 @@ function Pill({children}: {children: ReactNode}) {
 }
 
 const CARD = 'flex min-w-56 flex-col items-start gap-3 rounded-card p-4 pr-12 text-left'
+const ICON =
+  'grid size-7 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none'
 
-/** Without `onSelect` (the editor's live preview) the card is not a tab. */
+/**
+ * Without `onSelect` (the editor's live preview) the card is not a tab. A click selects the
+ * server; `editHref` adds the pencil that opens its editor. Render inside a `LayoutGroup` so the
+ * selection ring rolls between cards.
+ */
 export function ServerCard({
   server,
   selected = false,
   onSelect,
-  handle
+  handle,
+  editHref
 }: {
   server: Pick<
     Server,
@@ -33,6 +46,7 @@ export function ServerCard({
   selected?: boolean
   onSelect?: () => void
   handle?: DragHandleProps
+  editHref?: string
 }) {
   const rconReady = server.rconPasswordSet && Boolean(server.rcon?.host)
   const style = {background: server.accent, color: server.onAccent}
@@ -55,16 +69,32 @@ export function ServerCard({
       </div>
     )
   return (
-    <div className="relative">
+    <div className="relative isolate">
+      {selected && <RollingIndicator className="-inset-1 rounded-[24px] ring-2 ring-fg" />}
       <button
         type="button"
         role="tab"
         aria-selected={selected}
         onClick={onSelect}
         style={style}
-        className={`${CARD} ring-offset-2 ring-offset-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-selected:ring-2 aria-selected:ring-fg`}>
+        className={cn(
+          CARD,
+          editHref && 'pr-20',
+          'ring-offset-2 ring-offset-bg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none'
+        )}>
         {body}
       </button>
+      {editHref && (
+        <Hint label="Edit server">
+          <Link
+            href={editHref}
+            aria-label={`Edit ${server.name}`}
+            className={cn(ICON, 'absolute top-3 right-11 hover:bg-black/10')}
+            style={{color: server.onAccent}}>
+            <Pencil aria-hidden className="size-4" />
+          </Link>
+        </Hint>
+      )}
       {handle && (
         <DragHandle
           label={server.name}

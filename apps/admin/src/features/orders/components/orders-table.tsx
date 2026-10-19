@@ -7,7 +7,6 @@ import {StatusDot} from '@/components/status-dot'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
 import {formatMoney, formatTime} from '@/lib/format'
 import {ReceiptText, Search} from 'lucide-react'
-import Link from 'next/link'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 
@@ -60,15 +59,12 @@ function PageRows({
         rows={page.data.orders}
         rowKey={o => o.id}
         rowLabel={o => o.publicId}
+        rowHref={o => `/orders/${o.id}`}
         columns={[
           {
             header: 'Order',
             primary: true,
-            cell: o => (
-              <Link href={`/orders/${o.id}`} className="font-mono hover:underline">
-                {o.publicId}
-              </Link>
-            )
+            cell: o => <span className="font-mono">{o.publicId}</span>
           },
           {header: 'Date', cell: o => formatTime(o.createdAt), className: 'tabular text-muted'},
           {header: 'Nick', cell: o => o.nick},

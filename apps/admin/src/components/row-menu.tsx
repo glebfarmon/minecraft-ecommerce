@@ -20,7 +20,7 @@ export function RowMenu({label, items}: {label: string; items: RowMenuItem[]}) {
         <Menu.Content
           align="end"
           sideOffset={6}
-          className="z-50 min-w-44 rounded-plate border border-border bg-card-raised p-1 shadow-xl shadow-black/40">
+          className="menu-content z-50 min-w-44 rounded-plate border border-border bg-card-raised p-1 shadow-xl shadow-black/40">
           {items.map(item => (
             <Menu.Item
               key={item.label}

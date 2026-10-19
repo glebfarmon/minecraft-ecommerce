@@ -103,8 +103,9 @@ describe('AdminsTable', () => {
     const fetchMock = mockApi()
     renderWithStore(<AdminsTable canChangeRoles />)
     await choose('ann@x.io', 'Change role')
-    const picker = screen.getByRole('combobox', {name: 'Role of ann@x.io'})
-    fireEvent.change(picker, {target: {value: 'r2'}})
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', {name: 'Role of ann@x.io'}))
+    await user.click(await screen.findByRole('option', {name: 'SUPPORT'}))
     expect(screen.getByText(/to SUPPORT\? They are signed out everywhere/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', {name: 'Change role'}))
     await waitFor(() => {
@@ -142,8 +143,9 @@ describe('AdminsTable', () => {
     mockApi()
     renderWithStore(<AdminsTable canChangeRoles held={['admin.invite', 'audit.read']} />)
     await choose('ann@x.io', 'Change role')
-    const picker = screen.getByRole('combobox', {name: 'Role of ann@x.io'})
-    const names = Array.from(picker.querySelectorAll('option')).map(o => o.textContent)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', {name: 'Role of ann@x.io'}))
+    const names = (await screen.findAllByRole('option')).map(o => o.textContent)
     expect(names).toEqual(['ADMIN', 'SUPPORT', 'Auditor'])
   })
 

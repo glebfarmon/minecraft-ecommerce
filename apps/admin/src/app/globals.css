@@ -73,13 +73,188 @@ body {
   .label-caps {
     @apply text-[11px] font-semibold tracking-[0.12em] text-muted uppercase;
   }
+
+  /* Tooltip: a small pill that slides 4px out of the side it sits on. */
+  .tooltip-content {
+    @apply z-50 rounded-full bg-card-raised px-2.5 py-1 text-[12px] font-medium text-fg shadow-lg shadow-black/40;
+    --tip-x: 0px;
+    --tip-y: 0px;
+    animation: tooltip-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .tooltip-content[data-side='top'] {
+    --tip-y: 4px;
+  }
+  .tooltip-content[data-side='bottom'] {
+    --tip-y: -4px;
+  }
+  .tooltip-content[data-side='left'] {
+    --tip-x: 4px;
+  }
+  .tooltip-content[data-side='right'] {
+    --tip-x: -4px;
+  }
+  .tooltip-content[data-state='closed'] {
+    animation: tooltip-out 100ms ease-in both;
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--tip-x), var(--tip-y)) scale(0.96);
+  }
+}
+
+@keyframes tooltip-out {
+  to {
+    opacity: 0;
+    transform: translate(var(--tip-x), var(--tip-y)) scale(0.96);
+  }
+}
+
+/*
+ * Motion. No prefers-reduced-motion opt-out: the owner asked for animations to always run.
+ * Page entry: each block of a page rises in, one after another (capped at the eighth).
+ */
+.page-enter > * > * {
+  animation: enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 7) * 40ms);
+}
+.page-enter > * > :nth-child(1) {
+  --i: 0;
+}
+.page-enter > * > :nth-child(2) {
+  --i: 1;
+}
+.page-enter > * > :nth-child(3) {
+  --i: 2;
+}
+.page-enter > * > :nth-child(4) {
+  --i: 3;
+}
+.page-enter > * > :nth-child(5) {
+  --i: 4;
+}
+.page-enter > * > :nth-child(6) {
+  --i: 5;
+}
+.page-enter > * > :nth-child(7) {
+  --i: 6;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Charts: bars grow from the baseline, sparklines draw left to right. */
+.bar-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-grow 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+.line-draw {
+  stroke-dasharray: 1;
+  animation: line-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Row menus pop from their trigger. */
+.menu-content {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: menu-in 140ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu-content[data-state='closed'] {
+  animation: menu-out 100ms ease-in both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Select: the list unfolds out of the field, options follow in a short cascade, the check draws. */
+.select-content {
+  transform-origin: var(--radix-select-content-transform-origin);
+  animation: select-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.select-content[data-side='top'] {
+  animation-name: select-in-top;
+}
+.select-content[data-state='closed'] {
+  animation: select-out 120ms ease-in both;
+}
+.select-content[data-state='open'] .select-item {
+  animation: select-item-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 18ms), 126ms);
+}
+.check-draw {
+  stroke-dasharray: 1;
+  animation: check-draw 160ms ease-out 80ms both;
+}
+
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+    clip-path: inset(0 0 100% 0 round 14px);
+  }
+  to {
+    clip-path: inset(0 round 14px);
+  }
+}
+
+@keyframes select-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+    clip-path: inset(100% 0 0 0 round 14px);
+  }
+  to {
+    clip-path: inset(0 round 14px);
+  }
+}
+
+@keyframes select-out {
+  to {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes select-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+@keyframes check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }

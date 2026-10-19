@@ -73,6 +73,20 @@ describe('CategoriesTable', () => {
     })
   })
 
+  it('initialEdit opens the edit form for that category', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([ranks]))
+    renderWithStore(<CategoriesTable canEdit initialEdit="c1" />)
+    expect(await screen.findByText('Edit Ranks')).toBeInTheDocument()
+  })
+
+  it('clicking a row opens its edit form', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([ranks]))
+    renderWithStore(<CategoriesTable canEdit />)
+    const table = await screen.findByRole('table', {name: 'Categories'})
+    fireEvent.click(within(table).getByText('ranks'))
+    expect(await screen.findByText('Edit Ranks')).toBeInTheDocument()
+  })
+
   it('renames from the row menu', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([ranks]))
     const user = userEvent.setup()
