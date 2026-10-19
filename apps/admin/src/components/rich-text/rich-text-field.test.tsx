@@ -174,4 +174,108 @@ describe('RichTextField', () => {
     })
     expect(onChange).not.toHaveBeenCalled()
   })
+
+  it.each(['Be polite (no insults).', 'C++ and C#', 'Use [brackets]', '2 * 3'])(
+    'does not report stored text %j just by mounting',
+    async stored => {
+      const onChange = jest.fn()
+      render(<RichTextField id="f" value={stored} onChange={onChange} />)
+      await screen.findByText(stored)
+      expect(onChange).not.toHaveBeenCalled()
+    }
+  )
+
+  it('cannot undo into the previous outside value', async () => {
+    const onChange = jest.fn()
+    let editor: Editor | undefined
+    const onReady = (e: Editor) => {
+      editor = e
+    }
+    const {rerender} = render(
+      <RichTextField id="f" value="English rule" onChange={onChange} onReady={onReady} />
+    )
+    await screen.findByText('English rule')
+    rerender(<RichTextField id="f" value="Polska zasada" onChange={onChange} onReady={onReady} />)
+    await screen.findByText('Polska zasada')
+    act(() => {
+      editor?.commands.undo()
+    })
+    expect(screen.getByRole('textbox')).toHaveTextContent('Polska zasada')
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('keeps typed _x_ and *x* as literal text', async () => {
+    const onChange = jest.fn()
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        onChange={onChange}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    const view = editor?.view
+    act(() => {
+      // What the browser does per key: input rules get the first go, then the character lands.
+      for (const ch of 'ban _Steve_ a *note* ') {
+        const {from, to} = view?.state.selection ?? {from: 1, to: 1}
+        const handled = view?.someProp('handleTextInput', f =>
+          f(view, from, to, ch, () => view.state.tr)
+        )
+        if (!handled) view?.dispatch(view.state.tr.insertText(ch, from, to))
+      }
+    })
+    expect(onChange).toHaveBeenLastCalledWith('ban _Steve_ a \\*note\\* ')
+    expect(screen.getByRole('textbox').querySelector('em, strong')).toBeNull()
+  })
+
+  it('does not link pasted plain domains or http URLs', async () => {
+    let editor: Editor | undefined
+    render(
+      <RichTextField
+        id="f"
+        value=""
+        links
+        onChange={jest.fn()}
+        onReady={e => {
+          editor = e
+        }}
+      />
+    )
+    await screen.findByRole('textbox')
+    // jsdom has no clipboard events; ProseMirror only needs these two.
+    class FakeData {
+      private readonly data = new Map<string, string>()
+      setData(type: string, value: string) {
+        this.data.set(type, value)
+      }
+      getData(type: string) {
+        return this.data.get(type) ?? ''
+      }
+    }
+    Object.assign(globalThis, {
+      DataTransfer: FakeData,
+      ClipboardEvent: class extends Event {
+        clipboardData: unknown
+        constructor(type: string, init?: {clipboardData?: unknown}) {
+          super(type, {cancelable: true})
+          this.clipboardData = init?.clipboardData
+        }
+      }
+    })
+    const view = editor?.view
+    act(() => {
+      view?.pasteText('server play.example.net or http://x.com')
+    })
+    expect(screen.getByRole('textbox').querySelector('a')).toBeNull()
+  })
+
+  it('is not editable while disabled', async () => {
+    render(<RichTextField id="f" value="x" disabled onChange={jest.fn()} />)
+    expect(await screen.findByRole('textbox')).toHaveAttribute('contenteditable', 'false')
+  })
 })

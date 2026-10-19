@@ -36,7 +36,17 @@ const toggle = (editor: Editor, name: MarkName) => {
 
 // Typing `[label](href)` makes a link, as the rules text did before the editor was visual.
 // The href is not checked here: the rules schema refuses unsafe ones at save.
+// Typed or pasted `_x_` and `*x*` stay literal: Minecraft names contain underscores, and the
+// toolbar and ⌘B/⌘I are how marks are made.
+const PlainBold = Bold.extend({addInputRules: () => [], addPasteRules: () => []})
+const PlainItalic = Italic.extend({addInputRules: () => [], addPasteRules: () => []})
+
+// The same rule as `SAFE_HREF` in the rules schema: https:// or a site path.
+const isSafeUri = (uri: string) => /^(https:\/\/|\/(?![/\\]))/i.test(uri)
+
 const LinkWithMarkdownInput = Link.extend({
+  // Pasted plain domains and URLs are not turned into links; a link is made on purpose.
+  addPasteRules: () => [],
   addInputRules() {
     return [
       new InputRule({
@@ -128,7 +138,7 @@ export function RichTextField({
   const latest = useRef({onChange, onReady})
   // The markdown the editor last held. The editor is created from the first render's value and
   // fires `update` once while mounting; that is not an edit, so it must not reach the form.
-  const known = useRef(value)
+  const known = useRef(fromDoc(toDoc(value, options)))
   useEffect(() => {
     latest.current = {onChange, onReady}
   })
@@ -140,8 +150,8 @@ export function RichTextField({
       Document,
       Paragraph,
       Text,
-      Bold,
-      Italic,
+      PlainBold,
+      PlainItalic,
       Underline,
       UndoRedo,
       Placeholder.configure({placeholder: placeholder ?? ''}),
@@ -151,7 +161,8 @@ export function RichTextField({
             LinkWithMarkdownInput.configure({
               openOnClick: false,
               autolink: false,
-              protocols: ['https']
+              linkOnPaste: false,
+              isAllowedUri: isSafeUri
             })
           ]
         : [])
@@ -200,9 +211,17 @@ export function RichTextField({
 
   // A form reset or a tab switch changes `value` from outside; typing never trips this.
   useEffect(() => {
-    if (editor && fromDoc(editor.getJSON()) !== value) {
-      known.current = value
-      editor.commands.setContent(toDoc(value, options), {emitUpdate: false})
+    if (!editor) return
+    // Stored text need not be in the editor's canonical form (an unescaped "(" is fine).
+    const canonical = fromDoc(toDoc(value, options))
+    if (fromDoc(editor.getJSON()) !== canonical) {
+      known.current = canonical
+      // Not undoable: undo must not bring back the previous language's text.
+      editor
+        .chain()
+        .setMeta('addToHistory', false)
+        .setContent(toDoc(value, options), {emitUpdate: false})
+        .run()
     }
   }, [editor, value, options])
 

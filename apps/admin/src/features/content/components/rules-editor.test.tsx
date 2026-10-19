@@ -65,6 +65,30 @@ describe('RulesEditor', () => {
     }
   })
 
+  it('locks the fields while a save is running, so typing is not lost to the reload', async () => {
+    let release: () => void = () => undefined
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      if (req.method === 'GET') return Response.json(draft)
+      await gate
+      return Response.json({...draft, revision: 5})
+    })
+    renderWithStore(<RulesEditor />)
+    const field = await screen.findByLabelText('Rule 1.1 (EN)')
+    setMarkdown(field, 'Be nicer.')
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    await waitFor(() => {
+      expect(field).toHaveAttribute('contenteditable', 'false')
+    })
+    release()
+    await waitFor(() => {
+      expect(screen.getByLabelText('Rule 1.1 (EN)')).toHaveAttribute('contenteditable', 'true')
+    })
+  })
+
   it('refuses an unsafe link client-side and shows it at the field', async () => {
     const sent = mockApi()
     renderWithStore(<RulesEditor />)

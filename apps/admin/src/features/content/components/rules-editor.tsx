@@ -248,7 +248,7 @@ export function RulesEditor() {
           <TabsContent value={tab}>
             {/* Tab triggers stay outside the fieldset, so the language can switch while saving. */}
             <fieldset disabled={busy} className="min-w-0">
-              <Sections locale={tab} control={control} />
+              <Sections locale={tab} control={control} disabled={busy} />
             </fieldset>
           </TabsContent>
         </Tabs>
@@ -263,9 +263,11 @@ export function RulesEditor() {
 type EditorProps = {
   locale: Locale
   control: Control<RulesForm, unknown, RulesDocument>
+  /** A contenteditable ignores `fieldset disabled`; locked while a request runs. */
+  disabled: boolean
 }
 
-function Sections({locale, control}: EditorProps) {
+function Sections({locale, control, disabled}: EditorProps) {
   const {fields, append, remove, move} = useFieldArray({control, name: 'sections'})
 
   return (
@@ -287,6 +289,7 @@ function Sections({locale, control}: EditorProps) {
               locale={locale}
               index={index}
               control={control}
+              disabled={disabled}
               handle={handle}
               onRemove={() => {
                 remove(index)
@@ -312,6 +315,7 @@ function Section({
   locale,
   index,
   control,
+  disabled,
   handle,
   onRemove
 }: EditorProps & {index: number; handle: DragHandleProps; onRemove: () => void}) {
@@ -331,6 +335,7 @@ function Section({
         <Handle label={name} handle={handle} />
         <TextField
           control={control}
+          disabled={disabled}
           name={textPath(index, locale)}
           label={`Section ${n} title (${tag})`}
           className="flex-1"
@@ -355,6 +360,7 @@ function Section({
               </span>
               <TextField
                 control={control}
+                disabled={disabled}
                 name={textPath(index, locale, i)}
                 label={`Rule ${number} (${tag})`}
                 multiline
@@ -399,12 +405,13 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
 
 function TextField({
   control,
+  disabled,
   name,
   label,
   multiline = false,
   hideLabel = false,
   className
-}: Pick<EditorProps, 'control'> & {
+}: Pick<EditorProps, 'control' | 'disabled'> & {
   name: TextPath
   label: string
   multiline?: boolean
@@ -435,6 +442,7 @@ function TextField({
             onChange={field.onChange}
             multiline={multiline}
             links
+            disabled={disabled}
             placeholder={hint}
             aria-labelledby={`${id}-label`}
             aria-invalid={error ? true : undefined}
