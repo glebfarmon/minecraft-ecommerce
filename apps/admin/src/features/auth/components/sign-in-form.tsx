@@ -2,8 +2,11 @@
 
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema, EmailSchema} from '@/features/auth/schemas'
+import {useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 import {useForm, useFormState} from 'react-hook-form'
@@ -19,9 +22,11 @@ export function SignInForm({
   email?: string
   googleEnabled: boolean
 }) {
+  const t = useTranslations('auth')
+  const errorText = useErrorText()
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const emailForm = useForm({
     resolver: valibotResolver(EmailSchema),
     defaultValues: {email: invited ?? ''}
@@ -39,11 +44,11 @@ export function SignInForm({
         type: 'sign-in'
       })
       if (failed) {
-        setError(codeErrorMessage(failed, 'Could not send the code. Try again.'))
+        setError(codeErrorMessage(failed, t('sendCodeFailed'), t))
         return
       }
     } catch {
-      setError('Could not send the code. Try again.')
+      setError(t('sendCodeFailed'))
       return
     }
     setEmail(value)
@@ -54,12 +59,7 @@ export function SignInForm({
     const {error: failed} = await authClient.signIn.emailOtp({email, otp: code})
     if (failed) {
       setError(
-        failed.status === 403
-          ? 'This email is not invited to Shop Admin.'
-          : codeErrorMessage(
-              failed,
-              'That code did not work. Check the latest email or request a new code.'
-            )
+        failed.status === 403 ? t('notInvited') : codeErrorMessage(failed, t('codeFailedEmail'), t)
       )
       return
     }
@@ -70,7 +70,7 @@ export function SignInForm({
     <div className="flex flex-col gap-6">
       {email === null ? (
         <form onSubmit={event => void sendCode(event)} className="flex flex-col gap-3" noValidate>
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('email')}</Label>
           <Input
             id="email"
             type="email"
@@ -82,7 +82,7 @@ export function SignInForm({
           />
           {emailErrors.email && (
             <p id="email-error" role="alert" className="text-sm text-destructive">
-              {emailErrors.email.message}
+              {errorText(emailErrors.email.message)}
             </p>
           )}
           {error && (
@@ -90,14 +90,12 @@ export function SignInForm({
               {error}
             </p>
           )}
-          <Button type="submit">Send code</Button>
+          <Button type="submit">{t('sendCode')}</Button>
         </form>
       ) : (
         <form onSubmit={event => void signIn(event)} className="flex flex-col gap-3" noValidate>
-          <p className="text-sm text-muted-foreground">
-            We sent a code to {email} if it is allowed to sign in.
-          </p>
-          <Label htmlFor="code">6-digit code</Label>
+          <p className="text-sm text-muted-foreground">{t('codeSent', {email})}</p>
+          <Label htmlFor="code">{t('n6DigitCode')}</Label>
           <Input
             id="code"
             inputMode="numeric"
@@ -108,7 +106,7 @@ export function SignInForm({
           />
           {codeErrors.code && (
             <p id="code-error" role="alert" className="text-sm text-destructive">
-              {codeErrors.code.message}
+              {errorText(codeErrors.code.message)}
             </p>
           )}
           {error && (
@@ -116,7 +114,7 @@ export function SignInForm({
               {error}
             </p>
           )}
-          <Button type="submit">Sign in</Button>
+          <Button type="submit">{t('signIn')}</Button>
         </form>
       )}
       {googleEnabled && (
@@ -124,7 +122,7 @@ export function SignInForm({
           type="button"
           variant="outline"
           onClick={() => void authClient.signIn.social({provider: 'google', callbackURL: '/2fa'})}>
-          Continue with Google
+          {t('continueWithGoogle')}
         </Button>
       )}
     </div>

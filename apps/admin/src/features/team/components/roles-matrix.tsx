@@ -3,7 +3,8 @@
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {RoleNameSchema} from '@/features/team/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useDeleteApiAdminRolesByIdMutation,
   useGetApiAdminRolesQuery,
@@ -11,6 +12,7 @@ import {
   usePostApiAdminRolesMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useState} from 'react'
 import {useForm, useFormState} from 'react-hook-form'
 
@@ -39,6 +41,9 @@ export function RolesMatrix({
   /** Permissions the viewer holds; others are disabled (the API enforces it too). */
   held?: readonly Permission[]
 }) {
+  const t = useTranslations('team')
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const roles = useGetApiAdminRolesQuery()
   const [createRole, {isLoading: creating}] = usePostApiAdminRolesMutation()
   const [updateRole] = usePatchApiAdminRolesByIdMutation()
@@ -46,7 +51,7 @@ export function RolesMatrix({
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({})
   const [newPermissions, setNewPermissions] = useState<Permission[]>([])
   const [confirming, setConfirming] = useState<{id: string; kind: 'save' | 'delete'} | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(RoleNameSchema),
@@ -54,13 +59,13 @@ export function RolesMatrix({
   })
   const {errors} = useFormState({control})
 
-  if (roles.isLoading) return <p>Loading roles…</p>
-  if (roles.isError) return <p role="alert">Could not load roles. Refresh the page.</p>
+  if (roles.isLoading) return <p>{t('loadingRoles')}</p>
+  if (roles.isError) return <p role="alert">{t('couldNotLoadRolesRefreshThe')}</p>
 
   async function run(action: Promise<{error?: unknown}>) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     return !result.error
   }
 
@@ -79,19 +84,16 @@ export function RolesMatrix({
           {error}
         </p>
       )}
-      <Card title="Role permissions">
-        <p className="-mt-2 text-[13px] text-muted">
-          Changing a role signs out everyone who has it. You can only give out permissions you hold.
-          System roles are read-only.
-        </p>
+      <Card title={t('rolePermissions')}>
+        <p className="-mt-2 text-[13px] text-muted">{t('changingARoleSignsOutEveryone')}</p>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className={STICKY}>Role</TableHead>
+              <TableHead className={STICKY}>{t('role')}</TableHead>
               {PERMISSIONS.map(p => (
                 <TableHead key={p}>{p}</TableHead>
               ))}
-              <TableHead>Actions</TableHead>
+              <TableHead>{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,7 +105,9 @@ export function RolesMatrix({
                 <TableRow key={role.id}>
                   <TableCell className={cn(STICKY, 'font-medium whitespace-nowrap')}>
                     {role.name}
-                    {role.isSystem && <span className="font-normal text-muted"> (system)</span>}
+                    {role.isSystem && (
+                      <span className="font-normal text-muted"> {t('system')}</span>
+                    )}
                   </TableCell>
                   {PERMISSIONS.map(p => (
                     <TableCell key={p}>
@@ -123,8 +127,8 @@ export function RolesMatrix({
                         <div className="flex flex-col gap-2">
                           <p className="text-sm">
                             {confirming.kind === 'save'
-                              ? `Save ${role.name}? Everyone with this role is signed out.`
-                              : `Delete ${role.name}? Fails while the role is in use.`}
+                              ? t('confirmSaveRole', {name: role.name})
+                              : t('confirmDeleteRole', {name: role.name})}
                           </p>
                           <div className="flex gap-2">
                             <Button
@@ -150,7 +154,7 @@ export function RolesMatrix({
                                     )
                                 })
                               }}>
-                              {confirming.kind === 'save' ? 'Save role' : 'Delete role'}
+                              {confirming.kind === 'save' ? t('saveRole') : t('deleteRole')}
                             </Button>
                             <Button
                               type="button"
@@ -158,7 +162,7 @@ export function RolesMatrix({
                               onClick={() => {
                                 setConfirming(null)
                               }}>
-                              Back
+                              {t('back')}
                             </Button>
                           </div>
                         </div>
@@ -166,21 +170,21 @@ export function RolesMatrix({
                         <div className="flex gap-2">
                           <Button
                             type="button"
-                            aria-label={`Save ${role.name}`}
+                            aria-label={t('saveName', {name: role.name})}
                             disabled={!dirty}
                             onClick={() => {
                               setConfirming({id: role.id, kind: 'save'})
                             }}>
-                            Save
+                            {t('save')}
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
-                            aria-label={`Delete ${role.name}`}
+                            aria-label={t('deleteName', {name: role.name})}
                             onClick={() => {
                               setConfirming({id: role.id, kind: 'delete'})
                             }}>
-                            Delete
+                            {t('delete')}
                           </Button>
                         </div>
                       ))}
@@ -192,10 +196,10 @@ export function RolesMatrix({
         </Table>
       </Card>
       {editable && (
-        <form onSubmit={e => void onCreate(e)} noValidate aria-label="New role">
-          <FormSection title="New role">
+        <form onSubmit={e => void onCreate(e)} noValidate aria-label={t('newRole')}>
+          <FormSection title={t('newRole')}>
             <div className="flex min-w-0 flex-col gap-1 md:col-span-2">
-              <Label htmlFor="role-name">New role name</Label>
+              <Label htmlFor="role-name">{t('newRoleName')}</Label>
               <Input
                 id="role-name"
                 autoComplete="off"
@@ -205,7 +209,7 @@ export function RolesMatrix({
               />
               {errors.name && (
                 <p id="role-name-error" role="alert" className="text-sm text-destructive">
-                  {errors.name.message}
+                  {errorText(errors.name.message)}
                 </p>
               )}
             </div>
@@ -226,7 +230,7 @@ export function RolesMatrix({
             </div>
             <div className="md:col-span-2">
               <Button type="submit" disabled={creating}>
-                Create role
+                {t('createRole')}
               </Button>
             </div>
           </FormSection>

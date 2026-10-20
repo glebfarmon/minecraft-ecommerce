@@ -3,7 +3,8 @@
 import {DataTable} from '@/components/data-table'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useDeleteApiAdminAdminsByIdMutation,
   useGetApiAdminAdminsQuery,
@@ -11,6 +12,7 @@ import {
   usePatchApiAdminAdminsByIdRoleMutation,
   usePostApiAdminAdminsByIdReset2FaMutation
 } from '@/lib/api/generated'
+import {useTranslations} from 'next-intl'
 import {useState} from 'react'
 
 import {PERMISSIONS, type Permission} from '@shop/shared/access'
@@ -29,16 +31,18 @@ export function AdminsTable({
   /** Permissions the viewer holds; roles needing more cannot be handed out (the API enforces it). */
   held?: readonly Permission[]
 }) {
+  const t = useTranslations('team')
+  const apiError = useApiError()
   const admins = useGetApiAdminAdminsQuery()
   const roles = useGetApiAdminRolesQuery()
   const [remove] = useDeleteApiAdminAdminsByIdMutation()
   const [reset] = usePostApiAdminAdminsByIdReset2FaMutation()
   const [changeRole] = usePatchApiAdminAdminsByIdRoleMutation()
   const [pending, setPending] = useState<Pending | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   if (admins.isLoading) return <SkeletonRows rows={3} />
-  if (admins.isError) return <p role="alert">Could not load admins. Refresh the page.</p>
+  if (admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>
 
   const assignable = (roles.data ?? []).filter(
     r => r.name !== OWNER && r.permissions.every(p => held.includes(p))
@@ -52,7 +56,7 @@ export function AdminsTable({
         : p.kind === 'reset'
           ? await reset({id: p.adminId})
           : await changeRole({id: p.adminId, body: {roleId: p.roleId ?? ''}})
-    if ('error' in result) setError(apiErrorMessage(result.error))
+    if ('error' in result) setError(apiError(result.error))
     setPending(null)
   }
 
@@ -75,7 +79,7 @@ export function AdminsTable({
         <div className="flex flex-col gap-3 rounded-card bg-card p-4">
           {pending.kind === 'role' && (
             <Select
-              aria-label={`Role of ${target.email}`}
+              aria-label={t('roleOf', {email: target.email})}
               className="max-w-xs"
               value={pending.roleId ?? target.role.id}
               options={[
@@ -94,14 +98,12 @@ export function AdminsTable({
             />
           )}
           <p className="text-[13px]">
-            {pending.kind === 'remove' &&
-              `Remove ${target.email}? They lose access and are signed out everywhere.`}
-            {pending.kind === 'reset' &&
-              `Reset two-factor for ${target.email}? They are signed out everywhere and must set it up again.`}
+            {pending.kind === 'remove' && t('confirmRemove', {email: target.email})}
+            {pending.kind === 'reset' && t('confirmReset', {email: target.email})}
             {pending.kind === 'role' &&
               (newRole
-                ? `Change ${target.email} to ${newRole.name}? They are signed out everywhere and must sign in again.`
-                : `Pick the new role for ${target.email}.`)}
+                ? t('confirmChangeRole', {email: target.email, role: newRole.name})
+                : t('pickRole', {email: target.email}))}
           </p>
           <div className="flex gap-2">
             <Button
@@ -110,10 +112,10 @@ export function AdminsTable({
               disabled={pending.kind === 'role' && !newRole}
               onClick={() => void confirm(pending)}>
               {pending.kind === 'remove'
-                ? 'Remove'
+                ? t('remove')
                 : pending.kind === 'reset'
-                  ? 'Reset'
-                  : 'Change role'}
+                  ? t('reset')
+                  : t('changeRole')}
             </Button>
             <Button
               type="button"
@@ -121,19 +123,19 @@ export function AdminsTable({
               onClick={() => {
                 setPending(null)
               }}>
-              Cancel
+              {t('cancel')}
             </Button>
           </div>
         </div>
       )}
       <DataTable
-        caption="Admins"
+        caption={t('admins')}
         rows={list}
         rowKey={a => a.id}
         rowLabel={a => a.email}
         columns={[
           {
-            header: 'Admin',
+            header: t('admin'),
             primary: true,
             cell: a => (
               <span className="flex min-w-0 flex-col">
@@ -142,23 +144,23 @@ export function AdminsTable({
               </span>
             )
           },
-          {header: 'Role', cell: a => a.role.name},
+          {header: t('role'), cell: a => a.role.name},
           {
-            header: '2FA',
+            header: t('n2fa'),
             cell: a => (
               <ToneDot
                 tone={a.twoFactorEnabled ? 'ok' : 'warn'}
-                label={a.twoFactorEnabled ? 'On' : 'Off'}
+                label={a.twoFactorEnabled ? t('on') : t('off')}
               />
             )
           },
           {
-            header: 'Status',
+            header: t('status'),
             cell: a =>
               a.disabledAt === null ? (
-                <ToneDot tone="ok" label="Active" />
+                <ToneDot tone="ok" label={t('active')} />
               ) : (
-                <ToneDot tone="idle" label="Removed" />
+                <ToneDot tone="idle" label={t('removed')} />
               )
           }
         ]}
@@ -166,9 +168,9 @@ export function AdminsTable({
           a.role.name === OWNER || a.disabledAt !== null
             ? []
             : [
-                ...(canChangeRoles ? [{label: 'Change role', onSelect: open(a.id, 'role')}] : []),
-                {label: 'Reset 2FA', onSelect: open(a.id, 'reset')},
-                {label: 'Remove', tone: 'danger' as const, onSelect: open(a.id, 'remove')}
+                ...(canChangeRoles ? [{label: t('changeRole'), onSelect: open(a.id, 'role')}] : []),
+                {label: t('reset2fa'), onSelect: open(a.id, 'reset')},
+                {label: t('remove'), tone: 'danger' as const, onSelect: open(a.id, 'remove')}
               ]
         }
       />

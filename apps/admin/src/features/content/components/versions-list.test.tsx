@@ -1,4 +1,5 @@
 import {makeStore} from '@/lib/api/store'
+import {IntlWrapper} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setMarkdown} from '@/test/rich-field'
 import {fireEvent, render, screen, waitFor, within} from '@testing-library/react'
@@ -150,10 +151,12 @@ describe('VersionsList', () => {
     const page = (show: boolean): ReactNode => (
       <Provider store={store}>
         {show && (
-          <TooltipProvider>
-            <RulesEditor />
-            <VersionsList />
-          </TooltipProvider>
+          <IntlWrapper>
+            <TooltipProvider>
+              <RulesEditor />
+              <VersionsList />
+            </TooltipProvider>
+          </IntlWrapper>
         )}
       </Provider>
     )

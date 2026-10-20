@@ -1,4 +1,5 @@
-import {fireEvent, render, screen, within} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {fireEvent, screen, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import {DataTable} from './data-table'

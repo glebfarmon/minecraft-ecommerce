@@ -5,9 +5,10 @@ import {Hint} from '@/components/hint'
 import {PageHeader} from '@/components/page-header'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
+import {useFormat} from '@/hooks/use-format'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
-import {formatMoney, formatTime} from '@/lib/format'
 import {ArrowLeft, Copy} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import type {ReactNode} from 'react'
 
@@ -29,37 +30,40 @@ function Row({label, children}: {label: string; children: ReactNode}) {
 }
 
 function BackLink() {
+  const t = useTranslations('orders.detail')
   return (
     <Button asChild variant="ghost">
       <Link href="/orders">
         <ArrowLeft aria-hidden className="size-4" />
-        Back to orders
+        {t('back')}
       </Link>
     </Button>
   )
 }
 
 export function OrderDetails({id}: {id: string}) {
+  const t = useTranslations('orders.detail')
+  const f = useFormat()
   const {data: order, isLoading, error} = useGetAdminOrderQuery({id})
   if (isLoading) return <SkeletonRows rows={6} />
   if (!order)
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Order" actions={<BackLink />} />
+        <PageHeader title={t('order')} actions={<BackLink />} />
         <p role="alert" className="rounded-card bg-card p-5">
           {(error as {status?: unknown} | undefined)?.status === 404
-            ? 'Order not found.'
-            : 'Could not load the order. Try again.'}
+            ? t('notFound')
+            : t('loadFailed')}
         </p>
       </div>
     )
-  const money = (n: number) => formatMoney(n, order.currency)
+  const money = (n: number) => f.money(n, order.currency)
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title={
           <>
-            Order <span className="font-mono">{order.publicId}</span>
+            {t('order')} <span className="font-mono">{order.publicId}</span>
           </>
         }
         actions={
@@ -70,7 +74,7 @@ export function OrderDetails({id}: {id: string}) {
         }
       />
       <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
-        <Card title="Items">
+        <Card title={t('items')}>
           {order.servers.map(s => (
             <section key={s.serverName} className="flex flex-col gap-1.5">
               <h3 className="label-caps">{s.serverName}</h3>
@@ -81,9 +85,9 @@ export function OrderDetails({id}: {id: string}) {
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-plate bg-card-raised px-4 py-3 text-[13px]">
                     <span className="min-w-0 flex-1 font-medium">{item.productName}</span>
                     <span className="tabular text-muted">
-                      × {item.quantity} · {money(item.unitAmountMinor)} each
+                      {t('each', {quantity: item.quantity, price: money(item.unitAmountMinor)})}
                     </span>
-                    <span className="tabular w-20 text-right font-semibold">
+                    <span className="tabular min-w-20 text-right font-semibold">
                       {money(item.unitAmountMinor * item.quantity)}
                     </span>
                   </li>
@@ -92,25 +96,25 @@ export function OrderDetails({id}: {id: string}) {
             </section>
           ))}
           <dl className="tabular ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-2 border-t border-border pt-4 text-[13px]">
-            <dt className="text-muted">Subtotal</dt>
+            <dt className="text-muted">{t('subtotal')}</dt>
             <dd className="text-right">{money(order.subtotalMinor)}</dd>
-            <dt className="text-muted">Discount</dt>
+            <dt className="text-muted">{t('discount')}</dt>
             <dd className="text-right">{money(order.discountMinor)}</dd>
-            <dt className="font-semibold">Total</dt>
+            <dt className="font-semibold">{t('total')}</dt>
             <dd className="text-right text-[15px] font-semibold">{money(order.totalMinor)}</dd>
           </dl>
         </Card>
         <div className="flex min-w-0 flex-col gap-4">
-          <Card title="Buyer">
+          <Card title={t('buyer')}>
             <Fields>
-              <Row label="Nick">{order.nick}</Row>
-              <Row label="Email">
+              <Row label={t('nick')}>{order.nick}</Row>
+              <Row label={t('email')}>
                 <span>{order.email}</span>
-                <Hint label="Copy email">
+                <Hint label={t('copyEmail')}>
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Copy email"
+                    aria-label={t('copyEmail')}
                     className="size-7 shrink-0"
                     onClick={() => {
                       void navigator.clipboard.writeText(order.email)
@@ -119,13 +123,13 @@ export function OrderDetails({id}: {id: string}) {
                   </Button>
                 </Hint>
               </Row>
-              <Row label="Locale">{order.locale}</Row>
+              <Row label={t('locale')}>{order.locale}</Row>
             </Fields>
           </Card>
-          <Card title="Payment">
+          <Card title={t('payment')}>
             <Fields>
-              <Row label="Currency">{order.currency}</Row>
-              <Row label="Stripe session">
+              <Row label={t('currency')}>{order.currency}</Row>
+              <Row label={t('stripeSession')}>
                 {order.stripeSessionId ? (
                   <a
                     className="font-mono underline"
@@ -138,26 +142,26 @@ export function OrderDetails({id}: {id: string}) {
                   '—'
                 )}
               </Row>
-              <Row label="Delivery consent">{formatTime(order.deliveryConsentAt)}</Row>
+              <Row label={t('deliveryConsent')}>{f.time(order.deliveryConsentAt)}</Row>
             </Fields>
           </Card>
-          <Card title="Timeline">
+          <Card title={t('timeline')}>
             <ol className="flex flex-col gap-3 text-[13px]">
               <li className="flex items-center gap-3">
                 <span aria-hidden className="size-2 rounded-full bg-idle" />
-                <span className="flex-1">Created</span>
-                <span className="tabular text-muted">{formatTime(order.createdAt)}</span>
+                <span className="flex-1">{t('created')}</span>
+                <span className="tabular text-muted">{f.time(order.createdAt)}</span>
               </li>
               {order.paidAt && (
                 <li className="flex items-center gap-3">
                   <span aria-hidden className="size-2 rounded-full bg-ok" />
-                  <span className="flex-1">Paid</span>
-                  <span className="tabular text-muted">{formatTime(order.paidAt)}</span>
+                  <span className="flex-1">{t('paid')}</span>
+                  <span className="tabular text-muted">{f.time(order.paidAt)}</span>
                 </li>
               )}
               <li className="flex items-center gap-3">
                 <span aria-hidden className="size-2 rounded-full bg-fg" />
-                <span className="flex-1">Now</span>
+                <span className="flex-1">{t('now')}</span>
                 <StatusDot status={order.status} />
               </li>
             </ol>

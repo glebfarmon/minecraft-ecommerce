@@ -1,3 +1,4 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setMarkdown} from '@/test/rich-field'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
@@ -213,6 +214,24 @@ describe('ProductEditor', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Save'}))
     expect(await screen.findByText('Only the {nick} placeholder is allowed')).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'PATCH')).toBe(false)
+  })
+
+  it('shows the placeholder refusal in Polish', async () => {
+    mockApi()
+    renderWithProviders(<ProductEditor id="p1" canEdit />, {locale: 'pl'})
+    fireEvent.change(await screen.findByLabelText('Polecenia nadania'), {
+      target: {value: 'give {player} 1'}
+    })
+    fireEvent.click(screen.getByRole('button', {name: 'Zapisz'}))
+    expect(await screen.findByText('Dozwolony jest tylko znacznik {nick}')).toBeInTheDocument()
+  })
+
+  it('speaks Polish: section titles and the variables help', async () => {
+    mockApi()
+    renderWithProviders(<ProductEditor id="p1" canEdit />, {locale: 'pl'})
+    expect(await screen.findByText('Polecenia')).toBeInTheDocument()
+    expect(screen.getByText('Nick kupującego')).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'Wstaw {nick}'})).toBeInTheDocument()
   })
 
   it('sends minor units and the version, and keeps the form on a 409 stale', async () => {

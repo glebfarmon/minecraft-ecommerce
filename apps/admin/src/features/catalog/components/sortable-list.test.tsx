@@ -1,4 +1,5 @@
-import {render, screen} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {screen} from '@testing-library/react'
 
 import {SortableList} from './sortable-list'
 

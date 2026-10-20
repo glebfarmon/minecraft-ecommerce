@@ -2,12 +2,14 @@ import {AuthCard} from '@/features/auth/components/auth-card'
 import {TotpChallenge} from '@/features/auth/components/totp-challenge'
 import {TotpSetup} from '@/features/auth/components/totp-setup'
 import {getMe} from '@/lib/session'
+import {getTranslations} from 'next-intl/server'
 import {cookies} from 'next/headers'
 import {redirect} from 'next/navigation'
 
 const API_ORIGIN = process.env.API_ORIGIN ?? 'http://localhost:4000'
 
 export default async function TwoFactorPage() {
+  const t = await getTranslations('auth')
   const me = await getMe()
   if (me.state === 'ok') redirect('/')
   if (me.state === 'signed-out') redirect('/login')
@@ -19,7 +21,7 @@ export default async function TwoFactorPage() {
   if (!res.ok) throw new Error(`GET /api/auth/get-session failed with ${String(res.status)}`)
   const session = (await res.json()) as {user?: {twoFactorEnabled?: boolean}} | null
   return (
-    <AuthCard title="Two-factor authentication">
+    <AuthCard title={t('twoFactorAuthentication')}>
       {session?.user?.twoFactorEnabled ? <TotpChallenge /> : <TotpSetup />}
     </AuthCard>
   )

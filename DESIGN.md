@@ -103,6 +103,7 @@ The storefront's dark world put to work: card modules on a dark ground. Colour t
 12. **No native `title` tooltips.** Icon buttons and badges get `Hint` (`@shop/ui/tooltip`), which also needs a focusable trigger.
 13. **Native `<select>` is not used.** `@shop/ui/select` is the designed Radix select (`combobox` + `option` roles; label it with `htmlFor` or `aria-label`).
 14. Lucide icons only, `aria-hidden`, 16px in buttons and 20px in nav. Icon-only controls carry an `aria-label`.
+15. **Every visible string goes through `t`** (next-intl, `apps/admin/messages/{en,pl}.json`; see CLAUDE.md). Dates and money go through `useFormat`/`formatTime`/`formatMoney` with the locale. Polish runs about 30% longer than English, so **buttons, tabs, table headers and KPI labels are never fixed-width**: let them wrap or truncate with `min-w-0`, and check 390 px in both languages. Counts use ICU `plural` with Polish `one/few/many/other`, never `n + 's'`.
 
 ### Motion
 

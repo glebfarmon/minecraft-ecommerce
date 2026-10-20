@@ -9,6 +9,7 @@ import {
   PRODUCT_KINDS,
   ProductSectionSchema
 } from './catalog'
+import {VALIDATION_MESSAGES, type ValidationKey} from './validation-messages'
 
 /** Same rule as the `*_slug_format` checks in the database: slugs fit the cart cookie. */
 export const SLUG_PATTERN = /^[a-z0-9-]{1,40}$/
@@ -16,12 +17,12 @@ export const SLUG_PATTERN = /^[a-z0-9-]{1,40}$/
 const Id = v.pipe(v.string(), v.minLength(1))
 const IdList = v.pipe(
   v.array(Id),
-  v.check(ids => new Set(ids).size === ids.length, 'An id appears twice')
+  v.check(ids => new Set(ids).size === ids.length, VALIDATION_MESSAGES.idRepeated)
 )
 const Slug = v.pipe(
   v.string(),
   v.trim(),
-  v.regex(SLUG_PATTERN, 'Use 1–40 lowercase letters, digits or dashes'),
+  v.regex(SLUG_PATTERN, VALIDATION_MESSAGES.slugFormat),
   v.description('URL segment: 1–40 of a–z, 0–9 and "-". Also stored in shoppers’ cart cookies.')
 )
 /** Versions are Postgres INT4; anything larger would reach the database and fail there. */
@@ -33,16 +34,16 @@ const Version = v.pipe(
   v.maxValue(MAX_VERSION),
   v.description('The version you read. If someone saved since, the write fails with 409 `stale`.')
 )
-const text = (max: number, what: string) =>
+const text = (max: 12 | 40 | 60, required: ValidationKey) =>
   v.pipe(
     v.string(),
     v.trim(),
-    v.minLength(1, `Enter ${what}`),
-    v.maxLength(max, `Use at most ${String(max)} characters`)
+    v.minLength(1, VALIDATION_MESSAGES[required]),
+    v.maxLength(max, VALIDATION_MESSAGES[`atMost${String(max) as '12' | '40' | '60'}`])
   )
 const Color = v.pipe(
   v.string(),
-  v.regex(/^#[0-9a-f]{6}$/i, 'Use a hex color like #ff6b1a'),
+  v.regex(/^#[0-9a-f]{6}$/i, VALIDATION_MESSAGES.hexColor),
   v.description('Hex color, e.g. `#ff6b1a`')
 )
 const Minor = v.pipe(
@@ -61,8 +62,8 @@ const Command = v.pipe(
   v.string(),
   v.trim(),
   v.minLength(1),
-  v.maxLength(200, 'Use at most 200 characters per command'),
-  v.check(hasOnlyNickPlaceholder, 'Only the {nick} placeholder is allowed'),
+  v.maxLength(200, VALIDATION_MESSAGES.commandTooLong),
+  v.check(hasOnlyNickPlaceholder, VALIDATION_MESSAGES.onlyNickPlaceholder),
   v.description('RCON command without a leading slash; `{nick}` becomes the buyer’s nickname')
 )
 const Commands = v.pipe(v.array(Command), v.maxLength(20))
@@ -95,7 +96,7 @@ export function missingForActive(p: {
 
 const serverFields = {
   slug: Slug,
-  name: text(40, 'a name'),
+  name: text(40, 'enterName'),
   accent: v.pipe(Color, v.description('Tab and button color on the storefront')),
   onAccent: v.pipe(Color, v.description('Text color on top of the accent'))
 }
@@ -178,7 +179,7 @@ export const RconInputSchema = v.pipe(
       v.pipe(v.boolean(), v.description('true removes the stored password'))
     )
   }),
-  v.check(r => (r.host === null) === (r.port === null), 'Set host and port together'),
+  v.check(r => (r.host === null) === (r.port === null), VALIDATION_MESSAGES.hostAndPortTogether),
   v.check(
     r => !(r.password !== undefined && r.clearPassword === true),
     'Send a new password or clearPassword, not both'
@@ -195,7 +196,7 @@ export const RconTestResultSchema = v.variant('ok', [
 
 // Categories
 
-const Names = v.object({en: text(40, 'an English name'), pl: text(40, 'a Polish name')})
+const Names = v.object({en: text(40, 'enterEnglishName'), pl: text(40, 'enterPolishName')})
 export const CategoryInputSchema = v.object({slug: Slug, names: Names})
 export const CategoryUpdateSchema = v.object({slug: Slug, names: Names, version: Version})
 export const AdminCategorySchema = v.object({
@@ -210,7 +211,7 @@ export const AdminCategorySchema = v.object({
 // Products
 
 const Translation = v.object({
-  name: text(60, 'a name'),
+  name: text(60, 'enterName'),
   description: v.pipe(v.string(), v.trim(), v.maxLength(2000)),
   sections: v.pipe(v.array(ProductSectionSchema), v.maxLength(20))
 })
@@ -223,7 +224,7 @@ const productFields = {
     v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3650))),
     v.description('Days until revoke commands run; required for TIMED, null otherwise')
   ),
-  mark: v.pipe(text(12, 'a mark'), v.description('Short wordmark on the product tile')),
+  mark: v.pipe(text(12, 'enterMark'), v.description('Short wordmark on the product tile')),
   icon: v.picklist(PRODUCT_ICONS),
   grantCommands: v.pipe(Commands, v.description('Run on the game server after payment')),
   revokeCommands: v.pipe(Commands, v.description('Run when a TIMED product expires')),

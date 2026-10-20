@@ -1,3 +1,4 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -80,6 +81,13 @@ async function choose(email: string, item: string) {
 }
 
 describe('InvitesPanel', () => {
+  it('speaks Polish: the invite button and the table', async () => {
+    mockApi()
+    renderWithProviders(<InvitesPanel />, {locale: 'pl'})
+    expect(await screen.findByRole('button', {name: 'Zaproś'})).toBeInTheDocument()
+    expect(await screen.findByRole('table', {name: 'Zaproszenia'})).toBeInTheDocument()
+  })
+
   it('lists invites with their status', async () => {
     mockApi()
     renderWithStore(<InvitesPanel />)

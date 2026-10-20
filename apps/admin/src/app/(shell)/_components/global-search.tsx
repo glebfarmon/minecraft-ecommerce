@@ -1,10 +1,12 @@
 'use client'
 
 import {Search} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 
 export function GlobalSearch() {
+  const t = useTranslations('shell')
   const router = useRouter()
   const [q, setQ] = useState('')
   return (
@@ -21,8 +23,8 @@ export function GlobalSearch() {
       />
       <input
         type="search"
-        aria-label="Search orders"
-        placeholder="Search orders"
+        aria-label={t('searchOrders')}
+        placeholder={t('searchOrders')}
         value={q}
         onChange={e => {
           setQ(e.target.value)

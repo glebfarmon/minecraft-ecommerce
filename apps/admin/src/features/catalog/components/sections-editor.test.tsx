@@ -1,6 +1,7 @@
 import {emptyProductForm} from '@/features/catalog/lib/product-form'
 import type {ProductForm} from '@/features/catalog/schemas'
-import {fireEvent, render, screen} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {fireEvent, screen} from '@testing-library/react'
 import {useEffect} from 'react'
 import {useForm, useWatch} from 'react-hook-form'
 

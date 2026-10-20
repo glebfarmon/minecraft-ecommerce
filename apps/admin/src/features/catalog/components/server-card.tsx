@@ -2,6 +2,7 @@ import {Hint} from '@/components/hint'
 import {RollingIndicator} from '@/components/rolling-indicator'
 import type {ListCatalogServersApiResponse} from '@/lib/api/generated'
 import {Pencil} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import type {ReactNode} from 'react'
 
@@ -48,17 +49,18 @@ export function ServerCard({
   handle?: DragHandleProps
   editHref?: string
 }) {
+  const t = useTranslations('catalog')
   const rconReady = server.rconPasswordSet && Boolean(server.rcon?.host)
   const style = {background: server.accent, color: server.onAccent}
   const body = (
     <>
       <span className="text-[16px] font-semibold">{server.name}</span>
       <span className="tabular text-[13px]">
-        {server.productCount} {server.productCount === 1 ? 'product' : 'products'}
+        {t('productsCount', {count: server.productCount})}
       </span>
       <span className="flex flex-wrap gap-1.5">
-        <Pill>{rconReady ? 'RCON ready' : 'RCON not set'}</Pill>
-        {!server.isActive && <Pill>Disabled</Pill>}
+        <Pill>{rconReady ? t('rconReady') : t('rconNotSet')}</Pill>
+        {!server.isActive && <Pill>{t('disabled')}</Pill>}
       </span>
     </>
   )
@@ -85,10 +87,10 @@ export function ServerCard({
         {body}
       </button>
       {editHref && (
-        <Hint label="Edit server">
+        <Hint label={t('editServer')}>
           <Link
             href={editHref}
-            aria-label={`Edit ${server.name}`}
+            aria-label={t('editName', {name: server.name})}
             className={cn(ICON, 'absolute top-3 right-11 hover:bg-black/10')}
             style={{color: server.onAccent}}>
             <Pencil aria-hidden className="size-4" />

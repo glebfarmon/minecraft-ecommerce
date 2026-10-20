@@ -1,6 +1,7 @@
 import {ToneDot} from '@/components/status-dot'
+import {useFormat} from '@/hooks/use-format'
 import type {ListCatalogProductsApiResponse} from '@/lib/api/generated'
-import {formatMoney} from '@/lib/format'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 
 import {fromMinor} from '@shop/shared/catalog-admin'
@@ -11,14 +12,8 @@ import type {DragHandleProps} from './sortable-list'
 
 type Product = ListCatalogProductsApiResponse[number]
 
-const KIND: Record<Product['kind'], string> = {
-  PERMANENT: 'Permanent',
-  TIMED: 'Timed',
-  CASE: 'Case'
-}
-
-function prices(p: Pick<Product, 'prices'>) {
-  const eur = p.prices.EUR === null ? '—' : formatMoney(p.prices.EUR, 'EUR')
+function prices(p: Pick<Product, 'prices'>, money: (minor: number, currency: string) => string) {
+  const eur = p.prices.EUR === null ? '—' : money(p.prices.EUR, 'EUR')
   const pln = p.prices.PLN === null ? '—' : `${fromMinor(p.prices.PLN)} zł`
   return `${eur} · ${pln}`
 }
@@ -35,6 +30,8 @@ export function ProductCard({
   href?: string
   handle?: DragHandleProps
 }) {
+  const t = useTranslations('catalog')
+  const f = useFormat()
   return (
     <article className="group relative flex h-full flex-col gap-3 rounded-card bg-card p-3 transition-colors hover:bg-card-raised">
       <div
@@ -60,13 +57,13 @@ export function ProductCard({
         ) : (
           <p className="truncate font-semibold">{product.name}</p>
         )}
-        <p className="tabular text-[13px] text-muted">{prices(product)}</p>
+        <p className="tabular text-[13px] text-muted">{prices(product, f.money)}</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex h-6 items-center rounded-full bg-card-raised px-2.5 text-[12px] text-muted">
-            {KIND[product.kind]}
+            {t(`kind${product.kind}`)}
           </span>
-          {!product.isActive && <ToneDot tone="idle" label="Disabled" />}
-          {product.missing.length > 0 && <ToneDot tone="warn" label="Incomplete" />}
+          {!product.isActive && <ToneDot tone="idle" label={t('disabled')} />}
+          {product.missing.length > 0 && <ToneDot tone="warn" label={t('incomplete')} />}
         </div>
       </div>
       {handle && (

@@ -407,3 +407,58 @@ test('the owner switches sub-navs, opens editors from pencils and the preview fo
     .click()
   await expect(page).toHaveURL(/\/catalog\/servers\/\w+$/)
 })
+
+test('the owner switches the admin to Polish, it persists and the 390 px layout holds', async ({
+  page
+}) => {
+  test.setTimeout(180_000)
+  await signInOwner(page)
+  try {
+    await page
+      .getByRole('radiogroup', {name: 'Language'})
+      .getByRole('radio', {name: 'Polski'})
+      .click()
+    await expect(page.getByRole('link', {name: 'Zamówienia'})).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
+    await page.reload()
+    await expect(page.getByRole('link', {name: 'Zamówienia'})).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
+
+    await page.setViewportSize({width: 390, height: 844})
+    for (const path of [
+      '/',
+      '/orders',
+      '/catalog',
+      '/catalog/categories',
+      '/catalog/servers/new',
+      '/catalog/products/new',
+      '/team',
+      '/audit',
+      '/account',
+      '/content/rules',
+      '/content/texts',
+      '/content/settings'
+    ]) {
+      await page.goto(`${ADMIN}${path}`)
+      await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
+      await expect(page.getByRole('main')).toBeVisible()
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth
+      )
+      expect(overflow, `horizontal scroll on ${path} in Polish`).toBeLessThanOrEqual(0)
+    }
+
+    // The sheet menu carries the same switch; use it to go back.
+    await page.getByRole('button', {name: 'Otwórz menu'}).click()
+    const sheet = page.getByRole('dialog', {name: 'Menu'})
+    await expect(sheet.getByRole('link', {name: 'Zamówienia'})).toBeVisible()
+    await sheet
+      .getByRole('radiogroup', {name: 'Język'})
+      .getByRole('radio', {name: 'English'})
+      .click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  } finally {
+    // The suite is serial: leave English behind whatever happened above.
+    await page.context().clearCookies({name: 'admin_locale'})
+  }
+})

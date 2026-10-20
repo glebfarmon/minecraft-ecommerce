@@ -1,11 +1,12 @@
-import {render as rtlRender, screen} from '@testing-library/react'
+import {renderWithIntl} from '@/test/render-with-providers'
+import {screen} from '@testing-library/react'
 import type {ReactElement} from 'react'
 
 import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {Nav} from './nav'
 
-const render = (ui: ReactElement) => rtlRender(<TooltipProvider>{ui}</TooltipProvider>)
+const render = (ui: ReactElement) => renderWithIntl(<TooltipProvider>{ui}</TooltipProvider>)
 
 let mockPath = '/team'
 jest.mock('next/navigation', () => ({usePathname: () => mockPath}))

@@ -1,4 +1,5 @@
-import {render, screen, waitFor} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {screen, waitFor} from '@testing-library/react'
 
 import {ORDER_STATUSES} from '@shop/shared/orders'
 

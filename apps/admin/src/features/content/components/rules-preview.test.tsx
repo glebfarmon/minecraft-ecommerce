@@ -1,12 +1,12 @@
+import {IntlTooltipWrapper} from '@/test/render-with-providers'
 import {render as rtlRender, screen, within} from '@testing-library/react'
 import type {ReactElement} from 'react'
 
 import type {RulesDocument} from '@shop/shared/rules'
-import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {RulesPreview} from './rules-preview'
 
-const render = (ui: ReactElement) => rtlRender(ui, {wrapper: TooltipProvider})
+const render = (ui: ReactElement) => rtlRender(ui, {wrapper: IntlTooltipWrapper})
 
 const content: RulesDocument = {
   sections: [

@@ -5,7 +5,8 @@ import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type ListContentMessagesApiResponse,
   useListContentMessagesQuery,
@@ -13,6 +14,7 @@ import {
   useSetContentMessageMutation
 } from '@/lib/api/generated'
 import {SearchX} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
@@ -26,10 +28,9 @@ type Locale = 'en' | 'pl'
 type Message = ListContentMessagesApiResponse[number]
 
 const LONG_TEXT = 80
-const STALE_HINT =
-  'The default text changed its placeholders or tags. The site shows the default until you save a matching text.'
 
 export function TextsTable() {
+  const t = useTranslations('content')
   const [locale, setLocale] = useState<Locale>('en')
   const [search, setSearch] = useState('')
 
@@ -40,12 +41,12 @@ export function TextsTable() {
         setLocale(v as Locale)
       }}>
       <div className="flex flex-wrap items-end gap-4">
-        <TabsList aria-label="Language">
-          <TabsTrigger value="en">EN</TabsTrigger>
-          <TabsTrigger value="pl">PL</TabsTrigger>
+        <TabsList aria-label={t('language')}>
+          <TabsTrigger value="en">{t('en')}</TabsTrigger>
+          <TabsTrigger value="pl">{t('pl')}</TabsTrigger>
         </TabsList>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="texts-search">Search texts</Label>
+          <Label htmlFor="texts-search">{t('searchTexts')}</Label>
           <Input
             id="texts-search"
             type="search"
@@ -64,13 +65,14 @@ export function TextsTable() {
 }
 
 function Messages({locale, search}: {locale: Locale; search: string}) {
+  const t = useTranslations('content')
   const messages = useListContentMessagesQuery({locale})
   // currentData, not data: while another locale loads, data still holds the previous one.
   const data = messages.currentData
   if (messages.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
-        Could not load the texts. Refresh the page.
+        {t('couldNotLoadTheTextsRefresh')}
       </p>
     )
   if (!data) return <SkeletonRows />
@@ -84,7 +86,7 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
   )
   const groups = new Map<string, Message[]>()
   for (const m of shown) groups.set(m.namespace, [...(groups.get(m.namespace) ?? []), m])
-  if (groups.size === 0) return <EmptyState icon={SearchX} title="No texts match." />
+  if (groups.size === 0) return <EmptyState icon={SearchX} title={t('noTextsMatch')} />
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,9 +95,9 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="hidden md:table-cell">Key</TableHead>
-                <TableHead>Default</TableHead>
-                <TableHead>Override</TableHead>
+                <TableHead className="hidden md:table-cell">{t('key')}</TableHead>
+                <TableHead>{t('default')}</TableHead>
+                <TableHead>{t('override')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,10 +113,12 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
 }
 
 function TextRow({locale, message}: {locale: Locale; message: Message}) {
+  const t = useTranslations('content')
+  const apiError = useApiError()
   const [set, {isLoading: saving}] = useSetContentMessageMutation()
   const [reset, {isLoading: resetting}] = useResetContentMessageMutation()
   const [draft, setDraft] = useState(message.override ?? '')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const busy = saving || resetting
   const errorId = `override-${locale}-${message.key}-error`
   const fieldProps = {
@@ -130,13 +134,13 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
   async function onSave() {
     setError(null)
     const result = await set({locale, key: message.key, body: {value: draft}})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
   }
 
   async function onReset() {
     setError(null)
     const result = await reset({locale, key: message.key})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else setDraft('')
   }
 
@@ -153,7 +157,7 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
       <TableCell className="min-w-40 align-top">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={fieldProps.id} className="sr-only">
-            Override for {message.key}
+            {t('overrideFor', {key: message.key})}
           </Label>
           {message.default.length > LONG_TEXT ? (
             <Textarea {...fieldProps} />
@@ -162,14 +166,14 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
           )}
           {(message.override !== null || message.stale) && (
             <span className="flex flex-wrap gap-1.5">
-              {message.override !== null && <ToneDot tone="ok" label="changed" />}
+              {message.override !== null && <ToneDot tone="ok" label={t('changed')} />}
               {message.stale && (
-                <Hint label={STALE_HINT}>
+                <Hint label={t('staleHint')}>
                   <span
                     tabIndex={0}
-                    aria-description={STALE_HINT}
+                    aria-description={t('staleHint')}
                     className="rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
-                    <ToneDot tone="warn" label="needs update" />
+                    <ToneDot tone="warn" label={t('needsUpdate')} />
                   </span>
                 </Hint>
               )}
@@ -185,11 +189,11 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
               variant="outline"
               disabled={busy || draft.trim() === '' || draft === (message.override ?? '')}
               onClick={() => void onSave()}>
-              Save
+              {t('save')}
             </Button>
             {message.override !== null && (
               <Button variant="outline" disabled={busy} onClick={() => void onReset()}>
-                Reset
+                {t('reset')}
               </Button>
             )}
           </div>

@@ -1,10 +1,12 @@
 import {NAV} from '@/config/nav'
 import {ArrowUpRight} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 
 import {type Me, hasPermission} from '@shop/shared/access'
 
 export function QuickLinks({me}: {me: Me}) {
+  const t = useTranslations('nav')
   const items = NAV.filter(
     item =>
       item.href !== '/' && (!item.permission || hasPermission(me.permissions, item.permission))
@@ -21,7 +23,7 @@ export function QuickLinks({me}: {me: Me}) {
               <span className="grid size-11 place-items-center rounded-full bg-card-raised text-muted group-hover:bg-surface">
                 <Icon aria-hidden className="size-5" />
               </span>
-              <span className="flex-1 font-semibold">{item.label}</span>
+              <span className="flex-1 font-semibold">{t(item.key)}</span>
               <ArrowUpRight aria-hidden className="size-4 text-muted" />
             </Link>
           </li>

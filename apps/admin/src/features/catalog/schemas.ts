@@ -1,18 +1,20 @@
+import {FORM_MESSAGES} from '@/lib/validation-messages'
 import * as v from 'valibot'
 
 import {PRODUCT_ICONS, PRODUCT_KINDS} from '@shop/shared/catalog'
 import {SLUG_PATTERN, hasOnlyNickPlaceholder, toMinor} from '@shop/shared/catalog-admin'
+import {VALIDATION_MESSAGES} from '@shop/shared/validation-messages'
 
 export const SlugField = v.pipe(
   v.string(),
   v.trim(),
-  v.regex(SLUG_PATTERN, 'Use 1–40 lowercase letters, digits or dashes')
+  v.regex(SLUG_PATTERN, VALIDATION_MESSAGES.slugFormat)
 )
 const Name = v.pipe(
   v.string(),
   v.trim(),
-  v.minLength(1, 'Enter a name'),
-  v.maxLength(40, 'Use at most 40 characters')
+  v.minLength(1, VALIDATION_MESSAGES.enterName),
+  v.maxLength(40, VALIDATION_MESSAGES.atMost40)
 )
 
 export const CategoryFormSchema = v.object({slug: SlugField, en: Name, pl: Name})
@@ -21,39 +23,39 @@ export type CategoryForm = v.InferOutput<typeof CategoryFormSchema>
 const PriceText = v.pipe(
   v.string(),
   v.trim(),
-  v.check(t => t === '' || toMinor(t) !== null, 'Use a price like 9.99')
+  v.check(t => t === '' || toMinor(t) !== null, FORM_MESSAGES.priceFormat)
 )
 const CommandLines = v.pipe(
   v.string(),
   v.check(
     t => t.split('\n').every(line => hasOnlyNickPlaceholder(line)),
-    'Only the {nick} placeholder is allowed'
+    VALIDATION_MESSAGES.onlyNickPlaceholder
   ),
   v.check(
     t => t.split('\n').every(line => line.trim().length <= 200),
-    'Use at most 200 characters per command'
+    VALIDATION_MESSAGES.commandTooLong
   )
 )
 const EntryForm = v.object({cmd: v.string(), text: v.string(), cooldown: v.string()})
 const SectionForm = v.object({title: v.string(), entries: v.array(EntryForm)})
 const TranslationForm = v.object({
-  name: v.pipe(v.string(), v.maxLength(60, 'Use at most 60 characters')),
-  description: v.pipe(v.string(), v.maxLength(2000, 'Use at most 2000 characters')),
+  name: v.pipe(v.string(), v.maxLength(60, VALIDATION_MESSAGES.atMost60)),
+  description: v.pipe(v.string(), v.maxLength(2000, VALIDATION_MESSAGES.atMost2000)),
   sections: v.array(SectionForm)
 })
 
 export const ProductFormSchema = v.pipe(
   v.object({
-    serverId: v.pipe(v.string(), v.minLength(1, 'Choose a server')),
-    categoryId: v.pipe(v.string(), v.minLength(1, 'Choose a category')),
+    serverId: v.pipe(v.string(), v.minLength(1, FORM_MESSAGES.chooseServer)),
+    categoryId: v.pipe(v.string(), v.minLength(1, FORM_MESSAGES.chooseCategory)),
     slug: SlugField,
     kind: v.picklist(PRODUCT_KINDS),
     durationDays: v.pipe(v.string(), v.trim()),
     mark: v.pipe(
       v.string(),
       v.trim(),
-      v.minLength(1, 'Enter a mark'),
-      v.maxLength(12, 'Use at most 12 characters')
+      v.minLength(1, VALIDATION_MESSAGES.enterMark),
+      v.maxLength(12, VALIDATION_MESSAGES.atMost12)
     ),
     icon: v.picklist(PRODUCT_ICONS),
     isActive: v.boolean(),
@@ -66,21 +68,21 @@ export const ProductFormSchema = v.pipe(
     v.partialCheck(
       [['kind'], ['durationDays']],
       f => (f.kind === 'TIMED') === /^[1-9]\d*$/.test(f.durationDays),
-      'TIMED products need a number of days; other kinds leave it empty'
+      FORM_MESSAGES.timedDays
     ),
     ['durationDays']
   )
 )
 export type ProductForm = v.InferInput<typeof ProductFormSchema>
 
-const Hex = v.pipe(v.string(), v.regex(/^#[0-9a-f]{6}$/i, 'Use a hex color like #ff6b1a'))
+const Hex = v.pipe(v.string(), v.regex(/^#[0-9a-f]{6}$/i, VALIDATION_MESSAGES.hexColor))
 export const ServerFormSchema = v.object({
   slug: SlugField,
   name: v.pipe(
     v.string(),
     v.trim(),
-    v.minLength(1, 'Enter a name'),
-    v.maxLength(40, 'Use at most 40 characters')
+    v.minLength(1, VALIDATION_MESSAGES.enterName),
+    v.maxLength(40, VALIDATION_MESSAGES.atMost40)
   ),
   accent: Hex,
   onAccent: Hex,
@@ -89,13 +91,13 @@ export const ServerFormSchema = v.object({
 export type ServerForm = v.InferOutput<typeof ServerFormSchema>
 
 export const RconFormSchema = v.object({
-  host: v.pipe(v.string(), v.trim(), v.maxLength(253)),
+  host: v.pipe(v.string(), v.trim(), v.maxLength(253, VALIDATION_MESSAGES.atMost253)),
   port: v.pipe(
     v.string(),
     v.trim(),
     v.check(
       p => p === '' || (/^\d+$/.test(p) && Number(p) >= 1 && Number(p) <= 65535),
-      'Use a port between 1 and 65535'
+      FORM_MESSAGES.portRange
     )
   ),
   password: v.string(),

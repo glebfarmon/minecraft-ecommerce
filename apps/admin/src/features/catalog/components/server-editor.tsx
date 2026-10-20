@@ -6,7 +6,8 @@ import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useCreateCatalogServerMutation,
   useDeleteCatalogServerMutation,
@@ -15,6 +16,7 @@ import {
 } from '@/lib/api/generated'
 import {contrastRatio} from '@/lib/contrast'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {type ReactNode, useEffect, useRef, useState} from 'react'
 import {Controller, type FieldPath, useForm, useFormState, useWatch} from 'react-hook-form'
@@ -40,12 +42,15 @@ const EMPTY: ServerForm = {
 }
 
 export function ServerEditor({id, canEdit, canRcon}: Props) {
+  const t = useTranslations('catalog')
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const router = useRouter()
   const server = useGetCatalogServerQuery({id: id ?? ''}, {skip: !id})
   const [create, {isLoading: creating}] = useCreateCatalogServerMutation()
   const [update, {isLoading: updating}] = useUpdateCatalogServerMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogServerMutation()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -72,7 +77,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
   const values = useWatch({control}) as ServerForm
 
   if (id && server.isLoading) return <SkeletonRows rows={4} />
-  if (id && !server.data) return <p role="alert">Could not load the server. Refresh the page.</p>
+  if (id && !server.data) return <p role="alert">{t('couldNotLoadTheServerRefresh')}</p>
 
   // The slug stays locked while the stored server is enabled.
   const locked = server.data?.isActive === true
@@ -84,14 +89,14 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     if (!id) {
       const {slug, name, accent, onAccent} = v
       const result = await create({body: {slug, name, accent, onAccent}})
-      if (result.error) setError(apiErrorMessage(result.error))
+      if (result.error) setError(apiError(result.error))
       else router.replace(`/catalog/servers/${result.data.id}`)
       return
     }
     if (version.current === null) return
     const result = await update({id, body: {...v, version: version.current}})
     if (result.error) {
-      setError(apiErrorMessage(result.error))
+      setError(apiError(result.error))
       return
     }
     version.current = result.data.version
@@ -103,11 +108,11 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else router.push('/catalog')
   }
 
-  const errorOf = (name: FieldPath<ServerForm>) => errors[name]?.message
+  const errorOf = (name: FieldPath<ServerForm>) => errorText(errors[name]?.message)
   const fieldProps = (name: FieldPath<ServerForm>) => ({
     'id': `server-${name}`,
     'aria-invalid': errorOf(name) ? true : undefined,
@@ -138,11 +143,11 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   return (
     <EditorLayout
-      title={id ? server.data?.name || 'Server' : 'New server'}
+      title={id ? server.data?.name || t('server') : t('newServer')}
       preview={
         <ServerCard
           server={{
-            name: values.name || 'Server',
+            name: values.name || t('server'),
             accent: values.accent,
             onAccent: values.onAccent,
             isActive: values.isActive,
@@ -160,30 +165,28 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
         )}
         {saved && (
           <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            Saved. Live on the site within a minute.
+            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 
         <fieldset disabled={!canEdit} className="min-w-0">
-          <FormSection title="Basics" description="How the server appears in the shop.">
-            <Field name="name" label="Name" error={errorOf('name')}>
+          <FormSection title={t('basics')} description={t('howTheServerAppearsInThe')}>
+            <Field name="name" label={t('name')} error={errorOf('name')}>
               <Input {...fieldProps('name')} {...register('name')} />
             </Field>
             <Field
               name="slug"
-              label="Slug"
+              label={t('slug')}
               error={errorOf('slug')}
-              hint={locked ? 'Disable the server to change its slug.' : undefined}>
+              hint={locked ? t('disableToChangeSlug') : undefined}>
               <Input {...fieldProps('slug')} readOnly={locked} {...register('slug')} />
             </Field>
-            {colorField('accent', 'Accent')}
-            {colorField('onAccent', 'Text color')}
+            {colorField('accent', t('accent'))}
+            {colorField('onAccent', t('textColor'))}
             {lowContrast && (
               <div className="md:col-span-2">
-                <ToneDot tone="warn" label="Low contrast" />
-                <span className="ml-2 text-[13px] text-muted">
-                  Text on the accent needs a contrast ratio of at least 4.5.
-                </span>
+                <ToneDot tone="warn" label={t('lowContrast')} />
+                <span className="ml-2 text-[13px] text-muted">{t('textOnTheAccentNeedsA')}</span>
               </div>
             )}
             {id && (
@@ -203,7 +206,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
                     />
                   )}
                 />
-                <Label htmlFor="server-isActive">Enabled</Label>
+                <Label htmlFor="server-isActive">{t('enabled')}</Label>
               </div>
             )}
           </FormSection>
@@ -212,7 +215,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
         {canEdit && (
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>
-              Save
+              {t('save')}
             </Button>
             {id &&
               (confirmDelete ? (
@@ -221,7 +224,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
                   variant="danger"
                   disabled={busy}
                   onClick={() => void onDelete()}>
-                  Confirm delete
+                  {t('confirmDelete')}
                 </Button>
               ) : (
                 <Button
@@ -230,7 +233,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
                   onClick={() => {
                     setConfirmDelete(true)
                   }}>
-                  Delete
+                  {t('delete')}
                 </Button>
               ))}
           </div>
@@ -238,7 +241,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
       </form>
 
       {canRcon && server.data && (
-        <Card title="RCON">
+        <Card title={t('rcon')}>
           <RconPanel server={server.data} />
         </Card>
       )}

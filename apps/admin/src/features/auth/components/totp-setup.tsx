@@ -3,8 +3,11 @@
 import {BackupCodes} from '@/features/auth/components/backup-codes'
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema} from '@/features/auth/schemas'
+import {useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {QRCodeSVG} from 'qrcode.react'
 import {useEffect, useState} from 'react'
@@ -25,11 +28,13 @@ function secretOf(totpURI: string): string {
 }
 
 export function TotpSetup() {
+  const t = useTranslations('auth')
+  const errorText = useErrorText()
   const router = useRouter()
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const form = useForm({resolver: valibotResolver(CodeSchema), defaultValues: {code: ''}})
   const errors = useFormState({control: form.control}).errors
 
@@ -48,7 +53,7 @@ export function TotpSetup() {
   const confirm = form.handleSubmit(async ({code}) => {
     const {error: failed} = await authClient.twoFactor.verifyTotp({code})
     if (failed) {
-      setError(codeErrorMessage(failed, 'That code did not work. Check the app and try again.'))
+      setError(codeErrorMessage(failed, t('codeFailedApp'), t))
       return
     }
     setError(null)
@@ -58,26 +63,23 @@ export function TotpSetup() {
   if (loadError) {
     return (
       <p role="alert" className="text-sm text-destructive">
-        Could not start two-factor setup. Reload the page to try again.
+        {t('couldNotStartTwoFactorSetup')}
       </p>
     )
   }
-  if (!enrollment) return <p className="text-sm text-muted-foreground">Preparing setup…</p>
+  if (!enrollment) return <p className="text-sm text-muted-foreground">{t('preparingSetup')}</p>
 
   if (confirmed) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm">
-          Two-factor is on. Save these backup codes now; each works once and they are not shown
-          again.
-        </p>
+        <p className="text-sm">{t('twoFactorIsOnSaveThese')}</p>
         <BackupCodes codes={enrollment.backupCodes} />
         <Button
           type="button"
           onClick={() => {
             router.replace('/')
           }}>
-          I saved them
+          {t('iSavedThem')}
         </Button>
       </div>
     )
@@ -85,21 +87,17 @@ export function TotpSetup() {
 
   return (
     <form onSubmit={event => void confirm(event)} className="flex flex-col gap-3" noValidate>
-      <p className="text-sm">
-        Scan this code with an authenticator app, then enter the 6-digit code it shows. Backup codes
-        appear after you confirm, and work only once setup is complete.
-      </p>
+      <p className="text-sm">{t('scanThisCodeWithAnAuthenticator')}</p>
       <QRCodeSVG
         value={enrollment.totpURI}
         role="img"
-        aria-label="QR code for your authenticator app"
+        aria-label={t('qrCodeForYourAuthenticatorApp')}
         className="bg-white p-2"
       />
       <p className="text-xs text-muted-foreground">
-        Cannot scan? Enter this key:{' '}
-        <code data-testid="totp-secret">{secretOf(enrollment.totpURI)}</code>
+        {t('cannotScan')} <code data-testid="totp-secret">{secretOf(enrollment.totpURI)}</code>
       </p>
-      <Label htmlFor="code">Code from the app</Label>
+      <Label htmlFor="code">{t('codeFromTheApp')}</Label>
       <Input
         id="code"
         inputMode="numeric"
@@ -110,7 +108,7 @@ export function TotpSetup() {
       />
       {errors.code && (
         <p id="code-error" role="alert" className="text-sm text-destructive">
-          {errors.code.message}
+          {errorText(errors.code.message)}
         </p>
       )}
       {error && (
@@ -118,7 +116,7 @@ export function TotpSetup() {
           {error}
         </p>
       )}
-      <Button type="submit">Confirm</Button>
+      <Button type="submit">{t('confirm')}</Button>
     </form>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import type {MouseEvent, ReactNode} from 'react'
 
@@ -38,6 +39,7 @@ export function DataTable<T>({
   /** The whole row runs this instead, for rows whose detail opens in place. */
   onRowClick?: (r: T) => void
 }) {
+  const t = useTranslations('table')
   if (rows.length === 0) return <>{empty}</>
   const primary = columns.find(c => c.primary) ?? columns[0]
   const clickable = Boolean(rowHref ?? onRowClick)
@@ -65,9 +67,9 @@ export function DataTable<T>({
     else onRowClick?.(r)
   }
   const menuLabel = (r: T) => {
-    if (rowLabel) return `Actions for ${rowLabel(r)}`
+    if (rowLabel) return t('actionsFor', {label: rowLabel(r)})
     const v = primary?.cell(r)
-    return typeof v === 'string' ? `Actions for ${v}` : 'Actions'
+    return typeof v === 'string' ? t('actionsFor', {label: v}) : t('actions')
   }
   return (
     <>
@@ -82,7 +84,7 @@ export function DataTable<T>({
             ))}
             {menu && (
               <th scope="col" className="w-12">
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t('actions')}</span>
               </th>
             )}
           </tr>

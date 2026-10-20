@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+import {VALIDATION_MESSAGES} from './validation-messages'
+
 export type RichNode =
   | {type: 'text'; value: string}
   | {type: 'strong' | 'em' | 'u'; children: RichNode[]}
@@ -134,15 +136,14 @@ const LINK = /\[[^\]]+\]\(([^)\s]+)\)/g
 export const hasOnlySafeLinks = (text: string): boolean =>
   [...text.replace(/\\[\\*+[\]()]/g, 'xx').matchAll(LINK)].every(m => SAFE_HREF.test(m[1] ?? ''))
 
-const SAFE_LINKS = 'Links must start with https:// or /'
 const RuleText = (max: number) =>
   v.object({
     en: v.pipe(
       v.string(),
       v.trim(),
-      v.minLength(1, 'Enter the English text'),
+      v.minLength(1, VALIDATION_MESSAGES.ruleTextRequired),
       v.maxLength(max),
-      v.check(hasOnlySafeLinks, SAFE_LINKS),
+      v.check(hasOnlySafeLinks, VALIDATION_MESSAGES.safeLinks),
       v.description(
         'English text; **bold**, *italic*, ++underline++ and [label](https://… or /path) links; \\ escapes * + [ ] ( )'
       )
@@ -152,7 +153,7 @@ const RuleText = (max: number) =>
         v.string(),
         v.trim(),
         v.maxLength(max),
-        v.check(hasOnlySafeLinks, SAFE_LINKS),
+        v.check(hasOnlySafeLinks, VALIDATION_MESSAGES.safeLinks),
         v.description('Polish text; the English text is shown when empty')
       )
     )
@@ -177,8 +178,11 @@ export const RulesDocumentSchema = v.pipe(
       v.maxLength(50)
     )
   }),
-  v.check(d => unique(d.sections.map(s => s.id)), 'Section ids must be unique'),
-  v.check(d => unique(d.sections.flatMap(s => s.items.map(i => i.id))), 'Item ids must be unique')
+  v.check(d => unique(d.sections.map(s => s.id)), VALIDATION_MESSAGES.sectionIdsUnique),
+  v.check(
+    d => unique(d.sections.flatMap(s => s.items.map(i => i.id))),
+    VALIDATION_MESSAGES.itemIdsUnique
+  )
 )
 export type RulesDocument = v.InferOutput<typeof RulesDocumentSchema>
 

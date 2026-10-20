@@ -1,7 +1,8 @@
 'use client'
 
 import {Donut} from '@/components/donut'
-import {formatMoney} from '@/lib/format'
+import {useFormat} from '@/hooks/use-format'
+import {useTranslations} from 'next-intl'
 
 import type {OrderStats} from '@shop/shared/orders'
 
@@ -9,13 +10,15 @@ import type {OrderStats} from '@shop/shared/orders'
 const STROKE = {EUR: 'stroke-accent', PLN: 'stroke-fg'} as const
 const SWATCH = {EUR: 'bg-accent', PLN: 'bg-fg'} as const
 
-const orders = (n: number) => `${String(n)} ${n === 1 ? 'order' : 'orders'}`
-
 /** Paid orders by the currency they were paid in, with the sum in that original currency. */
 export function CurrencyDonut({byCurrency}: {byCurrency: OrderStats['byCurrency']}) {
+  const t = useTranslations('dashboard')
+  const f = useFormat()
   const total = byCurrency.reduce((a, r) => a + r.count, 0)
   const rows = byCurrency.map(r => ({...r, percent: Math.round((r.count / total) * 100)}))
-  const label = `Paid orders by currency: ${rows.map(r => `${r.currency} ${String(r.count)} (${String(r.percent)}%)`).join(', ')}`
+  const label = t('paidByCurrencyLabel', {
+    list: rows.map(r => `${r.currency} ${String(r.count)} (${String(r.percent)}%)`).join(', ')
+  })
   return (
     <div className="flex flex-wrap items-center gap-6">
       <Donut
@@ -36,7 +39,12 @@ export function CurrencyDonut({byCurrency}: {byCurrency: OrderStats['byCurrency'
           <li key={r.currency} className="flex items-center gap-3">
             <span aria-hidden className={`size-2 rounded-full ${SWATCH[r.currency]}`} />
             <span className="tabular text-[13px]">
-              {`${r.currency} ${String(r.percent)}% · ${orders(r.count)} · ${formatMoney(r.totalMinor, r.currency)}`}
+              {t('currencyRow', {
+                currency: r.currency,
+                percent: r.percent,
+                orders: t('ordersCount', {count: r.count}),
+                money: f.money(r.totalMinor, r.currency)
+              })}
             </span>
           </li>
         ))}
