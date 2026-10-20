@@ -4,6 +4,7 @@ import {MAILER, type Mailer} from '../mailer/mailer'
 import {orderReceiptMail} from '../mailer/templates'
 import type {PaymentEvent} from '../payments/payments-gateway'
 import {PrismaService} from '../prisma/prisma.service'
+import {OrderRatesService} from './order-rates.service'
 import {type OrderWithItems, localePrefix, toPublicOrder} from './order-view'
 import {publicWebOrigin} from './public-origin'
 
@@ -20,7 +21,8 @@ export class PaymentEventsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(MAILER) private readonly mailer: Mailer
+    @Inject(MAILER) private readonly mailer: Mailer,
+    private readonly rates: OrderRatesService
   ) {}
 
   async apply(event: PaymentEvent): Promise<void> {
@@ -79,7 +81,13 @@ export class PaymentEventsService {
       })
       return count === 1 ? {...order, status: 'PAID' as const, paidAt} : null
     })
-    if (paidNow) await this.sendReceipt(paidNow)
+    if (paidNow) {
+      // Not awaited: payment handling never waits for the rates source (fill logs its own failures).
+      this.rates.fill(paidNow.id).catch((error: unknown) => {
+        this.log.error(`exchange rate for ${paidNow.publicId} not filled`, error)
+      })
+      await this.sendReceipt(paidNow)
+    }
   }
 
   /** After commit, at most once per order; a mail failure never undoes the payment. */
