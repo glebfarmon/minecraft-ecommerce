@@ -20,6 +20,7 @@ import {
   useSaveRulesDraftMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useLocale, useTranslations} from 'next-intl'
 import {useEffect, useRef, useState} from 'react'
 import {
   type Control,
@@ -44,12 +45,6 @@ const LOCALES = ['en', 'pl'] as const
 type SectionPath = `sections.${number}`
 type TextPath = `${SectionPath}.title.${Locale}` | `${SectionPath}.items.${number}.text.${Locale}`
 
-const STALE = 'Someone else changed the draft. Reload to see their version.'
-const PUBLISHED = 'Published. Visible on the site within about a minute.'
-const FALLBACK = 'Uses the English text'
-const SECTIONS_LIMIT = 'The rules can have at most 50 sections.'
-const ITEMS_LIMIT = 'A section can hold at most 100 rules.'
-
 /** An error on the array itself (its length), not on one of its entries. */
 function hasArrayError(errors: unknown, path: string) {
   const e = get(errors, path) as {message?: string; root?: {message?: string}} | undefined
@@ -73,6 +68,8 @@ const textPath = (section: number, locale: Locale, item?: number) =>
 const fieldId = (name: string) => `rules-${name.replace(/\./g, '-')}`
 
 export function RulesEditor() {
+  const t = useTranslations('content')
+  const uiLocale = useLocale()
   const errorText = useErrorText()
   const apiError = useApiError()
   const draft = useGetRulesDraftQuery()
@@ -126,8 +123,8 @@ export function RulesEditor() {
     setConfirmPublish(false)
   }
 
-  if (draft.isLoading) return <p>Loading rules…</p>
-  if (!draft.data) return <p role="alert">Could not load the rules. Refresh the page.</p>
+  if (draft.isLoading) return <p>{t('loadingRules')}</p>
+  if (!draft.data) return <p role="alert">{t('couldNotLoadTheRulesRefresh')}</p>
 
   const busy = saving || publishing || restored.isLoading
 
@@ -153,13 +150,13 @@ export function RulesEditor() {
     if (revision.current === null) return
     const result = await save({body: {content, revision: revision.current}})
     if (result.error) {
-      setError(isStale(result.error) ? STALE : apiError(result.error))
+      setError(isStale(result.error) ? t('staleDraft') : apiError(result.error))
       return
     }
     revision.current = result.data.revision
     // The saved content carries the ids given to new sections and rules.
     reset(documentToForm(result.data.content))
-    setStatus('Draft saved. Publish it to show it on the site.')
+    setStatus(t('draftSaved'))
   }
 
   async function onPublish() {
@@ -170,13 +167,13 @@ export function RulesEditor() {
     // The revision this form shows: if someone saved since, the API refuses (409) instead of
     // publishing their edit unseen.
     const result = await publish({body: {revision: revision.current}})
-    if (result.error) setError(isStale(result.error) ? STALE : apiError(result.error))
-    else setStatus(PUBLISHED)
+    if (result.error) setError(isStale(result.error) ? t('staleDraft') : apiError(result.error))
+    else setStatus(t('published'))
   }
 
   const rootError = (() => {
     const {errors} = form.formState
-    return hasArrayError(errors, 'sections') ? SECTIONS_LIMIT : errorText(errors.root?.message)
+    return hasArrayError(errors, 'sections') ? t('sectionsLimit') : errorText(errors.root?.message)
   })()
 
   return (
@@ -191,7 +188,7 @@ export function RulesEditor() {
             setTab(value as Locale)
           }}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList aria-label="Language">
+            <TabsList aria-label={t('language')}>
               {LOCALES.map(l => (
                 <TabsTrigger key={l} value={l}>
                   {l.toUpperCase()}
@@ -199,20 +196,22 @@ export function RulesEditor() {
               ))}
             </TabsList>
             <div className="flex flex-wrap items-center gap-2">
-              {isDirty && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
+              {isDirty && (
+                <span className="text-xs text-muted-foreground">{t('unsavedChanges')}</span>
+              )}
               <Button type="submit" disabled={busy}>
-                Save draft
+                {t('saveDraft')}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 disabled={isDirty || busy}
-                title={isDirty ? 'Save the draft before publishing' : undefined}
+                title={isDirty ? t('saveBeforePublishing') : undefined}
                 onClick={() => {
                   setStatus(null)
                   setConfirmPublish(true)
                 }}>
-                Publish
+                {t('publish')}
               </Button>
             </div>
           </div>
@@ -220,10 +219,10 @@ export function RulesEditor() {
           {confirmPublish && !isDirty && (
             <div className="flex flex-wrap items-center gap-2 rounded-card bg-card p-4">
               <p className="mr-auto text-sm">
-                {`Publish as the edition of ${editionDate(new Date())}?`}
+                {t('publishEdition', {date: editionDate(new Date(), uiLocale)})}
               </p>
               <Button type="button" disabled={busy} onClick={() => void onPublish()}>
-                Publish now
+                {t('publishNow')}
               </Button>
               <Button
                 type="button"
@@ -231,7 +230,7 @@ export function RulesEditor() {
                 onClick={() => {
                   setConfirmPublish(false)
                 }}>
-                Cancel
+                {t('cancel')}
               </Button>
             </div>
           )}
@@ -270,16 +269,17 @@ type EditorProps = {
 }
 
 function Sections({locale, control, disabled}: EditorProps) {
+  const t = useTranslations('content')
   const {fields, append, remove, move} = useFieldArray({control, name: 'sections'})
 
   return (
     <div className="flex flex-col gap-4">
       {fields.length === 0 && (
-        <p className="text-sm text-muted-foreground">No sections yet. Add the first one.</p>
+        <p className="text-sm text-muted-foreground">{t('noSectionsYetAddTheFirst')}</p>
       )}
       <SortableList
         items={fields}
-        label="Sections"
+        label={t('sections')}
         className="flex flex-col gap-4"
         onMove={(_, from, to) => {
           move(from, to)
@@ -307,7 +307,7 @@ function Sections({locale, control, disabled}: EditorProps) {
         onClick={() => {
           append(emptySection())
         }}>
-        Add section
+        {t('addSection')}
       </Button>
     </div>
   )
@@ -321,6 +321,7 @@ function Section({
   handle,
   onRemove
 }: EditorProps & {index: number; handle: DragHandleProps; onRemove: () => void}) {
+  const t = useTranslations('content')
   const section = sectionPath(index)
   const {fields, append, remove, move} = useFieldArray({control, name: `${section}.items`})
   // Undefined for a moment after a remove or reset.
@@ -328,7 +329,7 @@ function Section({
   const {errors} = useFormState({control, name: `${section}.items`})
   const tooMany = hasArrayError(errors, `${section}.items`)
   const n = String(index + 1)
-  const name = (title ?? '').trim() || `section ${n}`
+  const name = (title ?? '').trim() || t('sectionN', {n})
   const tag = locale.toUpperCase()
 
   return (
@@ -339,14 +340,14 @@ function Section({
           control={control}
           disabled={disabled}
           name={textPath(index, locale)}
-          label={`Section ${n} title (${tag})`}
+          label={t('sectionTitle', {n, tag})}
           className="flex-1"
         />
-        <ConfirmDelete label={`Delete section ${n}`} onConfirm={onRemove} />
+        <ConfirmDelete label={t('deleteSection', {n})} onConfirm={onRemove} />
       </div>
       <SortableList
         items={fields}
-        label={`Rules in ${name}`}
+        label={t('rulesIn', {name})}
         className="flex flex-col gap-2"
         onMove={(_, from, to) => {
           move(from, to)
@@ -356,7 +357,7 @@ function Section({
           const number = `${n}.${String(i + 1)}`
           return (
             <div className="flex items-start gap-2">
-              <Handle label={`rule ${number}`} handle={ruleHandle} />
+              <Handle label={t('ruleN', {number})} handle={ruleHandle} />
               <span className="w-9 shrink-0 pt-2 text-sm text-muted-foreground tabular-nums">
                 {number}
               </span>
@@ -364,13 +365,13 @@ function Section({
                 control={control}
                 disabled={disabled}
                 name={textPath(index, locale, i)}
-                label={`Rule ${number} (${tag})`}
+                label={t('ruleTitle', {number, tag})}
                 multiline
                 hideLabel
                 className="flex-1"
               />
               <ConfirmDelete
-                label={`Delete rule ${number}`}
+                label={t('deleteRule', {number})}
                 onConfirm={() => {
                   remove(i)
                 }}
@@ -379,7 +380,7 @@ function Section({
           )
         }}
       </SortableList>
-      {tooMany && <p className="text-sm text-destructive">{ITEMS_LIMIT}</p>}
+      {tooMany && <p className="text-sm text-destructive">{t('itemsLimit')}</p>}
       <Button
         type="button"
         variant="outline"
@@ -387,17 +388,18 @@ function Section({
         onClick={() => {
           append(emptyItem())
         }}>
-        Add rule
+        {t('addRule')}
       </Button>
     </div>
   )
 }
 
 function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
+  const t = useTranslations('content')
   return (
     <button
       type="button"
-      aria-label={`Move ${label}`}
+      aria-label={t('moveItem', {label})}
       className="cursor-grab touch-none self-start rounded px-1 py-1.5 text-muted-foreground hover:bg-card-raised focus-visible:ring-2 focus-visible:outline-none"
       {...handle}>
       ⠿
@@ -420,6 +422,7 @@ function TextField({
   hideLabel?: boolean
   className?: string
 }) {
+  const t = useTranslations('content')
   const errorText = useErrorText()
   // Undefined for a moment after a remove or reset.
   const value = useWatch({control, name}) as string | undefined
@@ -427,7 +430,7 @@ function TextField({
   const error = errorText((get(errors, name) as FieldError | undefined)?.message)
   const id = fieldId(name)
   // An empty PL text is fine: the site shows the English one (and so does the preview).
-  const hint = name.endsWith('.pl') && !(value ?? '').trim() ? FALLBACK : undefined
+  const hint = name.endsWith('.pl') && !(value ?? '').trim() ? t('usesEnglishText') : undefined
   const describedBy = [error && `${id}-error`, hint && `${id}-hint`].filter(Boolean).join(' ')
 
   return (
@@ -471,6 +474,7 @@ function TextField({
 }
 
 function ConfirmDelete({label, onConfirm}: {label: string; onConfirm: () => void}) {
+  const t = useTranslations('content')
   const [confirming, setConfirming] = useState(false)
   if (!confirming)
     return (
@@ -482,13 +486,13 @@ function ConfirmDelete({label, onConfirm}: {label: string; onConfirm: () => void
         onClick={() => {
           setConfirming(true)
         }}>
-        Delete
+        {t('delete')}
       </Button>
     )
   return (
     <div className="flex shrink-0 gap-1 self-start">
       <Button type="button" variant="outline" className="text-destructive" onClick={onConfirm}>
-        Confirm delete
+        {t('confirmDelete')}
       </Button>
       <Button
         type="button"
@@ -496,7 +500,7 @@ function ConfirmDelete({label, onConfirm}: {label: string; onConfirm: () => void
         onClick={() => {
           setConfirming(false)
         }}>
-        Cancel
+        {t('cancel')}
       </Button>
     </div>
   )

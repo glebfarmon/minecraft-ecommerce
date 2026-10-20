@@ -1,3 +1,4 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
@@ -38,6 +39,14 @@ function mockApi(
 }
 
 describe('TextsTable', () => {
+  it('speaks Polish: headers, search and row labels (the text keys stay as they are)', async () => {
+    mockApi(() => Response.json({}))
+    renderWithProviders(<TextsTable />, {locale: 'pl'})
+    expect(await screen.findByLabelText('Nadpisanie dla rules.title')).toBeInTheDocument()
+    expect(screen.getByLabelText('Szukaj tekstów')).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader', {name: 'Klucz'}).length).toBeGreaterThan(0)
+  })
+
   it('saves one override and shows the placeholder error under that row only', async () => {
     const calls: string[] = []
     mockApi((method, url) => {

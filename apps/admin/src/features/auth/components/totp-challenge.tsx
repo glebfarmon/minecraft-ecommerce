@@ -5,6 +5,7 @@ import {BackupSchema, CodeSchema} from '@/features/auth/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 import {useForm, useFormState} from 'react-hook-form'
@@ -14,6 +15,7 @@ import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
 export function TotpChallenge() {
+  const t = useTranslations('auth')
   const errorText = useErrorText()
   const router = useRouter()
   const [useBackup, setUseBackup] = useState(false)
@@ -29,7 +31,7 @@ export function TotpChallenge() {
       ? await authClient.twoFactor.verifyBackupCode({code, trustDevice: false})
       : await authClient.twoFactor.verifyTotp({code, trustDevice: false})
     if (failed) {
-      setError(codeErrorMessage(failed, 'That code did not work.'))
+      setError(codeErrorMessage(failed, t('codeFailed'), t))
       return
     }
     router.replace('/')
@@ -37,7 +39,7 @@ export function TotpChallenge() {
 
   return (
     <form onSubmit={event => void verify(event)} className="flex flex-col gap-3" noValidate>
-      <Label htmlFor="code">{useBackup ? 'Backup code' : 'Code from the app'}</Label>
+      <Label htmlFor="code">{useBackup ? t('backupCode') : t('codeFromTheApp')}</Label>
       <Input
         key={useBackup ? 'backup' : 'totp'}
         id="code"
@@ -57,7 +59,7 @@ export function TotpChallenge() {
           {error}
         </p>
       )}
-      <Button type="submit">Verify</Button>
+      <Button type="submit">{t('verify')}</Button>
       <Button
         type="button"
         variant="outline"
@@ -66,7 +68,7 @@ export function TotpChallenge() {
           setError(null)
           form.reset({code: ''})
         }}>
-        {useBackup ? 'Use the app code' : 'Use a backup code'}
+        {useBackup ? t('useAppCode') : t('useBackupCode')}
       </Button>
     </form>
   )

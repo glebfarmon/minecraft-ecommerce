@@ -43,6 +43,15 @@ export function renderWithProviders(
   return render(store ? <Provider store={makeStore()}>{content}</Provider> : content)
 }
 
+/** Messages and tooltips, for tests that call RTL's `render(ui, {wrapper})` themselves so `rerender` keeps them. */
+export function IntlTooltipWrapper({children}: {children: ReactNode}) {
+  return (
+    <IntlWrapper>
+      <TooltipProvider>{children}</TooltipProvider>
+    </IntlWrapper>
+  )
+}
+
 /** Plain `render` with the English messages as its `wrapper`, so `rerender` keeps them. */
 export function renderWithIntl(
   ui: ReactElement,

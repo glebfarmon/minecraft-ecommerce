@@ -3,9 +3,10 @@
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {SkeletonRows} from '@/components/skeleton'
+import {useFormat} from '@/hooks/use-format'
 import {type GetApiAdminAuditApiArg, useGetApiAdminAuditQuery} from '@/lib/api/generated'
-import {formatTime} from '@/lib/format'
 import {ScrollText} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
@@ -37,37 +38,39 @@ function PageRows({
   isLast: boolean
   onMore: (cursor: string) => void
 }) {
+  const t = useTranslations('audit')
+  const f = useFormat()
   const page = useGetApiAdminAuditQuery({...query, cursor})
   if (page.isLoading) return <SkeletonRows />
   if (page.isError || !page.data)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {(page.error as {status?: unknown} | undefined)?.status === 403
-          ? 'You do not have permission to read the audit log.'
-          : 'Could not load the audit log. Try again.'}
+          ? t('forbidden')
+          : t('loadFailed')}
       </p>
     )
   const next = page.data.nextCursor
   return (
     <>
       <DataTable
-        caption="Audit log"
+        caption={t('auditLog')}
         rows={page.data.entries}
         rowKey={e => e.id}
         columns={[
-          {header: 'Action', primary: true, cell: e => e.action, className: 'font-mono'},
-          {header: 'Time', cell: e => formatTime(e.createdAt), className: 'tabular text-muted'},
-          {header: 'Actor', cell: e => e.actor?.email ?? 'System'},
+          {header: t('action'), primary: true, cell: e => e.action, className: 'font-mono'},
+          {header: t('time'), cell: e => f.time(e.createdAt), className: 'tabular text-muted'},
+          {header: t('actor'), cell: e => e.actor?.email ?? t('system')},
           {
-            header: 'Entity',
+            header: t('entity'),
             cell: e => (e.entityType ? `${e.entityType} ${e.entityId ?? ''}`.trim() : '—')
           },
           {
-            header: 'Details',
+            header: t('details'),
             cell: e => (
               <details>
                 <summary className="cursor-pointer text-muted hover:text-fg">
-                  Before / after
+                  {t('beforeAfter')}
                 </summary>
                 <pre className="mt-2 overflow-x-auto rounded-plate bg-card-raised p-3 font-mono text-[11px] whitespace-pre">
                   {JSON.stringify(
@@ -80,7 +83,7 @@ function PageRows({
             )
           }
         ]}
-        empty={isFirst ? <EmptyState icon={ScrollText} title="Nothing logged yet." /> : null}
+        empty={isFirst ? <EmptyState icon={ScrollText} title={t('nothingLoggedYet')} /> : null}
       />
       {isLast && next && (
         <Button
@@ -90,7 +93,7 @@ function PageRows({
           onClick={() => {
             onMore(next)
           }}>
-          Load more
+          {t('loadMore')}
         </Button>
       )}
     </>
@@ -98,6 +101,7 @@ function PageRows({
 }
 
 export function AuditTable() {
+  const t = useTranslations('audit')
   const [draft, setDraft] = useState<Filters>(NO_FILTERS)
   const [applied, setApplied] = useState<Filters>(NO_FILTERS)
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined])
@@ -113,10 +117,10 @@ export function AuditTable() {
           setCursors([undefined])
         }}>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="audit-action">Action starts with</Label>
+          <Label htmlFor="audit-action">{t('actionStartsWith')}</Label>
           <Input
             id="audit-action"
-            placeholder="role."
+            placeholder={t('role')}
             value={draft.action}
             onChange={e => {
               setDraft(d => ({...d, action: e.target.value}))
@@ -124,7 +128,7 @@ export function AuditTable() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="audit-from">From</Label>
+          <Label htmlFor="audit-from">{t('from')}</Label>
           <Input
             id="audit-from"
             type="date"
@@ -135,7 +139,7 @@ export function AuditTable() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="audit-to">To</Label>
+          <Label htmlFor="audit-to">{t('to')}</Label>
           <Input
             id="audit-to"
             type="date"
@@ -145,7 +149,7 @@ export function AuditTable() {
             }}
           />
         </div>
-        <Button type="submit">Apply filters</Button>
+        <Button type="submit">{t('applyFilters')}</Button>
       </form>
       <div className="flex flex-col gap-2">
         {cursors.map((cursor, i) => (

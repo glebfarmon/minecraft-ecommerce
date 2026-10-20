@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {MailPlus} from 'lucide-react'
+import {useLocale, useTranslations} from 'next-intl'
 import {useState} from 'react'
 import {useForm, useFormState} from 'react-hook-form'
 
@@ -43,6 +44,8 @@ function statusOf(invite: InviteRow): 'Accepted' | 'Revoked' | 'Expired' | 'Open
 }
 
 export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]}) {
+  const t = useTranslations('team')
+  const uiLocale = useLocale()
   const errorText = useErrorText()
   const apiError = useApiError()
   const invites = useGetApiAdminInvitesQuery()
@@ -76,7 +79,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   }
 
   const onSubmit = handleSubmit(async ({email}) => {
-    const ok = await run(create({body: {email, roleId: chosenRole}}), `Invite sent to ${email}.`)
+    const ok = await run(create({body: {email, roleId: chosenRole}}), t('inviteSent', {email}))
     if (ok) reset()
   })
 
@@ -85,9 +88,9 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   return (
     <div className="flex flex-col gap-4">
       <form onSubmit={e => void onSubmit(e)} noValidate>
-        <FormSection title="Invite an admin" description="They get an email with a sign-up link.">
+        <FormSection title={t('inviteAnAdmin')} description={t('theyGetAnEmailWithA')}>
           <div className="flex min-w-0 flex-col gap-1">
-            <Label htmlFor="invite-email">Email</Label>
+            <Label htmlFor="invite-email">{t('email')}</Label>
             <Input
               id="invite-email"
               type="email"
@@ -103,7 +106,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
             )}
           </div>
           <div className="flex min-w-0 flex-col gap-1">
-            <Label htmlFor="invite-role">Role</Label>
+            <Label htmlFor="invite-role">{t('role')}</Label>
             <Select
               id="invite-role"
               value={chosenRole}
@@ -113,7 +116,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
           </div>
           <div className="md:col-span-2">
             <Button type="submit" disabled={creating || !chosenRole}>
-              Send invite
+              {t('sendInvite')}
             </Button>
           </div>
         </FormSection>
@@ -130,9 +133,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
       )}
       {target && (
         <div className="flex flex-col gap-3 rounded-card bg-card p-4">
-          <p className="text-[13px]">
-            Revoke the invite for {target.email}? The link stops working.
-          </p>
+          <p className="text-[13px]">{t('confirmRevoke', {email: target.email})}</p>
           <div className="flex gap-2">
             <Button
               type="button"
@@ -141,7 +142,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
                 setConfirming(null)
                 void run(cancel({id: target.id}))
               }}>
-              Revoke invite
+              {t('revokeInvite')}
             </Button>
             <Button
               type="button"
@@ -149,7 +150,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
               onClick={() => {
                 setConfirming(null)
               }}>
-              Keep invite
+              {t('keepInvite')}
             </Button>
           </div>
         </div>
@@ -157,28 +158,29 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
       {invites.isLoading && <SkeletonRows rows={3} />}
       {invites.isError && (
         <p role="alert" className="rounded-card bg-card p-5">
-          Could not load invites. Refresh the page.
+          {t('couldNotLoadInvitesRefreshThe')}
         </p>
       )}
       {invites.data && (
         <DataTable
-          caption="Invites"
+          caption={t('invites')}
           rows={invites.data}
           rowKey={i => i.id}
           rowLabel={i => i.email}
           columns={[
-            {header: 'Email', primary: true, cell: i => i.email},
-            {header: 'Role', cell: i => i.role.name},
+            {header: t('email'), primary: true, cell: i => i.email},
+            {header: t('role'), cell: i => i.role.name},
             {
-              header: 'Status',
+              header: t('status'),
               cell: i => {
                 const status = statusOf(i)
-                return <ToneDot tone={STATUS_TONE[status]} label={status} />
+                return <ToneDot tone={STATUS_TONE[status]} label={t(`inviteStatus${status}`)} />
               }
             },
             {
-              header: 'Expires',
-              cell: i => new Date(i.expiresAt).toLocaleDateString('en-GB'),
+              header: t('expires'),
+              cell: i =>
+                new Date(i.expiresAt).toLocaleDateString(uiLocale === 'pl' ? 'pl-PL' : 'en-GB'),
               className: 'tabular text-muted'
             }
           ]}
@@ -187,11 +189,11 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
             if (status === 'Accepted' || status === 'Revoked') return []
             return [
               {
-                label: 'Resend',
-                onSelect: () => void run(resend({id: i.id}), `Invite re-sent to ${i.email}.`)
+                label: t('resend'),
+                onSelect: () => void run(resend({id: i.id}), t('inviteResent', {email: i.email}))
               },
               {
-                label: 'Revoke',
+                label: t('revoke'),
                 tone: 'danger',
                 onSelect: () => {
                   setConfirming(i.id)
@@ -199,7 +201,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
               }
             ]
           }}
-          empty={<EmptyState icon={MailPlus} title="No pending invites." />}
+          empty={<EmptyState icon={MailPlus} title={t('noPendingInvites')} />}
         />
       )}
     </div>

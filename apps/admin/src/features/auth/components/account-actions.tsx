@@ -3,12 +3,14 @@
 import {Card} from '@/components/card'
 import {BackupCodes} from '@/features/auth/components/backup-codes'
 import {authClient} from '@/lib/auth-client'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
 
 export function AccountActions() {
+  const t = useTranslations('auth')
   const router = useRouter()
   const [codes, setCodes] = useState<string[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -17,7 +19,7 @@ export function AccountActions() {
     setError(null)
     const {data, error: failed} = await authClient.twoFactor.generateBackupCodes({})
     if (failed) {
-      setError('Could not generate backup codes. Try again.')
+      setError(t('backupCodesFailed'))
       return
     }
     setCodes(data.backupCodes)
@@ -27,7 +29,7 @@ export function AccountActions() {
     setError(null)
     const {error: failed} = await authClient.revokeSessions()
     if (failed) {
-      setError('Could not sign out. Try again.')
+      setError(t('signOutFailed'))
       return
     }
     router.replace('/login')
@@ -35,28 +37,26 @@ export function AccountActions() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
-      <Card title="Backup codes">
-        <p className="text-[13px] text-muted">
-          One-time codes for when your authenticator app is not at hand.
-        </p>
+      <Card title={t('backupCodes')}>
+        <p className="text-[13px] text-muted">{t('oneTimeCodesForWhenYour')}</p>
         <Button type="button" variant="outline" className="w-fit" onClick={() => void regenerate()}>
-          Regenerate backup codes
+          {t('regenerateBackupCodes')}
         </Button>
         {codes && (
           <div className="flex flex-col gap-2">
-            <p className="text-[13px]">New codes replace the old ones. Save them now.</p>
+            <p className="text-[13px]">{t('newCodesReplaceTheOldOnes')}</p>
             <BackupCodes codes={codes} />
           </div>
         )}
       </Card>
-      <Card title="Sessions">
-        <p className="text-[13px] text-muted">Signs you out on every device, this one included.</p>
+      <Card title={t('sessions')}>
+        <p className="text-[13px] text-muted">{t('signsYouOutOnEveryDevice')}</p>
         <Button
           type="button"
           variant="outline"
           className="w-fit"
           onClick={() => void signOutEverywhere()}>
-          Sign out everywhere
+          {t('signOutEverywhere')}
         </Button>
       </Card>
       {error && (

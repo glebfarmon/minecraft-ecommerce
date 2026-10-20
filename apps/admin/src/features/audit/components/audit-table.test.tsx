@@ -1,5 +1,6 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
-import {fireEvent, screen, waitFor} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {AuditTable} from './audit-table'
 
@@ -44,6 +45,16 @@ async function rowOf(text: string) {
 }
 
 describe('AuditTable', () => {
+  it('speaks Polish in the headers while the entries stay as logged', async () => {
+    mockApi()
+    renderWithProviders(<AuditTable />, {locale: 'pl'})
+    const row = await rowOf('admin.role_changed')
+    const table = row.closest('table') as HTMLElement
+    expect(within(table).getByRole('columnheader', {name: 'Akcja'})).toBeInTheDocument()
+    expect(row).toHaveTextContent('ann@x.io')
+    expect(row).toHaveTextContent('12 paź 2026, 09:30 UTC')
+  })
+
   it('shows actor, action, entity and time for each entry', async () => {
     mockApi()
     renderWithStore(<AuditTable />)

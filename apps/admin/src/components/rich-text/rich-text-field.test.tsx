@@ -1,13 +1,12 @@
+import {IntlTooltipWrapper} from '@/test/render-with-providers'
 import {act, render as rtlRender, screen, waitFor} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type {Editor} from '@tiptap/core'
 import type {ReactElement} from 'react'
 
-import {TooltipProvider} from '@shop/ui/tooltip'
-
 import {RichTextField} from './rich-text-field'
 
-const render = (ui: ReactElement) => rtlRender(ui, {wrapper: TooltipProvider})
+const render = (ui: ReactElement) => rtlRender(ui, {wrapper: IntlTooltipWrapper})
 
 // jsdom has no clipboard events; ProseMirror only needs these two.
 function installClipboard() {

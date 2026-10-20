@@ -16,6 +16,7 @@ import type {EditorView} from '@tiptap/pm/view'
 import {EditorContent, useEditor, useEditorState} from '@tiptap/react'
 import {BubbleMenu} from '@tiptap/react/menus'
 import {Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useEffect, useMemo, useRef} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
@@ -23,9 +24,9 @@ import {cn} from '@shop/ui/lib/utils'
 import {fromDoc, toDoc} from './markdown-doc'
 
 const MARKS = [
-  {name: 'bold', label: 'Bold', hint: 'Bold ⌘B', icon: BoldIcon},
-  {name: 'italic', label: 'Italic', hint: 'Italic ⌘I', icon: ItalicIcon},
-  {name: 'underline', label: 'Underline', hint: 'Underline ⌘U', icon: UnderlineIcon}
+  {name: 'bold', icon: BoldIcon},
+  {name: 'italic', icon: ItalicIcon},
+  {name: 'underline', icon: UnderlineIcon}
 ] as const
 type MarkName = (typeof MARKS)[number]['name']
 
@@ -78,6 +79,7 @@ function flatten(slice: Slice, view: EditorView) {
 }
 
 function SelectionToolbar({editor}: {editor: Editor}) {
+  const t = useTranslations('richText')
   const state = useEditorState({
     editor,
     selector: ({editor: e}) => ({
@@ -94,14 +96,14 @@ function SelectionToolbar({editor}: {editor: Editor}) {
       options={{placement: 'top', offset: 8}}>
       <div
         role="toolbar"
-        aria-label="Text formatting"
+        aria-label={t('toolbar')}
         data-state={state.open ? 'open' : 'closed'}
         className="rich-toolbar flex gap-0.5 rounded-plate border border-border bg-card-raised p-1 shadow-lg shadow-black/40">
-        {MARKS.map(({name, label, hint, icon: Icon}) => (
-          <Hint key={name} label={hint}>
+        {MARKS.map(({name, icon: Icon}) => (
+          <Hint key={name} label={t(`${name}Hint`)}>
             <button
               type="button"
-              aria-label={label}
+              aria-label={t(name)}
               aria-pressed={state[name]}
               // Keep the selection: the editor must not lose focus to the button.
               onMouseDown={event => {

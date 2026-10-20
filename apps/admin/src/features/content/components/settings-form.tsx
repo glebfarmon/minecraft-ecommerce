@@ -6,6 +6,7 @@ import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/cont
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {type ReactNode, useEffect, useRef, useState} from 'react'
 import {type FieldPath, useForm, useFormState, useWatch} from 'react-hook-form'
 
@@ -16,6 +17,7 @@ import {Label} from '@shop/ui/label'
 const EMPTY: SettingsForm = {plain: '', accent: '', serverIp: '', discordUrl: '', supportEmail: ''}
 
 export function SettingsForm({canEdit}: {canEdit: boolean}) {
+  const t = useTranslations('content')
   const errorText = useErrorText()
   const apiError = useApiError()
   const settings = useGetContentSettingsQuery()
@@ -44,8 +46,8 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once; refetches must not reset
   }, [isLoaded])
 
-  if (settings.isLoading) return <p>Loading settings…</p>
-  if (!settings.data) return <p role="alert">Could not load the settings. Refresh the page.</p>
+  if (settings.isLoading) return <p>{t('loadingSettings')}</p>
+  if (!settings.data) return <p role="alert">{t('couldNotLoadTheSettingsRefresh')}</p>
 
   async function save(v: SettingsForm) {
     setError(null)
@@ -80,33 +82,33 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
         )}
         {saved && (
           <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            Saved. Live on the site within a minute.
+            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 
         <FormSection
-          title="Brand"
-          description="The wordmark in the site header."
+          title={t('brand')}
+          description={t('theWordmarkInTheSiteHeader')}
           disabled={!canEdit}>
-          <Field name="plain" label="Site name" error={errorOf('plain')}>
+          <Field name="plain" label={t('siteName')} error={errorOf('plain')}>
             <Input {...fieldProps('plain')} {...register('plain')} />
           </Field>
-          <Field name="accent" label="Accent part" error={errorOf('accent')}>
+          <Field name="accent" label={t('accentPart')} error={errorOf('accent')}>
             <Input {...fieldProps('accent')} {...register('accent')} />
           </Field>
         </FormSection>
 
         <FormSection
-          title="Contact"
-          description="Shown in the footer and on the rules page."
+          title={t('contact')}
+          description={t('shownInTheFooterAndOn')}
           disabled={!canEdit}>
-          <Field name="serverIp" label="Server address" error={errorOf('serverIp')}>
+          <Field name="serverIp" label={t('serverAddress')} error={errorOf('serverIp')}>
             <Input {...fieldProps('serverIp')} {...register('serverIp')} />
           </Field>
-          <Field name="discordUrl" label="Discord link" error={errorOf('discordUrl')}>
+          <Field name="discordUrl" label={t('discordLink')} error={errorOf('discordUrl')}>
             <Input {...fieldProps('discordUrl')} {...register('discordUrl')} />
           </Field>
-          <Field name="supportEmail" label="Support email" error={errorOf('supportEmail')}>
+          <Field name="supportEmail" label={t('supportEmail')} error={errorOf('supportEmail')}>
             <Input {...fieldProps('supportEmail')} {...register('supportEmail')} />
           </Field>
         </FormSection>
@@ -114,13 +116,13 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
         {canEdit && (
           <div>
             <Button type="submit" disabled={saving}>
-              Save
+              {t('save')}
             </Button>
           </div>
         )}
       </div>
 
-      <Card title="Preview">
+      <Card title={t('preview')}>
         <p data-testid="wordmark-preview" className="text-xl font-semibold break-all">
           {values.plain}
           <span data-accent className="text-accent">
