@@ -1,13 +1,14 @@
 'use client'
 
 import {type RconForm, RconFormSchema} from '@/features/catalog/schemas'
-import {useApiError} from '@/hooks/use-error-text'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   type GetCatalogServerApiResponse,
   useTestCatalogServerRconMutation,
   useUpdateCatalogServerRconMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {type ReactNode, useState} from 'react'
 import {Controller, useForm, useFormState} from 'react-hook-form'
 
@@ -18,15 +19,12 @@ import {Label} from '@shop/ui/label'
 
 type TestResult = {ok: true; ms: number} | {ok: false; error: string}
 
-const TEST_ERRORS: Record<string, string> = {
-  timeout: 'No answer within 5 seconds. Check host, port and the server’s firewall.',
-  unreachable: 'Could not connect. Check host and port.',
-  auth_failed: 'Wrong RCON password.',
-  decrypt_failed: 'The stored password cannot be read (the key changed). Enter it again.'
-}
+const TEST_ERRORS = ['timeout', 'unreachable', 'auth_failed', 'decrypt_failed'] as const
 
 export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
+  const t = useTranslations('catalog')
   const apiError = useApiError()
+  const errorText = useErrorText()
   const [updateRcon, {isLoading: saving}] = useUpdateCatalogServerRconMutation()
   const [testRcon, {isLoading: testing}] = useTestCatalogServerRconMutation()
   const [error, setError] = useState<string | null>(null)
@@ -81,8 +79,8 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
   const message = !result
     ? null
     : result.ok
-      ? `Connected in ${String(result.ms)} ms.`
-      : (TEST_ERRORS[result.error] ?? TEST_ERRORS.unreachable)
+      ? t('rconConnected', {ms: result.ms})
+      : t(`rconTest_${TEST_ERRORS.find(e => e === result.error) ?? 'unreachable'}`)
 
   return (
     <form
@@ -96,7 +94,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
       )}
       {saved && (
         <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok md:col-span-2">
-          RCON settings saved.
+          {t('rconSettingsSaved')}
         </p>
       )}
       {message && (
@@ -105,10 +103,10 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
         </p>
       )}
 
-      <Field id="rcon-host" label="Host">
+      <Field id="rcon-host" label={t('host')}>
         <Input id="rcon-host" {...register('host')} />
       </Field>
-      <Field id="rcon-port" label="Port" error={errors.port?.message}>
+      <Field id="rcon-port" label={t('port')} error={errorText(errors.port?.message)}>
         <Input
           id="rcon-port"
           inputMode="numeric"
@@ -119,13 +117,13 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
       </Field>
       <Field
         id="rcon-password"
-        label="New password"
-        hint={server.rconPasswordSet ? 'A password is set.' : 'No password set.'}>
+        label={t('newPassword')}
+        hint={server.rconPasswordSet ? t('passwordSet') : t('passwordNotSet')}>
         <Input
           id="rcon-password"
           type="password"
           autoComplete="new-password"
-          placeholder="Leave empty to keep it"
+          placeholder={t('leaveEmptyToKeepIt')}
           {...register('password')}
         />
       </Field>
@@ -146,16 +144,16 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
               />
             )}
           />
-          <Label htmlFor="rcon-clear">Remove the stored password</Label>
+          <Label htmlFor="rcon-clear">{t('removeTheStoredPassword')}</Label>
         </div>
       )}
 
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <Button type="submit" disabled={busy}>
-          Save RCON
+          {t('saveRcon')}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={() => void test()}>
-          Test connection
+          {t('testConnection')}
         </Button>
       </div>
     </form>

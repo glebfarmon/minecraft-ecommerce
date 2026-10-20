@@ -15,6 +15,7 @@ import {
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {Tags} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useState} from 'react'
 import {type FieldErrors, type UseFormRegister, useForm, useFormState} from 'react-hook-form'
 
@@ -24,6 +25,7 @@ import {Label} from '@shop/ui/label'
 
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
 export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
+  const t = useTranslations('catalog')
   const apiError = useApiError()
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
@@ -42,7 +44,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   if (categories.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
-        Could not load categories. Refresh the page.
+        {t('couldNotLoadCategoriesRefreshThe')}
       </p>
     )
 
@@ -71,11 +73,11 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       )}
       {canEdit && !editingCategory && (
         <form onSubmit={e => void onCreate(e)} noValidate>
-          <FormSection title="New category">
+          <FormSection title={t('newCategory')}>
             <CategoryFields prefix="new" register={register} errors={errors} />
             <div className="md:col-span-2">
               <Button type="submit" disabled={creating}>
-                Add category
+                {t('addCategory')}
               </Button>
             </div>
           </FormSection>
@@ -107,7 +109,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       )}
       {confirmingCategory && (
         <div className="flex flex-wrap items-center gap-3 rounded-card bg-card p-4">
-          <p className="flex-1">Delete {confirmingCategory.names.en}?</p>
+          <p className="flex-1">{t('deleteName', {name: confirmingCategory.names.en})}</p>
           <Button
             variant="danger"
             onClick={() => {
@@ -116,19 +118,19 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
                 remove({id: confirmingCategory.id, version: String(confirmingCategory.version)})
               )
             }}>
-            Confirm delete
+            {t('confirmDelete')}
           </Button>
           <Button
             variant="ghost"
             onClick={() => {
               setConfirming(null)
             }}>
-            Cancel
+            {t('cancel')}
           </Button>
         </div>
       )}
       <DataTable
-        caption="Categories"
+        caption={t('categories')}
         rows={list}
         rowKey={c => c.id}
         rowLabel={c => c.names.en}
@@ -141,24 +143,24 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
             : undefined
         }
         columns={[
-          {header: 'English', primary: true, cell: c => c.names.en},
-          {header: 'Polish', cell: c => c.names.pl},
-          {header: 'Slug', cell: c => c.slug, className: 'font-mono text-muted'},
-          {header: 'Servers', cell: c => c.servers.map(sv => sv.name).join(', ') || '—'},
-          {header: 'Products', cell: c => String(c.productCount), className: 'tabular'}
+          {header: t('english'), primary: true, cell: c => c.names.en},
+          {header: t('polish'), cell: c => c.names.pl},
+          {header: t('slug'), cell: c => c.slug, className: 'font-mono text-muted'},
+          {header: t('servers'), cell: c => c.servers.map(sv => sv.name).join(', ') || '—'},
+          {header: t('products'), cell: c => String(c.productCount), className: 'tabular'}
         ]}
         menu={
           canEdit
             ? c => [
                 {
-                  label: 'Edit',
+                  label: t('edit'),
                   onSelect: () => {
                     setConfirming(null)
                     setEditing(c.id)
                   }
                 },
                 {
-                  label: 'Delete',
+                  label: t('delete'),
                   tone: 'danger',
                   onSelect: () => {
                     setEditing(null)
@@ -168,7 +170,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
               ]
             : undefined
         }
-        empty={<EmptyState icon={Tags} title="No categories yet." />}
+        empty={<EmptyState icon={Tags} title={t('noCategoriesYet')} />}
       />
     </div>
   )
@@ -177,9 +179,9 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
 type Category = ListCatalogCategoriesApiResponse[number]
 
 const FIELDS = [
-  {name: 'slug', label: 'Slug'},
-  {name: 'en', label: 'English name'},
-  {name: 'pl', label: 'Polish name'}
+  {name: 'slug', label: 'slug'},
+  {name: 'en', label: 'englishName'},
+  {name: 'pl', label: 'polishName'}
 ] as const
 
 function CategoryFields({
@@ -191,10 +193,11 @@ function CategoryFields({
   register: UseFormRegister<CategoryForm>
   errors: FieldErrors<CategoryForm>
 }) {
+  const t = useTranslations('catalog')
   const errorText = useErrorText()
   return FIELDS.map(({name, label}) => (
     <div key={name} className="flex min-w-0 flex-col gap-1">
-      <Label htmlFor={`${prefix}-${name}`}>{label}</Label>
+      <Label htmlFor={`${prefix}-${name}`}>{t(label)}</Label>
       <Input
         id={`${prefix}-${name}`}
         className={name === 'slug' ? 'font-mono' : undefined}
@@ -220,6 +223,7 @@ function EditForm({
   onSave: (values: CategoryForm) => Promise<void>
   onCancel: () => void
 }) {
+  const t = useTranslations('catalog')
   const {register, handleSubmit, control} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
     defaultValues: {slug: category.slug, en: category.names.en, pl: category.names.pl}
@@ -233,14 +237,14 @@ function EditForm({
       onKeyDown={e => {
         if (e.key === 'Escape') onCancel()
       }}>
-      <FormSection title={`Edit ${category.names.en}`}>
+      <FormSection title={t('editName', {name: category.names.en})}>
         <CategoryFields prefix={`edit-${category.id}`} register={register} errors={errors} />
         <div className="flex gap-2 md:col-span-2">
           <Button type="submit" disabled={isSubmitting}>
-            Save
+            {t('save')}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            {t('cancel')}
           </Button>
         </div>
       </FormSection>

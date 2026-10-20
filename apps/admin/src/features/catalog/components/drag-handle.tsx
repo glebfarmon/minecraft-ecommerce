@@ -1,5 +1,6 @@
 import {Hint} from '@/components/hint'
 import {GripVertical} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import type {CSSProperties} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
@@ -17,11 +18,12 @@ export function DragHandle({
   className?: string
   style?: CSSProperties
 }) {
+  const t = useTranslations('catalog')
   return (
-    <Hint label="Drag to reorder">
+    <Hint label={t('dragToReorder')}>
       <button
         type="button"
-        aria-label={`Move ${label}`}
+        aria-label={t('moveItem', {label})}
         style={style}
         className={cn(
           'grid size-7 cursor-grab touch-none place-items-center rounded-full text-muted hover:bg-card-raised focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',

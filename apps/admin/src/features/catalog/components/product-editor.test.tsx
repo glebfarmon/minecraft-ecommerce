@@ -219,11 +219,19 @@ describe('ProductEditor', () => {
   it('shows the placeholder refusal in Polish', async () => {
     mockApi()
     renderWithProviders(<ProductEditor id="p1" canEdit />, {locale: 'pl'})
-    fireEvent.change(await screen.findByLabelText('Grant commands'), {
+    fireEvent.change(await screen.findByLabelText('Polecenia nadania'), {
       target: {value: 'give {player} 1'}
     })
-    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Zapisz'}))
     expect(await screen.findByText('Dozwolony jest tylko znacznik {nick}')).toBeInTheDocument()
+  })
+
+  it('speaks Polish: section titles and the variables help', async () => {
+    mockApi()
+    renderWithProviders(<ProductEditor id="p1" canEdit />, {locale: 'pl'})
+    expect(await screen.findByText('Polecenia')).toBeInTheDocument()
+    expect(screen.getByText('Nick kupującego')).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'Wstaw {nick}'})).toBeInTheDocument()
   })
 
   it('sends minor units and the version, and keeps the form on a 409 stale', async () => {

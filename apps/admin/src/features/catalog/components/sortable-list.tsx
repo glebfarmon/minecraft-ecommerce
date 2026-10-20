@@ -19,6 +19,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {CSS} from '@dnd-kit/utilities'
+import {useTranslations} from 'next-intl'
 import {type HTMLAttributes, type ReactNode, useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
@@ -56,6 +57,7 @@ export function SortableList<T extends {id: string}>({
   itemClassName,
   children
 }: Props<T>) {
+  const t = useTranslations('catalog')
   const sensors = useSensors(
     useSensor(PointerSensor, {activationConstraint: {distance: 4}}),
     useSensor(KeyboardSensor, {coordinateGetter: sortableKeyboardCoordinates})
@@ -79,7 +81,7 @@ export function SortableList<T extends {id: string}>({
       onDragEnd={onDragEnd}
       accessibility={{
         screenReaderInstructions: {
-          draggable: `To move an item in ${label}, press space, use the arrow keys, then press space again. Escape cancels.`
+          draggable: t('dragInstructions', {label})
         }
       }}>
       <SortableContext items={ids} disabled={disabled} strategy={STRATEGY[direction]}>

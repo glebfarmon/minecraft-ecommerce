@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/generated'
 import {Pencil, Tags} from 'lucide-react'
 import {LayoutGroup} from 'motion/react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import {useState} from 'react'
 
@@ -34,6 +35,7 @@ type Server = ListCatalogServersApiResponse[number]
 type Product = ListCatalogProductsApiResponse[number]
 
 export function CatalogBoard({canEdit}: {canEdit: boolean}) {
+  const t = useTranslations('catalog')
   const servers = useListCatalogServersQuery()
   const [orderServers] = useOrderCatalogServersMutation()
   const tabs = useOptimisticOrder(servers.data ?? [], (ids, base) =>
@@ -42,16 +44,16 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (servers.isLoading) return <SkeletonRows rows={4} />
-  if (servers.isError) return <p role="alert">Could not load the catalog. Refresh the page.</p>
+  if (servers.isError) return <p role="alert">{t('couldNotLoadTheCatalogRefresh')}</p>
   const selected = tabs.items.find(s => s.id === selectedId) ?? tabs.items[0]
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex gap-3 overflow-x-auto p-1 pb-2">
-        <div role="tablist" aria-label="Server">
+        <div role="tablist" aria-label={t('server')}>
           <LayoutGroup id="servers">
             <SortableList
-              label="Servers"
+              label={t('servers')}
               direction="horizontal"
               disabled={!canEdit}
               items={tabs.items}
@@ -72,7 +74,7 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
           </LayoutGroup>
         </div>
         {canEdit && (
-          <AddCard href="/catalog/servers/new" label="+ Server" className="min-w-40 shrink-0" />
+          <AddCard href="/catalog/servers/new" label={t('server2')} className="min-w-40 shrink-0" />
         )}
       </div>
       {tabs.error && <p role="alert">{tabs.error}</p>}
@@ -82,6 +84,7 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
 }
 
 function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
+  const t = useTranslations('catalog')
   const apiError = useApiError()
   const [setCategories] = useSetCatalogServerCategoriesMutation()
   const allCategories = useListCatalogCategoriesQuery()
@@ -115,17 +118,17 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
         setAttach('')
       }}>
       <div className="flex flex-col gap-1">
-        <Label htmlFor="attach-category">Attach category</Label>
+        <Label htmlFor="attach-category">{t('attachCategory')}</Label>
         <Select
           id="attach-category"
           value={attach}
-          placeholder="Choose…"
+          placeholder={t('choose')}
           options={unattached.map(c => ({value: c.id, label: c.names.en}))}
           onValueChange={setAttach}
         />
       </div>
       <Button type="submit" disabled={!attach}>
-        Attach
+        {t('attach')}
       </Button>
     </form>
   )
@@ -134,17 +137,17 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
     <section aria-label={server.name} className="flex flex-col gap-6">
       <h2 className="text-[20px] font-semibold">{server.name}</h2>
       {(error ?? categories.error) && <p role="alert">{error ?? categories.error}</p>}
-      {products.isError && <p role="alert">Could not load products. Refresh the page.</p>}
+      {products.isError && <p role="alert">{t('couldNotLoadProductsRefreshThe')}</p>}
       {categories.items.length === 0 ? (
         <EmptyState
           icon={Tags}
-          title={`No categories on ${server.name} yet.`}
+          title={t('noCategoriesOn', {name: server.name})}
           action={
             canEdit && (
               <div className="flex flex-col items-center gap-3">
                 {unattached.length > 0 && attachForm}
                 <Button asChild variant="outline">
-                  <Link href="/catalog/categories">Create category</Link>
+                  <Link href="/catalog/categories">{t('createCategory')}</Link>
                 </Button>
               </div>
             )
@@ -152,7 +155,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
         />
       ) : (
         <SortableList
-          label={`Categories of ${server.name}`}
+          label={t('categoriesOf', {name: server.name})}
           disabled={!canEdit}
           items={categories.items}
           className="flex flex-col gap-8"
@@ -164,10 +167,10 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                 <h3 className="text-[15px] font-semibold">{category.name}</h3>
                 {canEdit && (
                   <>
-                    <Hint label="Edit category">
+                    <Hint label={t('editCategory')}>
                       <Link
                         href={`/catalog/categories?edit=${category.id}`}
-                        aria-label={`Edit ${category.name}`}
+                        aria-label={t('editName', {name: category.name})}
                         className="grid size-7 place-items-center rounded-full text-muted hover:bg-card-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
                         <Pencil aria-hidden className="size-4" />
                       </Link>
@@ -176,11 +179,11 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
                       variant="ghost"
                       size="sm"
                       className="ml-auto"
-                      aria-label={`Detach ${category.name}`}
+                      aria-label={t('detachName', {name: category.name})}
                       onClick={() =>
                         void save(categories.items.filter(c => c.id !== category.id).map(c => c.id))
                       }>
-                      Detach
+                      {t('detach')}
                     </Button>
                   </>
                 )}
@@ -196,7 +199,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
               {canEdit && (
                 <AddCard
                   href={`/catalog/products/new?serverId=${server.id}&categoryId=${category.id}`}
-                  label={`+ Product in ${category.name}`}
+                  label={t('productIn', {name: category.name})}
                   className="h-12"
                 />
               )}
@@ -225,18 +228,19 @@ function ProductList({
   status: 'loading' | 'failed' | 'ready'
   canEdit: boolean
 }) {
+  const t = useTranslations('catalog')
   const [order] = useOrderCatalogProductsMutation()
   const list = useOptimisticOrder(products, (ids, base) =>
     order({serverId: server.id, categoryId, body: {ids, base}})
   )
-  if (status === 'loading') return <p className="text-[13px] text-muted">Loading products…</p>
+  if (status === 'loading') return <p className="text-[13px] text-muted">{t('loadingProducts')}</p>
   if (status === 'failed') return null
-  if (products.length === 0) return <p className="text-[13px] text-muted">No products.</p>
+  if (products.length === 0) return <p className="text-[13px] text-muted">{t('noProducts')}</p>
   return (
     <>
       {list.error && <p role="alert">{list.error}</p>}
       <SortableList
-        label={`Products in ${categoryName}`}
+        label={t('productsIn', {name: categoryName})}
         disabled={!canEdit}
         items={list.items}
         direction="grid"

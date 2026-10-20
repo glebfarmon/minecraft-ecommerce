@@ -2,6 +2,7 @@
 
 import {type DragHandleProps, SortableList} from '@/features/catalog/components/sortable-list'
 import type {ProductForm} from '@/features/catalog/schemas'
+import {useTranslations} from 'next-intl'
 import {type Control, type UseFormRegister, useFieldArray, useWatch} from 'react-hook-form'
 
 import {Button} from '@shop/ui/button'
@@ -24,10 +25,11 @@ type Props = {
 }
 
 function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
+  const t = useTranslations('catalog')
   return (
     <button
       type="button"
-      aria-label={`Move ${label}`}
+      aria-label={t('moveItem', {label})}
       className="cursor-grab touch-none rounded px-1 text-muted-foreground hover:bg-card-raised focus-visible:ring-2 focus-visible:outline-none"
       {...handle}>
       ⠿
@@ -37,6 +39,7 @@ function Handle({label, handle}: {label: string; handle: DragHandleProps}) {
 
 /** The perk sections of one translation tab: titled groups of command / text / cooldown lines. */
 export function SectionsEditor({locale, control, register, disabled}: Props) {
+  const t = useTranslations('catalog')
   const {fields, append, remove, move} = useFieldArray({
     control,
     name: `translations.${locale}.sections`
@@ -46,7 +49,7 @@ export function SectionsEditor({locale, control, register, disabled}: Props) {
     <div className="flex flex-col gap-3">
       <SortableList
         items={fields}
-        label={`Sections (${locale.toUpperCase()})`}
+        label={t('sectionsLocale', {locale: locale.toUpperCase()})}
         disabled={disabled}
         className="flex flex-col gap-3"
         onMove={(_, from, to) => {
@@ -77,7 +80,7 @@ export function SectionsEditor({locale, control, register, disabled}: Props) {
           onClick={() => {
             append({title: '', entries: []})
           }}>
-          + Section
+          {t('section')}
         </Button>
       )}
     </div>
@@ -98,29 +101,30 @@ function Section({
   handle: DragHandleProps
   onRemove: () => void
 }) {
+  const t = useTranslations('catalog')
   const section = sectionPath(locale, index)
   const {fields, append, remove, move} = useFieldArray({control, name: `${section}.entries`})
   const title = useWatch({control, name: `${section}.title`})
-  const name = title.trim() || `section ${String(index + 1)}`
+  const name = title.trim() || t('sectionN', {n: index + 1})
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border p-3">
       <div className="flex items-center gap-2">
         {!disabled && <Handle label={name} handle={handle} />}
         <Input
-          aria-label="Section title"
-          placeholder="Section title"
+          aria-label={t('sectionTitle')}
+          placeholder={t('sectionTitle')}
           {...register(`${section}.title`)}
         />
         {!disabled && (
           <Button type="button" variant="outline" onClick={onRemove}>
-            Remove
+            {t('remove')}
           </Button>
         )}
       </div>
       <SortableList
         items={fields}
-        label={`Lines of ${name}`}
+        label={t('linesOf', {name})}
         disabled={disabled}
         className="flex flex-col gap-2"
         onMove={(_, from, to) => {
@@ -131,22 +135,22 @@ function Section({
           const path = entryPath(section, i)
           return (
             <div className="flex flex-wrap items-center gap-2">
-              {!disabled && <Handle label={`line ${String(i + 1)}`} handle={lineHandle} />}
+              {!disabled && <Handle label={t('lineN', {n: i + 1})} handle={lineHandle} />}
               <Input
-                aria-label="Command"
-                placeholder="/command"
+                aria-label={t('command')}
+                placeholder={t('command2')}
                 className="w-40"
                 {...register(`${path}.cmd`)}
               />
               <Input
-                aria-label="Text"
-                placeholder="Text"
+                aria-label={t('text')}
+                placeholder={t('text')}
                 className="min-w-40 flex-1"
                 {...register(`${path}.text`)}
               />
               <Input
-                aria-label="Cooldown"
-                placeholder="Cooldown"
+                aria-label={t('cooldown')}
+                placeholder={t('cooldown')}
                 className="w-28"
                 {...register(`${path}.cooldown`)}
               />
@@ -157,7 +161,7 @@ function Section({
                   onClick={() => {
                     remove(i)
                   }}>
-                  Remove
+                  {t('remove')}
                 </Button>
               )}
             </div>
@@ -172,7 +176,7 @@ function Section({
           onClick={() => {
             append({cmd: '', text: '', cooldown: ''})
           }}>
-          + Line
+          {t('line')}
         </Button>
       )}
     </div>

@@ -20,6 +20,7 @@ import {
   useUpdateCatalogProductMutation
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {type ReactNode, useEffect, useRef, useState} from 'react'
 import {
@@ -48,14 +49,13 @@ import {CommandHelp} from './command-help'
 import {EditorLayout} from './editor-layout'
 import {ProductCard} from './product-card'
 
-const MISSING_LABEL = {
-  'price.EUR': 'EUR price',
-  'price.PLN': 'PLN price',
-  'translation.en': 'English translation',
-  'translation.pl': 'Polish translation'
+const MISSING_KEY = {
+  'price.EUR': 'missingPriceEUR',
+  'price.PLN': 'missingPricePLN',
+  'translation.en': 'missingTranslationEN',
+  'translation.pl': 'missingTranslationPL'
 } as const
 
-const COMMAND_HINT = 'One command per line, without /.'
 const LOCALES = [
   {locale: 'en', tab: 'EN'},
   {locale: 'pl', tab: 'PL'}
@@ -64,6 +64,7 @@ const LOCALES = [
 type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: boolean}
 
 export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
+  const t = useTranslations('catalog')
   const errorText = useErrorText()
   const apiError = useApiError()
   const router = useRouter()
@@ -104,17 +105,18 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const draft = formToCreate({...emptyProductForm(), ...values})
   const missing = missingForActive(draft)
   const incomplete = missing.length > 0
+  const missingText = missing.map(m => t(MISSING_KEY[m])).join(', ')
   // Never untick Enabled for the admin: a silent untick would take the product off the shop.
   const activeError =
     blockedActive && values.isActive && incomplete
-      ? `Fill ${missing.map(m => MISSING_LABEL[m]).join(', ')} or untick Enabled`
+      ? t('fillOrUntick', {what: missingText})
       : undefined
 
   /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
   const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
 
   if (id && product.isLoading) return <SkeletonRows rows={6} />
-  if (id && !product.data) return <p role="alert">Could not load the product. Refresh the page.</p>
+  if (id && !product.data) return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
 
   const server = servers.data?.find(s => s.id === values.serverId)
   const busy = creating || updating || removing
@@ -202,12 +204,12 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const storedName = product.data?.translations.en?.name || product.data?.slug
   return (
     <EditorLayout
-      title={id ? storedName || 'Product' : 'New product'}
+      title={id ? storedName || t('product') : t('newProduct')}
       preview={
         <ProductCard
           accent={server?.accent ?? 'var(--color-accent)'}
           product={{
-            name: values.translations.en.name || values.slug || 'New product',
+            name: values.translations.en.name || values.slug || t('newProduct'),
             mark: values.mark || values.translations.en.name || '',
             icon: values.icon,
             kind: values.kind,
@@ -227,7 +229,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         className="flex flex-col gap-4">
         {incomplete && (
           <p className="rounded-plate bg-warn-soft px-4 py-3 text-[13px] text-warn">
-            {`Missing to enable: ${missing.map(m => MISSING_LABEL[m]).join(', ')}`}
+            {t('missingToEnable', {what: missingText})}
           </p>
         )}
         {error && (
@@ -237,17 +239,17 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         )}
         {saved && (
           <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            Saved. Live on the site within a minute.
+            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 
         <FormSection
-          title="Basics"
-          description="Where the product sits and how it is sold."
+          title={t('basics')}
+          description={t('whereTheProductSitsAndHow')}
           disabled={!canEdit}>
           {field(
             'serverId',
-            'Server',
+            t('server'),
             <Controller
               control={control}
               name="serverId"
@@ -255,7 +257,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 <Select
                   {...fieldProps('serverId')}
                   value={f.value}
-                  placeholder="Choose a server"
+                  placeholder={t('chooseAServer')}
                   options={(servers.data ?? []).map(s => ({value: s.id, label: s.name}))}
                   onValueChange={v => {
                     f.onChange(v)
@@ -269,7 +271,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           )}
           {field(
             'categoryId',
-            'Category',
+            t('category'),
             <Controller
               control={control}
               name="categoryId"
@@ -277,18 +279,18 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 <Select
                   {...fieldProps('categoryId')}
                   value={f.value}
-                  placeholder="Choose a category"
+                  placeholder={t('chooseACategory')}
                   options={(server?.categories ?? []).map(c => ({value: c.id, label: c.name}))}
                   onValueChange={f.onChange}
                 />
               )}
             />
           )}
-          {field('slug', 'Slug', <Input {...fieldProps('slug')} {...register('slug')} />)}
-          {field('mark', 'Mark', <Input {...fieldProps('mark')} {...register('mark')} />)}
+          {field('slug', t('slug'), <Input {...fieldProps('slug')} {...register('slug')} />)}
+          {field('mark', t('mark'), <Input {...fieldProps('mark')} {...register('mark')} />)}
           {field(
             'kind',
-            'Kind',
+            t('kind'),
             <Controller
               control={control}
               name="kind"
@@ -309,7 +311,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {values.kind === 'TIMED' &&
             field(
               'durationDays',
-              'Duration (days)',
+              t('durationDays'),
               <Input
                 inputMode="numeric"
                 {...fieldProps('durationDays')}
@@ -318,7 +320,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
             )}
           {field(
             'icon',
-            'Icon',
+            t('icon'),
             <Controller
               control={control}
               name="icon"
@@ -352,7 +354,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 />
               )}
             />
-            <Label htmlFor={fieldId('isActive')}>Enabled</Label>
+            <Label htmlFor={fieldId('isActive')}>{t('enabled')}</Label>
             {activeError && (
               <p id={`${fieldId('isActive')}-error`} className="w-full text-xs text-destructive">
                 {activeError}
@@ -362,22 +364,22 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         </FormSection>
 
         <FormSection
-          title="Prices"
-          description="Both currencies are needed to enable the product."
+          title={t('prices')}
+          description={t('bothCurrenciesAreNeededToEnable')}
           disabled={!canEdit}>
           {field(
             'prices.EUR',
-            'Price EUR',
+            t('priceEUR'),
             <Input inputMode="decimal" {...fieldProps('prices.EUR')} {...register('prices.EUR')} />
           )}
           {field(
             'prices.PLN',
-            'Price PLN',
+            t('pricePLN'),
             <Input inputMode="decimal" {...fieldProps('prices.PLN')} {...register('prices.PLN')} />
           )}
         </FormSection>
 
-        <FormSection title="Texts" description="What buyers read, per language.">
+        <FormSection title={t('texts')} description={t('whatBuyersReadPerLanguage')}>
           <Tabs
             className="md:col-span-2"
             value={tab}
@@ -402,7 +404,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 <fieldset disabled={!canEdit} className="flex flex-col gap-4">
                   {field(
                     `translations.${locale}.name`,
-                    `Name (${label})`,
+                    t('nameIn', {locale: label}),
                     <Input
                       {...fieldProps(`translations.${locale}.name`)}
                       {...register(`translations.${locale}.name`)}
@@ -410,7 +412,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   )}
                   {field(
                     `translations.${locale}.description`,
-                    `Description (${label})`,
+                    t('descriptionIn', {locale: label}),
                     <Controller
                       control={control}
                       name={`translations.${locale}.description`}
@@ -439,25 +441,25 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         </FormSection>
 
         <FormSection
-          title="Commands"
-          description="Run over RCON when the order is delivered or revoked."
+          title={t('commands')}
+          description={t('runOverRconWhenTheOrder')}
           disabled={!canEdit}>
           {field(
             'grant',
-            'Grant commands',
+            t('grantCommands'),
             <Textarea className="font-mono" {...fieldProps('grant')} {...commandProps('grant')} />,
-            COMMAND_HINT,
+            t('commandHint'),
             true
           )}
           {field(
             'revoke',
-            'Revoke commands',
+            t('revokeCommands'),
             <Textarea
               className="font-mono"
               {...fieldProps('revoke')}
               {...commandProps('revoke')}
             />,
-            COMMAND_HINT,
+            t('commandHint'),
             true
           )}
           <CommandHelp onInsert={insertToken} />
@@ -466,7 +468,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         {canEdit && (
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>
-              Save
+              {t('save')}
             </Button>
             {id &&
               (confirmDelete ? (
@@ -475,7 +477,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   variant="danger"
                   disabled={busy}
                   onClick={() => void onDelete()}>
-                  Confirm delete
+                  {t('confirmDelete')}
                 </Button>
               ) : (
                 <Button
@@ -484,7 +486,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   onClick={() => {
                     setConfirmDelete(true)
                   }}>
-                  Delete
+                  {t('delete')}
                 </Button>
               ))}
           </div>
