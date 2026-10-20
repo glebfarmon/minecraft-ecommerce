@@ -12,13 +12,23 @@ const config = createJestConfig({
   }
 })
 
-// next-intl and use-intl ship ESM only; next/jest keeps an allow-list of packages SWC compiles, so add them to it.
+// next-intl, use-intl and the formatjs packages they build on ship ESM only. next/jest keeps an allow-list of
+// packages SWC compiles (three patterns, each spelling the names its own way), so add them to it.
+const ESM_PACKAGES = ['next-intl', 'use-intl', 'intl-messageformat', 'icu-minify']
+
 export default async () => {
   const resolved = await config()
   return {
     ...resolved,
     transformIgnorePatterns: resolved.transformIgnorePatterns.map(pattern =>
-      pattern.replaceAll('geist', 'geist|next-intl|use-intl')
+      pattern.replaceAll(
+        'geist',
+        [
+          'geist',
+          ...ESM_PACKAGES,
+          pattern.includes('\\+') ? '@formatjs\\+[a-z-]+' : '@formatjs'
+        ].join('|')
+      )
     )
   }
 }

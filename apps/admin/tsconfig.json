@@ -9,6 +9,7 @@
   "include": [
     "next-env.d.ts",
     "next.config.ts",
+    "global.d.ts",
     "openapi-config.ts",
     "scripts",
     "src",

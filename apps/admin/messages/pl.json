@@ -1,0 +1,11 @@
+{
+  "common": {
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "back": "Wstecz",
+    "loading": "Ładowanie…",
+    "retry": "Spróbuj ponownie"
+  }
+}

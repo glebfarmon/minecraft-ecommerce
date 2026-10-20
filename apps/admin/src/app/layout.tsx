@@ -1,4 +1,6 @@
 import type {Metadata} from 'next'
+import {NextIntlClientProvider} from 'next-intl'
+import {getLocale} from 'next-intl/server'
 import {Inter_Tight, JetBrains_Mono} from 'next/font/google'
 import type {ReactNode} from 'react'
 
@@ -23,11 +25,14 @@ export const metadata: Metadata = {
   robots: {index: false, follow: false}
 }
 
-export default function RootLayout({children}: {children: ReactNode}) {
+export default async function RootLayout({children}: {children: ReactNode}) {
+  const locale = await getLocale()
   return (
-    <html lang="en" className={`${interTight.variable} ${jetbrainsMono.variable}`}>
+    <html lang={locale} className={`${interTight.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-bg text-fg">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   )
