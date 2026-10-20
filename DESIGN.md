@@ -89,7 +89,7 @@ The storefront's dark world put to work: card modules on a dark ground. Colour t
 
 ### Rules
 
-1. **At most one accent-filled card per screen.** On the dashboard it is the EUR revenue `KpiCard`. Everything else is `bg-card`. Accent fills are also used for the primary button, the brand mark, chart bars and the focus ring. Those are not cards.
+1. **At most one accent-filled card per screen.** On the dashboard it is the Revenue `KpiCard`. Everything else is `bg-card`. Accent fills are also used for the primary button, the brand mark, chart bars and the focus ring. Those are not cards.
 2. **Status is always a dot plus a text label**, through `StatusDot`/`ToneDot`, never colour alone. Status colours (`ok`/`warn`/`bad`/`idle`) never reuse the accent, and the accent never stands for a status.
 3. **Table rows are raised plates.** Use `DataTable`: a `border-separate border-spacing-y-1.5` table whose cells are `bg-card` with `rounded-l/r-plate` ends and `card-raised` on row hover, with label-caps headers and no grid lines. Below md it renders a `<ul>` of plates instead: the primary column bold on top, the other columns as muted-label/value lines. **Both are in the DOM**, so each cell's content appears twice. Tests and e2e must target the visible one (scope by role/viewport, not bare text).
 4. **Row actions live in `RowMenu`.** `DataTable`'s `menu` prop adds the menu and names it "Actions for {primary}" (or `rowLabel`). A row with no actions gets no button. Destructive actions (remove, reset 2FA, change role) never run from the menu. They open a confirmation panel (`rounded-card bg-card p-4`) **above the table** that spells out the consequence, with a `danger` confirm and an `outline` cancel. Errors show above it as a `bad-soft` plate with `role="alert"`.
