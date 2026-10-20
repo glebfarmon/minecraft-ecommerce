@@ -101,6 +101,7 @@
     "showAll": "Show all items",
     "add": "Add {name} to cart",
     "added": "{name} added to cart",
+    "unavailableProduct": "Unavailable",
     "addShort": "Add",
     "days": "{count} days",
     "forever": "Forever",

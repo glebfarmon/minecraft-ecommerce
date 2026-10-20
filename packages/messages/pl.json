@@ -101,6 +101,7 @@
     "showAll": "Pokaż wszystko",
     "add": "Dodaj {name} do koszyka",
     "added": "Dodano {name} do koszyka",
+    "unavailableProduct": "Niedostępne",
     "addShort": "Dodaj",
     "days": "{count} dni",
     "forever": "Na zawsze",

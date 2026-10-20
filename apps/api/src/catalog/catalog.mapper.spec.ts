@@ -1,4 +1,10 @@
+import {randomBytes} from 'node:crypto'
+
 import {type CatalogRows, toCatalogResponse} from './catalog.mapper'
+
+beforeAll(() => {
+  process.env.RCON_ENCRYPTION_KEY = randomBytes(32).toString('base64')
+})
 
 const product = (overrides: Partial<CatalogRows['products'][number]> = {}) => ({
   slug: 'vip',
@@ -31,6 +37,9 @@ const rows = (products = [product()]): CatalogRows => ({
       name: 'Survival',
       accent: '#ff6b1a',
       onAccent: '#0e0e10',
+      rconHost: 'mc.example.com',
+      rconPort: 25575,
+      rconPasswordEnc: 'v1:a:b:c',
       categories: [
         {category: {slug: 'kits', translations: [{locale: 'en', name: 'Kits'}]}},
         {
@@ -92,6 +101,17 @@ describe('toCatalogResponse', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('price'))
   })
 
+  it('marks a server purchasable only with a complete RCON setup', () => {
+    const ready = rows()
+    expect(toCatalogResponse(ready, 'en', jest.fn()).servers[0]?.purchasable).toBe(true)
+    const [server] = ready.servers
+    if (!server) throw new Error('no server')
+    const without = {...ready, servers: [{...server, rconHost: null}]}
+    const res = toCatalogResponse(without, 'en', jest.fn())
+    expect(res.servers[0]?.purchasable).toBe(false)
+    expect(res.products).toHaveLength(1)
+  })
+
   it('never exposes commands or RCON fields', () => {
     const withSecrets = {
       ...product(),
@@ -99,7 +119,7 @@ describe('toCatalogResponse', () => {
       rconPasswordEnc: 'secret'
     }
     const json = JSON.stringify(toCatalogResponse(rows([withSecrets]), 'en', jest.fn()))
-    expect(json).not.toMatch(/grantCommands|rcon|secret|parent add/)
+    expect(json).not.toMatch(/grantCommands|rcon|secret|parent add|mc\.example|25575/)
   })
 
   it('throws on malformed sections instead of shipping them', () => {

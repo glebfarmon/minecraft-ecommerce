@@ -12,6 +12,7 @@ export const TEST_CATALOG: CatalogResponse = {
       name: 'Survival',
       accent: '#ff6b1a',
       onAccent: '#0e0e10',
+      purchasable: true,
       categories: [
         {slug: 'ranks', name: 'Ranks'},
         {slug: 'cases', name: 'Cases'},
@@ -24,6 +25,7 @@ export const TEST_CATALOG: CatalogResponse = {
       name: 'Anarchy',
       accent: '#7b3ff2',
       onAccent: '#ffffff',
+      purchasable: true,
       categories: [
         {slug: 'kits', name: 'Kits'},
         {slug: 'ranks', name: 'Ranks'}
@@ -34,6 +36,7 @@ export const TEST_CATALOG: CatalogResponse = {
       name: 'Minigames',
       accent: '#d92b52',
       onAccent: '#ffffff',
+      purchasable: true,
       categories: [
         {slug: 'ranks', name: 'Ranks'},
         {slug: 'cosmetics', name: 'Cosmetics'}

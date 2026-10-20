@@ -16,6 +16,11 @@ services:
       ADMIN_OWNER_EMAIL: owner@shop.localhost
       SMTP_URL: smtp://mailpit:1025
       MAIL_FROM: Shop <no-reply@shop.localhost>
+      # e2e only: gives the demo servers an RCON endpoint (and the key to store its password), or nothing is purchasable.
+      RCON_ENCRYPTION_KEY: MEUuxU2yK9jLs4j3q7S+m6vFcpMJynMOdcvcUMTkKQs=
+      SEED_RCON_HOST: rcon.e2e.invalid
+      SEED_RCON_PORT: '25575'
+      SEED_RCON_PASSWORD: e2e-throwaway
     depends_on:
       postgres: {condition: service_healthy}
       mailpit: {condition: service_started}

@@ -8,7 +8,7 @@ const product = (
   return {
     isActive: true,
     serverId: `srv-${server}`,
-    server: {slug: server, name: server.toUpperCase(), isActive: true},
+    server: {slug: server, name: server.toUpperCase(), isActive: true, purchasable: true},
     prices: [{currency: 'EUR', amountMinor: 500}],
     translations: [
       {locale: 'en', name: `${over.slug} en`},
@@ -105,6 +105,13 @@ describe('priceLines', () => {
         {server: 'skyblock', slug: 'fly'}
       ]
     })
+  })
+
+  it('refuses a product whose server cannot deliver', () => {
+    const noRcon = product({id: 'p6', slug: 'rank', server: 'norcon'})
+    noRcon.server.purchasable = false
+    const r = priceLines([{server: 'norcon', slug: 'rank', quantity: 1}], [noRcon], 'EUR', 'en')
+    expect(r).toEqual({unavailable: [{server: 'norcon', slug: 'rank'}]})
   })
 
   it('keeps client quantities but takes prices only from the database', () => {

@@ -33,6 +33,20 @@ describe('ProductCard footer', () => {
   })
 })
 
+describe('ProductCard on a server without RCON', () => {
+  it('shows the product but a disabled unavailable button', () => {
+    const [first, ...rest] = TEST_CATALOG.servers
+    if (!first) throw new Error('no server')
+    renderWithCatalog(<ProductCard product={product} onOpen={jest.fn()} />, {
+      servers: [{...first, purchasable: false}, ...rest],
+      products: TEST_CATALOG.products
+    })
+    expect(screen.getByRole('button', {name: product.name})).toBeInTheDocument()
+    expect(screen.queryByRole('button', {name: 'add'})).not.toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'unavailableProduct'})).toBeDisabled()
+  })
+})
+
 describe('ProductCard opening', () => {
   it('clicking the title opens the modal', () => {
     const onOpen = jest.fn()

@@ -16,7 +16,8 @@ export type PricingProduct = {
   slug: string
   isActive: boolean
   serverId: string
-  server: {slug: string; name: string; isActive: boolean}
+  /** `purchasable`: the server has a usable RCON, so a paid order can be delivered. */
+  server: {slug: string; name: string; isActive: boolean; purchasable: boolean}
   prices: {currency: Currency; amountMinor: number}[]
   translations: {locale: Locale; name: string}[]
 }
@@ -39,7 +40,14 @@ export function priceLines(
       product?.translations.find(t => t.locale === locale) ??
       product?.translations.find(t => t.locale === 'en')
     )?.name
-    if (!product || !product.isActive || !product.server.isActive || !price || name === undefined) {
+    if (
+      !product ||
+      !product.isActive ||
+      !product.server.isActive ||
+      !product.server.purchasable ||
+      !price ||
+      name === undefined
+    ) {
       unavailable.push({server: line.server, slug: line.slug})
       continue
     }

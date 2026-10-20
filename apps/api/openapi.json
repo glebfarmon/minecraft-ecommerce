@@ -44,6 +44,9 @@
                           "onAccent": {
                             "type": "string"
                           },
+                          "purchasable": {
+                            "type": "boolean"
+                          },
                           "categories": {
                             "type": "array",
                             "items": {
@@ -60,7 +63,14 @@
                             }
                           }
                         },
-                        "required": ["slug", "name", "accent", "onAccent", "categories"]
+                        "required": [
+                          "slug",
+                          "name",
+                          "accent",
+                          "onAccent",
+                          "purchasable",
+                          "categories"
+                        ]
                       }
                     },
                     "products": {

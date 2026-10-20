@@ -29,6 +29,8 @@ export const CatalogServerSchema = v.object({
   name: v.string(),
   accent: v.string(),
   onAccent: v.string(),
+  /** False when the server has no usable RCON: its products are listed but cannot be bought. */
+  purchasable: v.boolean(),
   /** In this server's display order. */
   categories: v.array(v.object({slug: v.string(), name: v.string()}))
 })

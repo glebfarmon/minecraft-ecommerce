@@ -104,6 +104,26 @@ describe('POST /api/orders', () => {
     ctx.turnstile.verify = jest.fn().mockResolvedValue(true)
   })
 
+  it('answers 409 unavailable for a server without RCON and lists the product in the catalog', async () => {
+    await ctx.prisma.server.update({where: {slug: 'survival'}, data: {rconHost: null}})
+    try {
+      const res = await post(body()).expect(409)
+      expect(message(res)).toBe('unavailable')
+      const catalog = await request(ctx.app.getHttpServer())
+        .get('/api/catalog?locale=en')
+        .expect(200)
+      const body_ = catalog.body as {
+        servers: {slug: string; purchasable: boolean}[]
+        products: {slug: string}[]
+      }
+      expect(body_.servers.find(s => s.slug === 'survival')?.purchasable).toBe(false)
+      expect(body_.servers.find(s => s.slug === 'anarchy')?.purchasable).toBe(true)
+      expect(body_.products.some(p => p.slug === 'vip')).toBe(true)
+    } finally {
+      await ctx.prisma.server.update({where: {slug: 'survival'}, data: {rconHost: '127.0.0.1'}})
+    }
+  })
+
   it('answers 502 payments_unavailable and keeps no order when the gateway fails', async () => {
     const before = await ctx.prisma.order.count()
     const spy = jest

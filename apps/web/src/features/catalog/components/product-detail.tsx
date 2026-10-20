@@ -113,20 +113,29 @@ export function ProductDetail({
               {formatPrice(product.prices[currency], currency, locale)}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              addAndFlash()
-              onAdded()
-            }}
-            className="flex h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-6 font-semibold text-on-accent transition-[filter] hover:brightness-110 sm:max-w-64">
-            {added ? (
-              <Check className="size-5 shrink-0" />
-            ) : (
-              <ShoppingBag className="size-5 shrink-0" />
-            )}
-            <span className="truncate">{inCart ? t('inCart') : t('addToCart')}</span>
-          </button>
+          {server.purchasable ? (
+            <button
+              type="button"
+              onClick={() => {
+                addAndFlash()
+                onAdded()
+              }}
+              className="flex h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-6 font-semibold text-on-accent transition-[filter] hover:brightness-110 sm:max-w-64">
+              {added ? (
+                <Check className="size-5 shrink-0" />
+              ) : (
+                <ShoppingBag className="size-5 shrink-0" />
+              )}
+              <span className="truncate">{inCart ? t('inCart') : t('addToCart')}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="flex h-14 min-w-0 flex-1 items-center justify-center rounded-full bg-fg/5 px-6 font-semibold text-muted disabled:cursor-not-allowed sm:max-w-64">
+              <span className="truncate">{tc('unavailableProduct')}</span>
+            </button>
+          )}
         </motion.div>
         <span aria-live="polite" className="sr-only">
           {added ? tc('added', {name: product.name}) : ''}

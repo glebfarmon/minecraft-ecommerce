@@ -25,6 +25,7 @@ const catalog = {
       name: 'Survival',
       accent: '#ff6b1a',
       onAccent: '#0e0e10',
+      purchasable: true,
       categories: [{slug: 'ranks', name: 'Ranks'}]
     }
   ],
@@ -44,6 +45,14 @@ describe('CatalogQuerySchema', () => {
 describe('CatalogResponseSchema', () => {
   it('accepts a valid catalog', () => {
     expect(v.parse(CatalogResponseSchema, catalog)).toEqual(catalog)
+  })
+
+  it('rejects a server without the purchasable flag', () => {
+    const server = {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10'}
+    expect(
+      v.safeParse(CatalogResponseSchema, {...catalog, servers: [{...server, categories: []}]})
+        .success
+    ).toBe(false)
   })
 
   it.each([
