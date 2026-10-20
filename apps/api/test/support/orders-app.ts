@@ -8,6 +8,7 @@ import {startCatalogApp} from './catalog-app'
 /** The catalog app plus the fake payments gateway; read by `createApp()`, so set before it. */
 export async function startOrdersApp() {
   process.env.PAYMENTS_GATEWAY = 'fake'
+  process.env.EXCHANGE_RATES = 'fixed'
   process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_int'
   process.env.PUBLIC_WEB_ORIGIN = 'http://shop.test'
   const ctx = await startCatalogApp()

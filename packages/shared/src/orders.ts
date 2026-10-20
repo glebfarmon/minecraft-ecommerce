@@ -115,28 +115,36 @@ export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
 
 export const STATS_RANGES = ['7d', '30d'] as const
 export const OrderStatsQuerySchema = v.object({
-  range: v.optional(v.picklist(STATS_RANGES), '7d')
+  range: v.optional(v.picklist(STATS_RANGES), '7d'),
+  currency: v.optional(CurrencySchema, 'EUR')
 })
 export type OrderStatsQuery = v.InferOutput<typeof OrderStatsQuerySchema>
 
 const Count = v.pipe(v.number(), v.integer(), v.minValue(0))
 export const OrderStatsSchema = v.object({
   range: v.picklist(STATS_RANGES),
+  /** The reporting currency of every `*Minor` figure except `byCurrency`. */
+  currency: CurrencySchema,
   from: Iso,
   to: Iso,
-  revenue: v.array(v.object({currency: CurrencySchema, totalMinor: Minor, previousMinor: Minor})),
+  revenueMinor: Minor,
+  previousRevenueMinor: Minor,
   paidCount: Count,
   previousPaidCount: Count,
+  averageMinor: v.nullable(Minor),
+  ltvMinor: v.nullable(Minor),
+  buyers: Count,
+  /** Paid orders in the range still without an exchange rate (not in the converted figures). */
+  awaitingRate: Count,
+  /** The same for the previous period, so its comparison can be flagged as partial. */
+  previousAwaitingRate: Count,
   expiredCount: Count,
   conversion: v.nullable(v.pipe(v.number(), v.minValue(0), v.maxValue(1))),
   byStatus: v.array(v.object({status: OrderStatusSchema, count: Count})),
+  /** Paid orders by the currency they were paid in; sums are in that original currency. */
+  byCurrency: v.array(v.object({currency: CurrencySchema, count: Count, totalMinor: Minor})),
   daily: v.array(
-    v.object({
-      day: v.pipe(v.string(), v.isoDate()),
-      currency: CurrencySchema,
-      totalMinor: Minor,
-      paidCount: Count
-    })
+    v.object({day: v.pipe(v.string(), v.isoDate()), totalMinor: Minor, paidCount: Count})
   ),
   topProducts: v.array(
     v.object({productId: v.string(), name: v.string(), serverName: v.string(), quantity: Count})

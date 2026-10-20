@@ -1,3 +1,5 @@
+import {Prisma} from '../src/generated/prisma/client'
+import {convertTotals} from '../src/orders/order-rates.service'
 import {startOrdersApp} from './support/orders-app'
 
 jest.setTimeout(180_000)
@@ -10,14 +12,22 @@ const startOfUtcDay = (d: Date) =>
 
 type Stats = {
   range: string
+  currency: string
   from: string
-  revenue: {currency: string; totalMinor: number; previousMinor: number}[]
+  revenueMinor: number
+  previousRevenueMinor: number
   paidCount: number
   previousPaidCount: number
+  averageMinor: number | null
+  ltvMinor: number | null
+  buyers: number
+  awaitingRate: number
+  previousAwaitingRate: number
   expiredCount: number
   conversion: number | null
   byStatus: {status: string; count: number}[]
-  daily: {day: string; currency: string; totalMinor: number; paidCount: number}[]
+  byCurrency: {currency: string; count: number; totalMinor: number}[]
+  daily: {day: string; totalMinor: number; paidCount: number}[]
   topProducts: {name: string; serverName: string; quantity: number}[]
 }
 
@@ -26,6 +36,9 @@ async function order(opts: {
   currency?: 'EUR' | 'PLN'
   totalMinor?: number
   at: Date
+  email?: string
+  /** PLN per EUR fixed at payment; `null` = still waiting for a rate. Default 4.3000. */
+  rate?: string | null
   items?: {
     productId: string
     serverId: string
@@ -36,15 +49,25 @@ async function order(opts: {
 }) {
   n += 1
   const paid = ['PAID', 'DELIVERED', 'REFUNDED'].includes(opts.status)
+  const currency = opts.currency ?? 'EUR'
+  const totalMinor = opts.totalMinor ?? 1000
+  const rate = opts.rate === undefined ? '4.3000' : opts.rate
   return ctx.prisma.order.create({
     data: {
       publicId: `sta${String(n).padStart(19, '0')}`,
       nick: 'Steve',
-      email: 's@example.com',
+      email: opts.email ?? 's@example.com',
       locale: 'en',
-      currency: opts.currency ?? 'EUR',
-      subtotalMinor: opts.totalMinor ?? 1000,
-      totalMinor: opts.totalMinor ?? 1000,
+      currency,
+      subtotalMinor: totalMinor,
+      totalMinor,
+      ...(paid && rate
+        ? {
+            eurPlnRate: new Prisma.Decimal(rate),
+            rateDate: new Date(opts.at.getTime() - DAY),
+            ...convertTotals(totalMinor, currency, rate)
+          }
+        : {}),
       status: opts.status,
       deliveryConsentAt: opts.at,
       createdAt: opts.at,
@@ -81,43 +104,113 @@ const get = async (query = '') =>
     .body as Stats
 
 describe('order stats', () => {
-  it('returns zeros, null conversion and every day of the range on an empty database', async () => {
+  it('returns zeros, nulls and every day of the range on an empty database', async () => {
     const s = await get()
     expect(s.range).toBe('7d')
+    expect(s.currency).toBe('EUR')
     expect(s.paidCount).toBe(0)
-    expect(s.conversion).toBeNull()
-    expect(s.revenue).toEqual([
-      {currency: 'EUR', totalMinor: 0, previousMinor: 0},
-      {currency: 'PLN', totalMinor: 0, previousMinor: 0}
-    ])
-    expect(new Set(s.daily.map(d => d.day)).size).toBe(7)
-    expect(s.daily).toHaveLength(14) // 7 days × 2 currencies
+    expect(s.revenueMinor).toBe(0)
+    expect([s.conversion, s.averageMinor, s.ltvMinor]).toEqual([null, null, null])
+    expect(s.buyers).toBe(0)
+    expect(s.awaitingRate).toBe(0)
+    expect(s.byCurrency).toEqual([])
+    expect(s.daily).toHaveLength(7)
     expect(s.daily.every(d => d.totalMinor === 0 && d.paidCount === 0)).toBe(true)
     expect(s.daily.at(-1)?.day).toBe(new Date().toISOString().slice(0, 10))
   })
 
-  it('counts revenue per currency from PAID and DELIVERED only, with the previous period', async () => {
+  it('sums PAID and DELIVERED orders in the reporting currency, with the previous period', async () => {
     const now = new Date()
-    await order({status: 'PAID', totalMinor: 500, at: now})
+    await order({status: 'PAID', totalMinor: 1000, at: now})
+    await order({status: 'PAID', currency: 'PLN', totalMinor: 4300, at: now})
     await order({status: 'DELIVERED', totalMinor: 700, at: new Date(now.getTime() - 2 * DAY)})
-    await order({status: 'PAID', currency: 'PLN', totalMinor: 2000, at: now})
     await order({status: 'REFUNDED', totalMinor: 9999, at: now})
     await order({status: 'PENDING', totalMinor: 9999, at: now})
     await order({status: 'PAID', totalMinor: 300, at: new Date(now.getTime() - 9 * DAY)}) // previous 7d
-    const s = await get('?range=7d')
-    expect(s.revenue).toEqual([
-      {currency: 'EUR', totalMinor: 1200, previousMinor: 300},
-      {currency: 'PLN', totalMinor: 2000, previousMinor: 0}
-    ])
-    expect(s.paidCount).toBe(3)
-    expect(s.previousPaidCount).toBe(1)
+    await order({
+      status: 'PAID',
+      currency: 'PLN',
+      totalMinor: 860,
+      at: new Date(now.getTime() - 10 * DAY)
+    }) // previous 7d, converted to 200 EUR
+    const eur = await get('?range=7d&currency=EUR')
+    expect(eur.currency).toBe('EUR')
+    expect(eur.revenueMinor).toBe(1000 + 1000 + 700)
+    expect(eur.previousRevenueMinor).toBe(300 + 200)
+    expect(eur.paidCount).toBe(3)
+    expect(eur.previousPaidCount).toBe(2)
+    expect(eur.averageMinor).toBe(900)
+    const pln = await get('?currency=PLN')
+    expect(pln.revenueMinor).toBe(4300 + 4300 + 3010)
+    expect(pln.previousRevenueMinor).toBe(1290 + 860)
     const today = now.toISOString().slice(0, 10)
-    expect(s.daily.find(d => d.day === today && d.currency === 'EUR')).toEqual({
+    expect(eur.daily.find(d => d.day === today)).toEqual({
       day: today,
-      currency: 'EUR',
-      totalMinor: 500,
-      paidCount: 1
+      totalMinor: 2000,
+      paidCount: 2
     })
+    expect(pln.daily.find(d => d.day === today)).toEqual({
+      day: today,
+      totalMinor: 8600,
+      paidCount: 2
+    })
+  })
+
+  it('splits paid orders by original currency with original-currency sums', async () => {
+    const now = new Date()
+    await order({status: 'PAID', totalMinor: 1000, at: now})
+    await order({status: 'PAID', totalMinor: 500, at: now})
+    await order({status: 'PAID', currency: 'PLN', totalMinor: 4300, at: now})
+    const s = await get('?currency=PLN')
+    expect(s.byCurrency).toEqual(
+      expect.arrayContaining([
+        {currency: 'EUR', count: 2, totalMinor: 1500},
+        {currency: 'PLN', count: 1, totalMinor: 4300}
+      ])
+    )
+    expect(s.byCurrency).toHaveLength(2)
+  })
+
+  it('counts a buyer once however the email is cased and divides revenue by buyers', async () => {
+    const now = new Date()
+    await order({status: 'PAID', totalMinor: 1000, at: now, email: 'Alex@Example.com'})
+    await order({status: 'PAID', totalMinor: 1000, at: now, email: 'alex@example.com'})
+    await order({status: 'PAID', totalMinor: 1000, at: now, email: 'sam@example.com'})
+    const s = await get()
+    expect(s.buyers).toBe(2)
+    expect(s.ltvMinor).toBe(1500)
+  })
+
+  it('leaves orders without a rate out of the sums but counts them', async () => {
+    const now = new Date()
+    await order({status: 'PAID', totalMinor: 1000, at: now})
+    await order({status: 'PAID', totalMinor: 5000, at: now, rate: null, email: 'late@example.com'})
+    const s = await get()
+    expect(s.revenueMinor).toBe(1000)
+    expect(s.averageMinor).toBe(1000)
+    expect(s.awaitingRate).toBe(1)
+    expect(s.paidCount).toBe(2)
+    expect(s.buyers).toBe(1)
+    expect(s.ltvMinor).toBe(1000)
+    expect(s.byCurrency).toEqual([{currency: 'EUR', count: 2, totalMinor: 6000}])
+  })
+
+  it('counts previous-period orders without a rate so the comparison can be flagged', async () => {
+    const now = new Date()
+    await order({status: 'PAID', at: new Date(now.getTime() - 9 * DAY)})
+    await order({status: 'PAID', at: new Date(now.getTime() - 9 * DAY), rate: null})
+    const s = await get()
+    expect(s.previousPaidCount).toBe(2)
+    expect(s.previousRevenueMinor).toBe(1000)
+    expect(s.previousAwaitingRate).toBe(1)
+    expect(s.awaitingRate).toBe(0)
+  })
+
+  it('has null average and LTV, not zero, while every paid order awaits a rate', async () => {
+    await order({status: 'PAID', totalMinor: 1000, at: new Date(), rate: null})
+    const s = await get()
+    expect([s.revenueMinor, s.averageMinor, s.ltvMinor]).toEqual([0, null, null])
+    expect([s.awaitingRate, s.paidCount]).toEqual([1, 1])
   })
 
   it('computes conversion as paid / (paid + expired) and counts every status', async () => {
@@ -144,7 +237,7 @@ describe('order stats', () => {
     await order({status: 'PAID', totalMinor: 100, at: new Date(from.getTime() - 1)})
     const s = await get()
     expect(s.from).toBe(from.toISOString())
-    expect(s.revenue[0]?.totalMinor).toBe(100)
+    expect(s.revenueMinor).toBe(100)
   })
 
   it('ranks the top five products by quantity over paid orders', async () => {
@@ -188,9 +281,10 @@ describe('order stats', () => {
   })
 
   it('accepts 30d, rejects other ranges and needs order.read', async () => {
-    expect((await get('?range=30d')).daily).toHaveLength(60)
+    expect((await get('?range=30d')).daily).toHaveLength(30)
     const admin = await ctx.admin('SUPPORT')
     await admin.get('/api/admin/stats/orders?range=1y').expect(400)
+    await admin.get('/api/admin/stats/orders?currency=USD').expect(400)
     const custom = await ctx.admin({permissions: ['audit.read']})
     await custom.get('/api/admin/stats/orders').expect(403)
   })

@@ -1,6 +1,12 @@
 import * as v from 'valibot'
 
-import {CreateOrderRequestSchema, ORDER_MAX_LINES, PublicOrderSchema} from './orders'
+import {
+  CreateOrderRequestSchema,
+  ORDER_MAX_LINES,
+  OrderStatsQuerySchema,
+  OrderStatsSchema,
+  PublicOrderSchema
+} from './orders'
 
 const valid = {
   lines: [{server: 'survival', slug: 'vip', quantity: 1}],
@@ -65,5 +71,55 @@ describe('PublicOrderSchema', () => {
       paidAt: '2026-10-16T10:01:00.000Z'
     }
     expect(v.parse(PublicOrderSchema, order)).toEqual(order)
+  })
+})
+
+describe('OrderStatsQuerySchema', () => {
+  it('defaults to 7d in EUR', () => {
+    expect(v.parse(OrderStatsQuerySchema, {})).toEqual({range: '7d', currency: 'EUR'})
+  })
+  it('accepts PLN and rejects other currencies', () => {
+    expect(v.parse(OrderStatsQuerySchema, {currency: 'PLN'}).currency).toBe('PLN')
+    expect(v.safeParse(OrderStatsQuerySchema, {currency: 'USD'}).success).toBe(false)
+  })
+})
+
+describe('OrderStatsSchema', () => {
+  const stats = {
+    range: '7d',
+    currency: 'EUR',
+    from: '2026-10-13T00:00:00.000Z',
+    to: '2026-10-19T12:00:00.000Z',
+    revenueMinor: 2000,
+    previousRevenueMinor: 0,
+    paidCount: 2,
+    previousPaidCount: 0,
+    averageMinor: 1000,
+    ltvMinor: 2000,
+    buyers: 1,
+    awaitingRate: 0,
+    previousAwaitingRate: 0,
+    expiredCount: 0,
+    conversion: 1,
+    byStatus: [{status: 'PAID', count: 2}],
+    byCurrency: [{currency: 'EUR', count: 2, totalMinor: 2000}],
+    daily: [{day: '2026-10-19', totalMinor: 2000, paidCount: 2}],
+    topProducts: []
+  }
+  it('accepts the converted shape, nulls included', () => {
+    expect(v.safeParse(OrderStatsSchema, stats).success).toBe(true)
+    expect(
+      v.safeParse(OrderStatsSchema, {...stats, averageMinor: null, ltvMinor: null}).success
+    ).toBe(true)
+  })
+  it('rejects a missing previousAwaitingRate', () => {
+    const rest: Partial<typeof stats> = {...stats}
+    delete rest.previousAwaitingRate
+    expect(v.safeParse(OrderStatsSchema, rest).success).toBe(false)
+  })
+  it('rejects a missing currency', () => {
+    const rest: Partial<typeof stats> = {...stats}
+    delete rest.currency
+    expect(v.safeParse(OrderStatsSchema, rest).success).toBe(false)
   })
 })
