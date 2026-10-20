@@ -2,8 +2,13 @@ import {randomBytes} from 'node:crypto'
 
 import {type CatalogRows, toCatalogResponse} from './catalog.mapper'
 
+const savedKey = process.env.RCON_ENCRYPTION_KEY
 beforeAll(() => {
   process.env.RCON_ENCRYPTION_KEY = randomBytes(32).toString('base64')
+})
+afterAll(() => {
+  if (savedKey === undefined) delete process.env.RCON_ENCRYPTION_KEY
+  else process.env.RCON_ENCRYPTION_KEY = savedKey
 })
 
 const product = (overrides: Partial<CatalogRows['products'][number]> = {}) => ({

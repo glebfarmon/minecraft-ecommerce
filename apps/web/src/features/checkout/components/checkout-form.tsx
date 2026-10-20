@@ -2,6 +2,7 @@ import {PENDING_ORDER_KEY} from '@/config/order'
 import {legalPath} from '@/config/site'
 import {toCartLine} from '@/features/cart/lib/cart-cookie'
 import {useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {createOrder} from '@/features/checkout/api/create-order'
 import type {CreateOrderResult} from '@/features/checkout/api/create-order'
 import {CheckField, TextField} from '@/features/checkout/components/fields'
@@ -52,6 +53,7 @@ export function CheckoutForm({form, titleId, onBack}: Props) {
   const t = useTranslations('checkout')
   const locale = useLocale()
   const {lines} = useCart()
+  const {findServer} = useCatalog()
   const {remove} = useCartActions()
   const {currency} = useCurrency()
   const {register, handleSubmit, control} = form
@@ -97,16 +99,23 @@ export function CheckoutForm({form, titleId, onBack}: Props) {
     setPending(false)
   }
 
-  const unavailable = new Set(
-    orderError?.error === 'unavailable' ? orderError.lines.map(l => `${l.server}/${l.slug}`) : []
-  )
+  // Lines of a server without RCON are known to be refused, so they are marked before the player fills the form.
+  const unpurchasable = lines
+    .filter(l => findServer(l.product.server)?.purchasable === false)
+    .map(l => `${l.product.server}/${l.product.slug}`)
+  const unavailable = new Set([
+    ...unpurchasable,
+    ...(orderError?.error === 'unavailable'
+      ? orderError.lines.map(l => `${l.server}/${l.slug}`)
+      : [])
+  ])
   const removeUnavailable = () => {
     for (const {product} of lines) {
       if (unavailable.has(`${product.server}/${product.slug}`)) remove(product)
     }
     setOrderError(null)
   }
-  const payDisabled = !isValid || !token
+  const payDisabled = !isValid || !token || unpurchasable.length > 0
 
   const error = (key: keyof CheckoutInput) => {
     const code = errors[key]?.message
@@ -171,6 +180,18 @@ export function CheckoutForm({form, titleId, onBack}: Props) {
             {...register('terms')}
           />
         </div>
+
+        {!orderError && unpurchasable.length > 0 && (
+          <div role="alert" className="flex flex-col items-start gap-2 text-sm">
+            <p className="text-danger">{t('errors.unavailable')}</p>
+            <button
+              type="button"
+              onClick={removeUnavailable}
+              className="inline-flex h-11 items-center rounded-full border border-line px-4 font-medium transition-colors hover:bg-card">
+              {t('removeUnavailable')}
+            </button>
+          </div>
+        )}
 
         {orderError && (
           <div id={errorId} role="alert" className="flex flex-col items-start gap-2 text-sm">

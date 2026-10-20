@@ -20,6 +20,7 @@
   },
   "cart": {
     "label": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
+    "unavailableLine": "Unavailable",
     "title": "Your cart",
     "empty": "Nothing here yet. Pick a server and add something.",
     "total": "Total",
