@@ -122,7 +122,9 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* min-w-0: as a flex item the root would not shrink, so the list could never scroll. */}
         <Tabs
+          className="max-w-full min-w-0"
           value={status ?? 'ALL'}
           onValueChange={v => {
             setStatus(v === 'ALL' ? undefined : (v as Status))
