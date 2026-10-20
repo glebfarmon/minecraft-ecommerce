@@ -1,6 +1,8 @@
 import * as v from 'valibot'
 
 import {
+  CategoryInputSchema,
+  CategoryUpdateSchema,
   OrderInputSchema,
   ProductCreateSchema,
   ProductUpdateSchema,
@@ -22,7 +24,6 @@ const product = {
   kind: 'PERMANENT' as const,
   durationDays: null,
   mark: 'VIP',
-  icon: 'crown' as const,
   grantCommands: ['lp user {nick} parent add vip'],
   revokeCommands: [],
   prices: {EUR: 499, PLN: null},
@@ -116,6 +117,33 @@ describe('ProductUpdateSchema', () => {
     expect(
       v.safeParse(ProductUpdateSchema, {...product, isActive: false, version: 1}).success
     ).toBe(true)
+  })
+})
+
+describe('icon lives on the category', () => {
+  const names = {en: 'Ranks', pl: 'Rangi'}
+
+  it('category input and update need a known icon', () => {
+    expect(v.safeParse(CategoryInputSchema, {slug: 'ranks', names}).success).toBe(false)
+    expect(v.safeParse(CategoryInputSchema, {slug: 'ranks', names, icon: 'star'}).success).toBe(
+      false
+    )
+    expect(v.parse(CategoryInputSchema, {slug: 'ranks', names, icon: 'box'}).icon).toBe('box')
+    expect(
+      v.parse(CategoryUpdateSchema, {slug: 'ranks', names, icon: 'coins', version: 1}).icon
+    ).toBe('coins')
+  })
+
+  it('product input with an icon drops it, like any unknown key', () => {
+    const create = v.parse(ProductCreateSchema, {...product, icon: 'crown'})
+    expect(create).not.toHaveProperty('icon')
+    const update = v.parse(ProductUpdateSchema, {
+      ...product,
+      icon: 'crown',
+      isActive: false,
+      version: 1
+    })
+    expect(update).not.toHaveProperty('icon')
   })
 })
 

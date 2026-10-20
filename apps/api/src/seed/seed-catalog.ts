@@ -26,6 +26,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
       update: {},
       create: {
         slug: c.slug,
+        icon: c.icon,
         translations: {create: LOCALES.map(locale => ({locale, name: c.names[locale]}))}
       }
     })
@@ -58,7 +59,6 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
           slug: p.slug,
           ...kindOf(p),
           mark: p.mark,
-          icon: p.icon,
           // Placeholder until delivery (sub-project 5) defines real commands per product.
           grantCommands: [`say [demo] {nick} bought ${p.slug}`],
           revokeCommands: [],

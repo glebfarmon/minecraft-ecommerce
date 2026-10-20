@@ -70,7 +70,6 @@ describe('product writes', () => {
     kind: 'PERMANENT' as const,
     durationDays: null,
     mark: 'VIP',
-    icon: 'crown' as const,
     grantCommands: [],
     revokeCommands: [],
     prices: {EUR: null, PLN: null},
@@ -105,5 +104,50 @@ describe('product writes', () => {
     const error: unknown = await service.create(input).catch((e: unknown) => e)
     expect(status(error)).toBe(409)
     expect(body(error)).toMatchObject({message: 'slug_taken'})
+  })
+})
+
+describe('category writes', () => {
+  const stored = (icon: string) => ({
+    id: 'c1',
+    slug: 'ranks',
+    icon,
+    version: 1,
+    translations: [],
+    servers: [],
+    _count: {products: 0}
+  })
+  const names = {en: 'Ranks', pl: 'Rangi'}
+
+  it('create stores the icon and returns it', async () => {
+    const create = jest.fn().mockResolvedValue(stored('box'))
+    const service = new CategoriesService({category: {create}} as unknown as PrismaService)
+    const out = await service.create({slug: 'ranks', names, icon: 'box'})
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({data: expect.objectContaining({icon: 'box'}) as unknown})
+    )
+    expect(out.icon).toBe('box')
+  })
+
+  it('update stores the icon with the version check', async () => {
+    const updateMany = jest.fn().mockResolvedValue({count: 1})
+    const tx = {
+      category: {updateMany, findUniqueOrThrow: jest.fn().mockResolvedValue(stored('coins'))},
+      categoryTranslation: {upsert: jest.fn()}
+    }
+    const prisma = {
+      category: {findUnique: jest.fn().mockResolvedValue(stored('crown'))},
+      $transaction: jest.fn((run: (t: typeof tx) => unknown) => run(tx))
+    }
+    const out = await new CategoriesService(prisma as unknown as PrismaService).update(
+      'c1',
+      {slug: 'ranks', names, icon: 'coins', version: 1},
+      () => undefined
+    )
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {id: 'c1', version: 1},
+      data: {slug: 'ranks', icon: 'coins', version: {increment: 1}}
+    })
+    expect(out.icon).toBe('coins')
   })
 })

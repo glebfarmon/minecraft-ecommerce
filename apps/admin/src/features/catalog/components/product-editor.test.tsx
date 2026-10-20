@@ -18,7 +18,7 @@ const servers = [
     sort: 0,
     version: 1,
     productCount: 1,
-    categories: [{id: 'c1', slug: 'ranks', name: 'Ranks'}],
+    categories: [{id: 'c1', slug: 'ranks', name: 'Ranks', icon: 'swords'}],
     rcon: null,
     rconPasswordSet: false
   }
@@ -33,7 +33,6 @@ const draft = {
   kind: 'PERMANENT',
   durationDays: null,
   mark: 'PRB',
-  icon: 'crown',
   isActive: false,
   grantCommands: [],
   revokeCommands: [],
@@ -54,6 +53,14 @@ function mockApi(patch: (body: unknown) => Response = () => Response.json(draft)
 }
 
 describe('ProductEditor', () => {
+  it('has no icon field: the preview draws the category icon', async () => {
+    mockApi()
+    const {container} = renderWithStore(<ProductEditor id="p1" canEdit />)
+    expect(await screen.findByText('Icon comes from the category')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', {name: 'Icon'})).not.toBeInTheDocument()
+    expect(container.querySelector('svg.lucide-swords')).not.toBeNull()
+  })
+
   it('lists what is missing and keeps "Enabled" off until it is complete', async () => {
     mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)
@@ -107,6 +114,7 @@ describe('ProductEditor', () => {
         await screen.findByText('Saved. Live on the site within a minute.')
       ).toBeInTheDocument()
       expect(sent).toEqual([expect.objectContaining({isActive: true})])
+      expect(sent[0]).not.toHaveProperty('icon')
     })
 
     it('saves a formatted multi-line description as markdown', async () => {

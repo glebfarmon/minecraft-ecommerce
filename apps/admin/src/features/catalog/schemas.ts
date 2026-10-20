@@ -17,7 +17,12 @@ const Name = v.pipe(
   v.maxLength(40, VALIDATION_MESSAGES.atMost40)
 )
 
-export const CategoryFormSchema = v.object({slug: SlugField, en: Name, pl: Name})
+export const CategoryFormSchema = v.object({
+  slug: SlugField,
+  en: Name,
+  pl: Name,
+  icon: v.picklist(PRODUCT_ICONS)
+})
 export type CategoryForm = v.InferOutput<typeof CategoryFormSchema>
 
 const PriceText = v.pipe(
@@ -57,7 +62,6 @@ export const ProductFormSchema = v.pipe(
       v.minLength(1, VALIDATION_MESSAGES.enterMark),
       v.maxLength(12, VALIDATION_MESSAGES.atMost12)
     ),
-    icon: v.picklist(PRODUCT_ICONS),
     isActive: v.boolean(),
     grant: CommandLines,
     revoke: CommandLines,

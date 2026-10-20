@@ -67,7 +67,13 @@ export const enhancedApi = api.enhanceEndpoints({
     listCatalogCategories: {providesTags: ['CatalogCategories']},
     createCatalogCategory: {invalidatesTags: ['CatalogCategories', 'Audit']},
     updateCatalogCategory: {
-      invalidatesTags: onSuccess(['CatalogCategories', 'CatalogServers', 'Audit'])
+      // Product cards show the category's icon.
+      invalidatesTags: onSuccess([
+        'CatalogCategories',
+        'CatalogServers',
+        'CatalogProducts',
+        'Audit'
+      ])
     },
     deleteCatalogCategory: {invalidatesTags: ['CatalogCategories', 'Audit']},
     listCatalogProducts: {providesTags: ['CatalogProducts']},

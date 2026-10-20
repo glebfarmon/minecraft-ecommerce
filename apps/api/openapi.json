@@ -1481,9 +1481,13 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "icon": {
+                              "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                              "type": "string"
                             }
                           },
-                          "required": ["id", "slug", "name"]
+                          "required": ["id", "slug", "name", "icon"]
                         },
                         "description": "Attached categories in display order"
                       },
@@ -1640,9 +1644,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "slug", "name"]
+                        "required": ["id", "slug", "name", "icon"]
                       },
                       "description": "Attached categories in display order"
                     },
@@ -1806,9 +1814,13 @@
                             },
                             "name": {
                               "type": "string"
+                            },
+                            "icon": {
+                              "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                              "type": "string"
                             }
                           },
-                          "required": ["id", "slug", "name"]
+                          "required": ["id", "slug", "name", "icon"]
                         },
                         "description": "Attached categories in display order"
                       },
@@ -1950,9 +1962,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "slug", "name"]
+                        "required": ["id", "slug", "name", "icon"]
                       },
                       "description": "Attached categories in display order"
                     },
@@ -2131,9 +2147,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "slug", "name"]
+                        "required": ["id", "slug", "name", "icon"]
                       },
                       "description": "Attached categories in display order"
                     },
@@ -2348,9 +2368,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "slug", "name"]
+                        "required": ["id", "slug", "name", "icon"]
                       },
                       "description": "Attached categories in display order"
                     },
@@ -2542,9 +2566,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "icon": {
+                            "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "slug", "name"]
+                        "required": ["id", "slug", "name", "icon"]
                       },
                       "description": "Attached categories in display order"
                     },
@@ -2702,7 +2730,7 @@
       "get": {
         "operationId": "listCatalogCategories",
         "summary": "All categories",
-        "description": "Each with its English and Polish name, the servers it is attached to and its product count. Any signed-in admin (session with TOTP) may call it.",
+        "description": "Each with its English and Polish name, its icon, the servers it is attached to and its product count. Any signed-in admin (session with TOTP) may call it.",
         "responses": {
           "200": {
             "description": "Categories",
@@ -2718,6 +2746,10 @@
                         "minLength": 1
                       },
                       "slug": {
+                        "type": "string"
+                      },
+                      "icon": {
+                        "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
                         "type": "string"
                       },
                       "names": {
@@ -2755,7 +2787,15 @@
                         }
                       }
                     },
-                    "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                    "required": [
+                      "id",
+                      "slug",
+                      "icon",
+                      "names",
+                      "version",
+                      "productCount",
+                      "servers"
+                    ]
                   }
                 }
               }
@@ -2773,7 +2813,7 @@
       "post": {
         "operationId": "createCatalogCategory",
         "summary": "Create a category",
-        "description": "Both names are required. Attach it to servers with PUT /servers/{id}/categories. Needs `catalog.write`.",
+        "description": "Both names and the icon (drawn on every product tile of the category) are required. Attach it to servers with PUT /servers/{id}/categories. Needs `catalog.write`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2801,9 +2841,14 @@
                       }
                     },
                     "required": ["en", "pl"]
+                  },
+                  "icon": {
+                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                    "type": "string",
+                    "description": "Drawn on every product tile of the category"
                   }
                 },
-                "required": ["slug", "names"]
+                "required": ["slug", "names", "icon"]
               }
             }
           }
@@ -2821,6 +2866,10 @@
                       "minLength": 1
                     },
                     "slug": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
                       "type": "string"
                     },
                     "names": {
@@ -2858,13 +2907,13 @@
                       }
                     }
                   },
-                  "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                  "required": ["id", "slug", "icon", "names", "version", "productCount", "servers"]
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid body: slug or names"
+            "description": "Invalid body: slug, names or icon"
           },
           "401": {
             "description": "No session, or the admin is disabled"
@@ -2882,8 +2931,8 @@
     "/api/admin/catalog/categories/{id}": {
       "patch": {
         "operationId": "updateCatalogCategory",
-        "summary": "Rename a category",
-        "description": "Changes slug and names. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
+        "summary": "Edit a category",
+        "description": "Changes slug, names and icon. Needs `catalog.write`. The storefront caches the catalog for 60 s, so the change is live within a minute.",
         "parameters": [
           {
             "name": "id",
@@ -2922,6 +2971,11 @@
                     },
                     "required": ["en", "pl"]
                   },
+                  "icon": {
+                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
+                    "type": "string",
+                    "description": "Drawn on every product tile of the category"
+                  },
                   "version": {
                     "type": "integer",
                     "minimum": 1,
@@ -2929,7 +2983,7 @@
                     "description": "The version you read. If someone saved since, the write fails with 409 `stale`."
                   }
                 },
-                "required": ["slug", "names", "version"]
+                "required": ["slug", "names", "icon", "version"]
               }
             }
           }
@@ -2947,6 +3001,10 @@
                       "minLength": 1
                     },
                     "slug": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
                       "type": "string"
                     },
                     "names": {
@@ -2984,13 +3042,13 @@
                       }
                     }
                   },
-                  "required": ["id", "slug", "names", "version", "productCount", "servers"]
+                  "required": ["id", "slug", "icon", "names", "version", "productCount", "servers"]
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid body: slug or names"
+            "description": "Invalid body: slug, names or icon"
           },
           "401": {
             "description": "No session, or the admin is disabled"
@@ -3115,7 +3173,8 @@
                       },
                       "icon": {
                         "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
-                        "type": "string"
+                        "type": "string",
+                        "description": "The category's icon"
                       },
                       "name": {
                         "type": "string",
@@ -3194,7 +3253,7 @@
       "post": {
         "operationId": "createCatalogProduct",
         "summary": "Create a product (disabled draft)",
-        "description": "Created disabled and last in its category; prices and translations may still be missing. The category must be attached to the server. Commands may only use the `{nick}` placeholder. Needs `catalog.write`.",
+        "description": "Created disabled and last in its category; the tile icon comes from the category. Prices and translations may still be missing. The category must be attached to the server. Commands may only use the `{nick}` placeholder. Needs `catalog.write`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3238,10 +3297,6 @@
                     "minLength": 1,
                     "maxLength": 12,
                     "description": "Short wordmark on the product tile"
-                  },
-                  "icon": {
-                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
-                    "type": "string"
                   },
                   "grantCommands": {
                     "type": "array",
@@ -3417,7 +3472,6 @@
                   "kind",
                   "durationDays",
                   "mark",
-                  "icon",
                   "grantCommands",
                   "revokeCommands",
                   "prices",
@@ -3471,10 +3525,6 @@
                       ]
                     },
                     "mark": {
-                      "type": "string"
-                    },
-                    "icon": {
-                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
                       "type": "string"
                     },
                     "isActive": {
@@ -3641,7 +3691,6 @@
                     "kind",
                     "durationDays",
                     "mark",
-                    "icon",
                     "isActive",
                     "grantCommands",
                     "revokeCommands",
@@ -3730,10 +3779,6 @@
                     "mark": {
                       "type": "string"
                     },
-                    "icon": {
-                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
-                      "type": "string"
-                    },
                     "isActive": {
                       "type": "boolean"
                     },
@@ -3898,7 +3943,6 @@
                     "kind",
                     "durationDays",
                     "mark",
-                    "icon",
                     "isActive",
                     "grantCommands",
                     "revokeCommands",
@@ -3979,10 +4023,6 @@
                     "minLength": 1,
                     "maxLength": 12,
                     "description": "Short wordmark on the product tile"
-                  },
-                  "icon": {
-                    "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
-                    "type": "string"
                   },
                   "grantCommands": {
                     "type": "array",
@@ -4168,7 +4208,6 @@
                   "kind",
                   "durationDays",
                   "mark",
-                  "icon",
                   "grantCommands",
                   "revokeCommands",
                   "prices",
@@ -4224,10 +4263,6 @@
                       ]
                     },
                     "mark": {
-                      "type": "string"
-                    },
-                    "icon": {
-                      "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
                       "type": "string"
                     },
                     "isActive": {
@@ -4394,7 +4429,6 @@
                     "kind",
                     "durationDays",
                     "mark",
-                    "icon",
                     "isActive",
                     "grantCommands",
                     "revokeCommands",
@@ -4561,7 +4595,8 @@
                       },
                       "icon": {
                         "enum": ["crown", "box", "coins", "swords", "pickaxe", "ticket"],
-                        "type": "string"
+                        "type": "string",
+                        "description": "The category's icon"
                       },
                       "name": {
                         "type": "string",

@@ -107,7 +107,12 @@ export const ServerUpdateSchema = v.object({
   version: Version
 })
 
-const CategoryRef = v.object({id: Id, slug: v.string(), name: v.string()})
+const CategoryRef = v.object({
+  id: Id,
+  slug: v.string(),
+  name: v.string(),
+  icon: v.picklist(PRODUCT_ICONS)
+})
 
 export const AdminServerSchema = v.object({
   id: Id,
@@ -197,11 +202,21 @@ export const RconTestResultSchema = v.variant('ok', [
 // Categories
 
 const Names = v.object({en: text(40, 'enterEnglishName'), pl: text(40, 'enterPolishName')})
-export const CategoryInputSchema = v.object({slug: Slug, names: Names})
-export const CategoryUpdateSchema = v.object({slug: Slug, names: Names, version: Version})
+const CategoryIcon = v.pipe(
+  v.picklist(PRODUCT_ICONS),
+  v.description('Drawn on every product tile of the category')
+)
+export const CategoryInputSchema = v.object({slug: Slug, names: Names, icon: CategoryIcon})
+export const CategoryUpdateSchema = v.object({
+  slug: Slug,
+  names: Names,
+  icon: CategoryIcon,
+  version: Version
+})
 export const AdminCategorySchema = v.object({
   id: Id,
   slug: v.string(),
+  icon: v.picklist(PRODUCT_ICONS),
   names: v.object({en: v.string(), pl: v.string()}),
   version: v.number(),
   productCount: v.number(),
@@ -225,7 +240,6 @@ const productFields = {
     v.description('Days until revoke commands run; required for TIMED, null otherwise')
   ),
   mark: v.pipe(text(12, 'enterMark'), v.description('Short wordmark on the product tile')),
-  icon: v.picklist(PRODUCT_ICONS),
   grantCommands: v.pipe(Commands, v.description('Run on the game server after payment')),
   revokeCommands: v.pipe(Commands, v.description('Run when a TIMED product expires')),
   prices: v.object({EUR: v.nullable(Minor), PLN: v.nullable(Minor)}),
@@ -273,7 +287,6 @@ export const AdminProductSchema = v.object({
   kind: v.picklist(PRODUCT_KINDS),
   durationDays: v.nullable(v.number()),
   mark: v.string(),
-  icon: v.picklist(PRODUCT_ICONS),
   isActive: v.boolean(),
   grantCommands: v.array(v.string()),
   revokeCommands: v.array(v.string()),
@@ -291,7 +304,7 @@ export const AdminProductListItemSchema = v.object({
   slug: v.string(),
   kind: v.picklist(PRODUCT_KINDS),
   mark: v.string(),
-  icon: v.picklist(PRODUCT_ICONS),
+  icon: v.pipe(v.picklist(PRODUCT_ICONS), v.description("The category's icon")),
   name: v.pipe(v.string(), v.description('English name, or the slug while there is none')),
   isActive: v.boolean(),
   prices: PricesOut,

@@ -51,7 +51,6 @@ const columns = (input: ProductCreate) => ({
   kind: input.kind,
   durationDays: input.durationDays,
   mark: input.mark,
-  icon: input.icon,
   grantCommands: input.grantCommands,
   revokeCommands: input.revokeCommands
 })

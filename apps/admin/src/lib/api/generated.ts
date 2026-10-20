@@ -591,6 +591,7 @@ export type ListCatalogServersApiResponse = /** status 200 Servers */ {
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -615,6 +616,7 @@ export type CreateCatalogServerApiResponse = /** status 201 The new server */ {
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -649,6 +651,7 @@ export type OrderCatalogServersApiResponse = /** status 200 Servers in the new o
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -680,6 +683,7 @@ export type GetCatalogServerApiResponse = /** status 200 The server */ {
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -706,6 +710,7 @@ export type UpdateCatalogServerApiResponse = /** status 200 The updated server *
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -751,6 +756,7 @@ export type SetCatalogServerCategoriesApiResponse =
       id: string
       slug: string
       name: string
+      icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
     }[]
     /** RCON address; null unless the viewer has `server.rcon` */
     rcon: {
@@ -783,6 +789,7 @@ export type UpdateCatalogServerRconApiResponse = /** status 200 The server */ {
     id: string
     slug: string
     name: string
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }[]
   /** RCON address; null unless the viewer has `server.rcon` */
   rcon: {
@@ -818,6 +825,7 @@ export type TestCatalogServerRconApiArg = {
 export type ListCatalogCategoriesApiResponse = /** status 200 Categories */ {
   id: string
   slug: string
+  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   names: {
     en: string
     pl: string
@@ -833,6 +841,7 @@ export type ListCatalogCategoriesApiArg = void
 export type CreateCatalogCategoryApiResponse = /** status 201 The new category */ {
   id: string
   slug: string
+  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   names: {
     en: string
     pl: string
@@ -852,11 +861,14 @@ export type CreateCatalogCategoryApiArg = {
       en: string
       pl: string
     }
+    /** Drawn on every product tile of the category */
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   }
 }
 export type UpdateCatalogCategoryApiResponse = /** status 200 The updated category */ {
   id: string
   slug: string
+  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   names: {
     en: string
     pl: string
@@ -877,6 +889,8 @@ export type UpdateCatalogCategoryApiArg = {
       en: string
       pl: string
     }
+    /** Drawn on every product tile of the category */
+    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
     /** The version you read. If someone saved since, the write fails with 409 `stale`. */
     version: number
   }
@@ -895,6 +909,7 @@ export type ListCatalogProductsApiResponse = /** status 200 Products */ {
   slug: string
   kind: 'PERMANENT' | 'TIMED' | 'CASE'
   mark: string
+  /** The category's icon */
   icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   /** English name, or the slug while there is none */
   name: string
@@ -920,7 +935,6 @@ export type CreateCatalogProductApiResponse = /** status 201 The new product */ 
   kind: 'PERMANENT' | 'TIMED' | 'CASE'
   durationDays: number | null
   mark: string
-  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   isActive: boolean
   grantCommands: string[]
   revokeCommands: string[]
@@ -969,7 +983,6 @@ export type CreateCatalogProductApiArg = {
     durationDays: number | null
     /** Short wordmark on the product tile */
     mark: string
-    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
     /** Run on the game server after payment */
     grantCommands: string[]
     /** Run when a TIMED product expires */
@@ -1016,7 +1029,6 @@ export type GetCatalogProductApiResponse = /** status 200 The product */ {
   kind: 'PERMANENT' | 'TIMED' | 'CASE'
   durationDays: number | null
   mark: string
-  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   isActive: boolean
   grantCommands: string[]
   revokeCommands: string[]
@@ -1066,7 +1078,6 @@ export type UpdateCatalogProductApiResponse = /** status 200 The updated product
   kind: 'PERMANENT' | 'TIMED' | 'CASE'
   durationDays: number | null
   mark: string
-  icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   isActive: boolean
   grantCommands: string[]
   revokeCommands: string[]
@@ -1116,7 +1127,6 @@ export type UpdateCatalogProductApiArg = {
     durationDays: number | null
     /** Short wordmark on the product tile */
     mark: string
-    icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
     /** Run on the game server after payment */
     grantCommands: string[]
     /** Run when a TIMED product expires */
@@ -1171,6 +1181,7 @@ export type OrderCatalogProductsApiResponse = /** status 200 The list in its new
   slug: string
   kind: 'PERMANENT' | 'TIMED' | 'CASE'
   mark: string
+  /** The category's icon */
   icon: 'crown' | 'box' | 'coins' | 'swords' | 'pickaxe' | 'ticket'
   /** English name, or the slug while there is none */
   name: string

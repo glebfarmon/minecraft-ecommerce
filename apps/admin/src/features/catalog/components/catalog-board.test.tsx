@@ -35,7 +35,7 @@ jest.mock('./sortable-list', () => {
 const server = (
   id: string,
   name: string,
-  categories: {id: string; slug: string; name: string}[]
+  categories: {id: string; slug: string; name: string; icon: string}[]
 ) => ({
   id,
   slug: name.toLowerCase(),
@@ -50,9 +50,9 @@ const server = (
   rcon: null,
   rconPasswordSet: false
 })
-const ranks = {id: 'c-ranks', slug: 'ranks', name: 'Ranks'}
-const kits = {id: 'c-kits', slug: 'kits', name: 'Kits'}
-const tools = {id: 'c-tools', slug: 'tools', name: 'Tools'}
+const ranks = {id: 'c-ranks', slug: 'ranks', name: 'Ranks', icon: 'crown'}
+const kits = {id: 'c-kits', slug: 'kits', name: 'Kits', icon: 'pickaxe'}
+const tools = {id: 'c-tools', slug: 'tools', name: 'Tools', icon: 'crown'}
 const product = (id: string, name: string, extra: object = {}) => ({
   id,
   version: 1,

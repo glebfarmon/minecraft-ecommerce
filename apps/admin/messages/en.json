@@ -319,6 +319,8 @@
     "kind": "Kind",
     "durationDays": "Duration (days)",
     "icon": "Icon",
+    "iconFromCategory": "Icon comes from the category",
+    "iconOnEveryTile": "Drawn on every product tile in this category",
     "priceEUR": "Price EUR",
     "pricePLN": "Price PLN",
     "nameIn": "Name ({locale})",

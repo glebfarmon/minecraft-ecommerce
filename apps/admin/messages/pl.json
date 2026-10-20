@@ -319,6 +319,8 @@
     "kind": "Rodzaj",
     "durationDays": "Czas trwania (dni)",
     "icon": "Ikona",
+    "iconFromCategory": "Ikona pochodzi z kategorii",
+    "iconOnEveryTile": "Widoczna na każdym kafelku produktu w tej kategorii",
     "priceEUR": "Cena EUR",
     "pricePLN": "Cena PLN",
     "nameIn": "Nazwa ({locale})",

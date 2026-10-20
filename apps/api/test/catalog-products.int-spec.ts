@@ -36,7 +36,6 @@ describe('catalog products API', () => {
     kind: 'TIMED',
     durationDays: 30,
     mark: 'PRB',
-    icon: 'crown',
     grantCommands: ['lp user {nick} parent addtemp probe 30d'],
     revokeCommands: ['lp user {nick} parent remove probe'],
     prices: {EUR: 499, PLN: null},

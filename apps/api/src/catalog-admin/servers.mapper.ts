@@ -7,7 +7,12 @@ export const serverInclude = {
     orderBy: {sort: 'asc'},
     select: {
       category: {
-        select: {id: true, slug: true, translations: {where: {locale: 'en'}, select: {name: true}}}
+        select: {
+          id: true,
+          slug: true,
+          icon: true,
+          translations: {where: {locale: 'en'}, select: {name: true}}
+        }
       }
     }
   },
@@ -29,7 +34,8 @@ export const toAdminServer = (r: ServerRow, withRcon: boolean): AdminServer => (
   categories: r.categories.map(({category: c}) => ({
     id: c.id,
     slug: c.slug,
-    name: c.translations[0]?.name ?? c.slug
+    name: c.translations[0]?.name ?? c.slug,
+    icon: c.icon
   })),
   rcon: withRcon ? {host: r.rconHost, port: r.rconPort} : null,
   rconPasswordSet: r.rconPasswordEnc !== null

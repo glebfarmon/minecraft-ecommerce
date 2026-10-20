@@ -55,6 +55,7 @@ model Server {
 model Category {
   id           String                @id @default(cuid())
   slug         String                @unique
+  icon         ProductIcon           @default(crown)
   version      Int                   @default(1)
   translations CategoryTranslation[]
   servers      ServerCategory[]
@@ -93,7 +94,6 @@ model Product {
   kind           ProductKind
   durationDays   Int?
   mark           String
-  icon           ProductIcon
   grantCommands  String[]
   revokeCommands String[]
   isActive       Boolean              @default(true)

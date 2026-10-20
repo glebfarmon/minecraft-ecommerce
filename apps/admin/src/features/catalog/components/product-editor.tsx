@@ -35,7 +35,7 @@ import {
   useWatch
 } from 'react-hook-form'
 
-import {PRODUCT_ICONS, PRODUCT_KINDS} from '@shop/shared/catalog'
+import {PRODUCT_KINDS} from '@shop/shared/catalog'
 import {missingForActive} from '@shop/shared/catalog-admin'
 import {Button} from '@shop/ui/button'
 import {Checkbox} from '@shop/ui/checkbox'
@@ -120,6 +120,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   if (id && !product.data) return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
 
   const server = servers.data?.find(s => s.id === values.serverId)
+  // The tile icon belongs to the category; until one is chosen the preview shows the default.
+  const icon = server?.categories.find(c => c.id === values.categoryId)?.icon ?? 'crown'
   const busy = creating || updating || removing
 
   // Inactive tabs unmount, so show the tab holding a translation error, or Save looks dead.
@@ -212,7 +214,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           product={{
             name: values.translations.en.name || values.slug || t('newProduct'),
             mark: values.mark || values.translations.en.name || '',
-            icon: values.icon,
+            icon,
             kind: values.kind,
             isActive: values.isActive,
             // A half-typed price is not a number yet; show it as missing, not NaN.
@@ -285,7 +287,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   onValueChange={f.onChange}
                 />
               )}
-            />
+            />,
+            t('iconFromCategory')
           )}
           {field('slug', t('slug'), <Input {...fieldProps('slug')} {...register('slug')} />)}
           {field('mark', t('mark'), <Input {...fieldProps('mark')} {...register('mark')} />)}
@@ -319,22 +322,6 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 {...register('durationDays')}
               />
             )}
-          {field(
-            'icon',
-            t('icon'),
-            <Controller
-              control={control}
-              name="icon"
-              render={({field: f}) => (
-                <Select
-                  {...fieldProps('icon')}
-                  value={f.value}
-                  options={PRODUCT_ICONS.map(i => ({value: i, label: i}))}
-                  onValueChange={f.onChange}
-                />
-              )}
-            />
-          )}
           <div className="flex flex-wrap items-center gap-2 md:col-span-2">
             <Controller
               control={control}

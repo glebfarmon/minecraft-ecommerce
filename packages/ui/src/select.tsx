@@ -7,7 +7,8 @@ import * as React from 'react'
 
 import {cn} from './lib/utils'
 
-type Option = {value: string; label: string}
+/** `icon` is drawn before the label, in the list and in the closed field. */
+type Option = {value: string; label: string; icon?: React.ReactNode}
 
 /**
  * A designed select on Radix: the list unfolds out of the field and the highlight rolls between
@@ -92,7 +93,16 @@ function Select({
                       transition={{type: 'spring', bounce: 0, duration: 0.25}}
                     />
                   )}
-                  <SelectPrimitive.ItemText>{o.label}</SelectPrimitive.ItemText>
+                  <SelectPrimitive.ItemText>
+                    {o.icon ? (
+                      <span className="flex items-center gap-2">
+                        {o.icon}
+                        {o.label}
+                      </span>
+                    ) : (
+                      o.label
+                    )}
+                  </SelectPrimitive.ItemText>
                   <SelectPrimitive.ItemIndicator>
                     <svg aria-hidden viewBox="0 0 16 16" className="size-4 text-accent">
                       <path

@@ -139,7 +139,6 @@ describe('shared schemas keep their English messages', () => {
       slug: 'p',
       kind: 'PERMANENT',
       mark: 'm',
-      icon: 'crown',
       isActive: false,
       durationDays: null,
       prices: {EUR: null, PLN: null},

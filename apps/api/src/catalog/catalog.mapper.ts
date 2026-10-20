@@ -31,9 +31,9 @@ export type CatalogRows = {
     kind: ProductKind
     durationDays: number | null
     mark: string
-    icon: ProductIcon
     server: {slug: string}
-    category: {slug: string}
+    /** The product shows its category's icon. */
+    category: {slug: string; icon: ProductIcon}
     translations: Translated<{name: string; description: string; sections: unknown}>[]
     prices: {currency: Currency; amountMinor: number}[]
   }[]
@@ -84,7 +84,7 @@ export function toCatalogResponse(
         kind: p.kind,
         durationDays: p.durationDays,
         mark: p.mark,
-        icon: p.icon,
+        icon: p.category.icon,
         name: text.name,
         description: text.description,
         // Malformed JSON in the database fails the request (500, logged) rather than reaching the storefront.

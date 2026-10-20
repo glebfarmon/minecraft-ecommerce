@@ -188,17 +188,17 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
     get: op({
       operationId: 'listCatalogCategories',
       summary: 'All categories',
-      description: `Each with its English and Polish name, the servers it is attached to and its product count. ${read}`,
+      description: `Each with its English and Polish name, its icon, the servers it is attached to and its product count. ${read}`,
       responses: {'200': json('Categories', v.array(AdminCategorySchema)), ...guarded}
     }),
     post: op({
       operationId: 'createCatalogCategory',
       summary: 'Create a category',
-      description: `Both names are required. Attach it to servers with PUT /servers/{id}/categories. ${write}`,
+      description: `Both names and the icon (drawn on every product tile of the category) are required. Attach it to servers with PUT /servers/{id}/categories. ${write}`,
       requestBody: body(CategoryInputSchema),
       responses: {
         '201': json('The new category', AdminCategorySchema),
-        ...invalid('slug or names'),
+        ...invalid('slug, names or icon'),
         ...guarded,
         '409': {description: '`slug_taken`'}
       }
@@ -207,13 +207,13 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
   '/api/admin/catalog/categories/{id}': {
     patch: op({
       operationId: 'updateCatalogCategory',
-      summary: 'Rename a category',
-      description: `Changes slug and names. ${write} ${LIVE}`,
+      summary: 'Edit a category',
+      description: `Changes slug, names and icon. ${write} ${LIVE}`,
       parameters: [pathParam('id')],
       requestBody: body(CategoryUpdateSchema),
       responses: {
         '200': json('The updated category', AdminCategorySchema),
-        ...invalid('slug or names'),
+        ...invalid('slug, names or icon'),
         ...guarded,
         ...missing,
         ...slugTaken
@@ -250,7 +250,7 @@ export const catalogAdminPaths: Record<string, Partial<Record<Method, Operation>
     post: op({
       operationId: 'createCatalogProduct',
       summary: 'Create a product (disabled draft)',
-      description: `Created disabled and last in its category; prices and translations may still be missing. The category must be attached to the server. Commands may only use the \`{nick}\` placeholder. ${write}`,
+      description: `Created disabled and last in its category; the tile icon comes from the category. Prices and translations may still be missing. The category must be attached to the server. Commands may only use the \`{nick}\` placeholder. ${write}`,
       requestBody: body(ProductCreateSchema),
       responses: {
         '201': json('The new product', AdminProductSchema),

@@ -16,9 +16,8 @@ const product = (overrides: Partial<CatalogRows['products'][number]> = {}) => ({
   kind: 'TIMED' as const,
   durationDays: 30,
   mark: 'VIP',
-  icon: 'crown' as const,
   server: {slug: 'survival'},
-  category: {slug: 'ranks'},
+  category: {slug: 'ranks', icon: 'crown' as const},
   translations: [
     {locale: 'en' as const, name: 'VIP', description: 'EN text', sections: []},
     {
@@ -78,6 +77,15 @@ describe('toCatalogResponse', () => {
       sections: [{title: 'Zestawy', entries: []}],
       prices: {EUR: 499, PLN: 2199}
     })
+  })
+
+  it("takes each product's icon from its category", () => {
+    const kit = product({slug: 'starter', category: {slug: 'kits', icon: 'box'}})
+    const res = toCatalogResponse(rows([product(), kit]), 'en', jest.fn())
+    expect(res.products.map(p => [p.slug, p.icon])).toEqual([
+      ['vip', 'crown'],
+      ['starter', 'box']
+    ])
   })
 
   it('falls back to en for missing translations, keeping server category order', () => {

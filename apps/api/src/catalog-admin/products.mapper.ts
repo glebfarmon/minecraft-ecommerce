@@ -9,7 +9,12 @@ import {
 
 import type {Prisma} from '../generated/prisma/client'
 
-export const productInclude = {translations: true, prices: true} satisfies Prisma.ProductInclude
+export const productInclude = {
+  translations: true,
+  prices: true,
+  // The tile icon belongs to the category; the list shows it, the product itself has none.
+  category: {select: {icon: true}}
+} satisfies Prisma.ProductInclude
 export type ProductRow = Prisma.ProductGetPayload<{include: typeof productInclude}>
 
 const Sections = v.array(ProductSectionSchema)
@@ -43,7 +48,6 @@ export function toAdminProduct(r: ProductRow): AdminProduct {
     kind: r.kind,
     durationDays: r.durationDays,
     mark: r.mark,
-    icon: r.icon,
     isActive: r.isActive,
     grantCommands: r.grantCommands,
     revokeCommands: r.revokeCommands,
@@ -55,6 +59,7 @@ export function toAdminProduct(r: ProductRow): AdminProduct {
 
 export function toListItem(r: ProductRow): AdminProductListItem {
   const p = toAdminProduct(r)
+  const icon = r.category.icon
   return {
     id: p.id,
     version: p.version,
@@ -64,7 +69,7 @@ export function toListItem(r: ProductRow): AdminProductListItem {
     slug: p.slug,
     kind: p.kind,
     mark: p.mark,
-    icon: p.icon,
+    icon,
     name: p.translations.en?.name ?? p.slug,
     isActive: p.isActive,
     prices: p.prices,

@@ -18,11 +18,22 @@ import {valibotResolver} from '@hookform/resolvers/valibot'
 import {Tags} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import {useState} from 'react'
-import {type FieldErrors, type UseFormRegister, useForm, useFormState} from 'react-hook-form'
+import {
+  type Control,
+  Controller,
+  type FieldErrors,
+  type UseFormRegister,
+  useForm,
+  useFormState
+} from 'react-hook-form'
 
+import {PRODUCT_ICONS} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
+import {Select} from '@shop/ui/select'
+
+import {ProductIcon} from './product-icon'
 
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
 export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
@@ -37,7 +48,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   const [error, setError] = useMessage()
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
-    defaultValues: {slug: '', en: '', pl: ''}
+    defaultValues: {slug: '', en: '', pl: '', icon: 'crown' as const}
   })
   const {errors} = useFormState({control})
 
@@ -57,8 +68,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   }
 
   const onCreate = handleSubmit(async values => {
-    if (await run(create({body: {slug: values.slug, names: {en: values.en, pl: values.pl}}})))
-      reset()
+    const body = {slug: values.slug, names: {en: values.en, pl: values.pl}, icon: values.icon}
+    if (await run(create({body}))) reset()
   })
 
   const list = categories.data ?? []
@@ -75,7 +86,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       {canEdit && !editingCategory && (
         <form onSubmit={e => void onCreate(e)} noValidate>
           <FormSection title={t('newCategory')}>
-            <CategoryFields prefix="new" register={register} errors={errors} />
+            <CategoryFields prefix="new" register={register} control={control} errors={errors} />
             <div className="md:col-span-2">
               <Button type="submit" disabled={creating}>
                 {t('addCategory')}
@@ -99,6 +110,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
                   body: {
                     slug: values.slug,
                     names: {en: values.en, pl: values.pl},
+                    icon: values.icon,
                     version: editingCategory.version
                   }
                 })
@@ -185,18 +197,26 @@ const FIELDS = [
   {name: 'pl', label: 'polishName'}
 ] as const
 
+const ICON_OPTIONS = PRODUCT_ICONS.map(i => ({
+  value: i,
+  label: i,
+  icon: <ProductIcon name={i} className="size-4 shrink-0" />
+}))
+
 function CategoryFields({
   prefix,
   register,
+  control,
   errors
 }: {
   prefix: string
   register: UseFormRegister<CategoryForm>
+  control: Control<CategoryForm>
   errors: FieldErrors<CategoryForm>
 }) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
-  return FIELDS.map(({name, label}) => (
+  const texts = FIELDS.map(({name, label}) => (
     <div key={name} className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={`${prefix}-${name}`}>{t(label)}</Label>
       <Input
@@ -213,6 +233,27 @@ function CategoryFields({
       )}
     </div>
   ))
+  return (
+    <>
+      {texts}
+      <div className="flex min-w-0 flex-col gap-1">
+        <Label htmlFor={`${prefix}-icon`}>{t('icon')}</Label>
+        <Controller
+          control={control}
+          name="icon"
+          render={({field: f}) => (
+            <Select
+              id={`${prefix}-icon`}
+              value={f.value}
+              options={ICON_OPTIONS}
+              onValueChange={f.onChange}
+            />
+          )}
+        />
+        <p className="text-xs text-muted-foreground">{t('iconOnEveryTile')}</p>
+      </div>
+    </>
+  )
 }
 
 function EditForm({
@@ -227,7 +268,12 @@ function EditForm({
   const t = useTranslations('catalog')
   const {register, handleSubmit, control} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
-    defaultValues: {slug: category.slug, en: category.names.en, pl: category.names.pl}
+    defaultValues: {
+      slug: category.slug,
+      en: category.names.en,
+      pl: category.names.pl,
+      icon: category.icon
+    }
   })
   const {errors, isSubmitting} = useFormState({control})
 
@@ -239,7 +285,12 @@ function EditForm({
         if (e.key === 'Escape') onCancel()
       }}>
       <FormSection title={t('editName', {name: category.names.en})}>
-        <CategoryFields prefix={`edit-${category.id}`} register={register} errors={errors} />
+        <CategoryFields
+          prefix={`edit-${category.id}`}
+          register={register}
+          control={control}
+          errors={errors}
+        />
         <div className="flex gap-2 md:col-span-2">
           <Button type="submit" disabled={isSubmitting}>
             {t('save')}
