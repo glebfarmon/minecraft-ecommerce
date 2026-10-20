@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs'
 import path from 'node:path'
 
+import {Prisma} from '../src/generated/prisma/client'
 import {startCatalogApp} from './support/catalog-app'
 
 jest.setTimeout(180_000)
@@ -46,6 +47,23 @@ describe('orders schema', () => {
     const order = await newOrder()
     expect(order.status).toBe('PENDING')
     expect(order.items).toHaveLength(1)
+  })
+
+  it('an order stores a 4-decimal rate and both totals', async () => {
+    const order = await newOrder()
+    await ctx.prisma.order.update({
+      where: {id: order.id},
+      data: {
+        eurPlnRate: new Prisma.Decimal('4.2875'),
+        rateDate: new Date('2026-10-16'),
+        totalEurMinor: 499,
+        totalPlnMinor: 2140
+      }
+    })
+    const read = await ctx.prisma.order.findUniqueOrThrow({where: {id: order.id}})
+    expect(read.eurPlnRate?.toFixed(4)).toBe('4.2875')
+    expect(read.rateDate?.toISOString().slice(0, 10)).toBe('2026-10-16')
+    expect([read.totalEurMinor, read.totalPlnMinor]).toEqual([499, 2140])
   })
 
   it('refuses a duplicate webhook event id', async () => {
