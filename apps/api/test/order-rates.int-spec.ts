@@ -111,6 +111,18 @@ describe('order exchange rates', () => {
     expect((await read(id)).totalPlnMinor).not.toBeNull()
   })
 
+  it('keeps the first value when two fills with different rates race', async () => {
+    const id = await paidAt('2026-10-17T10:00:00Z')
+    const at = (rate: string) => () => Promise.resolve({rate, date: '2026-10-16'})
+    const [a, b] = await Promise.all([
+      service.fill(id, at('4.1000')),
+      service.fill(id, at('4.2000'))
+    ])
+    expect([a, b].sort()).toEqual(['filled', 'skipped'])
+    const winner = a === 'filled' ? '4.1000' : '4.2000'
+    expect((await read(id)).eurPlnRate?.toFixed(4)).toBe(winner)
+  })
+
   it('never recomputes a filled order', async () => {
     const id = await paidAt('2026-10-17T10:00:00Z')
     await service.fill(id)

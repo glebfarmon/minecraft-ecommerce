@@ -23,6 +23,7 @@ const stats = (over: Partial<Record<string, unknown>> = {}) => ({
   ltvMinor: 1800,
   buyers: 4,
   awaitingRate: 0,
+  previousAwaitingRate: 0,
   expiredCount: 1,
   conversion: 0.5,
   byStatus: [
@@ -149,6 +150,24 @@ describe('Dashboard', () => {
       requestedUrls(fetchMock).every(u => !u.includes('stats/orders') || u.includes('currency=PLN'))
     ).toBe(true)
     expect(screen.getByRole('tab', {name: 'PLN'})).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('hides the vs-previous delta when the previous period had orders without a rate', async () => {
+    mockApi(stats({previousAwaitingRate: 1}))
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('€12.50')
+    expect(revenue).not.toHaveTextContent('+25%')
+  })
+
+  it('rolls an indicator on the currency tabs', async () => {
+    mockApi(stats())
+    renderWithStore(<Dashboard />)
+    await screen.findByRole('region', {name: 'Revenue'})
+    const tab = screen
+      .getByRole('tablist', {name: 'Currency'})
+      .querySelector('[aria-selected="true"] [data-slot="tabs-indicator"]')
+    expect(tab).not.toBeNull()
   })
 
   it('shows dashes for average and LTV and a note while orders wait for a rate', async () => {

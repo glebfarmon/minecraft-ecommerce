@@ -98,6 +98,7 @@ describe('OrderStatsSchema', () => {
     ltvMinor: 2000,
     buyers: 1,
     awaitingRate: 0,
+    previousAwaitingRate: 0,
     expiredCount: 0,
     conversion: 1,
     byStatus: [{status: 'PAID', count: 2}],
@@ -110,6 +111,11 @@ describe('OrderStatsSchema', () => {
     expect(
       v.safeParse(OrderStatsSchema, {...stats, averageMinor: null, ltvMinor: null}).success
     ).toBe(true)
+  })
+  it('rejects a missing previousAwaitingRate', () => {
+    const rest: Partial<typeof stats> = {...stats}
+    delete rest.previousAwaitingRate
+    expect(v.safeParse(OrderStatsSchema, rest).success).toBe(false)
   })
   it('rejects a missing currency', () => {
     const rest: Partial<typeof stats> = {...stats}

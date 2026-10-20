@@ -17,7 +17,7 @@ import {
 import {delta, formatMoney, formatPercent} from '@/lib/format'
 import {PackageOpen, ReceiptText} from 'lucide-react'
 import Link from 'next/link'
-import {useState} from 'react'
+import {useState, useSyncExternalStore} from 'react'
 
 import {CURRENCIES, type Currency} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
@@ -39,8 +39,9 @@ function Kpis({stats}: {stats: Stats}) {
   // While orders wait for a rate the revenue is partial: no change figure, and a dash when
   // nothing is converted yet, never €0.00.
   const waiting = stats.awaitingRate > 0
+  const partialChange = waiting || stats.previousAwaitingRate > 0
   const noneConverted = waiting && stats.awaitingRate >= stats.paidCount
-  const change = waiting ? null : delta(stats.revenueMinor, stats.previousRevenueMinor)
+  const change = partialChange ? null : delta(stats.revenueMinor, stats.previousRevenueMinor)
   const paidChange = delta(stats.paidCount, stats.previousPaidCount)
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -54,7 +55,7 @@ function Kpis({stats}: {stats: Stats}) {
         }
         delta={change}
         hint={
-          waiting
+          partialChange
             ? 'Partial: some orders wait for a rate'
             : change === null
               ? 'No sales in the previous period'
@@ -216,7 +217,13 @@ function Loading() {
 export function Dashboard() {
   const [range, setRange] = useState<Range>('7d')
   const [currency, setCurrency] = useReportCurrency()
-  const query = useGetOrderStatsQuery({range, currency})
+  // The remembered currency is only known after hydration; fetching before it would ask for EUR first.
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  )
+  const query = useGetOrderStatsQuery({range, currency}, {skip: !hydrated})
   // `currentData`, not `data`: after a switch the previous currency's numbers must not be shown
   // under the new label while the new ones load.
   const stats = query.currentData

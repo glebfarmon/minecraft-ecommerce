@@ -22,6 +22,7 @@ type Stats = {
   ltvMinor: number | null
   buyers: number
   awaitingRate: number
+  previousAwaitingRate: number
   expiredCount: number
   conversion: number | null
   byStatus: {status: string; count: number}[]
@@ -192,6 +193,17 @@ describe('order stats', () => {
     expect(s.buyers).toBe(1)
     expect(s.ltvMinor).toBe(1000)
     expect(s.byCurrency).toEqual([{currency: 'EUR', count: 2, totalMinor: 6000}])
+  })
+
+  it('counts previous-period orders without a rate so the comparison can be flagged', async () => {
+    const now = new Date()
+    await order({status: 'PAID', at: new Date(now.getTime() - 9 * DAY)})
+    await order({status: 'PAID', at: new Date(now.getTime() - 9 * DAY), rate: null})
+    const s = await get()
+    expect(s.previousPaidCount).toBe(2)
+    expect(s.previousRevenueMinor).toBe(1000)
+    expect(s.previousAwaitingRate).toBe(1)
+    expect(s.awaitingRate).toBe(0)
   })
 
   it('has null average and LTV, not zero, while every paid order awaits a rate', async () => {
