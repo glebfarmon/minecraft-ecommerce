@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type {ReactNode} from 'react'
 
 import {BrandMark} from './_components/brand-mark'
+import {LanguageSwitch} from './_components/language-switch'
 import {Nav} from './_components/nav'
 import {TopBar} from './_components/top-bar'
 
@@ -15,6 +16,7 @@ export default async function ShellLayout({children}: {children: ReactNode}) {
         <BrandMark />
         <Nav me={me} variant="rail" />
         <span className="mt-auto" />
+        <LanguageSwitch orientation="vertical" />
         <Link
           href="/account"
           tabIndex={-1}

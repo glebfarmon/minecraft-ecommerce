@@ -7,5 +7,10 @@
     "back": "Back",
     "loading": "Loading…",
     "retry": "Retry"
+  },
+  "shell": {
+    "language": "Language",
+    "openMenu": "Open menu",
+    "menu": "Menu"
   }
 }
