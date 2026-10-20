@@ -112,7 +112,8 @@ describe('OrderStatsSchema', () => {
     ).toBe(true)
   })
   it('rejects a missing currency', () => {
-    const {currency: _currency, ...rest} = stats
+    const rest: Partial<typeof stats> = {...stats}
+    delete rest.currency
     expect(v.safeParse(OrderStatsSchema, rest).success).toBe(false)
   })
 })

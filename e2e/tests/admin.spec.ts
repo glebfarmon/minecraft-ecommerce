@@ -329,8 +329,16 @@ test('the owner sees the dashboard and can open an order row menu with the keybo
   page
 }) => {
   await signInOwner(page)
-  await expect(page.getByRole('region', {name: 'Revenue EUR'})).toBeVisible()
+  const revenue = page.getByRole('region', {name: 'Revenue', exact: true})
+  await expect(revenue).toBeVisible()
+  await expect(page.getByRole('region', {name: 'Average order'})).toBeVisible()
   await expect(page.getByRole('region', {name: 'Conversion'})).toBeVisible()
+  await expect(page.getByRole('region', {name: 'LTV'})).toBeVisible()
+  // One currency for the whole dashboard (default EUR); the e2e stack uses the fixed 4.3000 rate.
+  await expect(revenue).toContainText('€')
+  await page.getByRole('tablist', {name: 'Currency'}).getByRole('tab', {name: 'PLN'}).click()
+  await expect(revenue).toContainText('PLN')
+  await expect(revenue).not.toContainText('€')
 
   await page.getByRole('link', {name: 'Orders'}).click()
   await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
