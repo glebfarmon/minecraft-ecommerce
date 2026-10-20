@@ -2,6 +2,7 @@
 
 import {type RconForm, RconFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type GetCatalogServerApiResponse,
   useTestCatalogServerRconMutation,
@@ -27,7 +28,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
   const errorText = useErrorText()
   const [updateRcon, {isLoading: saving}] = useUpdateCatalogServerRconMutation()
   const [testRcon, {isLoading: testing}] = useTestCatalogServerRconMutation()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [saved, setSaved] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
 

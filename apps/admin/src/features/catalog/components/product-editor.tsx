@@ -12,6 +12,7 @@ import {
 } from '@/features/catalog/lib/product-form'
 import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useCreateCatalogProductMutation,
   useDeleteCatalogProductMutation,
@@ -73,7 +74,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const [create, {isLoading: creating}] = useCreateCatalogProductMutation()
   const [update, {isLoading: updating}] = useUpdateCatalogProductMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogProductMutation()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'en' | 'pl'>('en')

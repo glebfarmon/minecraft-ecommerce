@@ -3,6 +3,7 @@
 import {editionDate} from '@/features/content/lib/edition-date'
 import {RESTORE_RULES_KEY} from '@/features/content/lib/rules-form'
 import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type ListRulesVersionsApiResponse,
   useListRulesVersionsQuery,
@@ -25,7 +26,7 @@ export function VersionsList() {
   const [restore, {isLoading: restoring}] = useRestoreRulesVersionMutation({
     fixedCacheKey: RESTORE_RULES_KEY
   })
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [restored, setRestored] = useState(false)
 
   async function onRestore(id: number) {

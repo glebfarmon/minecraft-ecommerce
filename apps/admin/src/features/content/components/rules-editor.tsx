@@ -13,6 +13,7 @@ import {
   formToDocument
 } from '@/features/content/lib/rules-form'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useGetRulesDraftQuery,
   usePublishRulesMutation,
@@ -77,8 +78,8 @@ export function RulesEditor() {
   const [publish, {isLoading: publishing}] = usePublishRulesMutation()
   // The versions list runs the restore; sharing its state hands the restored draft to this form.
   const [, restored] = useRestoreRulesVersionMutation({fixedCacheKey: RESTORE_RULES_KEY})
-  const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useMessage()
+  const [status, setStatus] = useMessage()
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [tab, setTab] = useState<Locale>('en')
 

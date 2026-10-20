@@ -53,7 +53,21 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
               <button
                 type="button"
                 role="radio"
+                lang={locale}
+                aria-label={name}
                 aria-checked={checked}
+                tabIndex={checked ? 0 : -1}
+                onKeyDown={e => {
+                  const step = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key]
+                  if (step === undefined) return
+                  e.preventDefault()
+                  const next =
+                    OPTIONS[
+                      (OPTIONS.findIndex(o => o.locale === locale) + step + OPTIONS.length) %
+                        OPTIONS.length
+                    ]
+                  if (next) choose(next.locale)
+                }}
                 onClick={() => {
                   choose(locale)
                 }}

@@ -6,6 +6,7 @@ import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type ListContentMessagesApiResponse,
   useListContentMessagesQuery,
@@ -117,7 +118,7 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
   const [set, {isLoading: saving}] = useSetContentMessageMutation()
   const [reset, {isLoading: resetting}] = useResetContentMessageMutation()
   const [draft, setDraft] = useState(message.override ?? '')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const busy = saving || resetting
   const errorId = `override-${locale}-${message.key}-error`
   const fieldProps = {

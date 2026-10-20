@@ -3,6 +3,7 @@
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema, EmailSchema} from '@/features/auth/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
@@ -25,7 +26,7 @@ export function SignInForm({
   const errorText = useErrorText()
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const emailForm = useForm({
     resolver: valibotResolver(EmailSchema),
     defaultValues: {email: invited ?? ''}

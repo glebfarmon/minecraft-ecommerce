@@ -150,7 +150,7 @@
     "days7": "7 dni",
     "days30": "30 dni",
     "statsFailed": "Nie udało się wczytać statystyk. Spróbuj ponownie.",
-    "awaitingRate": "{count, plural, one {# zamówienie czeka} few {# zamówienia czekają} many {# zamówień czeka} other {# zamówienia czeka}} na kurs wymiany — nie wlicza się jeszcze do sum."
+    "awaitingRate": "{count, plural, one {# zamówienie czeka} few {# zamówienia czekają} many {# zamówień czeka} other {# zamówienia czeka}} na kurs wymiany — nie są jeszcze wliczane do sum."
   },
   "orders": {
     "title": "Zamówienia",
@@ -459,7 +459,7 @@
     "inviteStatusExpired": "Wygasłe",
     "inviteStatusOpen": "Otwarte",
     "confirmSaveRole": "Zapisać {name}? Wszyscy z tą rolą zostaną wylogowani.",
-    "confirmDeleteRole": "Usunąć {name}? Się nie uda, dopóki rola jest używana.",
+    "confirmDeleteRole": "Usunąć {name}? Nie uda się, dopóki rola jest używana.",
     "saveRole": "Zapisz rolę",
     "deleteRole": "Usuń rolę",
     "saveName": "Zapisz {name}",

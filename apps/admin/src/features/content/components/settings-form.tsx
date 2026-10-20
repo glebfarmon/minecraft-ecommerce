@@ -4,6 +4,7 @@ import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/content/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
@@ -22,7 +23,7 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
   const apiError = useApiError()
   const settings = useGetContentSettingsQuery()
   const [update, {isLoading: saving}] = useUpdateContentSettingsMutation()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [saved, setSaved] = useState(false)
 
   const form = useForm<SettingsForm>({

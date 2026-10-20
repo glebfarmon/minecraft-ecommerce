@@ -3,6 +3,7 @@
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {BackupSchema, CodeSchema} from '@/features/auth/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
@@ -19,7 +20,7 @@ export function TotpChallenge() {
   const errorText = useErrorText()
   const router = useRouter()
   const [useBackup, setUseBackup] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const form = useForm({
     resolver: valibotResolver(useBackup ? BackupSchema : CodeSchema),
     defaultValues: {code: ''}

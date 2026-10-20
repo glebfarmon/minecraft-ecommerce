@@ -7,6 +7,7 @@ import {ToneDot} from '@/components/status-dot'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useCreateCatalogServerMutation,
   useDeleteCatalogServerMutation,
@@ -49,7 +50,7 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
   const [create, {isLoading: creating}] = useCreateCatalogServerMutation()
   const [update, {isLoading: updating}] = useUpdateCatalogServerMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogServerMutation()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 

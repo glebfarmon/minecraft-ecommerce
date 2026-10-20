@@ -4,6 +4,7 @@ import {BackupCodes} from '@/features/auth/components/backup-codes'
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema} from '@/features/auth/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
@@ -33,7 +34,7 @@ export function TotpSetup() {
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const form = useForm({resolver: valibotResolver(CodeSchema), defaultValues: {code: ''}})
   const errors = useFormState({control: form.control}).errors
 

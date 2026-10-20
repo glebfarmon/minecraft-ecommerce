@@ -1,4 +1,5 @@
 import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {useState} from 'react'
 
 /**
@@ -15,7 +16,7 @@ export function useOptimisticOrder<T extends {id: string}>(
   const baseIds = items.map(i => i.id)
   const base = baseIds.join('\n')
   const [pending, setPending] = useState<{base: string; ids: string[]} | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   const ordered =
     pending?.base === base ? pending.ids.flatMap(id => items.filter(i => i.id === id)) : [...items]

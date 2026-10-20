@@ -4,6 +4,7 @@ import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {RoleNameSchema} from '@/features/team/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useDeleteApiAdminRolesByIdMutation,
   useGetApiAdminRolesQuery,
@@ -50,7 +51,7 @@ export function RolesMatrix({
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({})
   const [newPermissions, setNewPermissions] = useState<Permission[]>([])
   const [confirming, setConfirming] = useState<{id: string; kind: 'save' | 'delete'} | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(RoleNameSchema),

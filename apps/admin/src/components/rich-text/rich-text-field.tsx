@@ -153,6 +153,7 @@ export function RichTextField({
   'aria-labelledby'?: string
 }) {
   const options = useMemo(() => ({multiline, links}), [multiline, links])
+  const placeholderText = useRef(placeholder ?? '')
   const latest = useRef({onChange, onReady})
   // The markdown the editor last held. The editor is created from the first render's value and
   // fires `update` once while mounting; that is not an edit, so it must not reach the form.
@@ -172,7 +173,8 @@ export function RichTextField({
       PlainItalic,
       Underline,
       UndoRedo,
-      Placeholder.configure({placeholder: placeholder ?? ''}),
+      // eslint-disable-next-line react-hooks/refs -- read lazily when the extension draws, not during render
+      Placeholder.configure({placeholder: () => placeholderText.current}),
       ...(multiline ? [HardBreak] : []),
       ...(links
         ? [
@@ -220,6 +222,13 @@ export function RichTextField({
   useEffect(() => {
     editor?.setEditable(!disabled)
   }, [editor, disabled])
+
+  // The extension asks for the text when it draws, so a new text (the admin switched language)
+  // needs only the ref changed and one empty transaction to redraw.
+  useEffect(() => {
+    placeholderText.current = placeholder ?? ''
+    editor?.view.dispatch(editor.state.tr)
+  }, [editor, placeholder])
 
   // A form reset or a tab switch changes `value` from outside; typing never trips this.
   useEffect(() => {

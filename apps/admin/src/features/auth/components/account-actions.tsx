@@ -2,6 +2,7 @@
 
 import {Card} from '@/components/card'
 import {BackupCodes} from '@/features/auth/components/backup-codes'
+import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
@@ -13,7 +14,7 @@ export function AccountActions() {
   const t = useTranslations('auth')
   const router = useRouter()
   const [codes, setCodes] = useState<string[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   async function regenerate() {
     setError(null)

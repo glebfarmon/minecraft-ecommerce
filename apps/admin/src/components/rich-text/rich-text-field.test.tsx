@@ -329,4 +329,24 @@ describe('RichTextField', () => {
     })
     expect(screen.getByRole('textbox').querySelector('a')).toBeNull()
   })
+
+  it('shows a changed placeholder without being rebuilt', async () => {
+    const field = (placeholder: string) => (
+      <RichTextField id="ph" value="" onChange={jest.fn()} placeholder={placeholder} />
+    )
+    const {rerender, container} = render(field('Uses the English text'))
+    await waitFor(() => {
+      expect(container.querySelector('[data-placeholder]')).toHaveAttribute(
+        'data-placeholder',
+        'Uses the English text'
+      )
+    })
+    rerender(field('Używa tekstu angielskiego'))
+    await waitFor(() => {
+      expect(container.querySelector('[data-placeholder]')).toHaveAttribute(
+        'data-placeholder',
+        'Używa tekstu angielskiego'
+      )
+    })
+  })
 })

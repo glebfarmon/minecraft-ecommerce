@@ -4,6 +4,7 @@ import {DataTable} from '@/components/data-table'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useDeleteApiAdminAdminsByIdMutation,
   useGetApiAdminAdminsQuery,
@@ -38,7 +39,7 @@ export function AdminsTable({
   const [reset] = usePostApiAdminAdminsByIdReset2FaMutation()
   const [changeRole] = usePatchApiAdminAdminsByIdRoleMutation()
   const [pending, setPending] = useState<Pending | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
 
   if (admins.isLoading) return <SkeletonRows rows={3} />
   if (admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>

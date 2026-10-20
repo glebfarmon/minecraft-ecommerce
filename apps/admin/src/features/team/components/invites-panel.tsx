@@ -7,6 +7,7 @@ import {SkeletonRows} from '@/components/skeleton'
 import {type Tone, ToneDot} from '@/components/status-dot'
 import {InviteFormSchema} from '@/features/team/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   useDeleteApiAdminInvitesByIdMutation,
   useGetApiAdminInvitesQuery,
@@ -54,9 +55,9 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   const [resend] = usePostApiAdminInvitesByIdResendMutation()
   const [cancel] = useDeleteApiAdminInvitesByIdMutation()
   const [roleId, setRoleId] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [confirming, setConfirming] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useMessage()
 
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(InviteFormSchema),

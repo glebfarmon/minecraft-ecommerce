@@ -18,6 +18,10 @@ const ESM_PACKAGES = ['next-intl', 'use-intl', 'intl-messageformat', 'icu-minify
 
 export default async () => {
   const resolved = await config()
+  if (!resolved.transformIgnorePatterns.some(pattern => pattern.includes('geist')))
+    throw new Error(
+      'jest.config.mjs: next/jest no longer lists geist in transformIgnorePatterns; update the ESM allow-list hook.'
+    )
   return {
     ...resolved,
     transformIgnorePatterns: resolved.transformIgnorePatterns.map(pattern =>

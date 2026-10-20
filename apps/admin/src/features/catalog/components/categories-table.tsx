@@ -6,6 +6,7 @@ import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type ListCatalogCategoriesApiResponse,
   useCreateCatalogCategoryMutation,
@@ -33,7 +34,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   const [remove] = useDeleteCatalogCategoryMutation()
   const [editing, setEditing] = useState<string | null>(initialEdit ?? null)
   const [confirming, setConfirming] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
     defaultValues: {slug: '', en: '', pl: ''}

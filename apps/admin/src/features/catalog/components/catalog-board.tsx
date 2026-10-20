@@ -4,6 +4,7 @@ import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {useApiError} from '@/hooks/use-error-text'
+import {useMessage} from '@/hooks/use-message'
 import {
   type ListCatalogProductsApiResponse,
   type ListCatalogServersApiResponse,
@@ -92,7 +93,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
   const categories = useOptimisticOrder(server.categories, (categoryIds, base) =>
     setCategories({id: server.id, body: {categoryIds, base}})
   )
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useMessage()
   const [attach, setAttach] = useState('')
 
   /** Attach or detach, starting from the list as shown; the API refuses it if that is out of date. */
