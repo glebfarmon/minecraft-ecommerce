@@ -332,6 +332,9 @@ importers:
       eslint:
         specifier: ^9.39.5
         version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
+      intl-messageformat:
+        specifier: 11.2.15
+        version: 11.2.15
       jest:
         specifier: ^30.5.2
         version: 30.5.2(@types/node@26.6.3)(supports-color@8.1.1)
