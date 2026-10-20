@@ -331,6 +331,10 @@ model Order {
   stripeSessionId   String?     @unique
   deliveryConsentAt DateTime
   paidAt            DateTime?
+  eurPlnRate        Decimal?    @db.Decimal(10, 4)
+  rateDate          DateTime?   @db.Date
+  totalEurMinor     Int?
+  totalPlnMinor     Int?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   items             OrderItem[]
