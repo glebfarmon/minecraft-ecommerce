@@ -5,7 +5,7 @@ const json = (body: unknown, status = 200) =>
 
 describe('NbpRates', () => {
   it('asks for the ten days before the day and returns the last table', async () => {
-    const fetchFn = jest.fn(() =>
+    const fetchFn = jest.fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>(() =>
       json({
         rates: [
           {effectiveDate: '2026-10-15', mid: 4.2811},
