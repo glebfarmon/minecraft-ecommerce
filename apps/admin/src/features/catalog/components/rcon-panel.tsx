@@ -1,7 +1,7 @@
 'use client'
 
 import {type RconForm, RconFormSchema} from '@/features/catalog/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
 import {
   type GetCatalogServerApiResponse,
   useTestCatalogServerRconMutation,
@@ -26,6 +26,7 @@ const TEST_ERRORS: Record<string, string> = {
 }
 
 export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
+  const apiError = useApiError()
   const [updateRcon, {isLoading: saving}] = useUpdateCatalogServerRconMutation()
   const [testRcon, {isLoading: testing}] = useTestCatalogServerRconMutation()
   const [error, setError] = useState<string | null>(null)
@@ -58,7 +59,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
       }
     })
     if (res.error) {
-      setError(apiErrorMessage(res.error))
+      setError(apiError(res.error))
       return
     }
     setValue('password', '')
@@ -71,7 +72,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
     setSaved(false)
     setResult(null)
     const res = await testRcon({id: server.id})
-    if (res.error) setError(apiErrorMessage(res.error))
+    if (res.error) setError(apiError(res.error))
     else if (res.data.ok === true && 'ms' in res.data) setResult({ok: true, ms: res.data.ms})
     else setResult({ok: false, error: 'error' in res.data ? res.data.error : 'unreachable'})
   }

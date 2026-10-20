@@ -6,7 +6,7 @@ import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
 import {type Tone, ToneDot} from '@/components/status-dot'
 import {InviteFormSchema} from '@/features/team/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   useDeleteApiAdminInvitesByIdMutation,
   useGetApiAdminInvitesQuery,
@@ -43,6 +43,8 @@ function statusOf(invite: InviteRow): 'Accepted' | 'Revoked' | 'Expired' | 'Open
 }
 
 export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]}) {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const invites = useGetApiAdminInvitesQuery()
   const roles = useGetApiAdminRolesQuery()
   const [create, {isLoading: creating}] = usePostApiAdminInvitesMutation()
@@ -68,7 +70,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
     setError(null)
     setNotice(null)
     const result = await action
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else if (done) setNotice(done)
     return !result.error
   }
@@ -96,7 +98,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
             />
             {errors.email && (
               <p id="invite-email-error" role="alert" className="text-xs text-destructive">
-                {errors.email.message}
+                {errorText(errors.email.message)}
               </p>
             )}
           </div>

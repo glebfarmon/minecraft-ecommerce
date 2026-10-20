@@ -11,7 +11,7 @@ import {
   productToForm
 } from '@/features/catalog/lib/product-form'
 import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   useCreateCatalogProductMutation,
   useDeleteCatalogProductMutation,
@@ -64,6 +64,8 @@ const LOCALES = [
 type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: boolean}
 
 export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const router = useRouter()
   const product = useGetCatalogProductQuery({id: id ?? ''}, {skip: !id})
   const servers = useListCatalogServersQuery()
@@ -132,14 +134,14 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     if (blocked) return
     if (!id) {
       const result = await create({body: formToCreate(v)})
-      if (result.error) setError(apiErrorMessage(result.error))
+      if (result.error) setError(apiError(result.error))
       else router.replace(`/catalog/products/${result.data.id}`)
       return
     }
     if (version.current === null) return
     const result = await update({id, body: formToUpdate(v, version.current)})
     if (result.error) {
-      setError(apiErrorMessage(result.error))
+      setError(apiError(result.error))
       return
     }
     version.current = result.data.version
@@ -151,12 +153,12 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else router.push('/catalog')
   }
 
   const errorOf = (name: FieldPath<ProductForm>) =>
-    (get(errors, name) as FieldError | undefined)?.message
+    errorText((get(errors, name) as FieldError | undefined)?.message)
   const fieldProps = (name: FieldPath<ProductForm>) => ({
     'id': fieldId(name),
     'aria-invalid': errorOf(name) ? true : undefined,

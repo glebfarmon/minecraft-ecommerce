@@ -5,7 +5,7 @@ import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
 import {
   type ListContentMessagesApiResponse,
   useListContentMessagesQuery,
@@ -111,6 +111,7 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
 }
 
 function TextRow({locale, message}: {locale: Locale; message: Message}) {
+  const apiError = useApiError()
   const [set, {isLoading: saving}] = useSetContentMessageMutation()
   const [reset, {isLoading: resetting}] = useResetContentMessageMutation()
   const [draft, setDraft] = useState(message.override ?? '')
@@ -130,13 +131,13 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
   async function onSave() {
     setError(null)
     const result = await set({locale, key: message.key, body: {value: draft}})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
   }
 
   async function onReset() {
     setError(null)
     const result = await reset({locale, key: message.key})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else setDraft('')
   }
 

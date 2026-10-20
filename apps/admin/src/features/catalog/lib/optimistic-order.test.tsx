@@ -1,6 +1,10 @@
-import {act, renderHook} from '@testing-library/react'
+import {IntlWrapper} from '@/test/render-with-providers'
+import {act, renderHook as renderHookBare} from '@testing-library/react'
 
 import {useOptimisticOrder} from './optimistic-order'
+
+const renderHook: typeof renderHookBare = (hook, options) =>
+  renderHookBare(hook, {wrapper: IntlWrapper, ...options})
 
 const a = {id: 'a'}
 const b = {id: 'b'}

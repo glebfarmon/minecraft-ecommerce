@@ -3,7 +3,7 @@
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {RoleNameSchema} from '@/features/team/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   useDeleteApiAdminRolesByIdMutation,
   useGetApiAdminRolesQuery,
@@ -39,6 +39,8 @@ export function RolesMatrix({
   /** Permissions the viewer holds; others are disabled (the API enforces it too). */
   held?: readonly Permission[]
 }) {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const roles = useGetApiAdminRolesQuery()
   const [createRole, {isLoading: creating}] = usePostApiAdminRolesMutation()
   const [updateRole] = usePatchApiAdminRolesByIdMutation()
@@ -60,7 +62,7 @@ export function RolesMatrix({
   async function run(action: Promise<{error?: unknown}>) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     return !result.error
   }
 
@@ -205,7 +207,7 @@ export function RolesMatrix({
               />
               {errors.name && (
                 <p id="role-name-error" role="alert" className="text-sm text-destructive">
-                  {errors.name.message}
+                  {errorText(errors.name.message)}
                 </p>
               )}
             </div>

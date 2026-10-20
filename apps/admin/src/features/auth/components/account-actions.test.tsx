@@ -1,8 +1,12 @@
 import {authClient} from '@/lib/auth-client'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {renderWithProviders} from '@/test/render-with-providers'
+import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {useRouter} from 'next/navigation'
+import type {ReactElement} from 'react'
 
 import {AccountActions} from './account-actions'
+
+const render = (ui: ReactElement) => renderWithProviders(ui, {store: false})
 
 jest.mock('@/lib/auth-client', () => ({
   authClient: {twoFactor: {generateBackupCodes: jest.fn()}, revokeSessions: jest.fn()}

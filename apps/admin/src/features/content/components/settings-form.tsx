@@ -3,7 +3,7 @@
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/content/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {type ReactNode, useEffect, useRef, useState} from 'react'
@@ -16,6 +16,8 @@ import {Label} from '@shop/ui/label'
 const EMPTY: SettingsForm = {plain: '', accent: '', serverIp: '', discordUrl: '', supportEmail: ''}
 
 export function SettingsForm({canEdit}: {canEdit: boolean}) {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const settings = useGetContentSettingsQuery()
   const [update, {isLoading: saving}] = useUpdateContentSettingsMutation()
   const [error, setError] = useState<string | null>(null)
@@ -51,14 +53,14 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
     if (version.current === null) return
     const result = await update({body: {...toSettings(v), version: version.current}})
     if (result.error) {
-      setError(apiErrorMessage(result.error))
+      setError(apiError(result.error))
       return
     }
     version.current = result.data.version
     setSaved(true)
   }
 
-  const errorOf = (name: FieldPath<SettingsForm>) => errors[name]?.message
+  const errorOf = (name: FieldPath<SettingsForm>) => errorText(errors[name]?.message)
   const fieldProps = (name: FieldPath<SettingsForm>) => ({
     'id': `settings-${name}`,
     'aria-invalid': errorOf(name) ? true : undefined,

@@ -2,6 +2,7 @@
 
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema, EmailSchema} from '@/features/auth/schemas'
+import {useErrorText} from '@/hooks/use-error-text'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useRouter} from 'next/navigation'
@@ -19,6 +20,7 @@ export function SignInForm({
   email?: string
   googleEnabled: boolean
 }) {
+  const errorText = useErrorText()
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +84,7 @@ export function SignInForm({
           />
           {emailErrors.email && (
             <p id="email-error" role="alert" className="text-sm text-destructive">
-              {emailErrors.email.message}
+              {errorText(emailErrors.email.message)}
             </p>
           )}
           {error && (
@@ -108,7 +110,7 @@ export function SignInForm({
           />
           {codeErrors.code && (
             <p id="code-error" role="alert" className="text-sm text-destructive">
-              {codeErrors.code.message}
+              {errorText(codeErrors.code.message)}
             </p>
           )}
           {error && (

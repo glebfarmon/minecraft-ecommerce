@@ -3,7 +3,7 @@
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
 import {
   type ListCatalogProductsApiResponse,
   type ListCatalogServersApiResponse,
@@ -82,6 +82,7 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
 }
 
 function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
+  const apiError = useApiError()
   const [setCategories] = useSetCatalogServerCategoriesMutation()
   const allCategories = useListCatalogCategoriesQuery()
   const products = useListCatalogProductsQuery({serverId: server.id})
@@ -98,7 +99,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
       id: server.id,
       body: {categoryIds: ids, base: categories.base}
     })
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
   }
 
   const unattached = (allCategories.data ?? []).filter(

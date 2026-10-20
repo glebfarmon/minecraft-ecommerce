@@ -12,7 +12,7 @@ import {
   emptySection,
   formToDocument
 } from '@/features/content/lib/rules-form'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   useGetRulesDraftQuery,
   usePublishRulesMutation,
@@ -73,6 +73,8 @@ const textPath = (section: number, locale: Locale, item?: number) =>
 const fieldId = (name: string) => `rules-${name.replace(/\./g, '-')}`
 
 export function RulesEditor() {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const draft = useGetRulesDraftQuery()
   const [save, {isLoading: saving}] = useSaveRulesDraftMutation()
   const [publish, {isLoading: publishing}] = usePublishRulesMutation()
@@ -151,7 +153,7 @@ export function RulesEditor() {
     if (revision.current === null) return
     const result = await save({body: {content, revision: revision.current}})
     if (result.error) {
-      setError(isStale(result.error) ? STALE : apiErrorMessage(result.error))
+      setError(isStale(result.error) ? STALE : apiError(result.error))
       return
     }
     revision.current = result.data.revision
@@ -168,13 +170,13 @@ export function RulesEditor() {
     // The revision this form shows: if someone saved since, the API refuses (409) instead of
     // publishing their edit unseen.
     const result = await publish({body: {revision: revision.current}})
-    if (result.error) setError(isStale(result.error) ? STALE : apiErrorMessage(result.error))
+    if (result.error) setError(isStale(result.error) ? STALE : apiError(result.error))
     else setStatus(PUBLISHED)
   }
 
   const rootError = (() => {
     const {errors} = form.formState
-    return hasArrayError(errors, 'sections') ? SECTIONS_LIMIT : errors.root?.message
+    return hasArrayError(errors, 'sections') ? SECTIONS_LIMIT : errorText(errors.root?.message)
   })()
 
   return (
@@ -418,10 +420,11 @@ function TextField({
   hideLabel?: boolean
   className?: string
 }) {
+  const errorText = useErrorText()
   // Undefined for a moment after a remove or reset.
   const value = useWatch({control, name}) as string | undefined
   const {errors} = useFormState({control, name})
-  const error = (get(errors, name) as FieldError | undefined)?.message
+  const error = errorText((get(errors, name) as FieldError | undefined)?.message)
   const id = fieldId(name)
   // An empty PL text is fine: the site shows the English one (and so does the preview).
   const hint = name.endsWith('.pl') && !(value ?? '').trim() ? FALLBACK : undefined

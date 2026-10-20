@@ -6,7 +6,7 @@ import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   useCreateCatalogServerMutation,
   useDeleteCatalogServerMutation,
@@ -40,6 +40,8 @@ const EMPTY: ServerForm = {
 }
 
 export function ServerEditor({id, canEdit, canRcon}: Props) {
+  const errorText = useErrorText()
+  const apiError = useApiError()
   const router = useRouter()
   const server = useGetCatalogServerQuery({id: id ?? ''}, {skip: !id})
   const [create, {isLoading: creating}] = useCreateCatalogServerMutation()
@@ -84,14 +86,14 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     if (!id) {
       const {slug, name, accent, onAccent} = v
       const result = await create({body: {slug, name, accent, onAccent}})
-      if (result.error) setError(apiErrorMessage(result.error))
+      if (result.error) setError(apiError(result.error))
       else router.replace(`/catalog/servers/${result.data.id}`)
       return
     }
     if (version.current === null) return
     const result = await update({id, body: {...v, version: version.current}})
     if (result.error) {
-      setError(apiErrorMessage(result.error))
+      setError(apiError(result.error))
       return
     }
     version.current = result.data.version
@@ -103,11 +105,11 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else router.push('/catalog')
   }
 
-  const errorOf = (name: FieldPath<ServerForm>) => errors[name]?.message
+  const errorOf = (name: FieldPath<ServerForm>) => errorText(errors[name]?.message)
   const fieldProps = (name: FieldPath<ServerForm>) => ({
     'id': `server-${name}`,
     'aria-invalid': errorOf(name) ? true : undefined,

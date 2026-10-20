@@ -3,6 +3,7 @@
 import {BackupCodes} from '@/features/auth/components/backup-codes'
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {CodeSchema} from '@/features/auth/schemas'
+import {useErrorText} from '@/hooks/use-error-text'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useRouter} from 'next/navigation'
@@ -25,6 +26,7 @@ function secretOf(totpURI: string): string {
 }
 
 export function TotpSetup() {
+  const errorText = useErrorText()
   const router = useRouter()
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -110,7 +112,7 @@ export function TotpSetup() {
       />
       {errors.code && (
         <p id="code-error" role="alert" className="text-sm text-destructive">
-          {errors.code.message}
+          {errorText(errors.code.message)}
         </p>
       )}
       {error && (

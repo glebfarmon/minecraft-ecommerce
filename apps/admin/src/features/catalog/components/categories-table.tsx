@@ -5,7 +5,7 @@ import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {
   type ListCatalogCategoriesApiResponse,
   useCreateCatalogCategoryMutation,
@@ -24,6 +24,7 @@ import {Label} from '@shop/ui/label'
 
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
 export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
+  const apiError = useApiError()
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
   const [update] = useUpdateCatalogCategoryMutation()
@@ -48,7 +49,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   async function run(action: Promise<{error?: unknown}>) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     return !result.error
   }
 
@@ -190,6 +191,7 @@ function CategoryFields({
   register: UseFormRegister<CategoryForm>
   errors: FieldErrors<CategoryForm>
 }) {
+  const errorText = useErrorText()
   return FIELDS.map(({name, label}) => (
     <div key={name} className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={`${prefix}-${name}`}>{label}</Label>
@@ -202,7 +204,7 @@ function CategoryFields({
       />
       {errors[name] && (
         <p id={`${prefix}-${name}-error`} className="text-xs text-destructive">
-          {errors[name].message}
+          {errorText(errors[name].message)}
         </p>
       )}
     </div>

@@ -23,6 +23,10 @@
       "types": "./dist/rules.d.ts",
       "default": "./dist/rules.js"
     },
+    "./validation-messages": {
+      "types": "./dist/validation-messages.d.ts",
+      "default": "./dist/validation-messages.js"
+    },
     "./catalog": {
       "types": "./dist/catalog.d.ts",
       "default": "./dist/catalog.js"

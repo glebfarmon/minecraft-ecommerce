@@ -2,6 +2,7 @@
 
 import {codeErrorMessage} from '@/features/auth/error-message'
 import {BackupSchema, CodeSchema} from '@/features/auth/schemas'
+import {useErrorText} from '@/hooks/use-error-text'
 import {authClient} from '@/lib/auth-client'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useRouter} from 'next/navigation'
@@ -13,6 +14,7 @@ import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
 export function TotpChallenge() {
+  const errorText = useErrorText()
   const router = useRouter()
   const [useBackup, setUseBackup] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +49,7 @@ export function TotpChallenge() {
       />
       {errors.code && (
         <p id="code-error" role="alert" className="text-sm text-destructive">
-          {errors.code.message}
+          {errorText(errors.code.message)}
         </p>
       )}
       {error && (

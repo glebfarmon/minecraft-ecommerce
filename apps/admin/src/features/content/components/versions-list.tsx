@@ -2,7 +2,7 @@
 
 import {editionDate} from '@/features/content/lib/edition-date'
 import {RESTORE_RULES_KEY} from '@/features/content/lib/rules-form'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
 import {
   type ListRulesVersionsApiResponse,
   useListRulesVersionsQuery,
@@ -17,6 +17,7 @@ type Restore = (id: number) => Promise<void>
 
 /** Published editions, newest first, each one restorable into the draft. */
 export function VersionsList() {
+  const apiError = useApiError()
   const first = useListRulesVersionsQuery({})
   // The editor takes the restored draft from this shared mutation state.
   const [restore, {isLoading: restoring}] = useRestoreRulesVersionMutation({
@@ -29,7 +30,7 @@ export function VersionsList() {
     setError(null)
     setRestored(false)
     const result = await restore({id: String(id)})
-    if (result.error) setError(apiErrorMessage(result.error))
+    if (result.error) setError(apiError(result.error))
     else setRestored(true)
   }
 

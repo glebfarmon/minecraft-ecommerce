@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 
 import {RulesDocumentSchema} from './rules'
+import {VALIDATION_MESSAGES} from './validation-messages'
 
 const NamePart = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(24))
 // hostname (labels of a-z0-9-) or dotted IPv4, optional :port
@@ -15,14 +16,14 @@ export const SiteSettingsSchema = v.object({
   serverIp: v.pipe(
     v.string(),
     v.trim(),
-    v.regex(HOST, 'Use a host name or IP, optionally with :port'),
+    v.regex(HOST, VALIDATION_MESSAGES.hostFormat),
     v.description('Minecraft server address shown to players, optionally with :port')
   ),
   discordUrl: v.pipe(
     v.string(),
     v.trim(),
     v.url(),
-    v.startsWith('https://', 'Use an https:// link'),
+    v.startsWith('https://', VALIDATION_MESSAGES.httpsLink),
     v.description('Discord invite link (https://)')
   ),
   supportEmail: v.pipe(v.string(), v.trim(), v.email(), v.description('Support contact address'))
@@ -95,7 +96,7 @@ export const MessageOverrideInputSchema = v.object({
     v.string(),
     v.trim(),
     // A blank override would blank a live text; resetting is the way back to the default.
-    v.minLength(1, 'Enter a text, or reset to use the default'),
+    v.minLength(1, VALIDATION_MESSAGES.textRequired),
     v.maxLength(2000),
     v.description('Replacement text, 1–2000 chars after trimming')
   )

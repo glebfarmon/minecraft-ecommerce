@@ -3,7 +3,7 @@
 import {DataTable} from '@/components/data-table'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
-import {apiErrorMessage} from '@/lib/api/error-message'
+import {useApiError} from '@/hooks/use-error-text'
 import {
   useDeleteApiAdminAdminsByIdMutation,
   useGetApiAdminAdminsQuery,
@@ -29,6 +29,7 @@ export function AdminsTable({
   /** Permissions the viewer holds; roles needing more cannot be handed out (the API enforces it). */
   held?: readonly Permission[]
 }) {
+  const apiError = useApiError()
   const admins = useGetApiAdminAdminsQuery()
   const roles = useGetApiAdminRolesQuery()
   const [remove] = useDeleteApiAdminAdminsByIdMutation()
@@ -52,7 +53,7 @@ export function AdminsTable({
         : p.kind === 'reset'
           ? await reset({id: p.adminId})
           : await changeRole({id: p.adminId, body: {roleId: p.roleId ?? ''}})
-    if ('error' in result) setError(apiErrorMessage(result.error))
+    if ('error' in result) setError(apiError(result.error))
     setPending(null)
   }
 
