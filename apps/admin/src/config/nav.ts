@@ -13,22 +13,22 @@ import type {Permission} from '@shop/shared/access'
 
 export const NAV: {
   href: string
-  label: string
+  key: 'home' | 'orders' | 'catalog' | 'content' | 'team' | 'audit' | 'account'
   icon: LucideIcon
   permission?: Permission
   match?: string
 }[] = [
-  {href: '/', label: 'Home', icon: LayoutGrid},
-  {href: '/orders', label: 'Orders', icon: ReceiptText, permission: 'order.read'},
-  {href: '/catalog', label: 'Catalog', icon: Boxes},
+  {href: '/', key: 'home', icon: LayoutGrid},
+  {href: '/orders', key: 'orders', icon: ReceiptText, permission: 'order.read'},
+  {href: '/catalog', key: 'catalog', icon: Boxes},
   {
     href: '/content/rules',
-    label: 'Content',
+    key: 'content',
     icon: FileText,
     permission: 'content.write',
     match: '/content'
   },
-  {href: '/team', label: 'Team', icon: Users, permission: 'admin.invite'},
-  {href: '/audit', label: 'Audit log', icon: ScrollText, permission: 'audit.read'},
-  {href: '/account', label: 'Account', icon: UserRound}
+  {href: '/team', key: 'team', icon: Users, permission: 'admin.invite'},
+  {href: '/audit', key: 'audit', icon: ScrollText, permission: 'audit.read'},
+  {href: '/account', key: 'account', icon: UserRound}
 ]

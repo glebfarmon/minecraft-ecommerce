@@ -1,6 +1,6 @@
 import type {AdminLocale} from '@/i18n/locale'
 import {makeStore} from '@/lib/api/store'
-import {type RenderResult, render} from '@testing-library/react'
+import {type RenderOptions, type RenderResult, render} from '@testing-library/react'
 import {NextIntlClientProvider} from 'next-intl'
 import type {ReactElement, ReactNode} from 'react'
 import {Provider} from 'react-redux'
@@ -41,4 +41,12 @@ export function renderWithProviders(
     </IntlWrapper>
   )
   return render(store ? <Provider store={makeStore()}>{content}</Provider> : content)
+}
+
+/** Plain `render` with the English messages as its `wrapper`, so `rerender` keeps them. */
+export function renderWithIntl(
+  ui: ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>
+): RenderResult {
+  return render(ui, {wrapper: IntlWrapper, ...options})
 }

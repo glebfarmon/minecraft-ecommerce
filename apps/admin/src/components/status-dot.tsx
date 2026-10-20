@@ -1,3 +1,5 @@
+import {useTranslations} from 'next-intl'
+
 import type {OrderStatus} from '@shop/shared/orders'
 import {cn} from '@shop/ui/lib/utils'
 
@@ -9,14 +11,6 @@ export const STATUS_TONE: Record<OrderStatus, Tone> = {
   EXPIRED: 'idle',
   REFUNDED: 'bad',
   DISPUTED: 'bad'
-}
-export const STATUS_LABEL: Record<OrderStatus, string> = {
-  PAID: 'Paid',
-  DELIVERED: 'Delivered',
-  PENDING: 'Pending',
-  EXPIRED: 'Expired',
-  REFUNDED: 'Refunded',
-  DISPUTED: 'Disputed'
 }
 const PILL: Record<Tone, string> = {
   ok: 'bg-ok-soft text-ok',
@@ -40,5 +34,6 @@ export function ToneDot({tone, label}: {tone: Tone; label: string}) {
 }
 
 export function StatusDot({status}: {status: OrderStatus}) {
-  return <ToneDot tone={STATUS_TONE[status]} label={STATUS_LABEL[status]} />
+  const t = useTranslations('status')
+  return <ToneDot tone={STATUS_TONE[status]} label={t(status)} />
 }

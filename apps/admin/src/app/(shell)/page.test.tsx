@@ -1,10 +1,17 @@
-import {render, screen} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {screen} from '@testing-library/react'
+import {createTranslator} from 'next-intl'
 
 import type {Me} from '@shop/shared/access'
 
+import en from '../../../messages/en.json'
 import HomePage from './page'
 
 let mockMe: Me
+jest.mock('next-intl/server', () => ({
+  getTranslations: (namespace: string) =>
+    Promise.resolve(createTranslator({locale: 'en', messages: en, namespace} as never))
+}))
 jest.mock('@/lib/session', () => ({requireMe: () => Promise.resolve(mockMe)}))
 jest.mock('next/navigation', () => ({usePathname: () => '/', useRouter: () => ({push: jest.fn()})}))
 

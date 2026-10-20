@@ -29,6 +29,12 @@ describe('shell', () => {
     expect(screen.getByRole('link', {name: 'Audit log'})).toBeInTheDocument()
   })
 
+  it('names the rail links in Polish', () => {
+    renderWithProviders(<Nav me={me} variant="rail" />, {store: false, locale: 'pl'})
+    expect(screen.getByRole('link', {name: 'Zamówienia'})).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('navigation', {name: 'Panel'})).toBeInTheDocument()
+  })
+
   it('hides entries the user lacks permission for', () => {
     renderWithProviders(<Nav me={{...me, permissions: []}} variant="rail" />, {store: false})
     expect(screen.queryByRole('link', {name: 'Orders'})).toBeNull()

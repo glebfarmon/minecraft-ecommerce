@@ -2,6 +2,7 @@
 
 import {useCountUp} from '@/hooks/use-count-up'
 import {formatDelta} from '@/lib/format'
+import {useTranslations} from 'next-intl'
 import {useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
@@ -26,6 +27,7 @@ export function KpiCard({
   /** Counts the shown number up to `to`; `value` stays the text screen readers and search get. */
   count?: {to: number; format: (n: number) => string}
 }) {
+  const t = useTranslations('dashboard')
   const id = useId()
   return (
     <section
@@ -44,7 +46,7 @@ export function KpiCard({
         {spark && (
           <Spark
             values={spark}
-            label={`${label} per day`}
+            label={t('perDay', {label})}
             className={cn(
               'h-8 w-24 shrink-0',
               tone === 'accent' ? 'text-on-accent' : 'text-accent'

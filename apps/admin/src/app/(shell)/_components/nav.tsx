@@ -4,6 +4,7 @@ import {Hint} from '@/components/hint'
 import {RollingIndicator} from '@/components/rolling-indicator'
 import {NAV} from '@/config/nav'
 import {LayoutGroup} from 'motion/react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {Fragment} from 'react'
@@ -26,23 +27,26 @@ export function Nav({
   variant: 'rail' | 'sheet'
   onNavigate?: () => void
 }) {
+  const t = useTranslations('nav')
+  const shell = useTranslations('shell')
   const pathname = usePathname()
   const rail = variant === 'rail'
   return (
     <LayoutGroup id={rail ? 'rail' : 'sheet'}>
       <nav
-        aria-label={rail ? 'Admin' : 'Admin menu'}
+        aria-label={rail ? shell('admin') : shell('adminMenu')}
         className={cn('flex flex-col gap-1', rail && 'items-center gap-2')}>
         {NAV.filter(item => !item.permission || hasPermission(me.permissions, item.permission)).map(
           item => {
             const Icon = item.icon
+            const label = t(item.key)
             const current = isCurrent(pathname, item.match ?? item.href)
             const link = (
               <Link
                 href={item.href}
                 onClick={onNavigate}
                 aria-current={current ? 'page' : undefined}
-                aria-label={rail ? item.label : undefined}
+                aria-label={rail ? label : undefined}
                 className={cn(
                   FOCUS,
                   rail
@@ -52,11 +56,11 @@ export function Nav({
                 )}>
                 {current && <RollingIndicator className="rounded-full bg-fg" />}
                 <Icon aria-hidden className="size-5 shrink-0" />
-                {!rail && item.label}
+                {!rail && label}
               </Link>
             )
             return rail ? (
-              <Hint key={item.href} label={item.label} side="right">
+              <Hint key={item.href} label={label} side="right">
                 {link}
               </Hint>
             ) : (

@@ -1,3 +1,4 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
@@ -62,6 +63,16 @@ beforeEach(() => {
 })
 
 describe('Dashboard', () => {
+  it('speaks Polish', async () => {
+    mockApi(stats())
+    renderWithProviders(<Dashboard />, {locale: 'pl'})
+    const revenue = await screen.findByRole('region', {name: 'Przychód'})
+    expect(revenue).toHaveTextContent('12,50')
+    expect(screen.getByRole('region', {name: 'Opłacone zamówienia'})).toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'Średnie zamówienie'})).toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'LTV'})).toHaveTextContent('4 kupujących')
+  })
+
   it('shows revenue, paid orders, average order, conversion and LTV in one currency', async () => {
     mockApi(stats())
     renderWithStore(<Dashboard />)

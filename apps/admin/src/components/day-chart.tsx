@@ -1,3 +1,5 @@
+import {useTranslations} from 'next-intl'
+
 import {cn} from '@shop/ui/lib/utils'
 
 export function DayChart({
@@ -9,6 +11,7 @@ export function DayChart({
   label: string
   format: (n: number) => string
 }) {
+  const t = useTranslations('dashboard')
   const max = Math.max(1, ...days.map(d => d.value))
   const total = days.reduce((a, d) => a + d.value, 0)
   const w = 100 / Math.max(1, days.length)
@@ -18,7 +21,7 @@ export function DayChart({
         // A new range replays the bars growing.
         key={`${days[0]?.day ?? ''}-${String(days.length)}`}
         role="img"
-        aria-label={`${label}: total ${format(total)} over ${String(days.length)} days`}
+        aria-label={t('chartTotal', {label, total: format(total), days: days.length})}
         viewBox="0 0 100 40"
         preserveAspectRatio="none"
         className="h-40 w-full text-accent">

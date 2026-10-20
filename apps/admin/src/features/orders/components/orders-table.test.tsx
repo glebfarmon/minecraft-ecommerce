@@ -1,3 +1,4 @@
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -35,6 +36,18 @@ function requestedUrls(fetchMock: jest.SpyInstance) {
 }
 
 describe('OrdersTable', () => {
+  it('speaks Polish: tabs, headers and status labels', async () => {
+    mockApi()
+    renderWithProviders(<OrdersTable />, {locale: 'pl'})
+    expect(screen.getByRole('tab', {name: 'Opłacone'})).toBeInTheDocument()
+    const table = await screen.findByRole('table', {name: 'Zamówienia'})
+    expect(within(table).getByRole('columnheader', {name: 'Status'})).toBeInTheDocument()
+    expect(within(table).getByRole('columnheader', {name: 'Suma'})).toBeInTheDocument()
+    const row = within(table).getByRole('link', {name: 'SHOP-o1'}).closest('tr') as HTMLElement
+    expect(row).toHaveTextContent('Opłacone')
+    expect(row).toHaveTextContent('12 paź 2026, 09:30 UTC')
+  })
+
   it('shows each order with date, link, nick, email, money and status', async () => {
     mockApi()
     renderWithStore(<OrdersTable />)

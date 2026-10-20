@@ -4,9 +4,10 @@ import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
+import {useFormat} from '@/hooks/use-format'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
-import {formatMoney, formatTime} from '@/lib/format'
 import {ReceiptText, Search} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useState} from 'react'
 
@@ -19,13 +20,7 @@ type Query = Omit<ListAdminOrdersApiArg, 'cursor'>
 type Status = NonNullable<Query['status']>
 
 // "Problem" (refunds, disputes, failed deliveries) arrives with delivery (5a).
-const TABS: {value: Status | 'ALL'; label: string}[] = [
-  {value: 'ALL', label: 'All'},
-  {value: 'PAID', label: 'Paid'},
-  {value: 'DELIVERED', label: 'Delivered'},
-  {value: 'PENDING', label: 'Pending'},
-  {value: 'EXPIRED', label: 'Expired'}
-]
+const TABS: (Status | 'ALL')[] = ['ALL', 'PAID', 'DELIVERED', 'PENDING', 'EXPIRED']
 
 function PageRows({
   query,
@@ -40,6 +35,8 @@ function PageRows({
   isLast: boolean
   onMore: (cursor: string) => void
 }) {
+  const t = useTranslations('orders')
+  const f = useFormat()
   const router = useRouter()
   const page = useListAdminOrdersQuery({...query, cursor})
   if (page.isLoading) return <SkeletonRows />
@@ -47,56 +44,56 @@ function PageRows({
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {(page.error as {status?: unknown} | undefined)?.status === 403
-          ? 'You do not have permission to read orders.'
-          : 'Could not load orders. Try again.'}
+          ? t('forbidden')
+          : t('loadFailed')}
       </p>
     )
   const next = page.data.nextCursor
   return (
     <>
       <DataTable
-        caption="Orders"
+        caption={t('title')}
         rows={page.data.orders}
         rowKey={o => o.id}
         rowLabel={o => o.publicId}
         rowHref={o => `/orders/${o.id}`}
         columns={[
           {
-            header: 'Order',
+            header: t('colOrder'),
             primary: true,
             cell: o => <span className="font-mono">{o.publicId}</span>
           },
-          {header: 'Date', cell: o => formatTime(o.createdAt), className: 'tabular text-muted'},
-          {header: 'Nick', cell: o => o.nick},
-          {header: 'Email', cell: o => o.email},
+          {header: t('colDate'), cell: o => f.time(o.createdAt), className: 'tabular text-muted'},
+          {header: t('colNick'), cell: o => o.nick},
+          {header: t('colEmail'), cell: o => o.email},
           {
-            header: 'Total',
-            cell: o => formatMoney(o.totalMinor, o.currency),
+            header: t('colTotal'),
+            cell: o => f.money(o.totalMinor, o.currency),
             className: 'tabular text-right'
           },
-          {header: 'Status', cell: o => <StatusDot status={o.status} />}
+          {header: t('colStatus'), cell: o => <StatusDot status={o.status} />}
         ]}
         menu={o => [
           {
-            label: 'Open',
+            label: t('open'),
             onSelect: () => {
               router.push(`/orders/${o.id}`)
             }
           },
           {
-            label: 'Copy order number',
+            label: t('copyNumber'),
             onSelect: () => {
               void navigator.clipboard.writeText(o.publicId)
             }
           },
           {
-            label: 'Copy email',
+            label: t('copyEmail'),
             onSelect: () => {
               void navigator.clipboard.writeText(o.email)
             }
           }
         ]}
-        empty={isFirst ? <EmptyState icon={ReceiptText} title="No orders found." /> : null}
+        empty={isFirst ? <EmptyState icon={ReceiptText} title={t('empty')} /> : null}
       />
       {isLast && next && (
         <Button
@@ -106,7 +103,7 @@ function PageRows({
           onClick={() => {
             onMore(next)
           }}>
-          Load more
+          {t('loadMore')}
         </Button>
       )}
     </>
@@ -114,6 +111,8 @@ function PageRows({
 }
 
 export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
+  const t = useTranslations('orders')
+  const status_ = useTranslations('status')
   const [draft, setDraft] = useState(initialQ)
   const [q, setQ] = useState(initialQ)
   const [status, setStatus] = useState<Status | undefined>(undefined)
@@ -129,10 +128,10 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             setStatus(v === 'ALL' ? undefined : (v as Status))
             setCursors([undefined])
           }}>
-          <TabsList aria-label="Status">
-            {TABS.map(t => (
-              <TabsTrigger key={t.value} value={t.value}>
-                {t.label}
+          <TabsList aria-label={t('status')}>
+            {TABS.map(tab => (
+              <TabsTrigger key={tab} value={tab}>
+                {tab === 'ALL' ? t('all') : status_(tab)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -146,7 +145,7 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             setCursors([undefined])
           }}>
           <Label htmlFor="orders-q" className="sr-only">
-            Search by nick, email or order number
+            {t('searchLabel')}
           </Label>
           <div className="relative flex-1">
             <Search
@@ -156,7 +155,7 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             <Input
               id="orders-q"
               type="search"
-              placeholder="Nick, email or order number"
+              placeholder={t('searchPlaceholder')}
               className="rounded-full pl-10"
               value={draft}
               onChange={e => {
@@ -165,7 +164,7 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             />
           </div>
           <Button type="submit" variant="outline" className="rounded-full">
-            Search
+            {t('search')}
           </Button>
         </form>
       </div>

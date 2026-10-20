@@ -8,14 +8,16 @@ import {KpiCard} from '@/components/kpi-card'
 import {Skeleton, SkeletonRows} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
+import {useFormat} from '@/hooks/use-format'
 import {useReportCurrency} from '@/hooks/use-report-currency'
 import {
   type GetOrderStatsApiResponse,
   useGetOrderStatsQuery,
   useListAdminOrdersQuery
 } from '@/lib/api/generated'
-import {delta, formatMoney, formatPercent} from '@/lib/format'
+import {delta} from '@/lib/format'
 import {PackageOpen, ReceiptText} from 'lucide-react'
+import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import {useState} from 'react'
 
@@ -31,64 +33,67 @@ type Stats = GetOrderStatsApiResponse
 const LINK =
   'text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full'
 
-const money = (minor: number | null, currency: Currency) =>
-  minor === null ? '—' : formatMoney(minor, currency)
-
 function Kpis({stats}: {stats: Stats}) {
+  const t = useTranslations('dashboard')
+  const f = useFormat()
   const {currency} = stats
+  const money = (minor: number | null) => (minor === null ? '—' : f.money(minor, currency))
   const change = delta(stats.revenueMinor, stats.previousRevenueMinor)
   const paidChange = delta(stats.paidCount, stats.previousPaidCount)
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <KpiCard
-        label="Revenue"
-        value={formatMoney(stats.revenueMinor, currency)}
-        count={{to: stats.revenueMinor, format: n => formatMoney(n, currency)}}
+        label={t('revenue')}
+        value={f.money(stats.revenueMinor, currency)}
+        count={{to: stats.revenueMinor, format: n => f.money(n, currency)}}
         delta={change}
-        hint={change === null ? 'No sales in the previous period' : 'vs previous period'}
+        hint={change === null ? t('noSalesPrevious') : t('vsPrevious')}
         tone="accent"
         spark={stats.daily.map(d => d.totalMinor)}
       />
       <KpiCard
-        label="Paid orders"
+        label={t('paidOrders')}
         value={String(stats.paidCount)}
         count={{to: stats.paidCount, format: String}}
         delta={paidChange}
-        hint={paidChange === null ? 'No paid orders in the previous period' : 'vs previous period'}
+        hint={paidChange === null ? t('noPaidPrevious') : t('vsPrevious')}
         spark={stats.daily.map(d => d.paidCount)}
       />
-      <KpiCard label="Average order" value={money(stats.averageMinor, currency)} />
+      <KpiCard label={t('averageOrder')} value={money(stats.averageMinor)} />
       <KpiCard
-        label="Conversion"
-        value={formatPercent(stats.conversion)}
-        hint={`${String(stats.expiredCount)} expired`}
+        label={t('conversion')}
+        value={f.percent(stats.conversion)}
+        hint={t('expired', {count: stats.expiredCount})}
       />
       <KpiCard
-        label="LTV"
-        value={money(stats.ltvMinor, currency)}
-        hint={`${String(stats.buyers)} ${stats.buyers === 1 ? 'buyer' : 'buyers'}`}
+        label={t('ltv')}
+        value={money(stats.ltvMinor)}
+        hint={t('buyers', {count: stats.buyers})}
       />
     </div>
   )
 }
 
 function RevenueChart({stats}: {stats: Stats}) {
+  const t = useTranslations('dashboard')
+  const f = useFormat()
   return (
-    <Card title="Revenue per day">
+    <Card title={t('revenuePerDay')}>
       <DayChart
         days={stats.daily.map(d => ({day: d.day, value: d.totalMinor}))}
-        label="Revenue per day"
-        format={n => formatMoney(n, stats.currency)}
+        label={t('revenuePerDay')}
+        format={n => f.money(n, stats.currency)}
       />
     </Card>
   )
 }
 
 function CurrencyCard({stats}: {stats: Stats}) {
+  const t = useTranslations('dashboard')
   return (
-    <Card title="Paid orders by currency">
+    <Card title={t('paidByCurrency')}>
       {stats.byCurrency.length === 0 ? (
-        <EmptyState icon={ReceiptText} title="No paid orders in this range." />
+        <EmptyState icon={ReceiptText} title={t('noPaidRange')} />
       ) : (
         <CurrencyDonut byCurrency={stats.byCurrency} />
       )}
@@ -97,11 +102,12 @@ function CurrencyCard({stats}: {stats: Stats}) {
 }
 
 function StatusCard({stats}: {stats: Stats}) {
+  const t = useTranslations('dashboard')
   const statuses = stats.byStatus.filter(s => s.count > 0)
   return (
-    <Card title="Orders by status">
+    <Card title={t('ordersByStatus')}>
       {statuses.length === 0 ? (
-        <EmptyState icon={ReceiptText} title="No orders in this range." />
+        <EmptyState icon={ReceiptText} title={t('noOrdersRange')} />
       ) : (
         <div className="flex flex-wrap items-center gap-6">
           <StatusDonut counts={statuses} />
@@ -120,10 +126,11 @@ function StatusCard({stats}: {stats: Stats}) {
 }
 
 function TopProducts({stats}: {stats: Stats}) {
+  const t = useTranslations('dashboard')
   return (
-    <Card title="Top products">
+    <Card title={t('topProducts')}>
       {stats.topProducts.length === 0 ? (
-        <EmptyState icon={PackageOpen} title="No sales in this range." />
+        <EmptyState icon={PackageOpen} title={t('noSalesRange')} />
       ) : (
         <ol className="flex flex-col gap-1.5">
           {stats.topProducts.map((p, i) => (
@@ -143,27 +150,29 @@ function TopProducts({stats}: {stats: Stats}) {
 }
 
 function LatestOrders() {
+  const t = useTranslations('dashboard')
+  const f = useFormat()
   const page = useListAdminOrdersQuery({})
   return (
     <Card
-      title="Latest orders"
+      title={t('latestOrders')}
       action={
         <Link href="/orders" className={LINK}>
-          View all
+          {t('viewAll')}
         </Link>
       }>
       {page.isLoading ? (
         <SkeletonRows rows={5} />
       ) : page.isError || !page.data ? (
-        <p className="text-muted">Could not load orders.</p>
+        <p className="text-muted">{t('ordersFailed')}</p>
       ) : (
         <DataTable
-          caption="Latest orders"
+          caption={t('latestOrders')}
           rows={page.data.orders.slice(0, 5)}
           rowKey={o => o.id}
           columns={[
             {
-              header: 'Order',
+              header: t('colOrder'),
               primary: true,
               cell: o => (
                 <Link href={`/orders/${o.id}`} className="font-mono hover:underline">
@@ -171,11 +180,11 @@ function LatestOrders() {
                 </Link>
               )
             },
-            {header: 'Nick', cell: o => o.nick},
-            {header: 'Total', cell: o => formatMoney(o.totalMinor, o.currency)},
-            {header: 'Status', cell: o => <StatusDot status={o.status} />}
+            {header: t('colNick'), cell: o => o.nick},
+            {header: t('colTotal'), cell: o => f.money(o.totalMinor, o.currency)},
+            {header: t('colStatus'), cell: o => <StatusDot status={o.status} />}
           ]}
-          empty={<EmptyState icon={ReceiptText} title="No orders yet." />}
+          empty={<EmptyState icon={ReceiptText} title={t('noOrdersYet')} />}
         />
       )}
     </Card>
@@ -183,9 +192,10 @@ function LatestOrders() {
 }
 
 function Loading() {
+  const t = useTranslations('dashboard')
   return (
     <div role="status" className="grid gap-4">
-      <span className="sr-only">Loading statistics…</span>
+      <span className="sr-only">{t('loadingStats')}</span>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({length: 5}, (_, i) => (
           <Skeleton key={i} className="h-36 rounded-card" />
@@ -200,6 +210,8 @@ function Loading() {
 }
 
 export function Dashboard() {
+  const t = useTranslations('dashboard')
+  const common = useTranslations('common')
   const [range, setRange] = useState<Range>('7d')
   const [currency, setCurrency] = useReportCurrency()
   const query = useGetOrderStatsQuery({range, currency})
@@ -214,7 +226,7 @@ export function Dashboard() {
           onValueChange={v => {
             setCurrency(v as Currency)
           }}>
-          <TabsList aria-label="Currency">
+          <TabsList aria-label={t('currency')}>
             {CURRENCIES.map(c => (
               <TabsTrigger key={c} value={c}>
                 {c}
@@ -227,9 +239,9 @@ export function Dashboard() {
           onValueChange={v => {
             setRange(v as Range)
           }}>
-          <TabsList aria-label="Range">
-            <TabsTrigger value="7d">7 days</TabsTrigger>
-            <TabsTrigger value="30d">30 days</TabsTrigger>
+          <TabsList aria-label={t('range')}>
+            <TabsTrigger value="7d">{t('days7')}</TabsTrigger>
+            <TabsTrigger value="30d">{t('days30')}</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -237,9 +249,9 @@ export function Dashboard() {
         <div
           role="alert"
           className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-card p-5">
-          <p>Could not load statistics. Try again.</p>
+          <p>{t('statsFailed')}</p>
           <Button variant="outline" onClick={() => void query.refetch()}>
-            Retry
+            {common('retry')}
           </Button>
         </div>
       ) : !stats ? (
@@ -249,7 +261,7 @@ export function Dashboard() {
           <Kpis stats={stats} />
           {stats.awaitingRate > 0 && (
             <p className="text-[12px] text-muted">
-              {`${String(stats.awaitingRate)} ${stats.awaitingRate === 1 ? 'order' : 'orders'} waiting for an exchange rate — not in the totals yet.`}
+              {t('awaitingRate', {count: stats.awaitingRate})}
             </p>
           )}
           <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">

@@ -1,4 +1,5 @@
-import {render, screen} from '@testing-library/react'
+import {renderWithIntl as render} from '@/test/render-with-providers'
+import {screen} from '@testing-library/react'
 import {Inbox} from 'lucide-react'
 
 import {Card} from './card'
