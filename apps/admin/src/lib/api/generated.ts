@@ -315,7 +315,8 @@ const injectedRtkApi = api.injectEndpoints({
       query: queryArg => ({
         url: `/api/admin/stats/orders`,
         params: {
-          range: queryArg.range
+          range: queryArg.range,
+          currency: queryArg.currency
         }
       })
     })
@@ -1459,24 +1460,30 @@ export type GetAdminOrderApiArg = {
 }
 export type GetOrderStatsApiResponse = /** status 200 Statistics for the range */ {
   range: '7d' | '30d'
+  currency: 'EUR' | 'PLN'
   from: string
   to: string
-  revenue: {
-    currency: 'EUR' | 'PLN'
-    totalMinor: number
-    previousMinor: number
-  }[]
+  revenueMinor: number
+  previousRevenueMinor: number
   paidCount: number
   previousPaidCount: number
+  averageMinor: number | null
+  ltvMinor: number | null
+  buyers: number
+  awaitingRate: number
   expiredCount: number
   conversion: number | null
   byStatus: {
     status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
     count: number
   }[]
+  byCurrency: {
+    currency: 'EUR' | 'PLN'
+    count: number
+    totalMinor: number
+  }[]
   daily: {
     day: string
-    currency: 'EUR' | 'PLN'
     totalMinor: number
     paidCount: number
   }[]
@@ -1489,6 +1496,7 @@ export type GetOrderStatsApiResponse = /** status 200 Statistics for the range *
 }
 export type GetOrderStatsApiArg = {
   range?: '7d' | '30d'
+  currency?: 'EUR' | 'PLN'
 }
 export const {
   useGetApiInviteLookupByTokenQuery,
