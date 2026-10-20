@@ -48,6 +48,8 @@ services:
       # The e2e pays through the fake gateway, which signs real Stripe-format events.
       PAYMENTS_GATEWAY: fake
       PAYMENTS_ALLOW_FAKE: 'true'
+      # No calls to NBP from the e2e stack.
+      EXCHANGE_RATES: fixed
       # e2e only: signs fake events, never used anywhere else.
       STRIPE_WEBHOOK_SECRET: whsec_e2e_throwaway
       PUBLIC_WEB_ORIGIN: http://shop.localhost
