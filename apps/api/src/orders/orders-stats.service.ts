@@ -40,6 +40,7 @@ export class OrdersStatsService {
       withRate,
       previousWithRate,
       awaitingRate,
+      previousAwaitingRate,
       buyers,
       byStatus,
       daily,
@@ -55,6 +56,7 @@ export class OrdersStatsService {
       converted(from, now),
       converted(prevFrom, from),
       this.prisma.order.count({where: {...revenueWhere(from, now), eurPlnRate: null}}),
+      this.prisma.order.count({where: {...revenueWhere(prevFrom, from), eurPlnRate: null}}),
       this.prisma.$queryRaw<{buyers: bigint}[]>(Prisma.sql`
           SELECT COUNT(DISTINCT lower(email))::bigint AS buyers
           FROM orders
@@ -113,6 +115,7 @@ export class OrdersStatsService {
       ltvMinor: buyerCount === 0 ? null : Math.round(revenueMinor / buyerCount),
       buyers: buyerCount,
       awaitingRate,
+      previousAwaitingRate,
       expiredCount,
       conversion:
         paidInRange + expiredCount === 0 ? null : paidInRange / (paidInRange + expiredCount),

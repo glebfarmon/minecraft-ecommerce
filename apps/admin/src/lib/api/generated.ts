@@ -1471,6 +1471,7 @@ export type GetOrderStatsApiResponse = /** status 200 Statistics for the range *
   ltvMinor: number | null
   buyers: number
   awaitingRate: number
+  previousAwaitingRate: number
   expiredCount: number
   conversion: number | null
   byStatus: {

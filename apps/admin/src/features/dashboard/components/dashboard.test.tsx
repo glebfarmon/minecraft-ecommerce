@@ -24,6 +24,7 @@ const stats = (over: Partial<Record<string, unknown>> = {}) => ({
   ltvMinor: 1800,
   buyers: 4,
   awaitingRate: 0,
+  previousAwaitingRate: 0,
   expiredCount: 1,
   conversion: 0.5,
   byStatus: [
@@ -162,6 +163,24 @@ describe('Dashboard', () => {
     expect(screen.getByRole('tab', {name: 'PLN'})).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('hides the vs-previous delta when the previous period had orders without a rate', async () => {
+    mockApi(stats({previousAwaitingRate: 1}))
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('€12.50')
+    expect(revenue).not.toHaveTextContent('+25%')
+  })
+
+  it('rolls an indicator on the currency tabs', async () => {
+    mockApi(stats())
+    renderWithStore(<Dashboard />)
+    await screen.findByRole('region', {name: 'Revenue'})
+    const tab = screen
+      .getByRole('tablist', {name: 'Currency'})
+      .querySelector('[aria-selected="true"] [data-slot="tabs-indicator"]')
+    expect(tab).not.toBeNull()
+  })
+
   it('shows dashes for average and LTV and a note while orders wait for a rate', async () => {
     mockApi(
       stats({
@@ -178,6 +197,32 @@ describe('Dashboard', () => {
     expect(screen.getByRole('region', {name: 'LTV'})).toHaveTextContent('—')
     expect(screen.getByText(/2 orders waiting for an exchange rate/)).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/NaN/)
+  })
+
+  it('shows a dash, not €0.00 and −100%, when every paid order awaits a rate', async () => {
+    mockApi(
+      stats({
+        revenueMinor: 0,
+        previousRevenueMinor: 900,
+        averageMinor: null,
+        ltvMinor: null,
+        buyers: 0,
+        awaitingRate: 20
+      })
+    )
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('—')
+    expect(revenue).not.toHaveTextContent('€0.00')
+    expect(revenue).not.toHaveTextContent('−100%')
+  })
+
+  it('hides the vs-previous delta while some orders await a rate', async () => {
+    mockApi(stats({awaitingRate: 1}))
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('€12.50')
+    expect(revenue).not.toHaveTextContent('+25%')
   })
 
   it('shows dashes and empty states on an empty range instead of NaN', async () => {

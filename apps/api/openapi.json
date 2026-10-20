@@ -6334,7 +6334,7 @@
       "get": {
         "operationId": "getOrderStats",
         "summary": "Order and revenue statistics for the dashboard",
-        "description": "Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. `currency` (`EUR` default or `PLN`) is the reporting currency: revenue, average order, LTV and the daily series are sums of the totals stored on each order when it was paid, converted at the NBP rate of the previous business day. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before, converted the same way. Paid orders still without a rate are left out of those figures and counted in `awaitingRate`; `averageMinor` and `ltvMinor` are `null` when no order has a rate. `ltvMinor` is revenue per distinct buyer email (case-insensitive). `byCurrency` splits paid orders by the currency they were paid in, with sums in that original currency. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none.",
+        "description": "Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. `currency` (`EUR` default or `PLN`) is the reporting currency: revenue, average order, LTV and the daily series are sums of the totals stored on each order when it was paid, converted at the NBP rate of the previous business day. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before, converted the same way. Paid orders still without a rate are left out of those figures and counted in `awaitingRate` (`previousAwaitingRate` for the previous range); `averageMinor` and `ltvMinor` are `null` when no order has a rate. `ltvMinor` is revenue per distinct buyer email (case-insensitive). `byCurrency` splits paid orders by the currency they were paid in, with sums in that original currency. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none.",
         "parameters": [
           {
             "name": "range",
@@ -6422,6 +6422,10 @@
                       "minimum": 0
                     },
                     "awaitingRate": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "previousAwaitingRate": {
                       "type": "integer",
                       "minimum": 0
                     },
@@ -6543,6 +6547,7 @@
                     "ltvMinor",
                     "buyers",
                     "awaitingRate",
+                    "previousAwaitingRate",
                     "expiredCount",
                     "conversion",
                     "byStatus",

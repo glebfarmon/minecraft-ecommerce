@@ -119,6 +119,7 @@
     "ltv": "LTV",
     "noSalesPrevious": "No sales in the previous period",
     "vsPrevious": "vs previous period",
+    "partialRevenue": "Partial: some orders wait for a rate",
     "noPaidPrevious": "No paid orders in the previous period",
     "expired": "{count} expired",
     "buyers": "{count, plural, one {# buyer} other {# buyers}}",

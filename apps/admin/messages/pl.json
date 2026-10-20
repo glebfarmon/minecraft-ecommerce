@@ -119,6 +119,7 @@
     "ltv": "LTV",
     "noSalesPrevious": "Brak sprzedaży w poprzednim okresie",
     "vsPrevious": "vs poprzedni okres",
+    "partialRevenue": "Częściowe: część zamówień czeka na kurs",
     "noPaidPrevious": "Brak opłaconych zamówień w poprzednim okresie",
     "expired": "{count, plural, one {# wygasłe} few {# wygasłe} many {# wygasłych} other {# wygasłych}}",
     "buyers": "{count, plural, one {# kupujący} few {# kupujących} many {# kupujących} other {# kupujących}}",

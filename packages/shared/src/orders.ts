@@ -136,6 +136,8 @@ export const OrderStatsSchema = v.object({
   buyers: Count,
   /** Paid orders in the range still without an exchange rate (not in the converted figures). */
   awaitingRate: Count,
+  /** The same for the previous period, so its comparison can be flagged as partial. */
+  previousAwaitingRate: Count,
   expiredCount: Count,
   conversion: v.nullable(v.pipe(v.number(), v.minValue(0), v.maxValue(1))),
   byStatus: v.array(v.object({status: OrderStatusSchema, count: Count})),

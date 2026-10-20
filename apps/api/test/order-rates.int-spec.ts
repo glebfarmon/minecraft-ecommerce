@@ -111,6 +111,18 @@ describe('order exchange rates', () => {
     expect((await read(id)).totalPlnMinor).not.toBeNull()
   })
 
+  it('keeps the first value when two fills with different rates race', async () => {
+    const id = await paidAt('2026-10-17T10:00:00Z')
+    const at = (rate: string) => () => Promise.resolve({rate, date: '2026-10-16'})
+    const [a, b] = await Promise.all([
+      service.fill(id, at('4.1000')),
+      service.fill(id, at('4.2000'))
+    ])
+    expect([a, b].sort()).toEqual(['filled', 'skipped'])
+    const winner = a === 'filled' ? '4.1000' : '4.2000'
+    expect((await read(id)).eurPlnRate?.toFixed(4)).toBe(winner)
+  })
+
   it('never recomputes a filled order', async () => {
     const id = await paidAt('2026-10-17T10:00:00Z')
     await service.fill(id)
@@ -139,8 +151,9 @@ describe('order exchange rates', () => {
     expect(order.totalEurMinor).toBe(Math.round(order.totalMinor / 4.3))
   })
 
-  it('sweep fills only paid orders still missing a rate, oldest first', async () => {
+  it('sweep fills only paid orders still missing a rate, newest first, across batches', async () => {
     const old = await paidAt('2026-10-10T10:00:00Z')
+    const mid = await paidAt('2026-10-11T10:00:00Z')
     const recent = await paidAt('2026-10-12T10:00:00Z')
     const {id: pending} = await createOrder()
     const days: string[] = []
@@ -148,10 +161,28 @@ describe('order exchange rates', () => {
       days.push(day)
       return Promise.resolve({rate: '4.3000', date: '2026-10-09'})
     })
-    await service.sweep()
-    expect((await read(old)).eurPlnRate).not.toBeNull()
-    expect((await read(recent)).eurPlnRate).not.toBeNull()
+    await service.sweep(1) // one order per batch: it must keep going until none are left
+    for (const id of [old, mid, recent]) expect((await read(id)).eurPlnRate).not.toBeNull()
     expect((await read(pending)).eurPlnRate).toBeNull()
-    expect(days.indexOf('2026-10-10')).toBeLessThan(days.indexOf('2026-10-12'))
+    // Earlier tests leave unfillable orders behind; only this test's days matter.
+    expect(days.filter(d => d <= '2026-10-12')).toEqual(['2026-10-12', '2026-10-11', '2026-10-10'])
+  })
+
+  it('sweep asks the rates source once per day and survives orders it cannot fill', async () => {
+    const a = await paidAt('2026-10-13T08:00:00Z')
+    const b = await paidAt('2026-10-13T09:00:00Z')
+    const down = await paidAt('2026-10-14T09:00:00Z')
+    const days: string[] = []
+    rates.eurPlnBefore.mockImplementation((day: string) => {
+      days.push(day)
+      return day === '2026-10-14'
+        ? Promise.reject(new Error('NBP down'))
+        : Promise.resolve({rate: '4.3000', date: '2026-10-12'})
+    })
+    await service.sweep(1)
+    expect(days.filter(d => d === '2026-10-13')).toHaveLength(1)
+    expect((await read(a)).eurPlnRate).not.toBeNull()
+    expect((await read(b)).eurPlnRate).not.toBeNull()
+    expect((await read(down)).eurPlnRate).toBeNull()
   })
 })

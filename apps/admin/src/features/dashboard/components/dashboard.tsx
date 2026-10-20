@@ -19,7 +19,7 @@ import {delta} from '@/lib/format'
 import {PackageOpen, ReceiptText} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
-import {useState} from 'react'
+import {useState, useSyncExternalStore} from 'react'
 
 import {CURRENCIES, type Currency} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
@@ -38,18 +38,31 @@ function Kpis({stats}: {stats: Stats}) {
   const f = useFormat()
   const {currency} = stats
   const money = (minor: number | null) => (minor === null ? '—' : f.money(minor, currency))
-  const change = delta(stats.revenueMinor, stats.previousRevenueMinor)
+  // While orders wait for a rate the revenue is partial: no change figure, and a dash when
+  // nothing is converted yet, never €0.00.
+  const waiting = stats.awaitingRate > 0
+  const partialChange = waiting || stats.previousAwaitingRate > 0
+  const noneConverted = waiting && stats.awaitingRate >= stats.paidCount
+  const change = partialChange ? null : delta(stats.revenueMinor, stats.previousRevenueMinor)
   const paidChange = delta(stats.paidCount, stats.previousPaidCount)
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <KpiCard
         label={t('revenue')}
-        value={f.money(stats.revenueMinor, currency)}
-        count={{to: stats.revenueMinor, format: n => f.money(n, currency)}}
+        value={noneConverted ? '—' : f.money(stats.revenueMinor, currency)}
+        count={
+          noneConverted ? undefined : {to: stats.revenueMinor, format: n => f.money(n, currency)}
+        }
         delta={change}
-        hint={change === null ? t('noSalesPrevious') : t('vsPrevious')}
+        hint={
+          partialChange
+            ? t('partialRevenue')
+            : change === null
+              ? t('noSalesPrevious')
+              : t('vsPrevious')
+        }
         tone="accent"
-        spark={stats.daily.map(d => d.totalMinor)}
+        spark={noneConverted ? undefined : stats.daily.map(d => d.totalMinor)}
       />
       <KpiCard
         label={t('paidOrders')}
@@ -214,7 +227,13 @@ export function Dashboard() {
   const common = useTranslations('common')
   const [range, setRange] = useState<Range>('7d')
   const [currency, setCurrency] = useReportCurrency()
-  const query = useGetOrderStatsQuery({range, currency})
+  // The remembered currency is only known after hydration; fetching before it would ask for EUR first.
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  )
+  const query = useGetOrderStatsQuery({range, currency}, {skip: !hydrated})
   // `currentData`, not `data`: after a switch the previous currency's numbers must not be shown
   // under the new label while the new ones load.
   const stats = query.currentData
