@@ -1,6 +1,7 @@
 'use client'
 
 import {FormSection} from '@/components/form-section'
+import {RichTextField} from '@/components/rich-text/rich-text-field'
 import {SkeletonRows} from '@/components/skeleton'
 import {SectionsEditor} from '@/features/catalog/components/sections-editor'
 import {
@@ -408,9 +409,19 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   {field(
                     `translations.${locale}.description`,
                     `Description (${label})`,
-                    <Textarea
-                      {...fieldProps(`translations.${locale}.description`)}
-                      {...register(`translations.${locale}.description`)}
+                    <Controller
+                      control={control}
+                      name={`translations.${locale}.description`}
+                      render={({field: input}) => (
+                        <RichTextField
+                          {...fieldProps(`translations.${locale}.description`)}
+                          aria-labelledby={`${fieldId(`translations.${locale}.description`)}-label`}
+                          value={input.value || ''}
+                          onChange={input.onChange}
+                          multiline
+                          disabled={!canEdit}
+                        />
+                      )}
                     />
                   )}
                   <SectionsEditor
@@ -500,7 +511,12 @@ function Field({
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-1', className)}>
-      <Label htmlFor={fieldId(name)}>{label}</Label>
+      <Label
+        id={`${fieldId(name)}-label`}
+        htmlFor={fieldId(name)}
+        onClick={() => document.getElementById(fieldId(name))?.focus()}>
+        {label}
+      </Label>
       {children}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (

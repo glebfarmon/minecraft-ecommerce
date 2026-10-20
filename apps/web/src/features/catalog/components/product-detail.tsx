@@ -6,6 +6,7 @@ import {useCart, useCurrency} from '@/features/cart/shop-provider'
 import {useCatalog} from '@/features/catalog/catalog-provider'
 import {ProductPlate} from '@/features/catalog/components/product-plate'
 import {Block, SectionBlock} from '@/features/catalog/components/product-sections'
+import {RichText} from '@/features/rules/components/rich-text'
 import {useScrollEdges} from '@/hooks/use-scroll-edges'
 import {formatPrice, productPlateLayoutId} from '@/lib/catalog'
 import {Check, ShoppingBag} from 'lucide-react'
@@ -94,7 +95,9 @@ export function ProductDetail({
             </Block>
           )}
           <Block title={t('description')}>
-            <p className="leading-relaxed text-fg/85">{product.description}</p>
+            <p className="leading-relaxed whitespace-pre-line text-fg/85">
+              <RichText text={product.description} links={false} />
+            </p>
           </Block>
           {sections.map(section => (
             <SectionBlock key={section.title} section={section} />

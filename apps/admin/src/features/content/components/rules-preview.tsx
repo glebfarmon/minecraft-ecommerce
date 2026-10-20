@@ -1,44 +1,52 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import {Fragment} from 'react'
+import {Fragment, type ReactNode} from 'react'
 
-import {type RulesDocument, parseInline} from '@shop/shared/rules'
+import {type RichNode, type RulesDocument, parseRich} from '@shop/shared/rules'
 
 type Locale = 'en' | 'pl'
 type Text = {en: string; pl?: string}
 
 const FALLBACK = 'Uses the English text'
 
-/** Rule mini-markdown with the admin's tokens; unsafe links come back from `parseInline` as text. */
-function RichText({text}: {text: string}) {
-  return parseInline(text).map((token, i) => {
-    switch (token.type) {
+function render(nodes: RichNode[]): ReactNode {
+  return nodes.map((node, i) => {
+    switch (node.type) {
       case 'strong':
         return (
           <strong key={i} className="font-semibold">
-            {token.value}
+            {render(node.children)}
           </strong>
         )
       case 'em':
-        return <em key={i}>{token.value}</em>
+        return <em key={i}>{render(node.children)}</em>
+      case 'u':
+        return (
+          <u key={i} className="underline-offset-2">
+            {render(node.children)}
+          </u>
+        )
       case 'link':
         return (
           <a
             key={i}
-            href={token.href}
+            href={node.href}
             className="text-accent underline underline-offset-2"
-            {...(token.href.startsWith('https://')
+            {...(node.href.startsWith('https://')
               ? {target: '_blank', rel: 'noopener noreferrer'}
               : {})}>
-            {token.value}
+            {render(node.children)}
           </a>
         )
-      default:
-        return <Fragment key={i}>{token.value}</Fragment>
+      case 'text':
+        return <Fragment key={i}>{node.value}</Fragment>
     }
   })
 }
+
+/** Rule mini-markdown with the admin's tokens; unsafe links come back from `parseRich` as text. */
+const RichText = ({text}: {text: string}) => render(parseRich(text))
 
 /** The text the site shows in `locale`: PL falls back to EN when empty, as the public API does. */
 function Localized({text, locale}: {text: Text; locale: Locale}) {

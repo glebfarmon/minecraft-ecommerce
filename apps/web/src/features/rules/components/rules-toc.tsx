@@ -6,6 +6,8 @@ import {MotionConfig, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useId} from 'react'
 
+import {parseRich, toPlainText} from '@shop/shared/rules'
+
 export function RulesToc({
   sections,
   active,
@@ -44,7 +46,7 @@ export function RulesToc({
                 <span
                   lang={section.title.lang === locale ? undefined : section.title.lang}
                   className="min-w-0 flex-1 break-words">
-                  {section.title.value}
+                  {toPlainText(parseRich(section.title.value))}
                 </span>
                 <span className="tabular shrink-0 text-xs text-muted">{section.items.length}</span>
               </a>

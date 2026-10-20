@@ -5,7 +5,7 @@ import {RichText} from '@/features/rules/components/rich-text'
 import {RuleActions} from '@/features/rules/components/rule-actions'
 import type {RuleItem} from '@/features/rules/types'
 
-import {parseInline, toPlainText} from '@shop/shared/rules'
+import {parseRich, toPlainText} from '@shop/shared/rules'
 
 export function RuleRow({
   item,
@@ -36,7 +36,7 @@ export function RuleRow({
       </p>
       <RuleActions
         number={item.number}
-        plainText={toPlainText(parseInline(item.text.value))}
+        plainText={toPlainText(parseRich(item.text.value))}
         href={`${rulesPath}#${item.anchor}`}
       />
     </li>

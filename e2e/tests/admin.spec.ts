@@ -124,6 +124,21 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
   await page.getByLabel('Price EUR').fill('3.49')
   await page.getByLabel('Price PLN').fill('14.99')
   await page.getByLabel('Name (EN)').fill('Probe Rank')
+  const description = page.getByLabel('Description (EN)')
+  await description.fill('Probe')
+  await description.dblclick({position: {x: 20, y: 18}})
+  // ProseMirror takes the DOM selection a moment after the double-click; the shortcut needs it.
+  await expect
+    .poll(() =>
+      description.evaluate(
+        el =>
+          (el as HTMLElement & {editor: {state: {selection: {empty: boolean}}}}).editor.state
+            .selection.empty
+      )
+    )
+    .toBe(false)
+  await page.keyboard.press('ControlOrMeta+u')
+  await expect(description.locator('u')).toHaveText('Probe')
   await page.getByRole('tab', {name: 'PL'}).click()
   await page.getByLabel('Name (PL)').fill('Ranga Próbna')
   await page.getByLabel('Grant commands').fill('lp user {nick} parent add probe')
@@ -132,6 +147,8 @@ test('the owner adds a product, enables it, moves it up and the shop shows it th
   try {
     await page.getByRole('button', {name: 'Save'}).click()
     await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
+    await page.reload()
+    await expect(page.getByLabel('Description (EN)').locator('u')).toHaveText('Probe')
     await page.getByLabel('Enabled').check()
     await page.getByRole('button', {name: 'Save'}).click()
     await expect(page.getByText('Saved. Live on the site within a minute.')).toBeVisible()
@@ -194,19 +211,28 @@ async function signInOwner(page: Page) {
 test('the owner publishes a rule edit and the rules page shows it', async ({page}) => {
   test.setTimeout(180_000)
   const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
-  const probe = `Probe rule ${String(Date.now())}`
+  // One word, so a double-click selects all of it.
+  const probe = `ProbeRule${String(Date.now())}`
   await signInOwner(page)
   await page.getByRole('link', {name: 'Content', exact: true}).click()
   await page.getByRole('link', {name: 'Rules', exact: true}).click()
   const field = page.getByLabel('Rule 1.1 (EN)')
   await expect(field).toBeVisible()
-  const original = await field.inputValue()
-  expect(original).not.toBe('')
+  // The rule field is a rich text editor: keep its document (marks included) to put back.
+  const editorDoc = (el: HTMLElement) =>
+    (el as HTMLElement & {editor: {getJSON(): unknown}}).editor.getJSON()
+  const original = await field.evaluate(editorDoc)
+  expect(JSON.stringify(original)).toContain('"text"')
 
   // From the first published probe the site shows it: always restore the seeded text and publish
   // it again, so rules.spec.ts finds the content it expects.
   try {
     await field.fill(probe)
+    await field.dblclick({position: {x: 40, y: 18}})
+    await page.getByRole('button', {name: 'Bold'}).click()
+    await expect(
+      page.getByRole('region', {name: 'Preview'}).locator('strong', {hasText: probe})
+    ).toBeVisible()
     await page.getByRole('button', {name: 'Save draft'}).click()
     await expect(page.getByText('Unsaved changes')).toHaveCount(0)
     await page.getByRole('button', {name: 'Publish', exact: true}).click()
@@ -230,8 +256,14 @@ test('the owner publishes a rule edit and the rules page shows it', async ({page
     await page.goto(`${ADMIN}/content/rules`)
     const restore = page.getByLabel('Rule 1.1 (EN)')
     await expect(restore).toBeVisible()
-    if ((await restore.inputValue()) !== original) {
-      await restore.fill(original)
+    if (JSON.stringify(await restore.evaluate(editorDoc)) !== JSON.stringify(original)) {
+      await restore.evaluate((el, doc) => {
+        ;(
+          el as HTMLElement & {
+            editor: {commands: {setContent(d: unknown, o: {emitUpdate: boolean}): void}}
+          }
+        ).editor.commands.setContent(doc, {emitUpdate: true})
+      }, original)
       await page.getByRole('button', {name: 'Save draft'}).click()
       await expect(page.getByText('Unsaved changes')).toHaveCount(0)
     }
