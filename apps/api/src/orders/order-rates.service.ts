@@ -52,7 +52,10 @@ export class OrderRatesService implements OnApplicationBootstrap, OnModuleDestro
     clearInterval(this.timer)
   }
 
-  async fill(orderId: string): Promise<'filled' | 'pending' | 'skipped'> {
+  async fill(
+    orderId: string,
+    lookup: ExchangeRates['eurPlnBefore'] = day => this.rates.eurPlnBefore(day)
+  ): Promise<'filled' | 'pending' | 'skipped'> {
     const order = await this.prisma.order.findUnique({
       where: {id: orderId},
       select: {paidAt: true, currency: true, totalMinor: true, eurPlnRate: true}
@@ -60,12 +63,15 @@ export class OrderRatesService implements OnApplicationBootstrap, OnModuleDestro
     if (!order?.paidAt || order.eurPlnRate) return 'skipped'
     let found
     try {
-      found = await this.rates.eurPlnBefore(warsawDay(order.paidAt))
+      found = await lookup(warsawDay(order.paidAt))
     } catch (error) {
       this.log.warn(`no exchange rate for order ${orderId} yet: ${String(error)}`)
       return 'pending'
     }
-    if (!found) return 'pending'
+    if (!found) {
+      this.log.warn(`no exchange-rate table before the payment day of order ${orderId}`)
+      return 'pending'
+    }
     // Conditional on a still-null rate: replicas filling the same order write the first value only.
     const {count} = await this.prisma.order.updateMany({
       where: {id: orderId, eurPlnRate: null},
@@ -78,15 +84,41 @@ export class OrderRatesService implements OnApplicationBootstrap, OnModuleDestro
     return count === 1 ? 'filled' : 'skipped'
   }
 
+  /**
+   * Fills every paid order still missing a rate, newest first (the range the dashboard shows
+   * comes back first), in batches of `limit`. One request per day however many orders share it;
+   * an order that stays pending is not retried within the same sweep.
+   */
   async sweep(limit = 200): Promise<void> {
+    const days = new Map<string, ReturnType<ExchangeRates['eurPlnBefore']>>()
+    const lookup: ExchangeRates['eurPlnBefore'] = day => {
+      let answer = days.get(day)
+      if (!answer) {
+        answer = this.rates.eurPlnBefore(day)
+        days.set(day, answer)
+      }
+      return answer
+    }
+    const tried: string[] = []
     try {
-      const orders = await this.prisma.order.findMany({
-        where: {status: {in: ['PAID', 'DELIVERED']}, paidAt: {not: null}, eurPlnRate: null},
-        orderBy: {paidAt: 'asc'},
-        take: limit,
-        select: {id: true}
-      })
-      for (const {id} of orders) await this.fill(id)
+      for (;;) {
+        const orders = await this.prisma.order.findMany({
+          where: {
+            status: {in: ['PAID', 'DELIVERED']},
+            paidAt: {not: null},
+            eurPlnRate: null,
+            id: {notIn: tried}
+          },
+          orderBy: {paidAt: 'desc'},
+          take: limit,
+          select: {id: true}
+        })
+        if (orders.length === 0) return
+        for (const {id} of orders) {
+          tried.push(id)
+          await this.fill(id, lookup)
+        }
+      }
     } catch (error) {
       this.log.error('exchange-rate sweep failed', error)
     }

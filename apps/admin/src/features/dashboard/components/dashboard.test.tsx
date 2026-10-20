@@ -169,6 +169,32 @@ describe('Dashboard', () => {
     expect(document.body.textContent).not.toMatch(/NaN/)
   })
 
+  it('shows a dash, not €0.00 and −100%, when every paid order awaits a rate', async () => {
+    mockApi(
+      stats({
+        revenueMinor: 0,
+        previousRevenueMinor: 900,
+        averageMinor: null,
+        ltvMinor: null,
+        buyers: 0,
+        awaitingRate: 20
+      })
+    )
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('—')
+    expect(revenue).not.toHaveTextContent('€0.00')
+    expect(revenue).not.toHaveTextContent('−100%')
+  })
+
+  it('hides the vs-previous delta while some orders await a rate', async () => {
+    mockApi(stats({awaitingRate: 1}))
+    renderWithStore(<Dashboard />)
+    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    expect(revenue).toHaveTextContent('€12.50')
+    expect(revenue).not.toHaveTextContent('+25%')
+  })
+
   it('shows dashes and empty states on an empty range instead of NaN', async () => {
     mockApi(
       stats({

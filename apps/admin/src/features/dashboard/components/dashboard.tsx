@@ -36,18 +36,32 @@ const money = (minor: number | null, currency: Currency) =>
 
 function Kpis({stats}: {stats: Stats}) {
   const {currency} = stats
-  const change = delta(stats.revenueMinor, stats.previousRevenueMinor)
+  // While orders wait for a rate the revenue is partial: no change figure, and a dash when
+  // nothing is converted yet, never €0.00.
+  const waiting = stats.awaitingRate > 0
+  const noneConverted = waiting && stats.awaitingRate >= stats.paidCount
+  const change = waiting ? null : delta(stats.revenueMinor, stats.previousRevenueMinor)
   const paidChange = delta(stats.paidCount, stats.previousPaidCount)
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <KpiCard
         label="Revenue"
-        value={formatMoney(stats.revenueMinor, currency)}
-        count={{to: stats.revenueMinor, format: n => formatMoney(n, currency)}}
+        value={noneConverted ? '—' : formatMoney(stats.revenueMinor, currency)}
+        count={
+          noneConverted
+            ? undefined
+            : {to: stats.revenueMinor, format: n => formatMoney(n, currency)}
+        }
         delta={change}
-        hint={change === null ? 'No sales in the previous period' : 'vs previous period'}
+        hint={
+          waiting
+            ? 'Partial: some orders wait for a rate'
+            : change === null
+              ? 'No sales in the previous period'
+              : 'vs previous period'
+        }
         tone="accent"
-        spark={stats.daily.map(d => d.totalMinor)}
+        spark={noneConverted ? undefined : stats.daily.map(d => d.totalMinor)}
       />
       <KpiCard
         label="Paid orders"
