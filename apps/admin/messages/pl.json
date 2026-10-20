@@ -49,7 +49,10 @@
     "chooseServer": "Wybierz serwer",
     "chooseCategory": "Wybierz kategorię",
     "portRange": "Użyj portu od 1 do 65535",
-    "roleNameLength": "Użyj od 2 do 40 znaków"
+    "roleNameLength": "Użyj od 2 do 40 znaków",
+    "atMost24": "Użyj najwyżej 24 znaków",
+    "atMost253": "Użyj najwyżej 253 znaków",
+    "validUrl": "Wpisz poprawny adres URL"
   },
   "apiErrors": {
     "generic": "Coś poszło nie tak. Spróbuj ponownie.",

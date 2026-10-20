@@ -128,7 +128,7 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             setStatus(v === 'ALL' ? undefined : (v as Status))
             setCursors([undefined])
           }}>
-          <TabsList aria-label={t('status')}>
+          <TabsList aria-label={t('status')} className="max-w-full overflow-x-auto">
             {TABS.map(tab => (
               <TabsTrigger key={tab} value={tab}>
                 {tab === 'ALL' ? t('all') : status_(tab)}

@@ -5,7 +5,6 @@ import {VALIDATION_MESSAGES} from '@shop/shared/validation-messages'
  * `@shop/shared/validation-messages`; both sets are translated under `validation.<key>` in `messages/`.
  */
 export const FORM_MESSAGES = {
-  validEmail: 'Enter a valid email',
   sixDigits: 'Enter the 6 digits',
   backupCode: 'Enter a backup code',
   priceFormat: 'Use a price like 9.99',

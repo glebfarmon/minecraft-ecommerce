@@ -3,7 +3,12 @@ import * as v from 'valibot'
 import {RulesDocumentSchema} from './rules'
 import {VALIDATION_MESSAGES} from './validation-messages'
 
-const NamePart = v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(24))
+const NamePart = v.pipe(
+  v.string(),
+  v.trim(),
+  v.minLength(1, VALIDATION_MESSAGES.enterName),
+  v.maxLength(24, VALIDATION_MESSAGES.atMost24)
+)
 // hostname (labels of a-z0-9-) or dotted IPv4, optional :port
 const HOST =
   /^(?=.{1,253}$)((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?::\d{1,5})?$/i
@@ -22,11 +27,16 @@ export const SiteSettingsSchema = v.object({
   discordUrl: v.pipe(
     v.string(),
     v.trim(),
-    v.url(),
+    v.url(VALIDATION_MESSAGES.validUrl),
     v.startsWith('https://', VALIDATION_MESSAGES.httpsLink),
     v.description('Discord invite link (https://)')
   ),
-  supportEmail: v.pipe(v.string(), v.trim(), v.email(), v.description('Support contact address'))
+  supportEmail: v.pipe(
+    v.string(),
+    v.trim(),
+    v.email(VALIDATION_MESSAGES.validEmail),
+    v.description('Support contact address')
+  )
 })
 export type SiteSettings = v.InferOutput<typeof SiteSettingsSchema>
 

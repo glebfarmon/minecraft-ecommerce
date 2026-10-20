@@ -1,8 +1,10 @@
 import {FORM_MESSAGES} from '@/lib/validation-messages'
 import * as v from 'valibot'
 
+import {VALIDATION_MESSAGES} from '@shop/shared/validation-messages'
+
 export const InviteFormSchema = v.object({
-  email: v.pipe(v.string(), v.trim(), v.toLowerCase(), v.email(FORM_MESSAGES.validEmail))
+  email: v.pipe(v.string(), v.trim(), v.toLowerCase(), v.email(VALIDATION_MESSAGES.validEmail))
 })
 export type InviteForm = v.InferOutput<typeof InviteFormSchema>
 

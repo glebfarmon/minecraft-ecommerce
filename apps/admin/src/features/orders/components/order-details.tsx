@@ -87,7 +87,7 @@ export function OrderDetails({id}: {id: string}) {
                     <span className="tabular text-muted">
                       {t('each', {quantity: item.quantity, price: money(item.unitAmountMinor)})}
                     </span>
-                    <span className="tabular w-20 text-right font-semibold">
+                    <span className="tabular min-w-20 text-right font-semibold">
                       {money(item.unitAmountMinor * item.quantity)}
                     </span>
                   </li>

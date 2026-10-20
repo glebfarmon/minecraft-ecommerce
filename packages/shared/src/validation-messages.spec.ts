@@ -116,6 +116,22 @@ describe('shared schemas keep their English messages', () => {
     expect(messagesOf(schema as v.GenericSchema, input)).toContain(message)
   })
 
+  it('settings: the default valibot texts are replaced by keyed messages', () => {
+    const base = {
+      siteName: {plain: 'a', accent: 'b'},
+      serverIp: 'play.example.com',
+      discordUrl: 'https://d.gg/x',
+      supportEmail: 'a@b.io'
+    }
+    const bad = (over: object) => messagesOf(SiteSettingsSchema, {...base, ...over})
+    expect(bad({siteName: {plain: '', accent: 'b'}})).toContain('Enter a name')
+    expect(bad({siteName: {plain: 'x'.repeat(25), accent: 'b'}})).toContain(
+      'Use at most 24 characters'
+    )
+    expect(bad({discordUrl: 'abc'})).toContain('Enter a valid URL')
+    expect(bad({supportEmail: 'nope'})).toContain('Enter a valid email')
+  })
+
   it('product: stray placeholder and long command', () => {
     const base = {
       serverId: 's',

@@ -91,7 +91,7 @@ export const ServerFormSchema = v.object({
 export type ServerForm = v.InferOutput<typeof ServerFormSchema>
 
 export const RconFormSchema = v.object({
-  host: v.pipe(v.string(), v.trim(), v.maxLength(253)),
+  host: v.pipe(v.string(), v.trim(), v.maxLength(253, VALIDATION_MESSAGES.atMost253)),
   port: v.pipe(
     v.string(),
     v.trim(),
