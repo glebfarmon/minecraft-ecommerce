@@ -154,12 +154,12 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
         </div>
       )}
       {loadingHeld && <SkeletonRows rows={3} />}
-      {invites.isError && (
+      {!loadingHeld && invites.isError && (
         <p role="alert" className="rounded-card bg-card p-5">
           {t('couldNotLoadInvitesRefreshThe')}
         </p>
       )}
-      {invites.data && (
+      {!loadingHeld && invites.data && (
         <DataTable
           caption={t('invites')}
           rows={invites.data}
