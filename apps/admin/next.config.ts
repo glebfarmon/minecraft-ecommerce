@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: repoRoot,
   turbopack: {root: repoRoot},
   transpilePackages: ['@shop/ui'],
+  headers: () =>
+    Promise.resolve([
+      {source: '/:path*', headers: [{key: 'X-Robots-Tag', value: 'noindex, nofollow'}]}
+    ]),
   // In production a reverse proxy serves /api; in dev the API runs on its own port, so forward it.
   rewrites: () =>
     Promise.resolve(
