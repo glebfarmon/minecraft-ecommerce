@@ -320,6 +320,38 @@ const injectedRtkApi = api.injectEndpoints({
           currency: queryArg.currency
         }
       })
+    }),
+    listPromoCodes: build.query<ListPromoCodesApiResponse, ListPromoCodesApiArg>({
+      query: () => ({url: `/api/admin/promo-codes`})
+    }),
+    createPromoCode: build.mutation<CreatePromoCodeApiResponse, CreatePromoCodeApiArg>({
+      query: queryArg => ({url: `/api/admin/promo-codes`, method: 'POST', body: queryArg.body})
+    }),
+    getPromoCode: build.query<GetPromoCodeApiResponse, GetPromoCodeApiArg>({
+      query: queryArg => ({url: `/api/admin/promo-codes/${queryArg.id}`})
+    }),
+    updatePromoCode: build.mutation<UpdatePromoCodeApiResponse, UpdatePromoCodeApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}`,
+        method: 'PATCH',
+        body: queryArg.body
+      })
+    }),
+    deletePromoCode: build.mutation<DeletePromoCodeApiResponse, DeletePromoCodeApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}`,
+        method: 'DELETE',
+        params: {
+          version: queryArg.version
+        }
+      })
+    }),
+    setPromoCodeActive: build.mutation<SetPromoCodeActiveApiResponse, SetPromoCodeActiveApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}/active`,
+        method: 'PATCH',
+        body: queryArg.body
+      })
     })
   }),
   overrideExisting: false
@@ -1521,6 +1553,143 @@ export type GetOrderStatsApiArg = {
   range?: '7d' | '30d'
   currency?: 'EUR' | 'PLN'
 }
+export type ListPromoCodesApiResponse = /** status 200 Promo codes */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}[]
+export type ListPromoCodesApiArg = void
+export type CreatePromoCodeApiResponse = /** status 201 The new code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type CreatePromoCodeApiArg = {
+  body: {
+    code: string
+    kind: 'PERCENT' | 'FIXED'
+    value: number
+    currency: ('EUR' | 'PLN') | null
+    maxUses: number | null
+    startsAt: string | null
+    endsAt: string | null
+    isActive: boolean
+    categoryIds: string[]
+    productIds: string[]
+  }
+}
+export type GetPromoCodeApiResponse = /** status 200 The code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type GetPromoCodeApiArg = {
+  id: string
+}
+export type UpdatePromoCodeApiResponse = /** status 200 The updated code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type UpdatePromoCodeApiArg = {
+  id: string
+  body: {
+    code: string
+    kind: 'PERCENT' | 'FIXED'
+    value: number
+    currency: ('EUR' | 'PLN') | null
+    maxUses: number | null
+    startsAt: string | null
+    endsAt: string | null
+    isActive: boolean
+    categoryIds: string[]
+    productIds: string[]
+  } & {
+    version: number
+  }
+}
+export type DeletePromoCodeApiResponse = unknown
+export type DeletePromoCodeApiArg = {
+  id: string
+  version: string
+}
+export type SetPromoCodeActiveApiResponse = /** status 200 The updated code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type SetPromoCodeActiveApiArg = {
+  id: string
+  body: {
+    isActive: boolean
+    version: number
+  }
+}
 export const {
   useGetApiInviteLookupByTokenQuery,
   useGetApiAdminMeQuery,
@@ -1568,5 +1737,11 @@ export const {
   useUpdateContentSettingsMutation,
   useListAdminOrdersQuery,
   useGetAdminOrderQuery,
-  useGetOrderStatsQuery
+  useGetOrderStatsQuery,
+  useListPromoCodesQuery,
+  useCreatePromoCodeMutation,
+  useGetPromoCodeQuery,
+  useUpdatePromoCodeMutation,
+  useDeletePromoCodeMutation,
+  useSetPromoCodeActiveMutation
 } = injectedRtkApi

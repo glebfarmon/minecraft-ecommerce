@@ -6858,6 +6858,1002 @@
         },
         "tags": ["Orders admin"]
       }
+    },
+    "/api/admin/promo-codes": {
+      "get": {
+        "operationId": "listPromoCodes",
+        "summary": "Promo codes, newest first",
+        "description": "Every live (not deleted) code with its status, use count and whether it is locked. Needs `promo.write`.",
+        "responses": {
+          "200": {
+            "description": "Promo codes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "kind": {
+                        "enum": ["PERCENT", "FIXED"],
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "number"
+                      },
+                      "currency": {
+                        "anyOf": [
+                          {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxUses": {
+                        "anyOf": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "usedCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "startsAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "endsAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "status": {
+                        "enum": ["active", "scheduled", "expired", "used_up", "disabled"],
+                        "type": "string"
+                      },
+                      "locked": {
+                        "type": "boolean"
+                      },
+                      "categoryIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "productIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "version": {
+                        "type": "number"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "code",
+                      "kind",
+                      "value",
+                      "currency",
+                      "maxUses",
+                      "usedCount",
+                      "startsAt",
+                      "endsAt",
+                      "isActive",
+                      "status",
+                      "locked",
+                      "categoryIds",
+                      "productIds",
+                      "version",
+                      "createdAt"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          }
+        },
+        "tags": ["promo-codes"]
+      },
+      "post": {
+        "operationId": "createPromoCode",
+        "summary": "Create a promo code",
+        "description": "Creates a code, optionally limited to categories and products (empty lists mean the whole cart). Needs `promo.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{3,32}$"
+                  },
+                  "kind": {
+                    "enum": ["PERCENT", "FIXED"],
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "integer"
+                  },
+                  "currency": {
+                    "anyOf": [
+                      {
+                        "enum": ["EUR", "PLN"],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUses": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "endsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "categoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "productIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "code",
+                  "kind",
+                  "value",
+                  "currency",
+                  "maxUses",
+                  "startsAt",
+                  "endsAt",
+                  "isActive",
+                  "categoryIds",
+                  "productIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERCENT", "FIXED"],
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "anyOf": [
+                        {
+                          "enum": ["EUR", "PLN"],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxUses": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "startsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "enum": ["active", "scheduled", "expired", "used_up", "disabled"],
+                      "type": "string"
+                    },
+                    "locked": {
+                      "type": "boolean"
+                    },
+                    "categoryIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "productIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "kind",
+                    "value",
+                    "currency",
+                    "maxUses",
+                    "usedCount",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "status",
+                    "locked",
+                    "categoryIds",
+                    "productIds",
+                    "version",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `invalid`: an unknown category or product id"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "409": {
+            "description": "`code_taken`: a live code already has this text"
+          }
+        },
+        "tags": ["promo-codes"]
+      }
+    },
+    "/api/admin/promo-codes/{id}": {
+      "get": {
+        "operationId": "getPromoCode",
+        "summary": "One promo code",
+        "description": "A live code by id. Needs `promo.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERCENT", "FIXED"],
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "anyOf": [
+                        {
+                          "enum": ["EUR", "PLN"],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxUses": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "startsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "enum": ["active", "scheduled", "expired", "used_up", "disabled"],
+                      "type": "string"
+                    },
+                    "locked": {
+                      "type": "boolean"
+                    },
+                    "categoryIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "productIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "kind",
+                    "value",
+                    "currency",
+                    "maxUses",
+                    "usedCount",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "status",
+                    "locked",
+                    "categoryIds",
+                    "productIds",
+                    "version",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          }
+        },
+        "tags": ["promo-codes"]
+      },
+      "patch": {
+        "operationId": "updatePromoCode",
+        "summary": "Edit a promo code",
+        "description": "Replaces the code's fields. Once a code has been used or attached to an order only the limit, dates and active flag may change. Needs `promo.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "pattern": "^[A-Z0-9]{3,32}$"
+                      },
+                      "kind": {
+                        "enum": ["PERCENT", "FIXED"],
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "integer"
+                      },
+                      "currency": {
+                        "anyOf": [
+                          {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxUses": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "startsAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "endsAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "categoryIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "productIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "kind",
+                      "value",
+                      "currency",
+                      "maxUses",
+                      "startsAt",
+                      "endsAt",
+                      "isActive",
+                      "categoryIds",
+                      "productIds"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": ["version"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERCENT", "FIXED"],
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "anyOf": [
+                        {
+                          "enum": ["EUR", "PLN"],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxUses": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "startsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "enum": ["active", "scheduled", "expired", "used_up", "disabled"],
+                      "type": "string"
+                    },
+                    "locked": {
+                      "type": "boolean"
+                    },
+                    "categoryIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "productIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "kind",
+                    "value",
+                    "currency",
+                    "maxUses",
+                    "usedCount",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "status",
+                    "locked",
+                    "categoryIds",
+                    "productIds",
+                    "version",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body, or `invalid`: an unknown category or product id"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`code_taken` (a live code has this text), `promo_locked` (the code was used, so its text, kind, value, currency and scope are fixed), `max_uses_below_used`, or `stale` (out-of-date `version`)"
+          }
+        },
+        "tags": ["promo-codes"]
+      },
+      "delete": {
+        "operationId": "deletePromoCode",
+        "summary": "Delete a promo code",
+        "description": "Soft delete: the code stops working and its text can be reused, orders keep their record of it. Needs `promo.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The version you read"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Missing or invalid `version`"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`stale`: the code changed since you read it (send the current `version`)"
+          }
+        },
+        "tags": ["promo-codes"]
+      }
+    },
+    "/api/admin/promo-codes/{id}/active": {
+      "patch": {
+        "operationId": "setPromoCodeActive",
+        "summary": "Enable or disable a promo code",
+        "description": "Flips the active flag without touching the rest. Needs `promo.write`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "integer"
+                  }
+                },
+                "required": ["isActive", "version"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["PERCENT", "FIXED"],
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "anyOf": [
+                        {
+                          "enum": ["EUR", "PLN"],
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maxUses": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usedCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "startsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "endsAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "enum": ["active", "scheduled", "expired", "used_up", "disabled"],
+                      "type": "string"
+                    },
+                    "locked": {
+                      "type": "boolean"
+                    },
+                    "categoryIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "productIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "version": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "kind",
+                    "value",
+                    "currency",
+                    "maxUses",
+                    "usedCount",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "status",
+                    "locked",
+                    "categoryIds",
+                    "productIds",
+                    "version",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "No such record"
+          },
+          "409": {
+            "description": "`stale`: the code changed since you read it (send the current `version`)"
+          }
+        },
+        "tags": ["promo-codes"]
+      }
     }
   }
 }

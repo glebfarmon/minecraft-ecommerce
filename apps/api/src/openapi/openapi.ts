@@ -29,6 +29,7 @@ import {
   schema
 } from './helpers'
 import {ordersPaths} from './orders-paths'
+import {promoPaths} from './promo-paths'
 
 export type {OpenApiDocument} from './helpers'
 
@@ -213,7 +214,8 @@ export function buildOpenApiDocument(): OpenApiDocument {
       },
       ...catalogAdminPaths,
       ...contentPaths,
-      ...ordersPaths
+      ...ordersPaths,
+      ...promoPaths
     }
   }
 }
