@@ -221,7 +221,7 @@ describe('promo uses and webhooks', () => {
     expect(await used(promo.id)).toBe(2)
   })
 
-  it('pays when the expiry commits just before the paid update runs', async () => {
+  it('pays when the expiry commits right after a paid update that matched no row', async () => {
     const promo = await makePromo('WHRACE', 5)
     const {publicId, sessionId} = await createOrder('en', 'WHRACE')
     const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.completed')
@@ -244,9 +244,11 @@ describe('promo uses and webhooks', () => {
                     const f = Reflect.get(o, m, r) as (...a: unknown[]) => unknown
                     if (m !== 'updateMany') return f.bind(o)
                     return async (...args: unknown[]) => {
-                      if (!flipped) {
+                      const result = (await f.apply(o, args)) as {count: number}
+                      if (!flipped && result.count === 0) {
                         flipped = true
-                        // The expiry commits between the order lookup and the paid update.
+                        // The first paid statement found no row to move; the expiry commits now.
+                        // The old EXPIRED-first order was stranded here (both statements miss).
                         await ctx.prisma.order.update({
                           where: {publicId},
                           data: {status: 'EXPIRED'}
@@ -256,7 +258,7 @@ describe('promo uses and webhooks', () => {
                           data: {usedCount: {decrement: 1}}
                         })
                       }
-                      return f.apply(o, args)
+                      return result
                     }
                   }
                 })
@@ -265,9 +267,11 @@ describe('promo uses and webhooks', () => {
           ),
         ...rest
       )) as never)
-    await post(signed).expect(200)
-    spy.mockRestore()
-    expect(flipped).toBe(true)
+    try {
+      await post(signed).expect(200)
+    } finally {
+      spy.mockRestore()
+    }
     expect(await statusOf(publicId)).toBe('PAID')
     expect(await used(promo.id)).toBe(1)
     expect(receipts(publicId)).toHaveLength(1)
