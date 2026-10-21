@@ -24,9 +24,9 @@ const Layout = ({
   </Html>
 )
 
-export const signInCodeMail = (code: string) =>
+export const signInCodeMail = (code: string, brand: string) =>
   mail(
-    `${code} is your Shop Admin sign-in code`,
+    `${code} is your ${brand} Admin sign-in code`,
     <Layout>
       <Heading as="h1">Your sign-in code</Heading>
       <Text style={{fontSize: 32, letterSpacing: 6, fontWeight: 700}}>{code}</Text>
@@ -34,19 +34,19 @@ export const signInCodeMail = (code: string) =>
     </Layout>
   )
 
-export const inviteMail = (link: string, roleName: string) =>
+export const inviteMail = (link: string, roleName: string, brand: string) =>
   mail(
-    'You are invited to Shop Admin',
+    `You are invited to ${brand} Admin`,
     <Layout>
       <Heading as="h1">You are invited</Heading>
-      <Text>You were invited to Shop Admin as {roleName}. The link is valid for 7 days.</Text>
+      <Text>{`You were invited to ${brand} Admin as ${roleName}. The link is valid for 7 days.`}</Text>
       <Link href={link}>{link}</Link>
     </Layout>
   )
 
-export const twoFactorResetMail = () =>
+export const twoFactorResetMail = (brand: string) =>
   mail(
-    'Your Shop Admin two-factor authentication was reset',
+    `Your ${brand} Admin two-factor authentication was reset`,
     <Layout>
       <Heading as="h1">Two-factor authentication reset</Heading>
       <Text>

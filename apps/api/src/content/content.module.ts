@@ -16,6 +16,7 @@ import {SettingsAdminService} from './settings-admin.service'
     MessagesAdminController,
     SettingsAdminController
   ],
-  providers: [ContentService, RulesAdminService, MessagesAdminService, SettingsAdminService]
+  providers: [ContentService, RulesAdminService, MessagesAdminService, SettingsAdminService],
+  exports: [ContentService]
 })
 export class ContentModule {}

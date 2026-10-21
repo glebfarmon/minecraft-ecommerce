@@ -8,6 +8,8 @@ import Redis from 'ioredis'
 
 import {type AuditEntryInput, AuditService} from '../audit/audit.service'
 import {CLIENT_IP_HEADER, requestIp} from '../common/client-ip'
+import {ContentService} from '../content/content.service'
+import {DEFAULT_BRAND, siteBrand} from '../mailer/brand'
 import {getMailer} from '../mailer/create-mailer'
 import {signInCodeMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
@@ -84,6 +86,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
   const redis = authRedis.get()
   const limits = rateLimits()
   const audit = new AuditService(prisma)
+  const content = new ContentService(prisma)
   // The call it records already succeeded (or already failed): a broken audit write must not turn it
   // into a 500. Logs the action and error kind only, never the row (it carries the email).
   const recordAudit = (entry: AuditEntryInput) =>
@@ -95,7 +98,7 @@ export function createAuth(options: {baseURL?: string} = {}) {
   const isEnrolled = async (userId: string) =>
     (await prisma.twoFactor.count({where: {userId, verified: true}})) > 0
   return betterAuth({
-    appName: 'Shop Admin',
+    appName: `${DEFAULT_BRAND} Admin`,
     baseURL,
     basePath: '/api/auth',
     secret: env.secret,
@@ -242,14 +245,15 @@ export function createAuth(options: {baseURL?: string} = {}) {
         sendVerificationOTP: async ({email, otp}, ctx) => {
           // Over the limit (or Redis down): answer as usual, send nothing (no enumeration).
           if (!(await otpAllowed(redis, email, requestIp(ctx?.request?.headers), limits))) return
-          void signInCodeMail(otp)
+          void siteBrand(content)
+            .then(brand => signInCodeMail(otp, brand))
             .then(mail => getMailer().send({to: email, ...mail}))
             .catch((error: unknown) => {
               console.error('mail: sign-in code failed', error)
             })
         }
       }),
-      twoFactor({issuer: 'Shop Admin', allowPasswordless: true})
+      twoFactor({issuer: `${DEFAULT_BRAND} Admin`, allowPasswordless: true})
     ]
   })
 }

@@ -94,7 +94,7 @@ describe('auth in NestJS', () => {
       .send({email: 'someone@example.com', type: 'sign-in'})
       .expect(200)
     const mail = await mailTo('someone@example.com')
-    expect(mail.subject).toMatch(/^\d{6} is your Shop Admin sign-in code$/)
+    expect(mail.subject).toMatch(/^\d{6} is your Blockhaus Admin sign-in code$/)
   })
 
   it('signs in with the code and sets the session cookie that opens guarded routes', async () => {
