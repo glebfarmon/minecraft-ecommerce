@@ -450,7 +450,9 @@ test('the rail marks a clicked page at once and its pill stays put inside a sect
   await expect(vip).toBeInViewport()
   const top = () => pill.evaluate(el => Math.round(el.getBoundingClientRect().top))
   const before = await top()
-  await vip.click()
+  // force: in CI Playwright reported the card "not stable" for 30 s while the screencast showed a
+  // still page (sub-pixel layout churn at this 480 px viewport). This test is about the pill.
+  await vip.click({force: true})
   await page.waitForTimeout(100)
   expect(await top()).toBe(before)
   await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
