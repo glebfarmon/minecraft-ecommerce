@@ -1,4 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor} from '@testing-library/react'
 
 import {SettingsForm} from './settings-form'
@@ -34,9 +35,7 @@ describe('SettingsForm', () => {
     expect(preview).toHaveTextContent('CraftWorld')
     expect(screen.getByText('World')).toHaveAttribute('data-accent')
     fireEvent.click(screen.getByRole('button', {name: 'Save'}))
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Saved. Live on the site within a minute.'
-    )
+    expect(await findToast()).toHaveTextContent('Saved. Live on the site within a minute.')
     expect(sent).toMatchObject({
       siteName: {plain: 'Craft', accent: 'World'},
       serverIp: 'play.example.com',
@@ -44,6 +43,15 @@ describe('SettingsForm', () => {
       supportEmail: 'help@example.com',
       version: 3
     })
+  })
+
+  it('shows a refused save other than 409 as an error toast and keeps the form quiet', async () => {
+    mockApi(() => Response.json({statusCode: 500, message: 'boom'}, {status: 500}))
+    renderWithStore(<SettingsForm canEdit />)
+    fireEvent.change(await screen.findByLabelText('Site name'), {target: {value: 'Block'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await findToast('alert')).toHaveTextContent('Something went wrong')
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
   })
 
   it('keeps the loaded version after a 409 (two saves both send version 3)', async () => {

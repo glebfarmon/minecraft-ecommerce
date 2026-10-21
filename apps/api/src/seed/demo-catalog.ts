@@ -1,13 +1,18 @@
-import type {Locale} from '@shop/shared/catalog'
+import type {Locale, ProductIcon} from '@shop/shared/catalog'
 
 export type CategoryId = 'ranks' | 'cases' | 'currency' | 'kits' | 'cosmetics'
 
-export const DEMO_CATEGORIES: {slug: CategoryId; names: Record<Locale, string>}[] = [
-  {slug: 'ranks', names: {en: 'Ranks', pl: 'Rangi'}},
-  {slug: 'cases', names: {en: 'Cases', pl: 'Skrzynki'}},
-  {slug: 'currency', names: {en: 'Currency', pl: 'Waluta'}},
-  {slug: 'kits', names: {en: 'Kits', pl: 'Zestawy'}},
-  {slug: 'cosmetics', names: {en: 'Cosmetics', pl: 'Kosmetyki'}}
+/** `icon` is drawn on every product tile of the category. */
+export const DEMO_CATEGORIES: {
+  slug: CategoryId
+  names: Record<Locale, string>
+  icon: ProductIcon
+}[] = [
+  {slug: 'ranks', names: {en: 'Ranks', pl: 'Rangi'}, icon: 'crown'},
+  {slug: 'cases', names: {en: 'Cases', pl: 'Skrzynki'}, icon: 'box'},
+  {slug: 'currency', names: {en: 'Currency', pl: 'Waluta'}, icon: 'coins'},
+  {slug: 'kits', names: {en: 'Kits', pl: 'Zestawy'}, icon: 'pickaxe'},
+  {slug: 'cosmetics', names: {en: 'Cosmetics', pl: 'Kosmetyki'}, icon: 'ticket'}
 ]
 
 /** Servers in display order; `categories` in each server's own order (a category may have no products). */

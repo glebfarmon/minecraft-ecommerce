@@ -3,8 +3,9 @@
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
-import {useApiError} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   type ListCatalogProductsApiResponse,
   type ListCatalogServersApiResponse,
@@ -15,20 +16,20 @@ import {
   useOrderCatalogServersMutation,
   useSetCatalogServerCategoriesMutation
 } from '@/lib/api/generated'
-import {Pencil, Tags} from 'lucide-react'
+import * as Menu from '@radix-ui/react-dropdown-menu'
+import {Pencil, Plus, Tags} from 'lucide-react'
 import {LayoutGroup} from 'motion/react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import {useState} from 'react'
 
 import {Button} from '@shop/ui/button'
-import {Label} from '@shop/ui/label'
-import {Select} from '@shop/ui/select'
 
 import {useOptimisticOrder} from '../lib/optimistic-order'
 import {AddCard} from './add-card'
 import {DragHandle} from './drag-handle'
 import {ProductCard} from './product-card'
+import {ProductIcon} from './product-icon'
 import {ServerCard} from './server-card'
 import {SortableList} from './sortable-list'
 
@@ -44,7 +45,8 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  if (servers.isLoading) return <SkeletonRows rows={4} />
+  const held = useHoldLoading(servers.isLoading)
+  if (held) return <SkeletonRows rows={4} />
   if (servers.isError) return <p role="alert">{t('couldNotLoadTheCatalogRefresh')}</p>
   const selected = tabs.items.find(s => s.id === selectedId) ?? tabs.items[0]
 
@@ -86,7 +88,6 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
 
 function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
   const t = useTranslations('catalog')
-  const apiError = useApiError()
   const [setCategories] = useSetCatalogServerCategoriesMutation()
   const allCategories = useListCatalogCategoriesQuery()
   const products = useListCatalogProductsQuery({serverId: server.id})
@@ -94,7 +95,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
     setCategories({id: server.id, body: {categoryIds, base}})
   )
   const [error, setError] = useMessage()
-  const [attach, setAttach] = useState('')
+  const report = useReportError(setError)
 
   /** Attach or detach, starting from the list as shown; the API refuses it if that is out of date. */
   async function save(ids: string[]) {
@@ -103,35 +104,38 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
       id: server.id,
       body: {categoryIds: ids, base: categories.base}
     })
-    if (result.error) setError(apiError(result.error))
+    if (result.error) report(result.error)
   }
 
   const unattached = (allCategories.data ?? []).filter(
     c => !server.categories.some(sc => sc.id === c.id)
   )
 
-  const attachForm = (
-    <form
-      className="flex flex-wrap items-end gap-2"
-      onSubmit={e => {
-        e.preventDefault()
-        if (attach) void save([...categories.items.map(c => c.id), attach])
-        setAttach('')
-      }}>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="attach-category">{t('attachCategory')}</Label>
-        <Select
-          id="attach-category"
-          value={attach}
-          placeholder={t('choose')}
-          options={unattached.map(c => ({value: c.id, label: c.names.en}))}
-          onValueChange={setAttach}
-        />
-      </div>
-      <Button type="submit" disabled={!attach}>
-        {t('attach')}
-      </Button>
-    </form>
+  const attachMenu = (
+    <Menu.Root modal={false}>
+      <Menu.Trigger asChild>
+        <Button variant="outline">
+          <Plus aria-hidden />
+          {t('attachCategory')}
+        </Button>
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content
+          align="start"
+          sideOffset={6}
+          className="menu-content z-50 min-w-56 rounded-plate border border-border bg-card-raised p-1 shadow-xl shadow-black/40">
+          {unattached.map(c => (
+            <Menu.Item
+              key={c.id}
+              onSelect={() => void save([...categories.items.map(x => x.id), c.id])}
+              className="flex h-9 cursor-pointer items-center gap-2.5 rounded-[10px] px-3 text-[13px] text-fg outline-none data-[highlighted]:bg-card">
+              <ProductIcon name={c.icon} className="size-4 text-muted" />
+              {c.names.en}
+            </Menu.Item>
+          ))}
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   )
 
   return (
@@ -146,7 +150,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           action={
             canEdit && (
               <div className="flex flex-col items-center gap-3">
-                {unattached.length > 0 && attachForm}
+                {unattached.length > 0 && attachMenu}
                 <Button asChild variant="outline">
                   <Link href="/catalog/categories">{t('createCategory')}</Link>
                 </Button>
@@ -208,7 +212,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           )}
         </SortableList>
       )}
-      {canEdit && unattached.length > 0 && categories.items.length > 0 && attachForm}
+      {canEdit && unattached.length > 0 && categories.items.length > 0 && attachMenu}
     </section>
   )
 }

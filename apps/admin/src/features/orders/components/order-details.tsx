@@ -6,10 +6,11 @@ import {PageHeader} from '@/components/page-header'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
-import {ArrowLeft, Copy} from 'lucide-react'
+import {copyText} from '@/lib/copy'
+import {Copy} from 'lucide-react'
 import {useTranslations} from 'next-intl'
-import Link from 'next/link'
 import type {ReactNode} from 'react'
 
 import {Button} from '@shop/ui/button'
@@ -29,27 +30,17 @@ function Row({label, children}: {label: string; children: ReactNode}) {
   )
 }
 
-function BackLink() {
-  const t = useTranslations('orders.detail')
-  return (
-    <Button asChild variant="ghost">
-      <Link href="/orders">
-        <ArrowLeft aria-hidden className="size-4" />
-        {t('back')}
-      </Link>
-    </Button>
-  )
-}
-
 export function OrderDetails({id}: {id: string}) {
   const t = useTranslations('orders.detail')
+  const tc = useTranslations('common')
   const f = useFormat()
   const {data: order, isLoading, error} = useGetAdminOrderQuery({id})
-  if (isLoading) return <SkeletonRows rows={6} />
+  const held = useHoldLoading(isLoading)
+  if (held) return <SkeletonRows rows={6} />
   if (!order)
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title={t('order')} actions={<BackLink />} />
+        <PageHeader title={t('order')} back={{href: '/orders', label: t('back')}} />
         <p role="alert" className="rounded-card bg-card p-5">
           {(error as {status?: unknown} | undefined)?.status === 404
             ? t('notFound')
@@ -66,12 +57,8 @@ export function OrderDetails({id}: {id: string}) {
             {t('order')} <span className="font-mono">{order.publicId}</span>
           </>
         }
-        actions={
-          <div className="flex items-center gap-3">
-            <StatusDot status={order.status} />
-            <BackLink />
-          </div>
-        }
+        back={{href: '/orders', label: t('back')}}
+        actions={<StatusDot status={order.status} />}
       />
       <div className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
         <Card title={t('items')}>
@@ -117,7 +104,7 @@ export function OrderDetails({id}: {id: string}) {
                     aria-label={t('copyEmail')}
                     className="size-7 shrink-0"
                     onClick={() => {
-                      void navigator.clipboard.writeText(order.email)
+                      void copyText(order.email, t('emailLabel'), tc)
                     }}>
                     <Copy aria-hidden className="size-3.5" />
                   </Button>

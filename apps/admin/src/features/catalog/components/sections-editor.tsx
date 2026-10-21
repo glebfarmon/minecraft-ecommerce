@@ -108,7 +108,7 @@ function Section({
   const name = title.trim() || t('sectionN', {n: index + 1})
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border p-3">
+    <div className="flex flex-col gap-2 rounded-plate bg-card-raised p-3">
       <div className="flex items-center gap-2">
         {!disabled && <Handle label={name} handle={handle} />}
         <Input

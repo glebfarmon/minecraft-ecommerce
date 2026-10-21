@@ -3,7 +3,8 @@
 import {Hint} from '@/components/hint'
 import {RollingIndicator} from '@/components/rolling-indicator'
 import {NAV} from '@/config/nav'
-import {LayoutGroup} from 'motion/react'
+import {usePendingHref} from '@/hooks/use-pending-href'
+import {LayoutGroup, motion} from 'motion/react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
@@ -11,12 +12,11 @@ import {Fragment} from 'react'
 
 import {type Me, hasPermission} from '@shop/shared/access'
 import {cn} from '@shop/ui/lib/utils'
+import {PILL_FOCUS} from '@shop/ui/pill-focus'
 
 function isCurrent(pathname: string, base: string) {
   return pathname === base || (base !== '/' && pathname.startsWith(`${base}/`))
 }
-
-const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
 
 export function Nav({
   me,
@@ -30,25 +30,36 @@ export function Nav({
   const t = useTranslations('nav')
   const shell = useTranslations('shell')
   const pathname = usePathname()
+  // The path changes only once the next page is ready; the clicked item is current at once.
+  const {pending, mark} = usePendingHref(pathname)
   const rail = variant === 'rail'
   return (
     <LayoutGroup id={rail ? 'rail' : 'sheet'}>
-      <nav
+      {/* The rail is sticky and the sheet fixed: as a layout root, Motion measures the pill
+          against the nav, not the page, so the scroll reset of a navigation does not fly it in. */}
+      <motion.nav
+        layout
+        layoutRoot
         aria-label={rail ? shell('admin') : shell('adminMenu')}
         className={cn('flex flex-col gap-1', rail && 'items-center gap-2')}>
         {NAV.filter(item => !item.permission || hasPermission(me.permissions, item.permission)).map(
           item => {
             const Icon = item.icon
             const label = t(item.key)
-            const current = isCurrent(pathname, item.match ?? item.href)
+            const current = pending
+              ? pending === item.href
+              : isCurrent(pathname, item.match ?? item.href)
             const link = (
               <Link
                 href={item.href}
-                onClick={onNavigate}
+                onClick={e => {
+                  mark(item.href)(e)
+                  onNavigate?.()
+                }}
                 aria-current={current ? 'page' : undefined}
                 aria-label={rail ? label : undefined}
                 className={cn(
-                  FOCUS,
+                  PILL_FOCUS,
                   rail
                     ? 'relative isolate flex size-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-card-raised'
                     : 'relative isolate flex items-center gap-3 rounded-full px-3 py-2.5 text-sm text-muted transition-colors hover:bg-card-raised',
@@ -68,7 +79,7 @@ export function Nav({
             )
           }
         )}
-      </nav>
+      </motion.nav>
     </LayoutGroup>
   )
 }

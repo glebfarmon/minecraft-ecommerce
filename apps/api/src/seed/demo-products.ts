@@ -1,5 +1,5 @@
 // Demo catalog, moved from apps/web/src/config/products.ts. Seeded into an empty database; never overwrites.
-import type {Currency, Locale, ProductIcon} from '@shop/shared/catalog'
+import type {Currency, Locale} from '@shop/shared/catalog'
 
 import type {CategoryId} from './demo-catalog'
 
@@ -14,7 +14,6 @@ export type Product = {
   name: string
   /** Short wordmark printed on the tile. */
   mark: string
-  icon: ProductIcon
   price: Record<Currency, number> // minor units
   durationDays?: number
   adult?: boolean
@@ -246,7 +245,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'VIP',
     mark: 'VIP',
-    icon: 'crown',
     price: p(499, 2199),
     durationDays: 30,
     description: {
@@ -260,7 +258,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Elite',
     mark: 'ELITE',
-    icon: 'crown',
     price: p(999, 4299),
     description: {
       en: 'Everything in VIP, plus /fly in your claims, 5 homes and a 10% shop discount.',
@@ -273,7 +270,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Legend',
     mark: 'LEGEND',
-    icon: 'crown',
     price: p(1999, 8599),
     description: {
       en: 'Everything in Elite, plus particle trails, 10 homes and a monthly Mythic case key.',
@@ -287,7 +283,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'cases',
     name: 'Mythic case',
     mark: 'MYTHIC',
-    icon: 'box',
     price: p(249, 1099),
     adult: true,
     description: {
@@ -301,7 +296,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'cases',
     name: 'Builder case',
     mark: 'BUILDER',
-    icon: 'box',
     price: p(149, 649),
     adult: true,
     description: {
@@ -315,7 +309,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'currency',
     name: '1 000 coins',
     mark: '1000',
-    icon: 'coins',
     price: p(299, 1299),
     description: {
       en: 'Credited to your balance as soon as the payment clears.',
@@ -328,7 +321,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'currency',
     name: '5 000 coins',
     mark: '5000',
-    icon: 'coins',
     price: p(1199, 5199),
     description: {
       en: 'Five thousand coins, about 20% cheaper per coin than the small pack.',
@@ -341,7 +333,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'kits',
     name: 'Starter kit',
     mark: 'START',
-    icon: 'pickaxe',
     price: p(199, 899),
     description: {
       en: 'Iron tools, a stack of food and 32 torches for your first night.',
@@ -354,7 +345,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'kits',
     name: 'Nether kit',
     mark: 'NETHER',
-    icon: 'swords',
     price: p(349, 1499),
     description: {
       en: 'Fire resistance potions, gold armour and an obsidian stack.',
@@ -367,7 +357,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Raider',
     mark: 'RAIDER',
-    icon: 'crown',
     price: p(599, 2599),
     durationDays: 30,
     description: {
@@ -381,7 +370,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Warlord',
     mark: 'WARLORD',
-    icon: 'crown',
     price: p(1299, 5599),
     description: {
       en: 'Everything in Raider, plus a reserved slot when the server is full.',
@@ -394,7 +382,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'cases',
     name: 'Chaos case',
     mark: 'CHAOS',
-    icon: 'box',
     price: p(299, 1299),
     adult: true,
     description: {
@@ -408,7 +395,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'currency',
     name: '2 500 shards',
     mark: '2500',
-    icon: 'coins',
     price: p(499, 2199),
     description: {
       en: 'Shards for the black market. Credited instantly.',
@@ -421,7 +407,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'kits',
     name: 'PvP kit',
     mark: 'PVP',
-    icon: 'swords',
     price: p(399, 1699),
     description: {
       en: 'Diamond armour, a sharp sword and 16 golden apples.',
@@ -434,7 +419,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'kits',
     name: 'Base kit',
     mark: 'BASE',
-    icon: 'pickaxe',
     price: p(299, 1299),
     description: {
       en: 'Building blocks, chests and a bed to start a hidden base.',
@@ -447,7 +431,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Pro',
     mark: 'PRO',
-    icon: 'crown',
     price: p(399, 1699),
     description: {
       en: 'Double XP in every mode and a Pro badge in the lobby.',
@@ -460,7 +443,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Champion',
     mark: 'CHAMP',
-    icon: 'crown',
     price: p(799, 3499),
     description: {
       en: 'Everything in Pro, plus private games and map voting.',
@@ -473,7 +455,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'ranks',
     name: 'Season pass',
     mark: 'SEASON',
-    icon: 'ticket',
     price: p(449, 1949),
     durationDays: 30,
     description: {
@@ -487,7 +468,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'cases',
     name: 'Cosmetic case',
     mark: 'STYLE',
-    icon: 'box',
     price: p(199, 899),
     adult: true,
     description: {
@@ -501,7 +481,6 @@ export const DEMO_PRODUCTS: Product[] = [
     category: 'currency',
     name: '1 000 tokens',
     mark: '1000',
-    icon: 'coins',
     price: p(199, 899),
     description: {
       en: 'Tokens for cosmetics in the lobby shop.',

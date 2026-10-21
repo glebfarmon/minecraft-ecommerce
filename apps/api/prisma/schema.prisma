@@ -55,6 +55,7 @@ model Server {
 model Category {
   id           String                @id @default(cuid())
   slug         String                @unique
+  icon         ProductIcon           @default(crown)
   version      Int                   @default(1)
   translations CategoryTranslation[]
   servers      ServerCategory[]
@@ -93,7 +94,8 @@ model Product {
   kind           ProductKind
   durationDays   Int?
   mark           String
-  icon           ProductIcon
+  /// Deprecated: unused since 2026-10-21 (the icon lives on Category); drop in the next release. Never read or write it.
+  icon           ProductIcon?         @default(crown)
   grantCommands  String[]
   revokeCommands String[]
   isActive       Boolean              @default(true)
@@ -260,6 +262,10 @@ model AuditLog {
 
   @@index([createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])
+  // Action prefix filter (LIKE 'x%'). The migration creates it with the text_pattern_ops operator
+  // class (needed for prefix LIKE under non-C collations). Prisma's `ops: raw(...)` is not read back
+  // from the database, so it would report drift; the plain declaration here matches without it.
+  @@index([action, createdAt(sort: Desc)])
   @@map("audit_logs")
 }
 

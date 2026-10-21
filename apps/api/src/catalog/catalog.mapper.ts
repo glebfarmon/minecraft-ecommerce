@@ -10,6 +10,8 @@ import {
   ProductSectionSchema
 } from '@shop/shared/catalog'
 
+import {rconReady} from '../catalog-admin/rcon/rcon-ready'
+
 type Translated<T> = T & {locale: Locale}
 
 /** What CatalogService selects; plain shapes so the mapper is testable without Prisma. */
@@ -19,6 +21,9 @@ export type CatalogRows = {
     name: string
     accent: string
     onAccent: string
+    rconHost: string | null
+    rconPort: number | null
+    rconPasswordEnc: string | null
     categories: {category: {slug: string; translations: Translated<{name: string}>[]}}[]
   }[]
   products: {
@@ -26,9 +31,9 @@ export type CatalogRows = {
     kind: ProductKind
     durationDays: number | null
     mark: string
-    icon: ProductIcon
     server: {slug: string}
-    category: {slug: string}
+    /** The product shows its category's icon. */
+    category: {slug: string; icon: ProductIcon}
     translations: Translated<{name: string; description: string; sections: unknown}>[]
     prices: {currency: Currency; amountMinor: number}[]
   }[]
@@ -51,6 +56,7 @@ export function toCatalogResponse(
     name: s.name,
     accent: s.accent,
     onAccent: s.onAccent,
+    purchasable: rconReady(s),
     categories: s.categories.flatMap(({category}) => {
       const text = pick(category.translations, locale)
       return text ? [{slug: category.slug, name: text.name}] : []
@@ -78,7 +84,7 @@ export function toCatalogResponse(
         kind: p.kind,
         durationDays: p.durationDays,
         mark: p.mark,
-        icon: p.icon,
+        icon: p.category.icon,
         name: text.name,
         description: text.description,
         // Malformed JSON in the database fails the request (500, logged) rather than reaching the storefront.

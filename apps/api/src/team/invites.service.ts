@@ -5,6 +5,8 @@ import type {CreateInvite, Invite, InviteLookup, Permission} from '@shop/shared/
 import {assertCanGrant} from '../access/grant'
 import {PermissionCache} from '../access/permission-cache'
 import {authEnv} from '../auth/auth-env'
+import {ContentService} from '../content/content.service'
+import {siteBrand} from '../mailer/brand'
 import type {Mailer} from '../mailer/mailer'
 import {MAILER} from '../mailer/mailer'
 import {inviteMail} from '../mailer/templates'
@@ -51,7 +53,8 @@ export class InvitesService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(MAILER) private readonly mailer: Mailer,
-    private readonly cache: PermissionCache
+    private readonly cache: PermissionCache,
+    private readonly content: ContentService
   ) {}
 
   async list(): Promise<Invite[]> {
@@ -132,7 +135,10 @@ export class InvitesService {
   private async send(email: string, token: string, roleName: string) {
     const link = `${authEnv(process.env).baseURL}/invite/${token}`
     try {
-      await this.mailer.send({to: email, ...(await inviteMail(link, roleName))})
+      await this.mailer.send({
+        to: email,
+        ...(await inviteMail(link, roleName, await siteBrand(this.content)))
+      })
     } catch (error) {
       // The invite stays open; "resend" mails a fresh link. Never log the link itself.
       console.error('mail: invite failed', error instanceof Error ? error.message : error)

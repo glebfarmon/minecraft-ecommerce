@@ -5,10 +5,11 @@ import {DataTable} from '@/components/data-table'
 import {DayChart} from '@/components/day-chart'
 import {EmptyState} from '@/components/empty-state'
 import {KpiCard} from '@/components/kpi-card'
-import {Skeleton, SkeletonRows} from '@/components/skeleton'
+import {Skeleton, SkeletonRows, SkeletonStatus} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useReportCurrency} from '@/hooks/use-report-currency'
 import {
   type GetOrderStatsApiResponse,
@@ -23,6 +24,7 @@ import {useState, useSyncExternalStore} from 'react'
 
 import {CURRENCIES, type Currency} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
+import {cn} from '@shop/ui/lib/utils'
 import {Tabs, TabsList, TabsTrigger} from '@shop/ui/tabs'
 
 import {CurrencyDonut} from './currency-donut'
@@ -166,6 +168,7 @@ function LatestOrders() {
   const t = useTranslations('dashboard')
   const f = useFormat()
   const page = useListAdminOrdersQuery({})
+  const held = useHoldLoading(page.isLoading)
   return (
     <Card
       title={t('latestOrders')}
@@ -174,7 +177,7 @@ function LatestOrders() {
           {t('viewAll')}
         </Link>
       }>
-      {page.isLoading ? (
+      {held ? (
         <SkeletonRows rows={5} />
       ) : page.isError || !page.data ? (
         <p className="text-muted">{t('ordersFailed')}</p>
@@ -183,15 +186,12 @@ function LatestOrders() {
           caption={t('latestOrders')}
           rows={page.data.orders.slice(0, 5)}
           rowKey={o => o.id}
+          rowHref={o => `/orders/${o.id}`}
           columns={[
             {
               header: t('colOrder'),
               primary: true,
-              cell: o => (
-                <Link href={`/orders/${o.id}`} className="font-mono hover:underline">
-                  {o.publicId}
-                </Link>
-              )
+              cell: o => <span className="font-mono">{o.publicId}</span>
             },
             {header: t('colNick'), cell: o => o.nick},
             {header: t('colTotal'), cell: o => f.money(o.totalMinor, o.currency)},
@@ -207,18 +207,28 @@ function LatestOrders() {
 function Loading() {
   const t = useTranslations('dashboard')
   return (
-    <div role="status" className="grid gap-4">
-      <span className="sr-only">{t('loadingStats')}</span>
+    <SkeletonStatus label={t('loadingStats')} className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({length: 5}, (_, i) => (
-          <Skeleton key={i} className="h-36 rounded-card" />
+          <div key={i} className="flex h-36 flex-col justify-between rounded-card bg-card p-5">
+            <Skeleton className="h-3 w-2/5 rounded-full" />
+            <Skeleton className="h-8 w-3/5" />
+          </div>
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <Skeleton className="h-64 rounded-card" />
-        <Skeleton className="h-64 rounded-card" />
+        <div className="flex h-64 flex-col gap-4 rounded-card bg-card p-5">
+          <Skeleton className="h-3 w-1/4 rounded-full" />
+          <Skeleton className="flex-1" />
+        </div>
+        <div className="flex h-64 flex-col gap-3 rounded-card bg-card p-5">
+          <Skeleton className="h-3 w-1/3 rounded-full" />
+          {Array.from({length: 4}, (_, i) => (
+            <Skeleton key={i} className="h-8" />
+          ))}
+        </div>
       </div>
-    </div>
+    </SkeletonStatus>
   )
 }
 
@@ -234,9 +244,11 @@ export function Dashboard() {
     () => false
   )
   const query = useGetOrderStatsQuery({range, currency}, {skip: !hydrated})
-  // `currentData`, not `data`: after a switch the previous currency's numbers must not be shown
-  // under the new label while the new ones load.
-  const stats = query.currentData
+  // A range switch keeps the previous range on screen (dimmed, busy) until the new numbers
+  // arrive; a currency switch must not, so old-currency numbers never sit under the new label.
+  const stats = query.currentData ?? (query.data?.currency === currency ? query.data : undefined)
+  const busy = query.isFetching && stats !== query.currentData
+  const held = useHoldLoading(!stats && !query.isError)
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap justify-end gap-3">
@@ -273,10 +285,15 @@ export function Dashboard() {
             {common('retry')}
           </Button>
         </div>
-      ) : !stats ? (
+      ) : !stats || held ? (
         <Loading />
       ) : (
-        <>
+        <div
+          aria-busy={busy}
+          className={cn(
+            'grid gap-4 transition-opacity duration-200 ease-out',
+            busy && 'opacity-60'
+          )}>
           <Kpis stats={stats} />
           {stats.awaitingRate > 0 && (
             <p className="text-[12px] text-muted">
@@ -292,7 +309,7 @@ export function Dashboard() {
             <TopProducts stats={stats} />
           </div>
           <LatestOrders />
-        </>
+        </div>
       )}
     </div>
   )

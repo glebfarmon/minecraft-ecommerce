@@ -24,6 +24,9 @@ function Pill({children}: {children: ReactNode}) {
   )
 }
 
+/** Numbers and literal colours, because Motion only corrects those against the scale of a layout animation: the card radius (20) + the 4px inset, and a 2px `fg` ring. */
+const RING_STYLE = {borderRadius: 24, boxShadow: '0 0 0 2px #f2f2f2'}
+
 const CARD = 'flex min-w-56 flex-col items-start gap-3 rounded-card p-4 pr-12 text-left'
 const ICON =
   'grid size-7 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none'
@@ -72,7 +75,7 @@ export function ServerCard({
     )
   return (
     <div className="relative isolate">
-      {selected && <RollingIndicator className="-inset-1 rounded-[24px] ring-2 ring-fg" />}
+      {selected && <RollingIndicator className="-inset-1" style={RING_STYLE} />}
       <button
         type="button"
         role="tab"

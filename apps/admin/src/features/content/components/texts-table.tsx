@@ -5,7 +5,9 @@ import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
+import {notify} from '@/components/toaster'
 import {useApiError} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {
   type ListContentMessagesApiResponse,
@@ -69,13 +71,14 @@ function Messages({locale, search}: {locale: Locale; search: string}) {
   const messages = useListContentMessagesQuery({locale})
   // currentData, not data: while another locale loads, data still holds the previous one.
   const data = messages.currentData
+  const held = useHoldLoading(!data && !messages.isError)
   if (messages.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {t('couldNotLoadTheTextsRefresh')}
       </p>
     )
-  if (!data) return <SkeletonRows />
+  if (!data || held) return <SkeletonRows />
   const q = search.trim().toLowerCase()
   const shown = data.filter(
     m =>
@@ -135,13 +138,17 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
     setError(null)
     const result = await set({locale, key: message.key, body: {value: draft}})
     if (result.error) setError(apiError(result.error))
+    else notify.ok(t('textSaved'))
   }
 
   async function onReset() {
     setError(null)
     const result = await reset({locale, key: message.key})
     if (result.error) setError(apiError(result.error))
-    else setDraft('')
+    else {
+      setDraft('')
+      notify.ok(t('textReset'))
+    }
   }
 
   return (

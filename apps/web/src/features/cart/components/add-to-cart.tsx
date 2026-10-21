@@ -28,9 +28,25 @@ export function useAddToCart(product: Product) {
   }
 }
 
-export function AddToCartButton({product}: {product: Product}) {
+export function AddToCartButton({
+  product,
+  purchasable
+}: {
+  product: Product
+  /** False when the product's server has no usable RCON: the button is disabled and nothing reaches the cart. */
+  purchasable: boolean
+}) {
   const t = useTranslations('catalog')
   const {added, addToCart} = useAddToCart(product)
+  if (!purchasable)
+    return (
+      <button
+        type="button"
+        disabled
+        className="relative z-10 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-inner)] bg-fg/5 text-sm font-semibold text-muted disabled:cursor-not-allowed">
+        {t('unavailableProduct')}
+      </button>
+    )
   return (
     <button
       type="button"

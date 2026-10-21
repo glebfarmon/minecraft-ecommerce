@@ -1,4 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor} from '@testing-library/react'
 
 import {RconPanel} from './rcon-panel'
@@ -49,11 +50,25 @@ describe('RconPanel', () => {
     })
   })
 
+  it('confirms a saved RCON with a toast', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json(server))
+    renderWithStore(<RconPanel server={server} />)
+    fireEvent.click(screen.getByRole('button', {name: 'Save RCON'}))
+    expect(await findToast()).toHaveTextContent('RCON settings saved')
+  })
+
+  it('shows a working test as a status toast', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json({ok: true, ms: 42}))
+    renderWithStore(<RconPanel server={server} />)
+    fireEvent.click(screen.getByRole('button', {name: 'Test connection'}))
+    expect(await findToast()).toHaveTextContent('42')
+  })
+
   it('shows a test result', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(Response.json({ok: false, error: 'auth_failed'}))
     renderWithStore(<RconPanel server={server} />)
     fireEvent.click(screen.getByRole('button', {name: 'Test connection'}))
-    expect(await screen.findByRole('status')).toHaveTextContent('Wrong RCON password.')
+    expect(await findToast('alert')).toHaveTextContent('Wrong RCON password.')
   })
 
   it('explains an internal address', async () => {

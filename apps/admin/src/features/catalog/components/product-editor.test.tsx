@@ -1,6 +1,7 @@
 import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setMarkdown} from '@/test/rich-field'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ProductEditor} from './product-editor'
@@ -18,7 +19,7 @@ const servers = [
     sort: 0,
     version: 1,
     productCount: 1,
-    categories: [{id: 'c1', slug: 'ranks', name: 'Ranks'}],
+    categories: [{id: 'c1', slug: 'ranks', name: 'Ranks', icon: 'swords'}],
     rcon: null,
     rconPasswordSet: false
   }
@@ -33,7 +34,6 @@ const draft = {
   kind: 'PERMANENT',
   durationDays: null,
   mark: 'PRB',
-  icon: 'crown',
   isActive: false,
   grantCommands: [],
   revokeCommands: [],
@@ -54,6 +54,14 @@ function mockApi(patch: (body: unknown) => Response = () => Response.json(draft)
 }
 
 describe('ProductEditor', () => {
+  it('has no icon field: the preview draws the category icon', async () => {
+    mockApi()
+    const {container} = renderWithStore(<ProductEditor id="p1" canEdit />)
+    expect(await screen.findByText('Icon comes from the category')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', {name: 'Icon'})).not.toBeInTheDocument()
+    expect(container.querySelector('svg.lucide-swords')).not.toBeNull()
+  })
+
   it('lists what is missing and keeps "Enabled" off until it is complete', async () => {
     mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)
@@ -107,6 +115,7 @@ describe('ProductEditor', () => {
         await screen.findByText('Saved. Live on the site within a minute.')
       ).toBeInTheDocument()
       expect(sent).toEqual([expect.objectContaining({isActive: true})])
+      expect(sent[0]).not.toHaveProperty('icon')
     })
 
     it('saves a formatted multi-line description as markdown', async () => {
@@ -175,6 +184,15 @@ describe('ProductEditor', () => {
     fireEvent.change(name, {target: {value: 'Probe Deluxe'}})
     const preview = screen.getByRole('region', {name: 'Preview'})
     expect(await within(preview).findByText('Probe Deluxe')).toBeInTheDocument()
+  })
+
+  it('shows the English description as plain text in the preview card', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const box = await screen.findByRole('textbox', {name: 'Description (EN)'})
+    setMarkdown(box, 'Fly **fast** and more')
+    const preview = screen.getByRole('region', {name: 'Preview'})
+    expect(await within(preview).findByText('Fly fast and more')).toBeInTheDocument()
   })
 
   it('clicking {nick} inserts it at the caret of the grant field', async () => {
@@ -248,6 +266,14 @@ describe('ProductEditor', () => {
       expect(sent).toMatchObject({version: 1, prices: {EUR: 549, PLN: null}})
     })
     expect(screen.getByLabelText('Price EUR')).toHaveValue('5,49')
+  })
+
+  it('confirms a saved product with a toast and shows no inline banner', async () => {
+    mockApi(() => Response.json({...draft, version: 2}))
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    fireEvent.change(await screen.findByLabelText('Price EUR'), {target: {value: '5,49'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await findToast()).toHaveTextContent('Saved. Live on the site within a minute.')
   })
 
   it('is read-only without catalog.write', async () => {

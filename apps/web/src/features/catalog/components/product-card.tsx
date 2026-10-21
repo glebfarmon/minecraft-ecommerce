@@ -24,7 +24,7 @@ export function ProductCard({
   const t = useTranslations('catalog')
   const locale = useLocale()
   const {currency} = useCurrency()
-  const {categoryName} = useCatalog()
+  const {categoryName, findServer} = useCatalog()
 
   return (
     <article data-product={productLayoutId(product)} className="group relative h-full">
@@ -70,7 +70,10 @@ export function ProductCard({
             <span className="tabular font-display text-2xl leading-none font-semibold whitespace-nowrap">
               {formatPrice(product.prices[currency], currency, locale)}
             </span>
-            <AddToCartButton product={product} />
+            <AddToCartButton
+              product={product}
+              purchasable={findServer(product.server)?.purchasable ?? false}
+            />
           </div>
         </div>
       </div>

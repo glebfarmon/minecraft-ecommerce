@@ -1,5 +1,7 @@
 import {SYSTEM_ROLES, type SystemRoleName} from '@shop/shared/access'
 
+import {ContentService} from '../content/content.service'
+import {siteBrand} from '../mailer/brand'
 import type {Mailer} from '../mailer/mailer'
 import {inviteMail} from '../mailer/templates'
 import type {PrismaService} from '../prisma/prisma.service'
@@ -38,7 +40,10 @@ export async function seedAccess(
   const ownerInviteUrl = `${adminUrl}/invite/${token}`
   // The link is printed by the seed, so a mail failure must not lose it (rerun sees an open invite).
   try {
-    await mailer.send({to: email, ...(await inviteMail(ownerInviteUrl, 'OWNER'))})
+    await mailer.send({
+      to: email,
+      ...(await inviteMail(ownerInviteUrl, 'OWNER', await siteBrand(new ContentService(prisma))))
+    })
   } catch (error) {
     console.error('seed: owner invite mail failed; use the printed link', error)
   }

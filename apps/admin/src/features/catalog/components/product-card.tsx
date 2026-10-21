@@ -23,11 +23,14 @@ export function ProductCard({
   product,
   accent,
   href,
+  description,
   handle
 }: {
   product: Pick<Product, 'name' | 'mark' | 'icon' | 'kind' | 'isActive' | 'prices' | 'missing'>
   accent: string
   href?: string
+  /** Plain text; the editor's preview passes it, the board's cards do not. */
+  description?: string
   handle?: DragHandleProps
 }) {
   const t = useTranslations('catalog')
@@ -51,12 +54,13 @@ export function ProductCard({
         {href ? (
           <Link
             href={href}
-            className="truncate rounded-sm font-semibold group-hover:underline after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent">
+            className="truncate rounded-sm font-semibold after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent">
             {product.name}
           </Link>
         ) : (
           <p className="truncate font-semibold">{product.name}</p>
         )}
+        {description && <p className="line-clamp-2 text-[13px] text-muted">{description}</p>}
         <p className="tabular text-[13px] text-muted">{prices(product, f.money)}</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex h-6 items-center rounded-full bg-card-raised px-2.5 text-[12px] text-muted">

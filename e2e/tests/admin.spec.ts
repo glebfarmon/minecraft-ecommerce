@@ -56,7 +56,7 @@ test('the owner accepts the seeded invite, sets up TOTP and reaches the team pag
   page
 }) => {
   const invite = await latestMail(OWNER)
-  expect(invite.subject).toBe('You are invited to Shop Admin')
+  expect(invite.subject).toMatch(/^You are invited to .+ Admin$/)
   await page.goto(inviteLink(invite))
   await signInWithCode(page, OWNER)
   ownerSecret = await setUpTotp(page)
@@ -94,8 +94,11 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   await page.getByRole('link', {name: 'Orders'}).click()
   await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
   await expect(page.getByLabel('Search by nick, email or order number')).toBeVisible()
-  const res = await page.goto(`${ADMIN}/audit`)
-  expect(res?.status()).toBe(404)
+  // The shell's loading.tsx streams the response, so a notFound() below it is a soft 404: status 200
+  // with the not-found UI (Next streaming contract). What matters is that no audit data renders.
+  await page.goto(`${ADMIN}/audit`)
+  await expect(page.getByText('This page could not be found.')).toBeVisible()
+  await expect(page.getByRole('heading', {name: 'Audit log'})).toHaveCount(0)
 })
 
 test('a signed-in session without TOTP is sent to /2fa', async ({page}) => {
@@ -406,6 +409,54 @@ test('the owner switches sub-navs, opens editors from pencils and the preview fo
     .first()
     .click()
   await expect(page).toHaveURL(/\/catalog\/servers\/\w+$/)
+})
+
+test('the rail marks a clicked page at once and its pill stays put inside a section', async ({
+  page
+}) => {
+  // A slow server from the start, so no route is ready before the click: prefetches fail (the
+  // loading fallback cannot commit early) and every other RSC request answers after 1.5 s.
+  await page.route('**/*', async route => {
+    const headers = route.request().headers()
+    if (headers['next-router-prefetch']) return route.abort()
+    if (headers.rsc === '1') await new Promise(r => setTimeout(r, 1500))
+    return route.fallback()
+  })
+  await signInOwner(page)
+  const rail = page.getByRole('navigation', {name: 'Admin'})
+  // Scoped to the nav: the aside also holds the language switch and its own pill.
+  const pill = rail.locator('[data-slot=rolling-indicator]')
+
+  const orders = rail.getByRole('link', {name: 'Orders'})
+  await orders.click()
+  await expect(orders).toHaveAttribute('aria-current', 'page', {timeout: 300})
+  await expect(orders.locator('[data-slot=rolling-indicator]')).toHaveCount(1, {timeout: 300})
+  // Still on the dashboard: the mark comes from the click, not from the committed path.
+  expect(new URL(page.url()).pathname).toBe('/')
+  await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
+  await page.unrouteAll({behavior: 'wait'})
+
+  // Catalog → product: the page scrolls to the top, the sticky rail does not move, nor its pill.
+  await page.setViewportSize({width: 1280, height: 480})
+  await page.goto(`${ADMIN}/catalog`)
+  const vip = page.getByRole('list', {name: 'Products in Ranks'}).getByRole('link', {name: 'VIP'})
+  await expect(vip).toBeVisible()
+  // Scroll the card to the middle of the viewport: the page is scrolled (header and servers sit
+  // above it) and the card stays clickable; the very bottom can push it out of a 480 px view.
+  await vip.evaluate(el => {
+    el.scrollIntoView({block: 'center'})
+  })
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  await expect(vip).toBeInViewport()
+  const top = () => pill.evaluate(el => Math.round(el.getBoundingClientRect().top))
+  const before = await top()
+  // force: in CI Playwright reported the card "not stable" for 30 s while the screencast showed a
+  // still page (sub-pixel layout churn at this 480 px viewport). This test is about the pill.
+  await vip.click({force: true})
+  await page.waitForTimeout(100)
+  expect(await top()).toBe(before)
+  await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
+  expect(await top()).toBe(before)
 })
 
 test('the owner switches the admin to Polish, it persists and the 390 px layout holds', async ({

@@ -20,6 +20,7 @@
   },
   "cart": {
     "label": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
+    "unavailableLine": "Unavailable",
     "title": "Your cart",
     "empty": "Nothing here yet. Pick a server and add something.",
     "total": "Total",
@@ -101,6 +102,7 @@
     "showAll": "Show all items",
     "add": "Add {name} to cart",
     "added": "{name} added to cart",
+    "unavailableProduct": "Unavailable",
     "addShort": "Add",
     "days": "{count} days",
     "forever": "Forever",

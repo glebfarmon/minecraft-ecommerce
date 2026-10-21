@@ -80,7 +80,17 @@ function LineCount() {
   return <output data-testid="line-count">{useCart().lines.length}</output>
 }
 
-function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
+const NO_RCON_CATALOG = {
+  ...TEST_CATALOG,
+  servers: TEST_CATALOG.servers.map(s => ({...s, purchasable: s.slug !== product.server}))
+}
+
+function setup({
+  onBack = jest.fn(),
+  onClose = jest.fn(),
+  open = true,
+  catalog = TEST_CATALOG
+} = {}) {
   const ui = (isOpen: boolean) => (
     <TurnstileKeyProvider siteKey="site-key">
       <ShopProvider>
@@ -90,14 +100,14 @@ function setup({onBack = jest.fn(), onClose = jest.fn(), open = true} = {}) {
       </ShopProvider>
     </TurnstileKeyProvider>
   )
-  const view = renderWithCatalog(ui(open))
+  const view = renderWithCatalog(ui(open), catalog)
   return {
     ...view,
     onBack,
     onClose,
     rerenderWith: (isOpen: boolean) => {
       // rerender replaces the whole tree, provider included.
-      view.rerender(<CatalogProvider servers={TEST_CATALOG.servers}>{ui(isOpen)}</CatalogProvider>)
+      view.rerender(<CatalogProvider servers={catalog.servers}>{ui(isOpen)}</CatalogProvider>)
     }
   }
 }
@@ -244,6 +254,27 @@ describe('CheckoutModal', () => {
       await waitFor(() => {
         expect(pay()).toBeEnabled()
       })
+    })
+
+    it('marks lines of a server without RCON, keeps pay disabled and offers to remove them', async () => {
+      setup({catalog: NO_RCON_CATALOG})
+      fillValid()
+      await waitFor(() => {
+        expect(screen.getByLabelText('email.label')).toHaveValue('steve@example.com')
+      })
+      expect(screen.getByText('unavailableLine')).toBeInTheDocument()
+      expect(pay()).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', {name: 'removeUnavailable'}))
+      expect(screen.getByTestId('line-count')).toHaveTextContent('0')
+    })
+
+    it('leaves lines of a purchasable server unmarked', async () => {
+      setup()
+      fillValid()
+      await waitFor(() => {
+        expect(pay()).toBeEnabled()
+      })
+      expect(screen.queryByText('unavailableLine')).not.toBeInTheDocument()
     })
 
     it('stays disabled with a solved captcha but an invalid form', () => {

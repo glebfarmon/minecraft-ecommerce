@@ -12,7 +12,7 @@ describe('catalog categories API', () => {
     await ctx.stop()
   })
 
-  const body = {slug: 'tools', names: {en: 'Tools', pl: 'Narzędzia'}}
+  const body = {slug: 'tools', names: {en: 'Tools', pl: 'Narzędzia'}, icon: 'pickaxe'}
 
   it('lists categories with names, servers and product counts for any admin', async () => {
     const support = await ctx.admin('SUPPORT')
@@ -35,13 +35,23 @@ describe('catalog categories API', () => {
     const editor = await ctx.admin({permissions: ['catalog.write']})
     const created = await editor.post('/api/admin/catalog/categories').send(body).expect(201)
     const id = (created.body as {id: string}).id
-    expect(created.body).toMatchObject({slug: 'tools', version: 1, productCount: 0, servers: []})
+    expect(created.body).toMatchObject({
+      slug: 'tools',
+      icon: 'pickaxe',
+      version: 1,
+      productCount: 0,
+      servers: []
+    })
 
     const renamed = await editor
       .patch(`/api/admin/catalog/categories/${id}`)
-      .send({...body, names: {en: 'Gear', pl: 'Sprzęt'}, version: 1})
+      .send({...body, names: {en: 'Gear', pl: 'Sprzęt'}, icon: 'swords', version: 1})
       .expect(200)
-    expect(renamed.body).toMatchObject({names: {en: 'Gear', pl: 'Sprzęt'}, version: 2})
+    expect(renamed.body).toMatchObject({
+      names: {en: 'Gear', pl: 'Sprzęt'},
+      icon: 'swords',
+      version: 2
+    })
 
     await editor
       .patch(`/api/admin/catalog/categories/${id}`)

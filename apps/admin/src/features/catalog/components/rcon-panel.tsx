@@ -1,8 +1,10 @@
 'use client'
 
+import {notify} from '@/components/toaster'
 import {type RconForm, RconFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   type GetCatalogServerApiResponse,
   useTestCatalogServerRconMutation,
@@ -10,7 +12,7 @@ import {
 } from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
-import {type ReactNode, useState} from 'react'
+import type {ReactNode} from 'react'
 import {Controller, useForm, useFormState} from 'react-hook-form'
 
 import {Button} from '@shop/ui/button'
@@ -18,9 +20,11 @@ import {Checkbox} from '@shop/ui/checkbox'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
-type TestResult = {ok: true; ms: number} | {ok: false; error: string}
-
 const TEST_ERRORS = ['timeout', 'unreachable', 'auth_failed', 'decrypt_failed'] as const
+
+/** A refused host is a problem with the host field, so it stays next to the form. */
+const isHostRefusal = (error: unknown) =>
+  String((error as {data?: {message?: unknown}}).data?.message).startsWith('rcon_host_')
 
 export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
   const t = useTranslations('catalog')
@@ -29,8 +33,7 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
   const [updateRcon, {isLoading: saving}] = useUpdateCatalogServerRconMutation()
   const [testRcon, {isLoading: testing}] = useTestCatalogServerRconMutation()
   const [error, setError] = useMessage()
-  const [saved, setSaved] = useState(false)
-  const [result, setResult] = useState<TestResult | null>(null)
+  const report = useReportError(setError)
 
   const form = useForm<RconForm>({
     resolver: valibotResolver(RconFormSchema),
@@ -46,8 +49,6 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
 
   async function save({host, port, password, clearPassword}: RconForm) {
     setError(null)
-    setSaved(false)
-    setResult(null)
     const res = await updateRcon({
       id: server.id,
       body: {
@@ -58,30 +59,28 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
       }
     })
     if (res.error) {
-      setError(apiError(res.error))
+      if (isHostRefusal(res.error)) setError(apiError(res.error))
+      else report(res.error)
       return
     }
     setValue('password', '')
     setValue('clearPassword', false)
-    setSaved(true)
+    notify.ok(t('rconSettingsSaved'))
   }
 
   async function test() {
     setError(null)
-    setSaved(false)
-    setResult(null)
     const res = await testRcon({id: server.id})
-    if (res.error) setError(apiError(res.error))
-    else if (res.data.ok === true && 'ms' in res.data) setResult({ok: true, ms: res.data.ms})
-    else setResult({ok: false, error: 'error' in res.data ? res.data.error : 'unreachable'})
+    if (res.error) report(res.error)
+    else if (res.data.ok === true && 'ms' in res.data)
+      notify.ok(t('rconConnected', {ms: res.data.ms}))
+    else {
+      const reason = 'error' in res.data ? res.data.error : 'unreachable'
+      notify.error(t(`rconTest_${TEST_ERRORS.find(e => e === reason) ?? 'unreachable'}`))
+    }
   }
 
   const busy = saving || testing
-  const message = !result
-    ? null
-    : result.ok
-      ? t('rconConnected', {ms: result.ms})
-      : t(`rconTest_${TEST_ERRORS.find(e => e === result.error) ?? 'unreachable'}`)
 
   return (
     <form
@@ -91,16 +90,6 @@ export function RconPanel({server}: {server: GetCatalogServerApiResponse}) {
       {error && (
         <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad md:col-span-2">
           {error}
-        </p>
-      )}
-      {saved && (
-        <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok md:col-span-2">
-          {t('rconSettingsSaved')}
-        </p>
-      )}
-      {message && (
-        <p role="status" className="rounded-plate bg-card-raised px-4 py-3 md:col-span-2">
-          {message}
         </p>
       )}
 

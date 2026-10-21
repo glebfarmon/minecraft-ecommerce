@@ -52,7 +52,6 @@ describe('database', () => {
         slug,
         kind,
         mark: 'P',
-        icon: 'crown',
         grantCommands: [],
         revokeCommands: []
       }

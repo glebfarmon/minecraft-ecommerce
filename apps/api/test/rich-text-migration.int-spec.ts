@@ -39,7 +39,6 @@ describe('escape product descriptions migration', () => {
         slug: 'esc',
         kind: 'PERMANENT',
         mark: 'ESC',
-        icon: 'crown',
         grantCommands: [],
         revokeCommands: [],
         translations: {

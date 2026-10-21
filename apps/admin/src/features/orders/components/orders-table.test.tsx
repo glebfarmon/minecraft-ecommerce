@@ -108,6 +108,7 @@ describe('OrdersTable', () => {
     await user.click(within(table).getByRole('button', {name: 'Actions for SHOP-o1'}))
     await user.click(await screen.findByRole('menuitem', {name: 'Copy order number'}))
     expect(writeText).toHaveBeenCalledWith('SHOP-o1')
+    expect(await screen.findByRole('status')).toHaveTextContent('Order number copied')
   })
 
   it('loads more with the cursor', async () => {

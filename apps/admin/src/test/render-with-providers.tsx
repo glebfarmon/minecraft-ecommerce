@@ -1,3 +1,4 @@
+import {Toaster} from '@/components/toaster'
 import type {AdminLocale} from '@/i18n/locale'
 import {makeStore} from '@/lib/api/store'
 import {type RenderOptions, type RenderResult, render} from '@testing-library/react'
@@ -28,7 +29,7 @@ export function IntlWrapper({
 }
 
 /**
- * Renders inside the tooltip provider and the real message file for `locale` (English by default), with a fresh
+ * Renders inside the tooltip provider (with the toaster) and the real message file for `locale` (English by default), with a fresh
  * RTK Query store unless `store: false`; stub the network with `jest.spyOn(global, 'fetch')`.
  */
 export function renderWithProviders(
@@ -37,7 +38,10 @@ export function renderWithProviders(
 ): RenderResult {
   const content = (
     <IntlWrapper locale={locale}>
-      <TooltipProvider>{ui}</TooltipProvider>
+      <TooltipProvider>
+        {ui}
+        <Toaster />
+      </TooltipProvider>
     </IntlWrapper>
   )
   return render(store ? <Provider store={makeStore()}>{content}</Provider> : content)

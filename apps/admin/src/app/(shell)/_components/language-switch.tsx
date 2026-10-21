@@ -9,6 +9,7 @@ import {useRouter} from 'next/navigation'
 import {useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
+import {PILL_FOCUS} from '@shop/ui/pill-focus'
 
 const OPTIONS: {locale: AdminLocale; label: string; name: string}[] = [
   {locale: 'en', label: 'EN', name: 'English'},
@@ -72,7 +73,8 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
                   choose(locale)
                 }}
                 className={cn(
-                  'relative isolate flex h-7 min-w-10 items-center justify-center rounded-full px-2 text-xs font-semibold tracking-wide transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',
+                  'relative isolate flex h-7 min-w-10 items-center justify-center rounded-full px-2 text-xs font-semibold tracking-wide transition-colors duration-150',
+                  PILL_FOCUS,
                   checked ? 'text-fg' : 'text-muted hover:text-fg'
                 )}>
                 {checked && <RollingIndicator className="rounded-full bg-card-raised" />}

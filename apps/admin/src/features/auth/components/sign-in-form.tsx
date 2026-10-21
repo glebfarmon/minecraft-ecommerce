@@ -17,9 +17,12 @@ import {Label} from '@shop/ui/label'
 
 export function SignInForm({
   email: invited,
+  site,
   googleEnabled
 }: {
   email?: string
+  /** The site name, for the not-invited message. */
+  site: string
   googleEnabled: boolean
 }) {
   const t = useTranslations('auth')
@@ -59,7 +62,9 @@ export function SignInForm({
     const {error: failed} = await authClient.signIn.emailOtp({email, otp: code})
     if (failed) {
       setError(
-        failed.status === 403 ? t('notInvited') : codeErrorMessage(failed, t('codeFailedEmail'), t)
+        failed.status === 403
+          ? t('notInvited', {site})
+          : codeErrorMessage(failed, t('codeFailedEmail'), t)
       )
       return
     }

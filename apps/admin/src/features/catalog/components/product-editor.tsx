@@ -1,8 +1,10 @@
 'use client'
 
 import {FormSection} from '@/components/form-section'
+import {plainText} from '@/components/rich-text/markdown-doc'
 import {RichTextField} from '@/components/rich-text/rich-text-field'
 import {SkeletonRows} from '@/components/skeleton'
+import {notify} from '@/components/toaster'
 import {SectionsEditor} from '@/features/catalog/components/sections-editor'
 import {
   emptyProductForm,
@@ -11,8 +13,10 @@ import {
   productToForm
 } from '@/features/catalog/lib/product-form'
 import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useCreateCatalogProductMutation,
   useDeleteCatalogProductMutation,
@@ -35,7 +39,7 @@ import {
   useWatch
 } from 'react-hook-form'
 
-import {PRODUCT_ICONS, PRODUCT_KINDS} from '@shop/shared/catalog'
+import {PRODUCT_KINDS} from '@shop/shared/catalog'
 import {missingForActive} from '@shop/shared/catalog-admin'
 import {Button} from '@shop/ui/button'
 import {Checkbox} from '@shop/ui/checkbox'
@@ -67,7 +71,6 @@ type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: bool
 export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
-  const apiError = useApiError()
   const router = useRouter()
   const product = useGetCatalogProductQuery({id: id ?? ''}, {skip: !id})
   const servers = useListCatalogServersQuery()
@@ -75,7 +78,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const [update, {isLoading: updating}] = useUpdateCatalogProductMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogProductMutation()
   const [error, setError] = useMessage()
-  const [saved, setSaved] = useState(false)
+  const report = useReportError(setError)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'en' | 'pl'>('en')
   // Set when Save is refused because the product is enabled but incomplete.
@@ -116,10 +119,13 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
   const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
 
-  if (id && product.isLoading) return <SkeletonRows rows={6} />
+  const held = useHoldLoading(Boolean(id) && product.isLoading)
+  if (held) return <SkeletonRows rows={6} />
   if (id && !product.data) return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
 
   const server = servers.data?.find(s => s.id === values.serverId)
+  // The tile icon belongs to the category; until one is chosen the preview shows the default.
+  const icon = server?.categories.find(c => c.id === values.categoryId)?.icon ?? 'crown'
   const busy = creating || updating || removing
 
   // Inactive tabs unmount, so show the tab holding a translation error, or Save looks dead.
@@ -131,24 +137,26 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
 
   async function save(v: ProductForm) {
     setError(null)
-    setSaved(false)
     const blocked = v.isActive && missingForActive(formToCreate(v)).length > 0
     setBlockedActive(blocked)
     if (blocked) return
     if (!id) {
       const result = await create({body: formToCreate(v)})
-      if (result.error) setError(apiError(result.error))
-      else router.replace(`/catalog/products/${result.data.id}`)
+      if (result.error) report(result.error)
+      else {
+        notify.ok(t('productCreated'))
+        router.replace(`/catalog/products/${result.data.id}`)
+      }
       return
     }
     if (version.current === null) return
     const result = await update({id, body: formToUpdate(v, version.current)})
     if (result.error) {
-      setError(apiError(result.error))
+      report(result.error)
       return
     }
     version.current = result.data.version
-    setSaved(true)
+    notify.ok(t('savedLiveOnTheSiteWithin'))
   }
 
   async function onDelete() {
@@ -156,8 +164,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiError(result.error))
-    else router.push('/catalog')
+    if (result.error) report(result.error)
+    else {
+      notify.ok(t('productDeleted'))
+      router.push('/catalog')
+    }
   }
 
   const errorOf = (name: FieldPath<ProductForm>) =>
@@ -209,10 +220,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       preview={
         <ProductCard
           accent={server?.accent ?? 'var(--color-accent)'}
+          description={plainText(values.translations.en.description || '')}
           product={{
             name: values.translations.en.name || values.slug || t('newProduct'),
             mark: values.mark || values.translations.en.name || '',
-            icon: values.icon,
+            icon,
             kind: values.kind,
             isActive: values.isActive,
             // A half-typed price is not a number yet; show it as missing, not NaN.
@@ -236,11 +248,6 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         {error && (
           <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
             {error}
-          </p>
-        )}
-        {saved && (
-          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 
@@ -285,7 +292,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   onValueChange={f.onChange}
                 />
               )}
-            />
+            />,
+            t('iconFromCategory')
           )}
           {field('slug', t('slug'), <Input {...fieldProps('slug')} {...register('slug')} />)}
           {field('mark', t('mark'), <Input {...fieldProps('mark')} {...register('mark')} />)}
@@ -319,22 +327,6 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                 {...register('durationDays')}
               />
             )}
-          {field(
-            'icon',
-            t('icon'),
-            <Controller
-              control={control}
-              name="icon"
-              render={({field: f}) => (
-                <Select
-                  {...fieldProps('icon')}
-                  value={f.value}
-                  options={PRODUCT_ICONS.map(i => ({value: i, label: i}))}
-                  onValueChange={f.onChange}
-                />
-              )}
-            />
-          )}
           <div className="flex flex-wrap items-center gap-2 md:col-span-2">
             <Controller
               control={control}

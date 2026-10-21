@@ -57,4 +57,12 @@ describe('SubNav', () => {
     render(<SubNav label="Catalog" items={CATALOG} />)
     expect(current()).toHaveTextContent('Products')
   })
+
+  it('pill links show keyboard focus without the accent ring', () => {
+    render(<SubNav label="Content" items={CONTENT} />)
+    const cls = screen.getByRole('link', {name: 'Texts'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:after:z-10')
+    expect(cls).toContain('focus-visible:after:ring-fg/40')
+  })
 })

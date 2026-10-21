@@ -6,7 +6,9 @@
     "edit": "Edytuj",
     "back": "Wstecz",
     "loading": "Ładowanie…",
-    "retry": "Spróbuj ponownie"
+    "retry": "Spróbuj ponownie",
+    "copied": "Skopiowano: {label}",
+    "copyFailed": "Nie udało się skopiować: {label}"
   },
   "shell": {
     "language": "Język",
@@ -196,8 +198,11 @@
       "timeline": "Oś czasu",
       "created": "Utworzono",
       "paid": "Opłacono",
-      "now": "Teraz"
-    }
+      "now": "Teraz",
+      "emailLabel": "E-mail"
+    },
+    "orderNumberLabel": "Numer zamówienia",
+    "emailLabel": "E-mail"
   },
   "catalog": {
     "backToCatalog": "Wróć do katalogu",
@@ -214,8 +219,6 @@
     "servers": "Serwery",
     "server2": "+ Serwer",
     "attachCategory": "Przypisz kategorię",
-    "choose": "Wybierz…",
-    "attach": "Przypisz",
     "couldNotLoadProductsRefreshThe": "Nie udało się wczytać produktów. Odśwież stronę.",
     "createCategory": "Utwórz kategorię",
     "editCategory": "Edytuj kategorię",
@@ -319,13 +322,29 @@
     "kind": "Rodzaj",
     "durationDays": "Czas trwania (dni)",
     "icon": "Ikona",
+    "iconFromCategory": "Ikona pochodzi z kategorii",
+    "iconOnEveryTile": "Widoczna na każdym kafelku produktu w tej kategorii",
+    "icons": {
+      "crown": "Korona",
+      "box": "Skrzynia",
+      "coins": "Monety",
+      "swords": "Miecze",
+      "pickaxe": "Kilof",
+      "ticket": "Bilet"
+    },
     "priceEUR": "Cena EUR",
     "pricePLN": "Cena PLN",
     "nameIn": "Nazwa ({locale})",
     "descriptionIn": "Opis ({locale})",
     "grantCommands": "Polecenia nadania",
     "revokeCommands": "Polecenia odebrania",
-    "commandHint": "Jedno polecenie w wierszu, bez /."
+    "commandHint": "Jedno polecenie w wierszu, bez /.",
+    "serverCreated": "Serwer utworzony.",
+    "serverDeleted": "Serwer usunięty.",
+    "productCreated": "Produkt utworzony.",
+    "productDeleted": "Produkt usunięty.",
+    "categorySaved": "Kategoria zapisana.",
+    "categoryDeleted": "Kategoria usunięta."
   },
   "content": {
     "loadingRules": "Wczytywanie zasad…",
@@ -402,7 +421,9 @@
     "overrideFor": "Nadpisanie dla {key}",
     "rules": "Zasady",
     "texts": "Teksty",
-    "settings": "Ustawienia"
+    "settings": "Ustawienia",
+    "textSaved": "Tekst zapisany. Na stronie w ciągu minuty.",
+    "textReset": "Tekst przywrócony do domyślnego."
   },
   "team": {
     "couldNotLoadAdminsRefreshThe": "Nie udało się wczytać administratorów. Odśwież stronę.",
@@ -464,7 +485,14 @@
     "saveRole": "Zapisz rolę",
     "deleteRole": "Usuń rolę",
     "saveName": "Zapisz {name}",
-    "deleteName": "Usuń {name}"
+    "deleteName": "Usuń {name}",
+    "inviteRevoked": "Zaproszenie anulowane.",
+    "adminRemoved": "Administrator usunięty.",
+    "adminReset": "Uwierzytelnianie dwuskładnikowe zresetowane. Skonfigurują je przy następnym logowaniu.",
+    "adminRoleChanged": "Rola zmieniona. Administrator został wylogowany.",
+    "roleCreated": "Rola utworzona.",
+    "roleSaved": "Rola zapisana.",
+    "roleDeleted": "Rola usunięta."
   },
   "audit": {
     "auditLog": "Dziennik audytu",
@@ -475,7 +503,6 @@
     "details": "Szczegóły",
     "beforeAfter": "Przed / po",
     "nothingLoggedYet": "Nic jeszcze nie zapisano.",
-    "loadMore": "Wczytaj więcej",
     "actionStartsWith": "Akcja zaczyna się od",
     "role": "role.",
     "from": "Od",
@@ -484,7 +511,12 @@
     "whoChangedWhatNewestFirst": "Kto co zmienił, od najnowszych.",
     "forbidden": "Nie masz uprawnień do przeglądania dziennika audytu.",
     "loadFailed": "Nie udało się wczytać dziennika audytu. Spróbuj ponownie.",
-    "system": "System"
+    "system": "System",
+    "pager": "Strony",
+    "previousPage": "Poprzednia strona",
+    "nextPage": "Następna strona",
+    "page": "Strona {n}",
+    "anyone": "Ktokolwiek"
   },
   "auth": {
     "backupCodes": "Kody zapasowe",
@@ -511,12 +543,12 @@
     "confirm": "Potwierdź",
     "account": "Konto",
     "twoFactorAuthentication": "Weryfikacja dwuetapowa",
-    "signInToShopAdmin": "Zaloguj się do panelu",
-    "joinShopAdmin": "Dołącz do panelu",
+    "signInToAdmin": "Zaloguj się do panelu {site}",
+    "joinAdmin": "Dołącz do panelu {site}",
     "backupCodesFailed": "Nie udało się wygenerować kodów zapasowych. Spróbuj ponownie.",
     "signOutFailed": "Nie udało się wylogować. Spróbuj ponownie.",
     "sendCodeFailed": "Nie udało się wysłać kodu. Spróbuj ponownie.",
-    "notInvited": "Ten adres e-mail nie jest zaproszony do panelu.",
+    "notInvited": "Ten adres e-mail nie jest zaproszony do panelu {site}.",
     "codeFailedEmail": "Ten kod nie zadziałał. Sprawdź najnowszy e-mail lub poproś o nowy kod.",
     "codeSent": "Wysłaliśmy kod na {email}, jeśli ma on prawo się zalogować.",
     "codeFailed": "Ten kod nie zadziałał.",
@@ -539,5 +571,11 @@
     "italicHint": "Kursywa ⌘I",
     "underline": "Podkreślenie",
     "underlineHint": "Podkreślenie ⌘U"
+  },
+  "toast": {
+    "done": "Gotowe",
+    "error": "Błąd",
+    "dismiss": "Zamknij",
+    "notifications": "Powiadomienia"
   }
 }

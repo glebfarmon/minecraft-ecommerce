@@ -1,4 +1,4 @@
-import {toAdminProduct} from './products.mapper'
+import {toAdminProduct, toListItem} from './products.mapper'
 
 const row = {
   id: 'p1',
@@ -10,7 +10,7 @@ const row = {
   kind: 'PERMANENT' as const,
   durationDays: null,
   mark: 'VIP',
-  icon: 'crown' as const,
+  category: {icon: 'swords' as const},
   isActive: false,
   grantCommands: ['lp user {nick} parent add vip'],
   revokeCommands: [],
@@ -26,5 +26,15 @@ describe('toAdminProduct', () => {
     expect(p.prices).toEqual({EUR: 499, PLN: null})
     expect(p.translations).toEqual({en: {name: 'VIP', description: 'd', sections: []}, pl: null})
     expect(p.missing).toEqual(['price.PLN', 'translation.pl'])
+  })
+
+  it('has no icon of its own', () => {
+    expect(toAdminProduct(row)).not.toHaveProperty('icon')
+  })
+})
+
+describe('toListItem', () => {
+  it("shows the category's icon", () => {
+    expect(toListItem(row).icon).toBe('swords')
   })
 })

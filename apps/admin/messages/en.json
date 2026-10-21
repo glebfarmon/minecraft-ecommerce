@@ -6,7 +6,9 @@
     "edit": "Edit",
     "back": "Back",
     "loading": "Loading…",
-    "retry": "Retry"
+    "retry": "Retry",
+    "copied": "{label} copied",
+    "copyFailed": "Could not copy {label}"
   },
   "shell": {
     "language": "Language",
@@ -196,8 +198,11 @@
       "timeline": "Timeline",
       "created": "Created",
       "paid": "Paid",
-      "now": "Now"
-    }
+      "now": "Now",
+      "emailLabel": "Email"
+    },
+    "orderNumberLabel": "Order number",
+    "emailLabel": "Email"
   },
   "catalog": {
     "backToCatalog": "Back to catalog",
@@ -214,8 +219,6 @@
     "servers": "Servers",
     "server2": "+ Server",
     "attachCategory": "Attach category",
-    "choose": "Choose…",
-    "attach": "Attach",
     "couldNotLoadProductsRefreshThe": "Could not load products. Refresh the page.",
     "createCategory": "Create category",
     "editCategory": "Edit category",
@@ -319,13 +322,29 @@
     "kind": "Kind",
     "durationDays": "Duration (days)",
     "icon": "Icon",
+    "iconFromCategory": "Icon comes from the category",
+    "iconOnEveryTile": "Drawn on every product tile in this category",
+    "icons": {
+      "crown": "Crown",
+      "box": "Box",
+      "coins": "Coins",
+      "swords": "Swords",
+      "pickaxe": "Pickaxe",
+      "ticket": "Ticket"
+    },
     "priceEUR": "Price EUR",
     "pricePLN": "Price PLN",
     "nameIn": "Name ({locale})",
     "descriptionIn": "Description ({locale})",
     "grantCommands": "Grant commands",
     "revokeCommands": "Revoke commands",
-    "commandHint": "One command per line, without /."
+    "commandHint": "One command per line, without /.",
+    "serverCreated": "Server created.",
+    "serverDeleted": "Server deleted.",
+    "productCreated": "Product created.",
+    "productDeleted": "Product deleted.",
+    "categorySaved": "Category saved.",
+    "categoryDeleted": "Category deleted."
   },
   "content": {
     "loadingRules": "Loading rules…",
@@ -402,7 +421,9 @@
     "overrideFor": "Override for {key}",
     "rules": "Rules",
     "texts": "Texts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "textSaved": "Text saved. Live on the site within a minute.",
+    "textReset": "Text reset to the default."
   },
   "team": {
     "couldNotLoadAdminsRefreshThe": "Could not load admins. Refresh the page.",
@@ -464,7 +485,14 @@
     "saveRole": "Save role",
     "deleteRole": "Delete role",
     "saveName": "Save {name}",
-    "deleteName": "Delete {name}"
+    "deleteName": "Delete {name}",
+    "inviteRevoked": "Invite revoked.",
+    "adminRemoved": "Admin removed.",
+    "adminReset": "Two-factor reset. They set it up again at the next sign-in.",
+    "adminRoleChanged": "Role changed. They are signed out.",
+    "roleCreated": "Role created.",
+    "roleSaved": "Role saved.",
+    "roleDeleted": "Role deleted."
   },
   "audit": {
     "auditLog": "Audit log",
@@ -475,7 +503,6 @@
     "details": "Details",
     "beforeAfter": "Before / after",
     "nothingLoggedYet": "Nothing logged yet.",
-    "loadMore": "Load more",
     "actionStartsWith": "Action starts with",
     "role": "role.",
     "from": "From",
@@ -484,7 +511,12 @@
     "whoChangedWhatNewestFirst": "Who changed what, newest first.",
     "forbidden": "You do not have permission to read the audit log.",
     "loadFailed": "Could not load the audit log. Try again.",
-    "system": "System"
+    "system": "System",
+    "pager": "Pages",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "page": "Page {n}",
+    "anyone": "Anyone"
   },
   "auth": {
     "backupCodes": "Backup codes",
@@ -511,12 +543,12 @@
     "confirm": "Confirm",
     "account": "Account",
     "twoFactorAuthentication": "Two-factor authentication",
-    "signInToShopAdmin": "Sign in to Shop Admin",
-    "joinShopAdmin": "Join Shop Admin",
+    "signInToAdmin": "Sign in to {site} Admin",
+    "joinAdmin": "Join {site} Admin",
     "backupCodesFailed": "Could not generate backup codes. Try again.",
     "signOutFailed": "Could not sign out. Try again.",
     "sendCodeFailed": "Could not send the code. Try again.",
-    "notInvited": "This email is not invited to Shop Admin.",
+    "notInvited": "This email is not invited to {site} Admin.",
     "codeFailedEmail": "That code did not work. Check the latest email or request a new code.",
     "codeSent": "We sent a code to {email} if it is allowed to sign in.",
     "codeFailed": "That code did not work.",
@@ -539,5 +571,11 @@
     "italicHint": "Italic ⌘I",
     "underline": "Underline",
     "underlineHint": "Underline ⌘U"
+  },
+  "toast": {
+    "done": "Done",
+    "error": "Error",
+    "dismiss": "Dismiss",
+    "notifications": "Notifications"
   }
 }

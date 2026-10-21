@@ -38,7 +38,7 @@ describe('MemoryMailer', () => {
     try {
       await new MemoryMailer().send({
         to: 'x@y.z',
-        subject: '123456 is your Shop Admin sign-in code',
+        subject: '123456 is your Blockhaus Admin sign-in code',
         html: '<p>123456</p>',
         text: '123456'
       })

@@ -61,6 +61,33 @@ const open = () => {
   fireEvent.click(screen.getByRole('button', {name: 'label'}))
 }
 
+describe('CartMenu with a server without RCON', () => {
+  it('marks the line as unavailable', () => {
+    renderWithCatalog(
+      <TurnstileKeyProvider siteKey="site-key">
+        <ShopProvider>
+          <AddProduct />
+          <CartMenu />
+        </ShopProvider>
+      </TurnstileKeyProvider>,
+      {
+        ...TEST_CATALOG,
+        servers: TEST_CATALOG.servers.map(s => ({...s, purchasable: s.slug !== product.server}))
+      }
+    )
+    fireEvent.click(screen.getByRole('button', {name: 'add-product'}))
+    open()
+    expect(screen.getByText('unavailableLine')).toBeInTheDocument()
+  })
+
+  it('does not mark a line of a purchasable server', () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', {name: 'add-product'}))
+    open()
+    expect(screen.queryByText('unavailableLine')).not.toBeInTheDocument()
+  })
+})
+
 describe('CartMenu', () => {
   it('shows the empty state and a disabled checkout', () => {
     setup()

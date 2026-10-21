@@ -1,3 +1,4 @@
+import {getSiteTitle} from '@/lib/site-name'
 import type {Metadata} from 'next'
 import {NextIntlClientProvider} from 'next-intl'
 import {getLocale} from 'next-intl/server'
@@ -20,9 +21,11 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap'
 })
 
-export const metadata: Metadata = {
-  title: 'Shop Admin',
-  robots: {index: false, follow: false}
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: `${await getSiteTitle()} Admin`,
+    robots: {index: false, follow: false}
+  }
 }
 
 export default async function RootLayout({children}: {children: ReactNode}) {

@@ -60,7 +60,7 @@ function Localized({text, locale}: {text: Text; locale: Locale}) {
           <span
             tabIndex={0}
             aria-label={t('enFallback')}
-            className="ml-2 rounded border px-1 align-middle text-[10px] font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+            className="ml-2 rounded border border-border px-1 align-middle text-[10px] font-medium text-muted-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
             {t('en')}
           </span>
         </Hint>

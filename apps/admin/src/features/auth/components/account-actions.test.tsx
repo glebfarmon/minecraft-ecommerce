@@ -1,5 +1,6 @@
 import {authClient} from '@/lib/auth-client'
 import {renderWithProviders} from '@/test/render-with-providers'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor} from '@testing-library/react'
 import {useRouter} from 'next/navigation'
 import type {ReactElement} from 'react'
@@ -39,5 +40,20 @@ describe('AccountActions', () => {
       expect(revokeSessions).toHaveBeenCalled()
       expect(replace).toHaveBeenCalledWith('/login')
     })
+  })
+
+  it('toasts a failed sign-out instead of showing a banner', async () => {
+    revokeSessions.mockResolvedValue({data: null, error: {message: 'x'}})
+    render(<AccountActions />)
+    fireEvent.click(screen.getByRole('button', {name: 'Sign out everywhere'}))
+    expect(await findToast('alert')).toHaveTextContent(/sign/i)
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('toasts failed backup codes', async () => {
+    generateBackupCodes.mockResolvedValue({data: null, error: {message: 'x'}})
+    render(<AccountActions />)
+    fireEvent.click(screen.getByRole('button', {name: 'Regenerate backup codes'}))
+    expect(await findToast('alert')).toHaveTextContent(/backup/i)
   })
 })

@@ -19,7 +19,7 @@ test('storefront renders styled home page', async ({page}) => {
 
 test('admin renders and is noindex', async ({page}) => {
   await page.goto(ADMIN)
-  await expect(page.getByRole('heading', {level: 1, name: 'Shop Admin'})).toBeVisible()
+  await expect(page.getByRole('heading', {level: 1, name: /^Sign in to .+ Admin$/})).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
 })
 

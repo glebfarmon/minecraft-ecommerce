@@ -4,9 +4,12 @@ import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
+import {notify} from '@/components/toaster'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   type ListCatalogCategoriesApiResponse,
   useCreateCatalogCategoryMutation,
@@ -18,16 +21,26 @@ import {valibotResolver} from '@hookform/resolvers/valibot'
 import {Tags} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import {useState} from 'react'
-import {type FieldErrors, type UseFormRegister, useForm, useFormState} from 'react-hook-form'
+import {
+  type Control,
+  Controller,
+  type FieldErrors,
+  type UseFormRegister,
+  useForm,
+  useFormState
+} from 'react-hook-form'
 
+import {PRODUCT_ICONS} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
+import {Select} from '@shop/ui/select'
+
+import {ProductIcon} from './product-icon'
 
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
 export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
   const t = useTranslations('catalog')
-  const apiError = useApiError()
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
   const [update] = useUpdateCatalogCategoryMutation()
@@ -35,13 +48,15 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   const [editing, setEditing] = useState<string | null>(initialEdit ?? null)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
-    defaultValues: {slug: '', en: '', pl: ''}
+    defaultValues: {slug: '', en: '', pl: '', icon: 'crown' as const}
   })
   const {errors} = useFormState({control})
 
-  if (categories.isLoading) return <SkeletonRows />
+  const held = useHoldLoading(categories.isLoading)
+  if (held) return <SkeletonRows />
   if (categories.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
@@ -49,16 +64,17 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       </p>
     )
 
-  async function run(action: Promise<{error?: unknown}>) {
+  async function run(action: Promise<{error?: unknown}>, done: string) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiError(result.error))
+    if (result.error) report(result.error)
+    else notify.ok(done)
     return !result.error
   }
 
   const onCreate = handleSubmit(async values => {
-    if (await run(create({body: {slug: values.slug, names: {en: values.en, pl: values.pl}}})))
-      reset()
+    const body = {slug: values.slug, names: {en: values.en, pl: values.pl}, icon: values.icon}
+    if (await run(create({body}), t('categorySaved'))) reset()
   })
 
   const list = categories.data ?? []
@@ -75,7 +91,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       {canEdit && !editingCategory && (
         <form onSubmit={e => void onCreate(e)} noValidate>
           <FormSection title={t('newCategory')}>
-            <CategoryFields prefix="new" register={register} errors={errors} />
+            <CategoryFields prefix="new" register={register} control={control} errors={errors} />
             <div className="md:col-span-2">
               <Button type="submit" disabled={creating}>
                 {t('addCategory')}
@@ -99,9 +115,11 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
                   body: {
                     slug: values.slug,
                     names: {en: values.en, pl: values.pl},
+                    icon: values.icon,
                     version: editingCategory.version
                   }
-                })
+                }),
+                t('categorySaved')
               )
             )
               setEditing(null)
@@ -116,7 +134,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
             onClick={() => {
               setConfirming(null)
               void run(
-                remove({id: confirmingCategory.id, version: String(confirmingCategory.version)})
+                remove({id: confirmingCategory.id, version: String(confirmingCategory.version)}),
+                t('categoryDeleted')
               )
             }}>
             {t('confirmDelete')}
@@ -188,15 +207,22 @@ const FIELDS = [
 function CategoryFields({
   prefix,
   register,
+  control,
   errors
 }: {
   prefix: string
   register: UseFormRegister<CategoryForm>
+  control: Control<CategoryForm>
   errors: FieldErrors<CategoryForm>
 }) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
-  return FIELDS.map(({name, label}) => (
+  const iconOptions = PRODUCT_ICONS.map(i => ({
+    value: i,
+    label: t(`icons.${i}`),
+    icon: <ProductIcon name={i} className="size-4 shrink-0" />
+  }))
+  const texts = FIELDS.map(({name, label}) => (
     <div key={name} className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={`${prefix}-${name}`}>{t(label)}</Label>
       <Input
@@ -213,6 +239,27 @@ function CategoryFields({
       )}
     </div>
   ))
+  return (
+    <>
+      {texts}
+      <div className="flex min-w-0 flex-col gap-1">
+        <Label htmlFor={`${prefix}-icon`}>{t('icon')}</Label>
+        <Controller
+          control={control}
+          name="icon"
+          render={({field: f}) => (
+            <Select
+              id={`${prefix}-icon`}
+              value={f.value}
+              options={iconOptions}
+              onValueChange={f.onChange}
+            />
+          )}
+        />
+        <p className="text-xs text-muted-foreground">{t('iconOnEveryTile')}</p>
+      </div>
+    </>
+  )
 }
 
 function EditForm({
@@ -227,7 +274,12 @@ function EditForm({
   const t = useTranslations('catalog')
   const {register, handleSubmit, control} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
-    defaultValues: {slug: category.slug, en: category.names.en, pl: category.names.pl}
+    defaultValues: {
+      slug: category.slug,
+      en: category.names.en,
+      pl: category.names.pl,
+      icon: category.icon
+    }
   })
   const {errors, isSubmitting} = useFormState({control})
 
@@ -239,7 +291,12 @@ function EditForm({
         if (e.key === 'Escape') onCancel()
       }}>
       <FormSection title={t('editName', {name: category.names.en})}>
-        <CategoryFields prefix={`edit-${category.id}`} register={register} errors={errors} />
+        <CategoryFields
+          prefix={`edit-${category.id}`}
+          register={register}
+          control={control}
+          errors={errors}
+        />
         <div className="flex gap-2 md:col-span-2">
           <Button type="submit" disabled={isSubmitting}>
             {t('save')}

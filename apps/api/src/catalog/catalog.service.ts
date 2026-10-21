@@ -22,6 +22,9 @@ export class CatalogService {
           name: true,
           accent: true,
           onAccent: true,
+          rconHost: true,
+          rconPort: true,
+          rconPasswordEnc: true,
           categories: {
             orderBy: {sort: 'asc'},
             select: {
@@ -40,9 +43,8 @@ export class CatalogService {
           kind: true,
           durationDays: true,
           mark: true,
-          icon: true,
           server: {select: {slug: true}},
-          category: {select: {slug: true}},
+          category: {select: {slug: true, icon: true}},
           translations: {
             ...texts,
             select: {locale: true, name: true, description: true, sections: true}

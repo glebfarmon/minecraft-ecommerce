@@ -19,6 +19,7 @@ type Row = Prisma.CategoryGetPayload<{include: typeof include}>
 const toAdminCategory = (r: Row): AdminCategory => ({
   id: r.id,
   slug: r.slug,
+  icon: r.icon,
   version: r.version,
   names: {
     en: r.translations.find(t => t.locale === 'en')?.name ?? r.slug,
@@ -47,6 +48,7 @@ export class CategoriesService {
       .create({
         data: {
           slug: input.slug,
+          icon: input.icon,
           translations: {create: LOCALES.map(locale => ({locale, name: input.names[locale]}))}
         },
         include
@@ -67,7 +69,7 @@ export class CategoriesService {
       .$transaction(async tx => {
         const {count} = await tx.category.updateMany({
           where: {id, version: input.version},
-          data: {slug: input.slug, version: {increment: 1}}
+          data: {slug: input.slug, icon: input.icon, version: {increment: 1}}
         })
         await assertUpdated(count, async () => (await tx.category.count({where: {id}})) > 0)
         for (const locale of LOCALES)

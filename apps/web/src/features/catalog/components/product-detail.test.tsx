@@ -47,6 +47,27 @@ describe('ProductDetail add to cart', () => {
   })
 })
 
+describe('ProductDetail without RCON', () => {
+  it('shows a disabled unavailable button and adds nothing', () => {
+    add.mockClear()
+    const onAdded = jest.fn()
+    renderWithCatalog(
+      <ProductDetail
+        product={product}
+        server={{...server, purchasable: false}}
+        titleId="t"
+        onAdded={onAdded}
+      />
+    )
+    expect(screen.queryByRole('button', {name: 'addToCart'})).not.toBeInTheDocument()
+    const button = screen.getByRole('button', {name: 'unavailableProduct'})
+    expect(button).toBeDisabled()
+    fireEvent.click(button)
+    expect(add).not.toHaveBeenCalled()
+    expect(onAdded).not.toHaveBeenCalled()
+  })
+})
+
 describe('ProductDetail description', () => {
   it('renders marks and keeps line breaks, but not links', () => {
     const formatted = {...product, description: '**Fast** delivery\nall day [x](/a)'}

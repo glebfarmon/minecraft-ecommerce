@@ -54,4 +54,18 @@ describe('Tabs indicator', () => {
       indicators(container)[0] as HTMLElement
     )
   })
+
+  it('tab triggers show keyboard focus without the accent ring', () => {
+    render(<Controlled />)
+    const cls = screen.getByRole('tab', {name: 'A'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:after:z-10')
+    expect(cls).toContain('focus-visible:after:ring-fg/40')
+  })
+
+  it('tab triggers draw one focus ring only, the pill one', () => {
+    render(<Controlled />)
+    const classes = screen.getByRole('tab', {name: 'B'}).className.split(/\s+/)
+    expect(classes.filter(c => /^focus-visible:ring/.test(c))).toEqual([])
+  })
 })

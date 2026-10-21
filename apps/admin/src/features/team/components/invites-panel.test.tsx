@@ -1,5 +1,6 @@
 import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -88,6 +89,31 @@ describe('InvitesPanel', () => {
     expect(await screen.findByRole('table', {name: 'Zaproszenia'})).toBeInTheDocument()
   })
 
+  it('holds the skeleton alone while a slow load settles, then shows the table', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(input => {
+      const url = String(input instanceof Request ? input.url : input)
+      const body = url.endsWith('/api/admin/invites') ? invites : roles
+      return new Promise(resolve =>
+        setTimeout(() => {
+          resolve(Response.json(body))
+        }, 300)
+      )
+    })
+    const {container} = renderWithStore(<InvitesPanel />)
+    await waitFor(() => {
+      expect(container.querySelector('.skeleton')).not.toBeNull()
+    })
+    await waitFor(() => {
+      expect(screen.getByText('Loading…')).toBeInTheDocument()
+    })
+    // Data lands at ~300 ms; the skeleton is held until ~600 ms and the table waits for it.
+    await new Promise(r => setTimeout(r, 150))
+    expect(container.querySelector('.skeleton')).not.toBeNull()
+    expect(screen.queryByRole('table', {name: 'Invites'})).not.toBeInTheDocument()
+    expect(await screen.findByRole('table', {name: 'Invites'}, {timeout: 2000})).toBeInTheDocument()
+    expect(container.querySelector('.skeleton')).toBeNull()
+  })
+
   it('lists invites with their status', async () => {
     mockApi()
     renderWithStore(<InvitesPanel />)
@@ -135,6 +161,7 @@ describe('InvitesPanel', () => {
     expect(req.method).toBe('POST')
     expect(req.url).toMatch(/\/api\/admin\/invites$/)
     expect(await req.clone().json()).toEqual({email: 'new@x.io', roleId: 'r2'})
+    expect(await findToast()).toHaveTextContent('Invite sent to new@x.io.')
   })
 
   it('does not offer OWNER as an invite role', async () => {
@@ -153,6 +180,7 @@ describe('InvitesPanel', () => {
     const req = await mutation(fetchMock)
     expect(req.method).toBe('POST')
     expect(req.url).toMatch(/\/api\/admin\/invites\/i1\/resend$/)
+    expect(await findToast()).toHaveTextContent('Invite re-sent to open@x.io.')
   })
 
   it('sends nothing on Revoke until confirmed and offers to keep the invite', async () => {
@@ -183,7 +211,7 @@ describe('InvitesPanel', () => {
     mockApi({status: 503, message: 'mail_failed'})
     renderWithStore(<InvitesPanel />)
     await choose('open@x.io', 'Resend')
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Use Resend/)
+    expect(await findToast('alert')).toHaveTextContent(/Use Resend/)
   })
 
   it('shows an empty state without invites', async () => {

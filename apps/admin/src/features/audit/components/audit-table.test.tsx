@@ -19,6 +19,27 @@ const entry = (id: string, action: string, email: string | null) => ({
 function mockApi() {
   return jest.spyOn(global, 'fetch').mockImplementation(input => {
     const url = new URL(String(input instanceof Request ? input.url : input))
+    if (url.pathname.endsWith('/admin/admins'))
+      return Promise.resolve(
+        Response.json([
+          {
+            id: 'u-ann',
+            email: 'ann@x.io',
+            name: 'Ann',
+            role: {id: 'r', name: 'ADMIN'},
+            twoFactorEnabled: true,
+            disabledAt: null
+          },
+          {
+            id: 'u-bob',
+            email: 'bob@x.io',
+            name: 'Bob',
+            role: {id: 'r', name: 'ADMIN'},
+            twoFactorEnabled: true,
+            disabledAt: null
+          }
+        ])
+      )
     if (url.searchParams.get('cursor') === 'c1')
       return Promise.resolve(
         Response.json({entries: [entry('3', 'role.deleted', 'bob@x.io')], nextCursor: null})
@@ -80,14 +101,43 @@ describe('AuditTable', () => {
     expect(details).toHaveTextContent('"role": "ADMIN"')
   })
 
-  it('loads the next page with the cursor', async () => {
+  it('pages forward and back', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AuditTable />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Load more'}))
+    await screen.findAllByText('admin.role_changed')
+    expect(screen.getByText('Page 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}))
     expect((await screen.findAllByText('role.deleted')).length).toBeGreaterThan(0)
-    expect(screen.getAllByText('admin.role_changed').length).toBeGreaterThan(0)
+    expect(screen.queryAllByText('admin.role_changed')).toHaveLength(0)
+    expect(screen.getByText('Page 2')).toBeInTheDocument()
+    expect(screen.getByRole('button', {name: 'Next page'})).toBeDisabled()
     expect(requestedUrls(fetchMock).some(u => u.searchParams.get('cursor') === 'c1')).toBe(true)
-    expect(screen.queryByRole('button', {name: 'Load more'})).not.toBeInTheDocument()
+    const calls = requestedUrls(fetchMock).length
+    fireEvent.click(screen.getByRole('button', {name: 'Previous page'}))
+    expect((await screen.findAllByText('admin.role_changed')).length).toBeGreaterThan(0)
+    expect(screen.getByText('Page 1')).toBeInTheDocument()
+    expect(requestedUrls(fetchMock)).toHaveLength(calls)
+  })
+
+  it('filters by actor', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<AuditTable />)
+    await screen.findAllByText('admin.role_changed')
+    fireEvent.click(screen.getByRole('combobox', {name: 'Actor'}))
+    expect(await screen.findByRole('option', {name: 'Anyone'})).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('option', {name: 'bob@x.io'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
+    await waitFor(() => {
+      expect(requestedUrls(fetchMock).some(u => u.searchParams.get('actorId') === 'u-bob')).toBe(
+        true
+      )
+    })
+    expect(
+      requestedUrls(fetchMock)
+        .filter(u => u.pathname.endsWith('/admin/audit'))
+        .some(u => u.searchParams.has('actorId') && u.searchParams.get('actorId') === '')
+    ).toBe(false)
   })
 
   it('filters by action prefix', async () => {
@@ -121,16 +171,17 @@ describe('AuditTable', () => {
     })
   })
 
-  it('restarts from the first page when filters change', async () => {
+  it('resets to page 1 when filters change', async () => {
     mockApi()
     renderWithStore(<AuditTable />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Load more'}))
+    fireEvent.click(await screen.findByRole('button', {name: 'Next page'}))
     await screen.findAllByText('role.deleted')
     fireEvent.change(screen.getByLabelText('Action starts with'), {target: {value: 'invite.'}})
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
     await waitFor(() => {
       expect(screen.queryAllByText('role.deleted')).toHaveLength(0)
     })
+    expect(await screen.findByText('Page 1')).toBeInTheDocument()
   })
 
   it('shows an error when the log cannot be loaded', async () => {

@@ -30,4 +30,15 @@ describe('ServerCard', () => {
     renderWithProviders(<ServerCard server={server(0)} />, {locale: 'pl', store: false})
     expect(screen.getByText('RCON nieustawiony')).toBeInTheDocument()
   })
+
+  it('draws the selection ring with a numeric radius and a box-shadow Motion can correct', () => {
+    const {container} = renderWithProviders(
+      <ServerCard server={server(1)} selected onSelect={() => undefined} />,
+      {locale: 'en', store: false}
+    )
+    const ring = container.querySelector('[data-slot="rolling-indicator"]') as HTMLElement
+    expect(ring.style.borderRadius).toBe('24px')
+    expect(ring.style.boxShadow).toContain('0 0 0 2px')
+    expect(ring.className).not.toContain('ring-')
+  })
 })

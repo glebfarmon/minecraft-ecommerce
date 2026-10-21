@@ -20,6 +20,7 @@
   },
   "cart": {
     "label": "Koszyk, {count, plural, =0 {pusty} one {# przedmiot} few {# przedmioty} other {# przedmiotów}}",
+    "unavailableLine": "Niedostępne",
     "title": "Twój koszyk",
     "empty": "Na razie pusto. Wybierz serwer i coś dodaj.",
     "total": "Razem",
@@ -101,6 +102,7 @@
     "showAll": "Pokaż wszystko",
     "add": "Dodaj {name} do koszyka",
     "added": "Dodano {name} do koszyka",
+    "unavailableProduct": "Niedostępne",
     "addShort": "Dodaj",
     "days": "{count} dni",
     "forever": "Na zawsze",

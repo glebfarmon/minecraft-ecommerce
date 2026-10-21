@@ -2,6 +2,7 @@ import {makeStore} from '@/lib/api/store'
 import {IntlWrapper} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setMarkdown} from '@/test/rich-field'
+import {findToast} from '@/test/toast'
 import {fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import type {ReactNode} from 'react'
 import {Provider} from 'react-redux'
@@ -115,9 +116,9 @@ describe('VersionsList', () => {
       {method: 'POST', path: '/api/admin/content/rules/versions/1/restore', search: '', body: null}
     ])
     expect(markdownOf(screen.getByLabelText('Section 1 title (EN)'))).toBe('Old rules')
-    expect(
-      screen.getByText('Restored to the draft above. Publish it to show it on the site.')
-    ).toBeInTheDocument()
+    expect(await findToast()).toHaveTextContent(
+      'Restored to the draft above. Publish it to show it on the site.'
+    )
 
     // The restored draft's revision replaces the loaded one.
     fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))

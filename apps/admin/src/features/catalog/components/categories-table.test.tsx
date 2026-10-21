@@ -1,4 +1,7 @@
+import {useListCatalogProductsQuery} from '@/lib/api/generated'
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -8,6 +11,7 @@ const ranks = {
   id: 'c1',
   slug: 'ranks',
   names: {en: 'Ranks', pl: 'Rangi'},
+  icon: 'crown',
   version: 1,
   productCount: 6,
   servers: [{id: 's1', name: 'Survival'}]
@@ -24,7 +28,7 @@ describe('CategoriesTable', () => {
     expect(row).toHaveTextContent('6')
   })
 
-  it('creates a category with both names', async () => {
+  it('creates a category with both names and the chosen icon', async () => {
     const fetchMock = jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
       const req = input instanceof Request ? input : new Request(String(input), init)
       return Promise.resolve(
@@ -35,11 +39,83 @@ describe('CategoriesTable', () => {
     fireEvent.change(await screen.findByLabelText('Slug'), {target: {value: 'tools'}})
     fireEvent.change(screen.getByLabelText('English name'), {target: {value: 'Tools'}})
     fireEvent.change(screen.getByLabelText('Polish name'), {target: {value: 'Narzędzia'}})
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('combobox', {name: 'Icon'}))
+    const option = await screen.findByRole('option', {name: 'Pickaxe'})
+    expect(option.querySelector('svg.lucide-pickaxe')).not.toBeNull()
+    await user.click(option)
     fireEvent.click(screen.getByRole('button', {name: 'Add category'}))
+    let post: Request | undefined
     await waitFor(() => {
-      const post = fetchMock.mock.calls.map(([r]) => r as Request).find(r => r.method === 'POST')
+      post = fetchMock.mock.calls.map(([r]) => r as Request).find(r => r.method === 'POST')
       expect(post).toBeDefined()
     })
+    expect(await post?.clone().json()).toEqual({
+      slug: 'tools',
+      names: {en: 'Tools', pl: 'Narzędzia'},
+      icon: 'pickaxe'
+    })
+  })
+
+  it('changes the icon in the edit form and refreshes the product cards that show it', async () => {
+    const sent: unknown[] = []
+    let productLoads = 0
+    function ProductsProbe() {
+      useListCatalogProductsQuery({})
+      return null
+    }
+    jest.spyOn(global, 'fetch').mockImplementation(async (input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      if (new URL(req.url).pathname === '/api/admin/catalog/products') {
+        productLoads += 1
+        return Response.json([])
+      }
+      if (req.method === 'PATCH') {
+        sent.push(await req.json())
+        return Response.json({...ranks, icon: 'coins', version: 2})
+      }
+      return Response.json([ranks])
+    })
+    const user = userEvent.setup()
+    renderWithStore(
+      <>
+        <ProductsProbe />
+        <CategoriesTable canEdit initialEdit="c1" />
+      </>
+    )
+    const form = await screen.findByRole('group', {name: 'Edit Ranks'})
+    await waitFor(() => {
+      expect(productLoads).toBe(1)
+    })
+    const icon = within(form).getByRole('combobox', {name: 'Icon'})
+    expect(icon).toHaveTextContent('Crown')
+    await user.click(icon)
+    await user.click(await screen.findByRole('option', {name: 'Coins'}))
+    await user.click(within(form).getByRole('button', {name: 'Save'}))
+    await waitFor(() => {
+      expect(sent).toEqual([
+        {slug: 'ranks', names: {en: 'Ranks', pl: 'Rangi'}, icon: 'coins', version: 1}
+      ])
+    })
+    await waitFor(() => {
+      expect(productLoads).toBe(2)
+    })
+  })
+
+  it('labels the icon options with translated names, not the enum values', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([]))
+    renderWithProviders(<CategoriesTable canEdit />, {locale: 'pl'})
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('combobox', {name: 'Ikona'}))
+    const options = await screen.findAllByRole('option')
+    expect(options.map(o => o.textContent)).toEqual([
+      'Korona',
+      'Skrzynia',
+      'Monety',
+      'Miecze',
+      'Kilof',
+      'Bilet'
+    ])
   })
 
   it('shows a field error for a bad slug', async () => {
@@ -71,6 +147,7 @@ describe('CategoriesTable', () => {
     await waitFor(() => {
       expect(methods).toContain('DELETE')
     })
+    expect(await findToast()).toHaveTextContent('Category deleted.')
   })
 
   it('initialEdit opens the edit form for that category', async () => {

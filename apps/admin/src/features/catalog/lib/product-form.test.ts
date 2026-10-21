@@ -12,7 +12,6 @@ const product = {
   kind: 'TIMED' as const,
   durationDays: 30,
   mark: 'VIP',
-  icon: 'crown' as const,
   isActive: true,
   grantCommands: ['lp user {nick} parent add vip', 'say hi {nick}'],
   revokeCommands: ['lp user {nick} parent remove vip'],

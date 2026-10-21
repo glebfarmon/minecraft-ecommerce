@@ -25,18 +25,31 @@ const eur = (locale: string, minor: number) =>
 
 describe('mail templates', () => {
   it('puts the code in the subject, html and text of the sign-in mail', async () => {
-    const mail = await signInCodeMail('482913')
+    const mail = await signInCodeMail('482913', 'BlockHaus')
     expect(mail.subject).toContain('482913')
     expect(mail.html).toContain('482913')
     expect(mail.text).toContain('482913')
   })
   it('links the invite and names the role', async () => {
-    const mail = await inviteMail('https://admin.example.com/invite/abc', 'ADMIN')
+    const mail = await inviteMail('https://admin.example.com/invite/abc', 'ADMIN', 'BlockHaus')
     expect(mail.html).toContain('https://admin.example.com/invite/abc')
     expect(mail.text).toContain('ADMIN')
   })
+  it('names the site, never "Shop Admin", in every admin mail', async () => {
+    const mails = [
+      await signInCodeMail('482913', 'BlockHaus'),
+      await inviteMail('https://admin.example.com/invite/abc', 'ADMIN', 'BlockHaus'),
+      await twoFactorResetMail('BlockHaus')
+    ]
+    expect(mails[0]?.subject).toBe('482913 is your BlockHaus Admin sign-in code')
+    expect(mails[1]?.subject).toBe('You are invited to BlockHaus Admin')
+    expect(mails[2]?.subject).toBe('Your BlockHaus Admin two-factor authentication was reset')
+    for (const m of mails) {
+      expect(m.subject + m.html + m.text).not.toContain('Shop Admin')
+    }
+  })
   it('tells the person their 2FA was reset', async () => {
-    expect((await twoFactorResetMail()).text).toMatch(/two-factor/i)
+    expect((await twoFactorResetMail('BlockHaus')).text).toMatch(/two-factor/i)
   })
 
   describe('orderReceiptMail', () => {

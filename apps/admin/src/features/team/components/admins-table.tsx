@@ -3,8 +3,10 @@
 import {DataTable} from '@/components/data-table'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
-import {useApiError} from '@/hooks/use-error-text'
+import {notify} from '@/components/toaster'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useDeleteApiAdminAdminsByIdMutation,
   useGetApiAdminAdminsQuery,
@@ -32,7 +34,6 @@ export function AdminsTable({
   held?: readonly Permission[]
 }) {
   const t = useTranslations('team')
-  const apiError = useApiError()
   const admins = useGetApiAdminAdminsQuery()
   const roles = useGetApiAdminRolesQuery()
   const [remove] = useDeleteApiAdminAdminsByIdMutation()
@@ -40,8 +41,10 @@ export function AdminsTable({
   const [changeRole] = usePatchApiAdminAdminsByIdRoleMutation()
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
 
-  if (admins.isLoading) return <SkeletonRows rows={3} />
+  const loadingHeld = useHoldLoading(admins.isLoading)
+  if (loadingHeld) return <SkeletonRows rows={3} />
   if (admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>
 
   const assignable = (roles.data ?? []).filter(
@@ -56,7 +59,17 @@ export function AdminsTable({
         : p.kind === 'reset'
           ? await reset({id: p.adminId})
           : await changeRole({id: p.adminId, body: {roleId: p.roleId ?? ''}})
-    if ('error' in result) setError(apiError(result.error))
+    if ('error' in result) report(result.error)
+    else
+      notify.ok(
+        t(
+          p.kind === 'remove'
+            ? 'adminRemoved'
+            : p.kind === 'reset'
+              ? 'adminReset'
+              : 'adminRoleChanged'
+        )
+      )
     setPending(null)
   }
 

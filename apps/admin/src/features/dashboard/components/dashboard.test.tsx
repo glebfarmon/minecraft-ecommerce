@@ -259,6 +259,72 @@ describe('Dashboard', () => {
     expect(requestedUrls(fetchMock).some(u => u.includes('range=30d'))).toBe(true)
   })
 
+  it('keeps the previous range on screen, busy, while the other range loads', async () => {
+    let release: () => void = () => undefined
+    jest.spyOn(global, 'fetch').mockImplementation(input => {
+      const url = new URL(String(input instanceof Request ? input.url : input))
+      if (!url.pathname.endsWith('/stats/orders'))
+        return Promise.resolve(Response.json({orders: [], nextCursor: null}))
+      if (url.searchParams.get('range') === '7d') return Promise.resolve(Response.json(stats()))
+      return new Promise(resolve => {
+        release = () => {
+          resolve(Response.json(stats({range: '30d', paidCount: 44})))
+        }
+      })
+    })
+    renderWithStore(<Dashboard />)
+    const paid = await screen.findByRole('region', {name: 'Paid orders'})
+    expect(paid).toHaveTextContent('20')
+    fireEvent.mouseDown(screen.getByRole('tab', {name: '30 days'}))
+    fireEvent.click(screen.getByRole('tab', {name: '30 days'}))
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', {name: 'Paid orders'}).closest('[aria-busy]')
+      ).toHaveAttribute('aria-busy', 'true')
+    })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'Paid orders'})).toHaveTextContent('20')
+    release()
+    await waitFor(() => {
+      expect(screen.getByRole('region', {name: 'Paid orders'})).toHaveTextContent('44')
+    })
+    expect(
+      screen.getByRole('region', {name: 'Paid orders'}).closest('[aria-busy="true"]')
+    ).toBeNull()
+  })
+
+  it('opens the order when the whole latest-orders row is clicked', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(input => {
+      const url = new URL(String(input instanceof Request ? input.url : input))
+      if (url.pathname.endsWith('/stats/orders')) return Promise.resolve(Response.json(stats()))
+      return Promise.resolve(
+        Response.json({
+          orders: [
+            {
+              id: 'o1',
+              publicId: 'ORD-1',
+              nick: 'Steve',
+              totalMinor: 500,
+              currency: 'EUR',
+              status: 'PAID'
+            }
+          ],
+          nextCursor: null
+        })
+      )
+    })
+    renderWithStore(<Dashboard />)
+    const nick = (await screen.findAllByText('Steve'))[0] as HTMLElement
+    const link = screen.getAllByRole('link', {name: 'ORD-1'})[0] as HTMLAnchorElement
+    expect(link).toHaveAttribute('href', '/orders/o1')
+    const click = jest.fn((e: Event) => {
+      e.preventDefault()
+    })
+    link.addEventListener('click', click)
+    fireEvent.click(nick)
+    expect(click).toHaveBeenCalledTimes(1)
+  })
+
   it('offers a retry when statistics fail to load', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(new Response('boom', {status: 500}))
     renderWithStore(<Dashboard />)

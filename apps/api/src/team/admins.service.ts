@@ -4,6 +4,8 @@ import type {Admin, Permission} from '@shop/shared/access'
 
 import {assertCanGrant} from '../access/grant'
 import {PermissionCache} from '../access/permission-cache'
+import {ContentService} from '../content/content.service'
+import {siteBrand} from '../mailer/brand'
 import type {Mailer} from '../mailer/mailer'
 import {MAILER} from '../mailer/mailer'
 import {twoFactorResetMail} from '../mailer/templates'
@@ -37,7 +39,8 @@ export class AdminsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(MAILER) private readonly mailer: Mailer,
-    private readonly cache: PermissionCache
+    private readonly cache: PermissionCache,
+    private readonly content: ContentService
   ) {}
 
   private async find(id: string): Promise<UserWithRole> {
@@ -94,7 +97,10 @@ export class AdminsService {
     ])
     // The reset has happened; a mail failure is logged, not turned into an error.
     try {
-      await this.mailer.send({to: user.email, ...(await twoFactorResetMail())})
+      await this.mailer.send({
+        to: user.email,
+        ...(await twoFactorResetMail(await siteBrand(this.content)))
+      })
     } catch (error) {
       console.error('mail: 2fa reset notice failed', error)
     }

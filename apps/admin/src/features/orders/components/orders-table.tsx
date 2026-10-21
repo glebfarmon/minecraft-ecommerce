@@ -5,7 +5,9 @@ import {EmptyState} from '@/components/empty-state'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
+import {copyText} from '@/lib/copy'
 import {ReceiptText, Search} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
@@ -36,10 +38,12 @@ function PageRows({
   onMore: (cursor: string) => void
 }) {
   const t = useTranslations('orders')
+  const tc = useTranslations('common')
   const f = useFormat()
   const router = useRouter()
   const page = useListAdminOrdersQuery({...query, cursor})
-  if (page.isLoading) return <SkeletonRows />
+  const held = useHoldLoading(page.isLoading)
+  if (held) return <SkeletonRows />
   if (page.isError || !page.data)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
@@ -83,13 +87,13 @@ function PageRows({
           {
             label: t('copyNumber'),
             onSelect: () => {
-              void navigator.clipboard.writeText(o.publicId)
+              void copyText(o.publicId, t('orderNumberLabel'), tc)
             }
           },
           {
             label: t('copyEmail'),
             onSelect: () => {
-              void navigator.clipboard.writeText(o.email)
+              void copyText(o.email, t('emailLabel'), tc)
             }
           }
         ]}

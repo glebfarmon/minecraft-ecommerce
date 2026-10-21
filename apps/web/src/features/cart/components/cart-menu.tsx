@@ -5,6 +5,7 @@ import {MorphPopover} from '@/components/morph-popover'
 import {MAX_QTY} from '@/config/cart'
 import {CART_TICK_S} from '@/config/motion'
 import {useCart, useCartActions, useCurrency} from '@/features/cart/shop-provider'
+import {useCatalog} from '@/features/catalog/catalog-provider'
 import {CheckoutModal} from '@/features/checkout/components/checkout-modal'
 import {formatPrice} from '@/lib/catalog'
 import {Minus, Plus, ShoppingBag, X} from 'lucide-react'
@@ -21,6 +22,7 @@ export function CartMenu() {
   const locale = useLocale()
   const {lines, count} = useCart()
   const {currency} = useCurrency()
+  const {findServer} = useCatalog()
   const {add, decrement, remove} = useCartActions()
   const [stage, setStage] = useState<Stage>('closed')
   const layoutId = useId()
@@ -76,6 +78,11 @@ export function CartMenu() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{product.name}</p>
                         <p className="text-xs text-muted capitalize">{product.server}</p>
+                        {findServer(product.server)?.purchasable === false && (
+                          <p className="text-xs font-semibold text-danger">
+                            {t('unavailableLine')}
+                          </p>
+                        )}
                         {qty > 1 && (
                           <div className="mt-2 inline-flex items-center rounded-full bg-white/5">
                             <button

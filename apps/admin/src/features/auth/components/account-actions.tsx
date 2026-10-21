@@ -1,8 +1,8 @@
 'use client'
 
 import {Card} from '@/components/card'
+import {notify} from '@/components/toaster'
 import {BackupCodes} from '@/features/auth/components/backup-codes'
-import {useMessage} from '@/hooks/use-message'
 import {authClient} from '@/lib/auth-client'
 import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
@@ -14,23 +14,20 @@ export function AccountActions() {
   const t = useTranslations('auth')
   const router = useRouter()
   const [codes, setCodes] = useState<string[] | null>(null)
-  const [error, setError] = useMessage()
 
   async function regenerate() {
-    setError(null)
     const {data, error: failed} = await authClient.twoFactor.generateBackupCodes({})
     if (failed) {
-      setError(t('backupCodesFailed'))
+      notify.error(t('backupCodesFailed'))
       return
     }
     setCodes(data.backupCodes)
   }
 
   async function signOutEverywhere() {
-    setError(null)
     const {error: failed} = await authClient.revokeSessions()
     if (failed) {
-      setError(t('signOutFailed'))
+      notify.error(t('signOutFailed'))
       return
     }
     router.replace('/login')
@@ -60,11 +57,6 @@ export function AccountActions() {
           {t('signOutEverywhere')}
         </Button>
       </Card>
-      {error && (
-        <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad lg:col-span-2">
-          {error}
-        </p>
-      )}
     </div>
   )
 }
