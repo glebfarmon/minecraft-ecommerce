@@ -45,7 +45,8 @@
                             "type": "string"
                           },
                           "purchasable": {
-                            "type": "boolean"
+                            "type": "boolean",
+                            "default": true
                           },
                           "categories": {
                             "type": "array",
@@ -63,14 +64,7 @@
                             }
                           }
                         },
-                        "required": [
-                          "slug",
-                          "name",
-                          "accent",
-                          "onAccent",
-                          "purchasable",
-                          "categories"
-                        ]
+                        "required": ["slug", "name", "accent", "onAccent", "categories"]
                       }
                     },
                     "products": {

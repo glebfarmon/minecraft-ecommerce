@@ -47,12 +47,27 @@ describe('CatalogResponseSchema', () => {
     expect(v.parse(CatalogResponseSchema, catalog)).toEqual(catalog)
   })
 
-  it('rejects a server without the purchasable flag', () => {
+  // An API from before the flag (rolling deploy, API-only rollback) means old behaviour: purchasable.
+  // POST /api/orders still answers 409 for a server without RCON.
+  it('treats a server without the purchasable flag as purchasable', () => {
     const server = {slug: 'survival', name: 'Survival', accent: '#ff6b1a', onAccent: '#0e0e10'}
-    expect(
-      v.safeParse(CatalogResponseSchema, {...catalog, servers: [{...server, categories: []}]})
-        .success
-    ).toBe(false)
+    const parsed = v.parse(CatalogResponseSchema, {
+      ...catalog,
+      servers: [{...server, categories: []}]
+    })
+    expect(parsed.servers[0]?.purchasable).toBe(true)
+  })
+
+  it('keeps purchasable false when the API sends it', () => {
+    const servers = catalog.servers.map(s => ({...s, purchasable: false}))
+    expect(v.parse(CatalogResponseSchema, {...catalog, servers}).servers[0]?.purchasable).toBe(
+      false
+    )
+  })
+
+  it('rejects a non-boolean purchasable flag', () => {
+    const servers = catalog.servers.map(s => ({...s, purchasable: 'yes'}))
+    expect(v.safeParse(CatalogResponseSchema, {...catalog, servers}).success).toBe(false)
   })
 
   it.each([
