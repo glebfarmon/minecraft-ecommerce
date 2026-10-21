@@ -515,3 +515,84 @@ test('the owner switches the admin to Polish, it persists and the 390 px layout 
     await page.context().clearCookies({name: 'admin_locale'})
   }
 })
+
+test('the owner creates a promo code and a player pays less with it', async ({page, browser}) => {
+  test.setTimeout(180_000)
+  const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
+  const email = `promo-${String(Date.now())}@shop.localhost`
+  await signInOwner(page)
+  await page.getByRole('link', {name: 'Promo codes', exact: true}).click()
+  await page.getByRole('link', {name: /New code/}).click()
+  // The dice fills the code; the owner can type over it.
+  const code = page.getByLabel('Code', {exact: true})
+  const dice = page.getByRole('button', {name: 'Generate a code'})
+  await dice.click()
+  // The dice is disabled while it rolls, and the roll's frames also match the code format.
+  await expect(dice).toBeEnabled()
+  await expect(code).toHaveValue(/^[A-HJ-NP-Z]{5}[2-9]{3}$/)
+  await code.fill('E2E10')
+  await page.getByLabel('Percent', {exact: true}).fill('10')
+
+  // From the first Create the code exists: always remove it, so a rerun can create it again.
+  try {
+    await page.getByRole('button', {name: 'Create code'}).click()
+    await expect(page).toHaveURL(/\/promo-codes\/\w+$/)
+
+    const context = await browser.newContext({viewport: {width: 1600, height: 900}})
+    const shop = await context.newPage()
+    await shop.goto(`${WEB}/`)
+    await expect(shop.getByRole('navigation', {name: 'Main'})).toHaveAttribute('data-animate')
+    await shop.getByRole('button', {name: 'Add VIP to cart'}).click()
+    await shop.getByRole('button', {name: /^Cart, 1 item$/}).click()
+    await shop.getByRole('button', {name: 'Checkout'}).click()
+    const dialog = shop.getByRole('dialog', {name: 'Checkout', exact: true})
+    await shop.getByLabel('Minecraft nickname').fill('E2e_Promo')
+    await shop.getByLabel('Email', {exact: true}).fill(email)
+    await dialog.getByText('I agree to immediate delivery').click({position: {x: 4, y: 4}})
+    await dialog.getByText('I accept the').click({position: {x: 4, y: 4}})
+
+    await dialog.getByRole('button', {name: 'Have a promo code?'}).click()
+    await dialog.getByLabel('Promo code').fill('e2e10')
+    await dialog.getByRole('button', {name: 'Apply'}).click()
+    await expect(dialog.getByRole('button', {name: 'Remove promo code E2E10'})).toBeVisible({
+      timeout: 15_000
+    })
+    await expect(dialog.getByText(/^−/)).toBeVisible()
+    await expect(shop.getByRole('button', {name: /^Pay/})).toBeEnabled({timeout: 30_000})
+    await shop.getByRole('button', {name: /^Pay/}).click()
+
+    await expect(shop).toHaveURL(/\/api\/payments\/fake\/cs_fake_/)
+    // The last amount in the text: the line reads "VIP × 1 — €4.99".
+    const money = (s: string) =>
+      Number(
+        s
+          .replace(/\s/g, '')
+          .match(/\d+(?:[.,]\d+)?/g)
+          ?.at(-1)
+          ?.replace(',', '.')
+      )
+    const discount = money(await shop.getByText('Discount (E2E10):').innerText())
+    const total = money(await shop.getByText('Total:').innerText())
+    const line = money(await shop.getByRole('listitem').innerText())
+    expect(discount).toBeGreaterThan(0)
+    expect(discount).toBeCloseTo(line * 0.1, 1)
+    expect(total).toBeCloseTo(line - discount, 2)
+    await shop.getByRole('button', {name: 'Pay', exact: true}).click()
+
+    await expect(shop).toHaveURL(/\/order\/[A-Za-z0-9_-]{22}$/)
+    await expect(shop.getByRole('heading', {name: 'Paid — thank you!'})).toBeVisible({
+      timeout: 30_000
+    })
+    await expect(shop.getByText('Promo code E2E10')).toBeVisible()
+    await context.close()
+  } finally {
+    await page.goto(`${ADMIN}/promo-codes`)
+    const actions = page.getByRole('button', {name: 'Actions for E2E10'})
+    if ((await actions.count()) > 0) {
+      await actions.click()
+      await page.getByRole('menuitem', {name: 'Delete'}).click()
+      await page.getByRole('button', {name: 'Confirm delete'}).click()
+      await expect(actions).toHaveCount(0)
+    }
+  }
+})
