@@ -1,6 +1,11 @@
 import {Inject, Injectable, Logger} from '@nestjs/common'
 
-import type {CreateOrderRequest, CreateOrderResponse, PublicOrder} from '@shop/shared/orders'
+import type {
+  CreateOrderRequest,
+  CreateOrderResponse,
+  PublicOrder,
+  RecentPurchases
+} from '@shop/shared/orders'
 
 import {rconReady} from '../catalog-admin/rcon/rcon-ready'
 import {badGateway, badRequest, conflict, notFound} from '../common/http-errors'
@@ -11,6 +16,9 @@ import {localePrefix, toPublicOrder} from './order-view'
 import {newPublicId} from './public-id'
 import {publicWebOrigin} from './public-origin'
 import {TURNSTILE, type TurnstileVerifier} from './turnstile'
+
+/** How many lines the storefront feed shows. */
+const RECENT_PURCHASES = 10
 
 @Injectable()
 export class OrdersService {
@@ -104,5 +112,39 @@ export class OrdersService {
     })
     if (!order) throw notFound()
     return toPublicOrder(order)
+  }
+
+  /** The latest paid lines for the storefront feed: nick, product and amount only. */
+  async recentPurchases(): Promise<RecentPurchases> {
+    const items = await this.prisma.orderItem.findMany({
+      where: {order: {status: {in: ['PAID', 'DELIVERED']}, paidAt: {not: null}}},
+      orderBy: [{order: {paidAt: 'desc'}}, {id: 'asc'}],
+      take: RECENT_PURCHASES,
+      select: {
+        id: true,
+        quantity: true,
+        unitAmountMinor: true,
+        order: {select: {nick: true, currency: true, paidAt: true}},
+        product: {select: {slug: true}},
+        server: {select: {slug: true}}
+      }
+    })
+    return {
+      purchases: items.flatMap(({id, quantity, unitAmountMinor, order, product, server}) =>
+        order.paidAt
+          ? [
+              {
+                id,
+                nick: order.nick,
+                server: server.slug,
+                product: product.slug,
+                currency: order.currency,
+                amountMinor: unitAmountMinor * quantity,
+                paidAt: order.paidAt.toISOString()
+              }
+            ]
+          : []
+      )
+    }
   }
 }

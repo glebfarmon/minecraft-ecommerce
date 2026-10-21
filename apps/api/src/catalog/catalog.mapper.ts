@@ -63,7 +63,17 @@ export function toCatalogResponse(
     })
   }))
 
-  const products = rows.products.flatMap((p): CatalogProduct[] => {
+  // `sort` restarts in every category, so the server's category order has to come first.
+  const rank = new Map(
+    rows.servers.flatMap(s =>
+      s.categories.map((c, i) => [`${s.slug}/${c.category.slug}`, i] as const)
+    )
+  )
+  const rankOf = (p: CatalogRows['products'][number]) =>
+    rank.get(`${p.server.slug}/${p.category.slug}`) ?? Infinity
+  const ordered = rows.products.toSorted((a, b) => rankOf(a) - rankOf(b))
+
+  const products = ordered.flatMap((p): CatalogProduct[] => {
     const id = `${p.server.slug}/${p.slug}`
     const text = pick(p.translations, locale)
     if (!text) {

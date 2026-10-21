@@ -6,7 +6,8 @@ import {
   CreateOrderResponseSchema,
   OrderStatsQuerySchema,
   OrderStatsSchema,
-  PublicOrderSchema
+  PublicOrderSchema,
+  RecentPurchasesSchema
 } from '@shop/shared/orders'
 
 import {type Method, type Operation, body, guarded, json, pathParam, queryParam} from './helpers'
@@ -46,6 +47,14 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
             '`payments_unavailable`: the payment provider could not open a session; nothing was charged'
         }
       }
+    })
+  },
+  '/api/orders/recent': {
+    get: publicOp({
+      operationId: 'getRecentPurchases',
+      summary: 'The latest paid purchases, for the storefront feed',
+      description: `Up to 10 paid lines, newest first: buyer nick, product, server, amount and time. Nothing else about the buyer or the order is exposed. ${NO_SESSION} Cached for 30 seconds.`,
+      responses: {'200': json('The latest purchases', RecentPurchasesSchema)}
     })
   },
   '/api/orders/{publicId}': {

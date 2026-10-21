@@ -78,6 +78,20 @@ export const PublicOrderSchema = v.object({
 })
 export type PublicOrder = v.InferOutput<typeof PublicOrderSchema>
 
+/** One bought line on the storefront's purchase feed. The buyer's email and the order id never leave the API. */
+export const RecentPurchaseSchema = v.object({
+  id: v.string(),
+  nick: v.string(),
+  server: v.string(),
+  product: v.string(),
+  currency: CurrencySchema,
+  amountMinor: Minor,
+  paidAt: Iso
+})
+export type RecentPurchase = v.InferOutput<typeof RecentPurchaseSchema>
+export const RecentPurchasesSchema = v.object({purchases: v.array(RecentPurchaseSchema)})
+export type RecentPurchases = v.InferOutput<typeof RecentPurchasesSchema>
+
 export const AdminOrderListItemSchema = v.object({
   id: v.string(),
   publicId: v.string(),

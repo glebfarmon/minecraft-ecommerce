@@ -62,6 +62,18 @@ const rows = (products = [product()]): CatalogRows => ({
 })
 
 describe('toCatalogResponse', () => {
+  it("lists products by the server's category order, then by their own order", () => {
+    const p = (slug: string, category: string) =>
+      product({slug, category: {slug: category, icon: 'crown'}})
+    // Rows arrive sorted by `sort`, which restarts at 0 in every category.
+    const res = toCatalogResponse(
+      rows([p('r0', 'ranks'), p('k0', 'kits'), p('r1', 'ranks'), p('k1', 'kits')]),
+      'en',
+      jest.fn()
+    )
+    expect(res.products.map(x => x.slug)).toEqual(['k0', 'k1', 'r0', 'r1'])
+  })
+
   it('uses the requested locale', () => {
     const res = toCatalogResponse(rows(), 'pl', jest.fn())
     expect(res.products[0]).toEqual({
@@ -83,8 +95,8 @@ describe('toCatalogResponse', () => {
     const kit = product({slug: 'starter', category: {slug: 'kits', icon: 'box'}})
     const res = toCatalogResponse(rows([product(), kit]), 'en', jest.fn())
     expect(res.products.map(p => [p.slug, p.icon])).toEqual([
-      ['vip', 'crown'],
-      ['starter', 'box']
+      ['starter', 'box'],
+      ['vip', 'crown']
     ])
   })
 
