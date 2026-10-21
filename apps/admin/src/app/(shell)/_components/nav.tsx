@@ -35,8 +35,8 @@ export function Nav({
   const rail = variant === 'rail'
   return (
     <LayoutGroup id={rail ? 'rail' : 'sheet'}>
-      {/* The rail is sticky and the sheet fixed: as a layout root, Motion measures the pill
-          against the nav, not the page, so the scroll reset of a navigation does not fly it in. */}
+      {/* As a layout root, Motion measures the pill against the nav; the rail's own scroll root
+          (`Rail`) keeps a navigation's scroll change from flying it in. */}
       <motion.nav
         layout
         layoutRoot

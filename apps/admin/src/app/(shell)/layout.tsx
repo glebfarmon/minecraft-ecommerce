@@ -5,6 +5,7 @@ import type {ReactNode} from 'react'
 import {BrandMark} from './_components/brand-mark'
 import {LanguageSwitch} from './_components/language-switch'
 import {Nav} from './_components/nav'
+import {Rail} from './_components/rail'
 import {TopBar} from './_components/top-bar'
 
 export default async function ShellLayout({children}: {children: ReactNode}) {
@@ -12,7 +13,7 @@ export default async function ShellLayout({children}: {children: ReactNode}) {
   const initial = (me.name || me.email).charAt(0).toUpperCase()
   return (
     <div className="grid min-h-screen grid-cols-1 gap-4 p-4 md:grid-cols-[auto_1fr]">
-      <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-[72px] flex-col items-center gap-2 rounded-full bg-surface py-4 md:flex">
+      <Rail>
         <BrandMark />
         <Nav me={me} variant="rail" />
         <span className="mt-auto" />
@@ -24,7 +25,7 @@ export default async function ShellLayout({children}: {children: ReactNode}) {
           className="flex size-10 items-center justify-center rounded-full bg-card-raised text-sm font-medium">
           {initial}
         </Link>
-      </aside>
+      </Rail>
       <div className="min-w-0">
         <TopBar me={me} />
         <main className="mx-auto w-full max-w-[1400px] pb-12">{children}</main>

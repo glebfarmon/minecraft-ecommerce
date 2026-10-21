@@ -40,8 +40,8 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
 
   return (
     <LayoutGroup id={group}>
-      {/* The rail is sticky: as a layout root, Motion measures the pill against the switch, not
-          the page, so the scroll reset of a navigation does not fly it in from below. */}
+      {/* As a layout root, Motion measures the pill against the switch, not the page (the top
+          bar's copy is not inside the fixed `Rail`). */}
       <motion.div
         layout
         layoutRoot

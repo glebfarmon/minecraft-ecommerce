@@ -114,7 +114,8 @@ body {
 
 /*
  * Motion. No prefers-reduced-motion opt-out: the owner asked for animations to always run.
- * Page entry: each block of a page rises in, one after another (capped at the eighth).
+ * Page entry: each block of a route's loading state rises in, one after another (capped at the
+ * eighth). Only the loading state (`PageEnter`): the page that replaces it does not animate again.
  */
 .page-enter > * > * {
   animation: enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;

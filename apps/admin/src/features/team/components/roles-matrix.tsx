@@ -54,7 +54,6 @@ export function RolesMatrix({
   const [deleteRole] = useDeleteApiAdminRolesByIdMutation()
   const [drafts, setDrafts] = useState<Record<string, Permission[]>>({})
   const [newPermissions, setNewPermissions] = useState<Permission[]>([])
-  const [confirming, setConfirming] = useState<{id: string; kind: 'save' | 'delete'} | null>(null)
   const [error, setError] = useMessage()
   const report = useReportError(setError)
 
@@ -148,73 +147,41 @@ export function RolesMatrix({
                       </TableCell>
                     ))}
                     <TableCell>
-                      {!locked &&
-                        (confirming?.id === role.id ? (
-                          <div className="flex flex-col gap-2">
-                            <p className="text-sm">
-                              {confirming.kind === 'save'
-                                ? t('confirmSaveRole', {name: role.name})
-                                : t('confirmDeleteRole', {name: role.name})}
-                            </p>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant={confirming.kind === 'delete' ? 'danger' : 'default'}
-                                onClick={() => {
-                                  setConfirming(null)
-                                  if (confirming.kind === 'delete') {
-                                    void run(deleteRole({id: role.id}), t('roleDeleted'))
-                                    return
-                                  }
-                                  void run(
-                                    updateRole({
-                                      id: role.id,
-                                      body: {name: role.name, permissions: draft}
-                                    }),
-                                    t('roleSaved')
-                                  ).then(ok => {
-                                    if (ok)
-                                      setDrafts(d =>
-                                        Object.fromEntries(
-                                          Object.entries(d).filter(([id]) => id !== role.id)
-                                        )
-                                      )
-                                  })
-                                }}>
-                                {confirming.kind === 'save' ? t('saveRole') : t('deleteRole')}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                  setConfirming(null)
-                                }}>
-                                {t('back')}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              aria-label={t('saveName', {name: role.name})}
-                              disabled={!dirty}
-                              onClick={() => {
-                                setConfirming({id: role.id, kind: 'save'})
-                              }}>
-                              {t('save')}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              aria-label={t('deleteName', {name: role.name})}
-                              onClick={() => {
-                                setConfirming({id: role.id, kind: 'delete'})
-                              }}>
-                              {t('delete')}
-                            </Button>
-                          </div>
-                        ))}
+                      {!locked && (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            aria-label={t('saveName', {name: role.name})}
+                            disabled={!dirty}
+                            onClick={() => {
+                              void run(
+                                updateRole({
+                                  id: role.id,
+                                  body: {name: role.name, permissions: draft}
+                                }),
+                                t('roleSaved')
+                              ).then(ok => {
+                                if (ok)
+                                  setDrafts(d =>
+                                    Object.fromEntries(
+                                      Object.entries(d).filter(([id]) => id !== role.id)
+                                    )
+                                  )
+                              })
+                            }}>
+                            {t('save')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            aria-label={t('deleteName', {name: role.name})}
+                            onClick={() => {
+                              void run(deleteRole({id: role.id}), t('roleDeleted'))
+                            }}>
+                            {t('delete')}
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 )
