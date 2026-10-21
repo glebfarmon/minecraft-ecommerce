@@ -1,5 +1,6 @@
 import request from 'supertest'
 
+import {PrismaService} from '../src/prisma/prisma.service'
 import {startOrdersApp} from './support/orders-app'
 
 jest.setTimeout(180_000)
@@ -218,6 +219,58 @@ describe('promo uses and webhooks', () => {
     await deliver(sessionId, 'checkout.session.completed').expect(200)
     expect(await statusOf(publicId)).toBe('PAID')
     expect(await used(promo.id)).toBe(2)
+  })
+
+  it('pays when the expiry commits just before the paid update runs', async () => {
+    const promo = await makePromo('WHRACE', 5)
+    const {publicId, sessionId} = await createOrder('en', 'WHRACE')
+    const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.completed')
+    const service = ctx.app.get(PrismaService)
+    const original = service.$transaction.bind(service) as (...a: unknown[]) => unknown
+    let flipped = false
+    const spy = jest.spyOn(service, '$transaction').mockImplementation(((
+      fn: (tx: Record<string, unknown>) => unknown,
+      ...rest: unknown[]
+    ) =>
+      original(
+        (tx: {order: {updateMany: (...a: unknown[]) => Promise<unknown>}}) =>
+          fn(
+            new Proxy(tx, {
+              get(target, prop, recv) {
+                const value = Reflect.get(target, prop, recv) as unknown
+                if (prop !== 'order') return value
+                return new Proxy(value as object, {
+                  get(o, m, r) {
+                    const f = Reflect.get(o, m, r) as (...a: unknown[]) => unknown
+                    if (m !== 'updateMany') return f.bind(o)
+                    return async (...args: unknown[]) => {
+                      if (!flipped) {
+                        flipped = true
+                        // The expiry commits between the order lookup and the paid update.
+                        await ctx.prisma.order.update({
+                          where: {publicId},
+                          data: {status: 'EXPIRED'}
+                        })
+                        await ctx.prisma.promoCode.update({
+                          where: {id: promo.id},
+                          data: {usedCount: {decrement: 1}}
+                        })
+                      }
+                      return f.apply(o, args)
+                    }
+                  }
+                })
+              }
+            })
+          ),
+        ...rest
+      )) as never)
+    await post(signed).expect(200)
+    spy.mockRestore()
+    expect(flipped).toBe(true)
+    expect(await statusOf(publicId)).toBe('PAID')
+    expect(await used(promo.id)).toBe(1)
+    expect(receipts(publicId)).toHaveLength(1)
   })
 
   it('leaves usedCount unchanged on a normal payment', async () => {

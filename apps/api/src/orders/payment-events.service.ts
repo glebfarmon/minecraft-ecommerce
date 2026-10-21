@@ -87,20 +87,28 @@ export class PaymentEventsService {
         paidAt,
         stripePaymentIntentId: event.paymentIntentId
       }
-      const late = await tx.order.updateMany({
-        where: {id: order.id, status: 'EXPIRED'},
+      // PENDING first: EXPIRED only ever moves to PAID, so whatever state a concurrent expiry
+      // leaves the row in, one of the two statements matches (a PENDING→PAID that finds the row
+      // expired by then blocks on its lock, re-checks and falls through to EXPIRED→PAID).
+      const first = await tx.order.updateMany({
+        where: {id: order.id, status: 'PENDING'},
         data: paidData
       })
-      if (late.count === 1 && order.promoCodeId !== null) {
-        // The expiry released the use; a paid order owns it again, even past maxUses.
-        await tx.promoCode.update({
-          where: {id: order.promoCodeId},
-          data: {usedCount: {increment: 1}}
+      let count = first.count
+      if (count === 0) {
+        const late = await tx.order.updateMany({
+          where: {id: order.id, status: 'EXPIRED'},
+          data: paidData
         })
+        count = late.count
+        if (count === 1 && order.promoCodeId !== null) {
+          // The expiry released the use; a paid order owns it again, even past maxUses.
+          await tx.promoCode.update({
+            where: {id: order.promoCodeId},
+            data: {usedCount: {increment: 1}}
+          })
+        }
       }
-      const {count} = late.count
-        ? late
-        : await tx.order.updateMany({where: {id: order.id, status: 'PENDING'}, data: paidData})
       return count === 1
         ? {
             ...order,
