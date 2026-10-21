@@ -19,6 +19,8 @@ export type RateLimits = {
   rconTest: number
   /** Orders created per client IP per minute (each one opens a payment session). */
   order: number
+  /** Promo code checks per client IP per minute (each one reads the database). */
+  promo: number
   /** Every other throttled request per IP per minute. */
   default: number
 }
@@ -33,6 +35,7 @@ export const RATE_LIMIT_DEFAULTS: Readonly<RateLimits> = Object.freeze({
   adminIp: 600,
   rconTest: 5,
   order: 10,
+  promo: 20,
   default: 100
 })
 
@@ -45,6 +48,7 @@ const ENV_NAMES = {
   adminIp: 'RATE_LIMIT_ADMIN_IP',
   rconTest: 'RATE_LIMIT_RCON_TEST',
   order: 'RATE_LIMIT_ORDER',
+  promo: 'RATE_LIMIT_PROMO',
   default: 'RATE_LIMIT_DEFAULT'
 } as const satisfies Record<keyof RateLimits, string>
 

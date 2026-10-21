@@ -9,6 +9,7 @@ import {
   PublicOrderSchema,
   RecentPurchasesSchema
 } from '@shop/shared/orders'
+import {ValidatePromoRequestSchema, ValidatePromoResponseSchema} from '@shop/shared/promo'
 
 import {type Method, type Operation, body, guarded, json, pathParam, queryParam} from './helpers'
 
@@ -46,6 +47,26 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
           description:
             '`payments_unavailable`: the payment provider could not open a session; nothing was charged'
         }
+      }
+    })
+  },
+  '/api/promo/validate': {
+    post: publicOp({
+      operationId: 'validatePromoCode',
+      summary: 'Check a promo code against the cart and price the discount',
+      description: `Prices the lines from the database and applies the code without using it; the use is counted when the order is paid. The code is trimmed and upper-cased; text that is not a code answers \`not_found\` instead of a validation error. A refused code answers 200 with \`ok: false\` and a \`reason\`. ${NO_SESSION}`,
+      requestBody: body(ValidatePromoRequestSchema),
+      responses: {
+        '200': json(
+          'The code applies (`ok: true`) or the reason it does not',
+          ValidatePromoResponseSchema
+        ),
+        '400': {description: 'Invalid body'},
+        '409': {
+          description:
+            '`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug)'
+        },
+        '429': {description: 'Too many checks from this address; try again later'}
       }
     })
   },

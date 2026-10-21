@@ -5982,6 +5982,127 @@
         "tags": ["Orders"]
       }
     },
+    "/api/promo/validate": {
+      "post": {
+        "operationId": "validatePromoCode",
+        "summary": "Check a promo code against the cart and price the discount",
+        "description": "Prices the lines from the database and applies the code without using it; the use is counted when the order is paid. The code is trimmed and upper-cased; text that is not a code answers `not_found` instead of a validation error. A refused code answers 200 with `ok: false` and a `reason`. No session needed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "currency": {
+                    "enum": ["EUR", "PLN"],
+                    "type": "string"
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "server": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9-]{1,40}$"
+                        },
+                        "slug": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9-]{1,40}$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 99
+                        }
+                      },
+                      "required": ["server", "slug", "quantity"],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 30
+                  }
+                },
+                "required": ["code", "currency", "lines"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The code applies (`ok: true`) or the reason it does not",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "const": true
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "subtotalMinor": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "discountMinor": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalMinor": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["ok", "code", "subtotalMinor", "discountMinor", "totalMinor"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ok": {
+                          "const": false
+                        },
+                        "reason": {
+                          "enum": [
+                            "not_found",
+                            "not_started",
+                            "expired",
+                            "used_up",
+                            "not_applicable",
+                            "wrong_currency"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["ok", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
+          },
+          "409": {
+            "description": "`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug)"
+          },
+          "429": {
+            "description": "Too many checks from this address; try again later"
+          }
+        },
+        "tags": ["Orders"]
+      }
+    },
     "/api/orders/recent": {
       "get": {
         "operationId": "getRecentPurchases",

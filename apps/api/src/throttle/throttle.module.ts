@@ -29,6 +29,8 @@ const ADMIN_PATH = /^\/api\/admin(?:[/?#]|$)/i
 
 const ORDER_CREATE_PATH = /^\/api\/orders\/?(?:[?#]|$)/i
 
+const PROMO_VALIDATE_PATH = /^\/api\/promo\/validate\/?(?:[?#]|$)/i
+
 const RCON_TEST_PATH = /^\/api\/admin\/catalog\/servers\/[^/]+\/rcon\/test\/?(?:[?#]|$)/i
 
 /** Express routes case-insensitively, so `/API/Admin/...` reaches admin handlers too. */
@@ -129,6 +131,19 @@ const adminRequest = (ctx: ExecutionContext) => ctx.switchToHttp().getRequest<Th
                 const req = adminRequest(ctx) as ThrottledRequest & {method?: string}
                 return (
                   req.method !== 'POST' || !ORDER_CREATE_PATH.test(req.originalUrl ?? req.url ?? '')
+                )
+              }
+            },
+            // Promo checks: unauthenticated lookups of code text, so they are limited per IP.
+            {
+              name: 'promo',
+              ttl: 60_000,
+              limit: limits.promo,
+              skipIf: ctx => {
+                const req = adminRequest(ctx) as ThrottledRequest & {method?: string}
+                return (
+                  req.method !== 'POST' ||
+                  !PROMO_VALIDATE_PATH.test(req.originalUrl ?? req.url ?? '')
                 )
               }
             }
