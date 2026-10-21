@@ -15,7 +15,12 @@ export const productInclude = {
   // The tile icon belongs to the category; the list shows it, the product itself has none.
   category: {select: {icon: true}}
 } satisfies Prisma.ProductInclude
-export type ProductRow = Prisma.ProductGetPayload<{include: typeof productInclude}>
+// products.icon is deprecated (kept for the previous release, dropped next release): never read it.
+export const productOmit = {icon: true} satisfies Prisma.ProductOmit
+export type ProductRow = Prisma.ProductGetPayload<{
+  include: typeof productInclude
+  omit: typeof productOmit
+}>
 
 const Sections = v.array(ProductSectionSchema)
 

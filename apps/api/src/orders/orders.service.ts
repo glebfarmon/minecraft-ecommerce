@@ -31,7 +31,9 @@ export class OrdersService {
 
     const products = await this.prisma.product.findMany({
       where: {OR: req.lines.map(l => ({slug: l.slug, server: {slug: l.server}}))},
-      include: {server: true, prices: {where: {currency: req.currency}}, translations: true}
+      include: {server: true, prices: {where: {currency: req.currency}}, translations: true},
+      // products.icon is deprecated (dropped next release); never read it.
+      omit: {icon: true}
     })
     const priced = priceLines(
       req.lines,

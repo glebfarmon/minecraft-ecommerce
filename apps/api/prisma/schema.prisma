@@ -94,6 +94,8 @@ model Product {
   kind           ProductKind
   durationDays   Int?
   mark           String
+  /// Deprecated: unused since 2026-10-21 (the icon lives on Category); drop in the next release. Never read or write it.
+  icon           ProductIcon?         @default(crown)
   grantCommands  String[]
   revokeCommands String[]
   isActive       Boolean              @default(true)

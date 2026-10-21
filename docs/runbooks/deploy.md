@@ -95,6 +95,10 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 
 **Migrations (automatic).** The `shop-api` container runs `prisma migrate deploy` on every start, before the server listens. A failed migration stops the container: the deploy job then fails on the version check, and the logs of `shop-api` show the Prisma error. While the new container migrates, the old one may still serve, so a migration must not break the previous release (add columns first, drop them in a later release). Migration `20261014100100_catalog_admin_permissions` gives the existing `ADMIN` role `catalog.write` and `server.rcon`; like every migration it runs automatically when the new `shop-api` container starts, so there is nothing to run by hand.
 
+**Pending contract steps.** Columns kept for the previous release, to be dropped by a migration in the next release (after this one is live everywhere):
+
+- `products.icon`: unused since 2026-10-21 (the icon moved to the category in `20261020120000_category_icon`); optional with default `crown` until then. Drop the column and the `icon` field of `Product` in `apps/api/prisma/schema.prisma`, then remove this entry.
+
 **Seed (once only).** After the first `shop-api` start has applied the migrations, run in its Terminal:
 
 ```bash

@@ -26,7 +26,7 @@ describe('category icon migration', () => {
     await db.stop()
   })
 
-  it('moves the most common product icon to its category, ties to the lowest sort', async () => {
+  it('moves the most common product icon to its category, ties to the lowest sort, keeps products.icon', async () => {
     const server = await prisma.server.create({
       data: {slug: 'mig', name: 'M', accent: '#000000', onAccent: '#ffffff'}
     })
@@ -58,11 +58,11 @@ describe('category icon migration', () => {
       })
     )
 
-    // Put the tables back the way they were before the migration, icons on the products.
+    // Put the tables back the way they were before the migration: icons on the products, required, no default.
     await prisma.$executeRawUnsafe('ALTER TABLE "categories" DROP COLUMN "icon"')
-    await prisma.$executeRawUnsafe('ALTER TABLE "products" ADD COLUMN "icon" "ProductIcon"')
     for (const {id, icon} of ids)
       await prisma.$executeRaw`UPDATE "products" SET "icon" = ${icon}::"ProductIcon" WHERE "id" = ${id}`
+    await prisma.$executeRawUnsafe('ALTER TABLE "products" ALTER COLUMN "icon" DROP DEFAULT')
     await prisma.$executeRawUnsafe('ALTER TABLE "products" ALTER COLUMN "icon" SET NOT NULL')
 
     const statements = CATEGORY_ICON_SQL.split('\n')
@@ -79,9 +79,20 @@ describe('category icon migration', () => {
       ])
     )
     expect(icons).toEqual({majority: 'box', tie: 'swords', empty: 'crown'})
-    const left = await prisma.$queryRaw<{n: bigint}[]>`
-      SELECT count(*) AS n FROM information_schema.columns
+    // Expand/contract: the previous release still reads products.icon, so the column stays (dropped next release),
+    // now optional with a default, and the values are untouched.
+    const column = await prisma.$queryRaw<{is_nullable: string; column_default: string | null}[]>`
+      SELECT is_nullable, column_default FROM information_schema.columns
       WHERE table_name = 'products' AND column_name = 'icon'`
-    expect(Number(left[0]?.n)).toBe(0)
+    expect(column).toEqual([{is_nullable: 'YES', column_default: '\'crown\'::"ProductIcon"'}])
+    const kept = await prisma.$queryRaw<{id: string; icon: string}[]>`
+      SELECT "id", "icon"::text AS icon FROM "products"`
+    expect(Object.fromEntries(kept.map(r => [r.id, r.icon]))).toEqual(
+      Object.fromEntries(ids.map(r => [r.id, r.icon]))
+    )
+    // New code creates products without an icon.
+    await prisma.$executeRaw`
+      INSERT INTO "products" ("id", "serverId", "categoryId", "slug", "kind", "mark", "grantCommands", "revokeCommands")
+      VALUES ('new', ${server.id}, ${tie.id}, 'new', 'PERMANENT', 'M', '{}', '{}')`
   })
 })

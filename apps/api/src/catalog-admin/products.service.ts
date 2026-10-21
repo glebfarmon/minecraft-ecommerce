@@ -16,7 +16,7 @@ import {assertUpdated} from '../common/versioned'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
 import {assertSameOrder, assertSameSet, isPrismaError, serializable} from './order'
-import {productInclude, toAdminProduct, toListItem} from './products.mapper'
+import {productInclude, productOmit, toAdminProduct, toListItem} from './products.mapper'
 
 const slugTaken = (error: unknown): never => {
   if (isPrismaError(error, 'P2002')) throw conflict('slug_taken')
@@ -68,13 +68,18 @@ export class ProductsService {
     const rows = await this.prisma.product.findMany({
       where: {serverId: query.serverId, categoryId: query.categoryId},
       include: productInclude,
+      omit: productOmit,
       orderBy: [{sort: 'asc'}, {slug: 'asc'}]
     })
     return rows.map(toListItem)
   }
 
   async get(id: string): Promise<AdminProduct> {
-    const row = await this.prisma.product.findUnique({where: {id}, include: productInclude})
+    const row = await this.prisma.product.findUnique({
+      where: {id},
+      include: productInclude,
+      omit: productOmit
+    })
     if (!row) throw notFound()
     return toAdminProduct(row)
   }
@@ -92,7 +97,8 @@ export class ProductsService {
           translations: {create: translationRows(input)},
           prices: {create: priceRows(input)}
         },
-        include: productInclude
+        include: productInclude,
+        omit: productOmit
       })
     }).catch(slugTaken)
     return toAdminProduct(row)
@@ -104,7 +110,11 @@ export class ProductsService {
     before: (p: AdminProduct) => void
   ): Promise<AdminProduct> {
     const row = await serializable(this.prisma, async tx => {
-      const current = await tx.product.findUnique({where: {id}, include: productInclude})
+      const current = await tx.product.findUnique({
+        where: {id},
+        include: productInclude,
+        omit: productOmit
+      })
       if (!current) throw notFound()
       // Slug and server are in storefront URLs and cart cookies (spec decision #9).
       if (current.isActive && (input.slug !== current.slug || input.serverId !== current.serverId))
@@ -144,7 +154,7 @@ export class ProductsService {
           create: {productId: id, ...p},
           update: {amountMinor: p.amountMinor}
         })
-      return tx.product.findUniqueOrThrow({where: {id}, include: productInclude})
+      return tx.product.findUniqueOrThrow({where: {id}, include: productInclude, omit: productOmit})
     }).catch(slugTaken)
     return toAdminProduct(row)
   }
@@ -175,7 +185,11 @@ export class ProductsService {
 
   /** A product that order items reference cannot be deleted (409 `in_use` with the order count). */
   async remove(id: string, version: number, before: (p: AdminProduct) => void): Promise<void> {
-    const current = await this.prisma.product.findUnique({where: {id}, include: productInclude})
+    const current = await this.prisma.product.findUnique({
+      where: {id},
+      include: productInclude,
+      omit: productOmit
+    })
     if (!current) throw notFound()
     before(toAdminProduct(current))
     const {count} = await this.prisma.product
