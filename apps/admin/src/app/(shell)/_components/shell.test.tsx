@@ -1,5 +1,5 @@
 import {renderWithProviders} from '@/test/render-with-providers'
-import {fireEvent, screen, within} from '@testing-library/react'
+import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import type {Me} from '@shop/shared/access'
 
@@ -48,11 +48,13 @@ describe('shell', () => {
     expect(push).toHaveBeenCalledWith('/orders?q=Steve%201')
   })
 
-  it('mobile menu opens as a dialog with the nav and closes on navigate', () => {
+  it('mobile menu opens as a dialog with the nav and closes on navigate', async () => {
     renderWithProviders(<MobileNav me={me} />, {store: false})
     fireEvent.click(screen.getByRole('button', {name: 'Open menu'}))
     const dialog = screen.getByRole('dialog', {name: 'Menu'})
     fireEvent.click(within(dialog).getByRole('link', {name: 'Catalog'}))
-    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
   })
 })
