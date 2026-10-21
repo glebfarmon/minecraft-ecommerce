@@ -1,3 +1,5 @@
+'use client'
+
 import {useDelayedFlag} from '@/hooks/use-delayed-flag'
 import {useTranslations} from 'next-intl'
 
