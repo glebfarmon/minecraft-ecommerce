@@ -17,6 +17,7 @@ jest.mock('next-intl/server', () => ({
       } as never)
     )
 }))
+jest.mock('@/lib/site-name', () => ({getSiteTitle: () => Promise.resolve('Blockhaus')}))
 jest.mock('@/lib/auth-client', () => ({authClient: {signIn: {}, emailOtp: {}}}))
 jest.mock('@/lib/session', () => ({getMe: () => Promise.resolve({state: 'signed-out'})}))
 jest.mock('next/navigation', () => ({
@@ -36,13 +37,15 @@ describe('LoginPage', () => {
   it('is outside the shell and still follows the language of the cookie', async () => {
     mockLocale = 'pl'
     await renderPage()
-    expect(screen.getByRole('heading', {name: 'Zaloguj się do panelu'})).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {name: 'Zaloguj się do panelu Blockhaus'})
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', {name: 'Wyślij kod'})).toBeInTheDocument()
   })
 
   it('reads English by default', async () => {
     mockLocale = 'en'
     await renderPage()
-    expect(screen.getByRole('heading', {name: 'Sign in to Shop Admin'})).toBeInTheDocument()
+    expect(screen.getByRole('heading', {name: 'Sign in to Blockhaus Admin'})).toBeInTheDocument()
   })
 })

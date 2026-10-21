@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe('SignInForm', () => {
   it('asks for the code after sending it, then signs in and goes to 2FA', async () => {
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'Ann@Example.com'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     await waitFor(() => {
@@ -45,7 +45,7 @@ describe('SignInForm', () => {
   })
 
   it('locks the email for an invite and offers Google when enabled', () => {
-    render(<SignInForm email="ann@example.com" googleEnabled />)
+    render(<SignInForm site="Blockhaus" email="ann@example.com" googleEnabled />)
     expect(screen.getByLabelText('Email')).toHaveAttribute('readonly')
     fireEvent.click(screen.getByRole('button', {name: 'Continue with Google'}))
     expect(social).toHaveBeenCalledWith({provider: 'google', callbackURL: '/2fa'})
@@ -53,7 +53,7 @@ describe('SignInForm', () => {
 
   it('shows a wrong-code error without leaving the form', async () => {
     emailOtp.mockResolvedValueOnce({data: null, error: {message: 'Invalid OTP'}})
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'a@x.io'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     fireEvent.change(await screen.findByLabelText('6-digit code'), {target: {value: '000000'}})
@@ -63,18 +63,18 @@ describe('SignInForm', () => {
 
   it('tells the visitor an uninvited email cannot sign in (403)', async () => {
     emailOtp.mockResolvedValueOnce({data: null, error: {status: 403}})
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'a@x.io'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     fireEvent.change(await screen.findByLabelText('6-digit code'), {target: {value: '111111'}})
     fireEvent.click(screen.getByRole('button', {name: 'Sign in'}))
-    expect(await screen.findByRole('alert')).toHaveTextContent('not invited')
+    expect(await screen.findByRole('alert')).toHaveTextContent('not invited to Blockhaus Admin')
   })
 })
 
 describe('SignInForm accessibility and send errors', () => {
   it('links field errors to the email and code inputs', async () => {
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'nope'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     const alert = await screen.findByRole('alert')
@@ -94,7 +94,7 @@ describe('SignInForm accessibility and send errors', () => {
 
   it('stays on the email step with a wait message on 429', async () => {
     sendVerificationOtp.mockResolvedValueOnce({data: null, error: {status: 429}})
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'a@x.io'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     expect(await screen.findByRole('alert')).toHaveTextContent('Too many attempts')
@@ -103,7 +103,7 @@ describe('SignInForm accessibility and send errors', () => {
 
   it('stays on the email step with a generic message on a network error', async () => {
     sendVerificationOtp.mockRejectedValueOnce(new Error('network'))
-    render(<SignInForm googleEnabled={false} />)
+    render(<SignInForm site="Blockhaus" googleEnabled={false} />)
     fireEvent.change(screen.getByLabelText('Email'), {target: {value: 'a@x.io'}})
     fireEvent.click(screen.getByRole('button', {name: 'Send code'}))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not send the code')
