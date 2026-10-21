@@ -77,7 +77,7 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
 - `shop-api` (admin auth, ADR 0009):
   - `REDIS_URL` = the internal Redis URL (rate limits, permission cache, used TOTP codes). The admin limiters fail closed: while Redis is down, sign-in codes are not sent and the admin API and TOTP checks answer with errors (429/403/500). The storefront (`/api/catalog`, the web app) keeps working.
   - `BETTER_AUTH_URL` = `https://admin.<domain>`; `BETTER_AUTH_SECRET` = 32+ random characters (`openssl rand -base64 32`). The API refuses to start in production without a valid secret.
-  - `RCON_ENCRYPTION_KEY` = 32 random bytes in base64 (`openssl rand -base64 32`); it encrypts the RCON passwords stored by the catalog admin. Store it in your password manager: losing or changing it means re-entering every RCON password. Without it the RCON settings answer 503 (the shop keeps working). `RCON_ALLOW_PRIVATE_HOSTS` must stay unset in production: it would let an admin probe the server's internal network.
+  - `RCON_ENCRYPTION_KEY` = 32 random bytes in base64 (`openssl rand -base64 32`); it encrypts the RCON passwords stored by the catalog admin. Store it in your password manager: losing or changing it means re-entering every RCON password. Without it the RCON settings answer 503 and **no product can be bought**: the catalog lists every product but marks it unavailable, and `POST /api/orders` answers 409. The same holds for any server whose RCON host, port or password is not set. `RCON_ALLOW_PRIVATE_HOSTS` must stay unset in production: it would let an admin probe the server's internal network.
   - `RESEND_API_KEY` and `MAIL_FROM` (an address on the domain verified in Resend, e.g. `Shop Admin <no-reply@<domain>>`). Production does not use `compose.yaml`; Mailpit is dev/e2e only.
   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; optional `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`.
   - `ADMIN_OWNER_EMAIL` = the first owner (see "First owner" below).
@@ -85,6 +85,13 @@ The images set `PORT`, `APP_VERSION` and `HOSTNAME`. The catalog adds the follow
   - Optional `RATE_LIMIT_*` overrides (positive integers), defaults: `RATE_LIMIT_OTP_EMAIL` 3 per email per 10 min, `RATE_LIMIT_OTP_IP` 10 per IP per hour, `RATE_LIMIT_SECOND_FACTOR` 5 per session per min (TOTP and backup codes), `RATE_LIMIT_2FA_DAY` 30 per user per day (TOTP and backup codes), `RATE_LIMIT_ADMIN` 300 per session per min, `RATE_LIMIT_ADMIN_IP` 600 per IP per min, `RATE_LIMIT_RCON_TEST` 5 per session per min (RCON connection tests), `RATE_LIMIT_DEFAULT` 100 per IP per min.
 - `shop-admin`: `API_ORIGIN` = the internal URL of `shop-api` (as for `shop-web`) and `GOOGLE_SIGN_IN=on`.
 - `shop-web`: `API_ORIGIN` = the internal URL of `shop-api`, e.g. `http://<shop-api-service>:4000`. Without it the web app falls back to `http://localhost:4000` and every page shows "shop unavailable". Optional: `CONTENT_REVALIDATE_SECONDS` (positive integer, default 60) is how long the storefront caches rules, texts and brand settings (ADR 0008); read at runtime, so a restart of `shop-web` applies a change. `CATALOG_REVALIDATE_SECONDS` (same rules, default 60) does the same for the catalog (ADR 0007).
+
+**Pre-deploy checklist (release with the category icon and RCON purchase gate).** Before merging it to `main`:
+
+- [ ] `RCON_ENCRYPTION_KEY` is set on `shop-api` (see above).
+- [ ] Every live server has its RCON host, port and password saved in admin (Catalog → the server → RCON), the connection test passes, and the server shows "RCON ready".
+
+Otherwise the shop stops selling the moment the new `shop-api` starts: products stay listed but cannot be bought.
 
 **Admin routing.** `admin.<domain>` path `/api` must go to `shop-api` (the table above) so the sign-in cookie, the OAuth callback and API calls share the admin origin.
 
