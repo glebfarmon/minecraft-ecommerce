@@ -186,6 +186,64 @@ describe('RichTextField', () => {
     expect(screen.getByRole('textbox').querySelector('a')).toHaveAttribute('href', '/rules')
   })
 
+  describe('toolbar link', () => {
+    async function selectWord(links: boolean) {
+      let editor: Editor | undefined
+      const onChange = jest.fn()
+      render(
+        <RichTextField
+          id="f"
+          value="see rules here"
+          links={links}
+          onChange={onChange}
+          onReady={e => {
+            editor = e
+          }}
+        />
+      )
+      await screen.findByText('see rules here')
+      act(() => {
+        editor?.chain().focus().setTextSelection({from: 5, to: 10}).run()
+      })
+      await waitFor(() => {
+        expect(editor?.isFocused).toBe(true)
+      })
+      return {onChange}
+    }
+
+    it('has no link button when links are off', async () => {
+      await selectWord(false)
+      await screen.findByRole('button', {name: 'Bold', hidden: true})
+      expect(screen.queryByRole('button', {name: 'Link', hidden: true})).not.toBeInTheDocument()
+    })
+
+    it('links the selection with the address typed in the toolbar', async () => {
+      const {onChange} = await selectWord(true)
+      await userEvent.click(await screen.findByRole('button', {name: 'Link', hidden: true}))
+      await userEvent.type(screen.getByRole('textbox', {name: 'Link address'}), '/rules{Enter}')
+      expect(onChange).toHaveBeenLastCalledWith('see [rules](/rules) here')
+    })
+
+    it('refuses an unsafe address and keeps the field open', async () => {
+      const {onChange} = await selectWord(true)
+      await userEvent.click(await screen.findByRole('button', {name: 'Link', hidden: true}))
+      const input = screen.getByRole('textbox', {name: 'Link address'})
+      await userEvent.type(input, 'http://x.test{Enter}')
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    it('removes the link when the address is emptied', async () => {
+      const {onChange} = await selectWord(true)
+      await userEvent.click(await screen.findByRole('button', {name: 'Link', hidden: true}))
+      await userEvent.type(screen.getByRole('textbox', {name: 'Link address'}), '/rules{Enter}')
+      await userEvent.click(await screen.findByRole('button', {name: 'Link', hidden: true}))
+      await userEvent.clear(screen.getByRole('textbox', {name: 'Link address'}))
+      await userEvent.keyboard('{Enter}')
+      expect(onChange).toHaveBeenLastCalledWith('see rules here')
+    })
+  })
+
   it('does not report a value that only arrived from outside', async () => {
     const onChange = jest.fn()
     const {rerender} = render(<RichTextField id="f" value="" onChange={onChange} />)

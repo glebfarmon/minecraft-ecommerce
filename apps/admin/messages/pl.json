@@ -562,7 +562,11 @@
     "italic": "Kursywa",
     "italicHint": "Kursywa ⌘I",
     "underline": "Podkreślenie",
-    "underlineHint": "Podkreślenie ⌘U"
+    "underlineHint": "Podkreślenie ⌘U",
+    "link": "Link",
+    "linkHint": "Link",
+    "linkAddress": "Adres linku",
+    "linkPlaceholder": "https://… lub /strona"
   },
   "toast": {
     "done": "Gotowe",

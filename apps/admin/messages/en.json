@@ -562,7 +562,11 @@
     "italic": "Italic",
     "italicHint": "Italic ⌘I",
     "underline": "Underline",
-    "underlineHint": "Underline ⌘U"
+    "underlineHint": "Underline ⌘U",
+    "link": "Link",
+    "linkHint": "Link",
+    "linkAddress": "Link address",
+    "linkPlaceholder": "https://… or /page"
   },
   "toast": {
     "done": "Done",

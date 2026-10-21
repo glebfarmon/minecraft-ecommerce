@@ -15,9 +15,14 @@ import {Fragment, type Node, Slice} from '@tiptap/pm/model'
 import type {EditorView} from '@tiptap/pm/view'
 import {EditorContent, useEditor, useEditorState} from '@tiptap/react'
 import {BubbleMenu} from '@tiptap/react/menus'
-import {Bold as BoldIcon, Italic as ItalicIcon, Underline as UnderlineIcon} from 'lucide-react'
+import {
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
+  Link as LinkIcon,
+  Underline as UnderlineIcon
+} from 'lucide-react'
 import {useTranslations} from 'next-intl'
-import {useEffect, useMemo, useRef} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
 
@@ -78,15 +83,38 @@ function flatten(slice: Slice, view: EditorView) {
   return new Slice(Fragment.from(inline), 0, 0)
 }
 
-function SelectionToolbar({editor}: {editor: Editor}) {
+const BUTTON =
+  'grid size-7 place-items-center rounded-lg text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-pressed:bg-accent-soft aria-pressed:text-accent'
+
+function SelectionToolbar({editor, links}: {editor: Editor; links: boolean}) {
   const t = useTranslations('richText')
+  // `draft` is the address being typed; null while the mark buttons show.
+  const [draft, setDraft] = useState<string | null>(null)
+  const [invalid, setInvalid] = useState(false)
+  const closeLinkInput = () => {
+    setDraft(null)
+    setInvalid(false)
+    editor.commands.focus()
+  }
+  const applyLink = () => {
+    const href = (draft ?? '').trim()
+    const chain = editor.chain().focus().extendMarkRange('link')
+    if (!href) chain.unsetLink().run()
+    else if (isSafeUri(href)) chain.setLink({href}).run()
+    else {
+      setInvalid(true)
+      return
+    }
+    closeLinkInput()
+  }
   const state = useEditorState({
     editor,
     selector: ({editor: e}) => ({
       open: e.isFocused && !e.state.selection.empty,
       bold: e.isActive('bold'),
       italic: e.isActive('italic'),
-      underline: e.isActive('underline')
+      underline: e.isActive('underline'),
+      link: e.isActive('link')
     })
   })
   return (
@@ -97,26 +125,70 @@ function SelectionToolbar({editor}: {editor: Editor}) {
       <div
         role="toolbar"
         aria-label={t('toolbar')}
-        data-state={state.open ? 'open' : 'closed'}
+        data-state={state.open || draft !== null ? 'open' : 'closed'}
         className="rich-toolbar flex gap-0.5 rounded-plate border border-border bg-card-raised p-1 shadow-lg shadow-black/40">
-        {MARKS.map(({name, icon: Icon}) => (
-          <Hint key={name} label={t(`${name}Hint`)}>
-            <button
-              type="button"
-              aria-label={t(name)}
-              aria-pressed={state[name]}
-              // Keep the selection: the editor must not lose focus to the button.
-              onMouseDown={event => {
+        {draft === null ? (
+          <>
+            {MARKS.map(({name, icon: Icon}) => (
+              <Hint key={name} label={t(`${name}Hint`)}>
+                <button
+                  type="button"
+                  aria-label={t(name)}
+                  aria-pressed={state[name]}
+                  // Keep the selection: the editor must not lose focus to the button.
+                  onMouseDown={event => {
+                    event.preventDefault()
+                  }}
+                  onClick={() => {
+                    toggle(editor, name)
+                  }}
+                  className={BUTTON}>
+                  <Icon aria-hidden className="size-3.5" />
+                </button>
+              </Hint>
+            ))}
+            {links && (
+              <Hint label={t('linkHint')}>
+                <button
+                  type="button"
+                  aria-label={t('link')}
+                  aria-pressed={state.link}
+                  onMouseDown={event => {
+                    event.preventDefault()
+                  }}
+                  onClick={() => {
+                    setDraft(String(editor.getAttributes('link').href ?? ''))
+                  }}
+                  className={BUTTON}>
+                  <LinkIcon aria-hidden className="size-3.5" />
+                </button>
+              </Hint>
+            )}
+          </>
+        ) : (
+          <input
+            type="text"
+            autoFocus
+            value={draft}
+            aria-label={t('linkAddress')}
+            aria-invalid={invalid ? true : undefined}
+            placeholder={t('linkPlaceholder')}
+            onChange={event => {
+              setDraft(event.target.value)
+              setInvalid(false)
+            }}
+            onKeyDown={event => {
+              if (event.key === 'Enter') {
                 event.preventDefault()
-              }}
-              onClick={() => {
-                toggle(editor, name)
-              }}
-              className="grid size-7 place-items-center rounded-lg text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-pressed:bg-accent-soft aria-pressed:text-accent">
-              <Icon aria-hidden className="size-3.5" />
-            </button>
-          </Hint>
-        ))}
+                applyLink()
+              } else if (event.key === 'Escape') {
+                event.preventDefault()
+                closeLinkInput()
+              }
+            }}
+            className="h-7 w-56 rounded-lg bg-surface px-2 text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-invalid:ring-2 aria-invalid:ring-bad"
+          />
+        )}
       </div>
     </BubbleMenu>
   )
@@ -249,7 +321,7 @@ export function RichTextField({
   return (
     <>
       <EditorContent editor={editor} />
-      {editor && !disabled && <SelectionToolbar editor={editor} />}
+      {editor && !disabled && <SelectionToolbar editor={editor} links={links} />}
     </>
   )
 }
