@@ -1,3 +1,4 @@
+import {PromoAdminService} from '../src/orders/promo/promo-admin.service'
 import {startCatalogApp} from './support/catalog-app'
 
 jest.setTimeout(180_000)
@@ -121,6 +122,68 @@ describe('admin promo codes', () => {
       .send({...input, code: 'USEDONE', endsAt: ends, maxUses: 5, version: 1})
       .expect(200)
     expect(ok.body).toMatchObject({endsAt: ends, maxUses: 5, locked: true})
+  })
+
+  it('locks a code that has an order even when usedCount is 0', async () => {
+    const a = await writer()
+    const promo = await ctx.prisma.promoCode.create({
+      data: {code: 'ORDERED', kind: 'PERCENT', value: 10}
+    })
+    await ctx.prisma.order.create({
+      data: {
+        publicId: 'promo-admin-order-1',
+        nick: 'Steve',
+        email: 'steve@example.com',
+        locale: 'en',
+        currency: 'EUR',
+        subtotalMinor: 500,
+        totalMinor: 500,
+        deliveryConsentAt: new Date(),
+        promoCodeId: promo.id,
+        promoCode: 'ORDERED'
+      }
+    })
+    const got = await a.get(`${base}/${promo.id}`).expect(200)
+    expect(got.body).toMatchObject({locked: true, usedCount: 0})
+    await a
+      .patch(`${base}/${promo.id}`)
+      .send({...input, code: 'ORDERED', value: 50, version: 1})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'promo_locked'})
+      })
+  })
+
+  it('does not change the value of a code used between the read and the write', async () => {
+    const a = await writer()
+    const promo = await ctx.prisma.promoCode.create({
+      data: {code: 'RACE', kind: 'PERCENT', value: 10}
+    })
+    const service = ctx.app.get(PromoAdminService)
+    const original = (service as unknown as {assertRefs: (i: unknown) => Promise<void>}).assertRefs
+    // assertRefs runs after the locked check read the row and before the write: a use lands here.
+    const spy = jest
+      .spyOn(service as unknown as {assertRefs: (i: unknown) => Promise<void>}, 'assertRefs')
+      .mockImplementationOnce(async function (this: unknown, i: unknown) {
+        await ctx.prisma.promoCode.update({where: {id: promo.id}, data: {usedCount: 1}})
+        return original.call(this, i)
+      })
+    await a
+      .patch(`${base}/${promo.id}`)
+      .send({...input, code: 'RACE', value: 90, version: 1})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'stale'})
+      })
+    spy.mockRestore()
+    expect((await ctx.prisma.promoCode.findUniqueOrThrow({where: {id: promo.id}})).value).toBe(10)
+    await a
+      .patch(`${base}/${promo.id}`)
+      .send({...input, code: 'RACE', value: 90, version: 1})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'promo_locked'})
+      })
   })
 
   it('refuses maxUses below usedCount', async () => {

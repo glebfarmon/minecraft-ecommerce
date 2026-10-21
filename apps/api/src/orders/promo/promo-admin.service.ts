@@ -117,8 +117,14 @@ export class PromoAdminService {
             id,
             version: input.version,
             deletedAt: null,
-            // A use counted since the check above must not leave usedCount above the new cap.
-            ...(input.maxUses !== null && {usedCount: {lte: input.maxUses}})
+            // Uses are counted without bumping `version` (reserving on order creation, in
+            // orders.service.ts; counting at payment). The locked check above read `usedCount`, so
+            // an unlocked code is only written while it is still unused: a use that landed since
+            // matches 0 rows and answers `stale`, and the re-read shows the code locked. An order
+            // always reserves a use, so this covers `orders > 0` too.
+            ...(view.locked
+              ? input.maxUses !== null && {usedCount: {lte: input.maxUses}}
+              : {usedCount: current.usedCount})
           },
           data: {
             code: input.code,
