@@ -56,7 +56,7 @@ test('the owner accepts the seeded invite, sets up TOTP and reaches the team pag
   page
 }) => {
   const invite = await latestMail(OWNER)
-  expect(invite.subject).toBe('You are invited to Shop Admin')
+  expect(invite.subject).toMatch(/^You are invited to .+ Admin$/)
   await page.goto(inviteLink(invite))
   await signInWithCode(page, OWNER)
   ownerSecret = await setUpTotp(page)

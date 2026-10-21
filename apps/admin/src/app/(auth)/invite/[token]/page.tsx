@@ -10,10 +10,10 @@ const API_ORIGIN = process.env.API_ORIGIN ?? 'http://localhost:4000'
 export default async function InvitePage({params}: {params: Promise<{token: string}>}) {
   const t = await getTranslations('auth')
   const {token} = await params
-  const site = await getSiteTitle()
-  const res = await fetch(`${API_ORIGIN}/api/invite-lookup/${encodeURIComponent(token)}`, {
-    cache: 'no-store'
-  })
+  const [site, res] = await Promise.all([
+    getSiteTitle(),
+    fetch(`${API_ORIGIN}/api/invite-lookup/${encodeURIComponent(token)}`, {cache: 'no-store'})
+  ])
   const invite = res.ok ? ((await res.json()) as InviteLookup) : null
   return (
     <AuthCard title={t('joinAdmin', {site})}>
