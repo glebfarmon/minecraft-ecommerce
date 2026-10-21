@@ -35,7 +35,7 @@ export function toPublicOrder(order: OrderWithItems): PublicOrder {
     currency: order.currency,
     subtotalMinor: order.subtotalMinor,
     discountMinor: order.discountMinor,
-    promoCode: null,
+    promoCode: order.promoCode,
     totalMinor: order.totalMinor,
     servers: groupByServer(order.items),
     createdAt: order.createdAt.toISOString(),
