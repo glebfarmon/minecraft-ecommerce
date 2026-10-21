@@ -77,9 +77,16 @@ export class PaymentEventsService {
       const paidAt = new Date()
       const {count} = await tx.order.updateMany({
         where: {id: order.id, status: {in: ['PENDING', 'EXPIRED']}},
-        data: {status: 'PAID', paidAt}
+        data: {status: 'PAID', paidAt, stripePaymentIntentId: event.paymentIntentId}
       })
-      return count === 1 ? {...order, status: 'PAID' as const, paidAt} : null
+      return count === 1
+        ? {
+            ...order,
+            status: 'PAID' as const,
+            paidAt,
+            stripePaymentIntentId: event.paymentIntentId
+          }
+        : null
     })
     if (paidNow) {
       // Not awaited: payment handling never waits for the rates source (fill logs its own failures).

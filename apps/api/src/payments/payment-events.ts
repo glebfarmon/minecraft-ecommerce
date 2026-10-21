@@ -18,6 +18,8 @@ export function toPaymentEvent(event: Stripe.Event): PaymentEvent {
     ...base,
     sessionId: s.id,
     orderId,
+    paymentIntentId:
+      typeof s.payment_intent === 'string' ? s.payment_intent : (s.payment_intent?.id ?? null),
     amountTotal: s.amount_total ?? -1,
     currency: (s.currency ?? '').toUpperCase()
   }

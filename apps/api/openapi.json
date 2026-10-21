@@ -1258,7 +1258,7 @@
     },
     "/api/admin/audit": {
       "get": {
-        "summary": "Audit log, newest first, 50 per page (needs audit.read)",
+        "summary": "Audit log, newest first, 25/50/100 per page (default 50; needs audit.read)",
         "parameters": [
           {
             "name": "actorId",
@@ -1303,6 +1303,15 @@
             "schema": {
               "type": "string",
               "minLength": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": ["25", "50", "100"],
+              "type": "string"
             }
           }
         ],
@@ -6322,6 +6331,16 @@
                         }
                       ]
                     },
+                    "stripePaymentIntentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "deliveryConsentAt": {
                       "type": "string",
                       "format": "date-time"
@@ -6348,6 +6367,7 @@
                     "id",
                     "locale",
                     "stripeSessionId",
+                    "stripePaymentIntentId",
                     "deliveryConsentAt",
                     "subtotalMinor",
                     "discountMinor"

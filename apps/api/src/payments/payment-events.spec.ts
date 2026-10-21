@@ -22,6 +22,7 @@ describe('toPaymentEvent', () => {
       type: 'checkout.session.completed',
       sessionId: 'cs_1',
       orderId: 'o1',
+      paymentIntentId: null,
       amountTotal: 499,
       currency: 'EUR'
     })
@@ -50,6 +51,19 @@ describe('toPaymentEvent', () => {
   )
   it('ignores other types', () => {
     expect(toPaymentEvent(event('charge.succeeded', {})).kind).toBe('ignored')
+  })
+  it('carries the payment intent id, expanded or not', () => {
+    const plain = toPaymentEvent(
+      event('checkout.session.completed', session({payment_intent: 'pi_1'}))
+    )
+    expect(plain).toMatchObject({kind: 'paid', paymentIntentId: 'pi_1'})
+    const expanded = toPaymentEvent(
+      event(
+        'checkout.session.completed',
+        session({payment_intent: {id: 'pi_2'} as Stripe.PaymentIntent})
+      )
+    )
+    expect(expanded).toMatchObject({kind: 'paid', paymentIntentId: 'pi_2'})
   })
   it('keeps a missing orderId as null', () => {
     const e = toPaymentEvent(event('checkout.session.completed', session({metadata: {}})))

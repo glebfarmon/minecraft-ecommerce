@@ -91,12 +91,23 @@ export const InviteLookupSchema = v.object({
 })
 export type InviteLookup = v.InferOutput<typeof InviteLookupSchema>
 
+/** Rows per audit page the admin can choose; the API defaults to 50. */
+export const AUDIT_PAGE_SIZES = [25, 50, 100] as const
+export type AuditPageSize = (typeof AUDIT_PAGE_SIZES)[number]
+
 export const AuditQuerySchema = v.object({
   actorId: v.optional(Id),
   action: v.optional(v.pipe(v.string(), v.maxLength(80))),
   from: v.optional(Timestamp),
   to: v.optional(Timestamp),
-  cursor: v.optional(Id)
+  cursor: v.optional(Id),
+  // A query string value, so the sizes arrive as text.
+  limit: v.optional(
+    v.pipe(
+      v.picklist(AUDIT_PAGE_SIZES.map(String) as ['25', '50', '100']),
+      v.transform(n => Number(n) as AuditPageSize)
+    )
+  )
 })
 export type AuditQuery = v.InferOutput<typeof AuditQuerySchema>
 

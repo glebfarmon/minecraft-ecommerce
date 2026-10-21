@@ -197,7 +197,7 @@ export function buildOpenApiDocument(): OpenApiDocument {
       },
       '/api/admin/audit': {
         get: {
-          summary: 'Audit log, newest first, 50 per page (needs audit.read)',
+          summary: 'Audit log, newest first, 25/50/100 per page (default 50; needs audit.read)',
           parameters: Object.entries(AuditQuerySchema.entries).map(([name, s]) => ({
             name,
             in: 'query' as const,

@@ -41,7 +41,8 @@ export class FakeGateway implements PaymentsGateway {
           metadata: {orderId: s.orderId},
           amount_total: s.lines.reduce((sum, l) => sum + l.unitAmountMinor * l.quantity, 0),
           currency: s.currency.toLowerCase(),
-          payment_status: paid ? 'paid' : 'unpaid'
+          payment_status: paid ? 'paid' : 'unpaid',
+          payment_intent: paid ? `pi_fake_${randomBytes(12).toString('hex')}` : null
         }
       }
     })

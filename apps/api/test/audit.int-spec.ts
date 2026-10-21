@@ -88,6 +88,13 @@ describe('audit log', () => {
     expect(pages).toBe(3)
     expect(ids).toHaveLength(120)
     expect(new Set(ids).size).toBe(120)
+    const small: {body: Page} = await admin
+      .get('/api/admin/audit')
+      .query({actorId: actor.id, action: 'paging.', limit: '25'})
+      .expect(200)
+    expect(small.body.entries).toHaveLength(25)
+    expect(small.body.nextCursor).toBe(ids[24])
+    await admin.get('/api/admin/audit').query({limit: '30'}).expect(400)
   })
 
   it('forbids the log to a role without audit.read', async () => {

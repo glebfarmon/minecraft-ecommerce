@@ -54,7 +54,8 @@ describe('OpenAPI document', () => {
       'action',
       'from',
       'to',
-      'cursor'
+      'cursor',
+      'limit'
     ])
   })
 

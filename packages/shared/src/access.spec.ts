@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 
 import {
+  AuditQuerySchema,
   CreateInviteSchema,
   PERMISSIONS,
   RoleInputSchema,
@@ -49,6 +50,15 @@ describe('access contract', () => {
       name: 'Editor',
       permissions: ['audit.read']
     })
+  })
+})
+
+describe('audit query', () => {
+  it('takes a page size of 25, 50 or 100 from the query string', () => {
+    expect(v.parse(AuditQuerySchema, {limit: '25'})).toEqual({limit: 25})
+    expect(v.parse(AuditQuerySchema, {})).toEqual({})
+    expect(v.safeParse(AuditQuerySchema, {limit: '30'}).success).toBe(false)
+    expect(v.safeParse(AuditQuerySchema, {limit: '1000'}).success).toBe(false)
   })
 })
 

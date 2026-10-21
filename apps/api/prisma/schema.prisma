@@ -335,6 +335,8 @@ model Order {
   totalMinor        Int
   status            OrderStatus @default(PENDING)
   stripeSessionId   String?     @unique
+  /// Set by the paid webhook; the admin links the payment in the Stripe dashboard with it.
+  stripePaymentIntentId String?
   deliveryConsentAt DateTime
   paidAt            DateTime?
   eurPlnRate        Decimal?    @db.Decimal(10, 4)
