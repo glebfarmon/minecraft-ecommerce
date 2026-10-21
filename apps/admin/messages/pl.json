@@ -324,6 +324,14 @@
     "icon": "Ikona",
     "iconFromCategory": "Ikona pochodzi z kategorii",
     "iconOnEveryTile": "Widoczna na każdym kafelku produktu w tej kategorii",
+    "icons": {
+      "crown": "Korona",
+      "box": "Skrzynia",
+      "coins": "Monety",
+      "swords": "Miecze",
+      "pickaxe": "Kilof",
+      "ticket": "Bilet"
+    },
     "priceEUR": "Cena EUR",
     "pricePLN": "Cena PLN",
     "nameIn": "Nazwa ({locale})",

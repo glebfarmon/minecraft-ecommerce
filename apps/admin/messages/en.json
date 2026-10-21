@@ -324,6 +324,14 @@
     "icon": "Icon",
     "iconFromCategory": "Icon comes from the category",
     "iconOnEveryTile": "Drawn on every product tile in this category",
+    "icons": {
+      "crown": "Crown",
+      "box": "Box",
+      "coins": "Coins",
+      "swords": "Swords",
+      "pickaxe": "Pickaxe",
+      "ticket": "Ticket"
+    },
     "priceEUR": "Price EUR",
     "pricePLN": "Price PLN",
     "nameIn": "Name ({locale})",

@@ -1,4 +1,5 @@
 import {useListCatalogProductsQuery} from '@/lib/api/generated'
+import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
@@ -40,7 +41,7 @@ describe('CategoriesTable', () => {
     fireEvent.change(screen.getByLabelText('Polish name'), {target: {value: 'Narzędzia'}})
     const user = userEvent.setup()
     await user.click(screen.getByRole('combobox', {name: 'Icon'}))
-    const option = await screen.findByRole('option', {name: 'pickaxe'})
+    const option = await screen.findByRole('option', {name: 'Pickaxe'})
     expect(option.querySelector('svg.lucide-pickaxe')).not.toBeNull()
     await user.click(option)
     fireEvent.click(screen.getByRole('button', {name: 'Add category'}))
@@ -87,9 +88,9 @@ describe('CategoriesTable', () => {
       expect(productLoads).toBe(1)
     })
     const icon = within(form).getByRole('combobox', {name: 'Icon'})
-    expect(icon).toHaveTextContent('crown')
+    expect(icon).toHaveTextContent('Crown')
     await user.click(icon)
-    await user.click(await screen.findByRole('option', {name: 'coins'}))
+    await user.click(await screen.findByRole('option', {name: 'Coins'}))
     await user.click(within(form).getByRole('button', {name: 'Save'}))
     await waitFor(() => {
       expect(sent).toEqual([
@@ -99,6 +100,22 @@ describe('CategoriesTable', () => {
     await waitFor(() => {
       expect(productLoads).toBe(2)
     })
+  })
+
+  it('labels the icon options with translated names, not the enum values', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue(Response.json([]))
+    renderWithProviders(<CategoriesTable canEdit />, {locale: 'pl'})
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('combobox', {name: 'Ikona'}))
+    const options = await screen.findAllByRole('option')
+    expect(options.map(o => o.textContent)).toEqual([
+      'Korona',
+      'Skrzynia',
+      'Monety',
+      'Miecze',
+      'Kilof',
+      'Bilet'
+    ])
   })
 
   it('shows a field error for a bad slug', async () => {

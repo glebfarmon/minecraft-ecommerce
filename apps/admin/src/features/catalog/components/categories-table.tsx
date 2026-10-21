@@ -204,12 +204,6 @@ const FIELDS = [
   {name: 'pl', label: 'polishName'}
 ] as const
 
-const ICON_OPTIONS = PRODUCT_ICONS.map(i => ({
-  value: i,
-  label: i,
-  icon: <ProductIcon name={i} className="size-4 shrink-0" />
-}))
-
 function CategoryFields({
   prefix,
   register,
@@ -223,6 +217,11 @@ function CategoryFields({
 }) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
+  const iconOptions = PRODUCT_ICONS.map(i => ({
+    value: i,
+    label: t(`icons.${i}`),
+    icon: <ProductIcon name={i} className="size-4 shrink-0" />
+  }))
   const texts = FIELDS.map(({name, label}) => (
     <div key={name} className="flex min-w-0 flex-col gap-1">
       <Label htmlFor={`${prefix}-${name}`}>{t(label)}</Label>
@@ -252,7 +251,7 @@ function CategoryFields({
             <Select
               id={`${prefix}-icon`}
               value={f.value}
-              options={ICON_OPTIONS}
+              options={iconOptions}
               onValueChange={f.onChange}
             />
           )}
