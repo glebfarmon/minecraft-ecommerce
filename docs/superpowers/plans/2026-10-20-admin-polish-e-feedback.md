@@ -271,3 +271,13 @@ Decision: controls whose selection is drawn by a `RollingIndicator` (rail, sheet
 - [ ] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:int && pnpm test:e2e`
 - [ ] `graphify update .`
 - [ ] Tick the boxes above; superpowers:finishing-a-development-branch.
+
+### Task 16: Admin UI shows the site name (added 2026-10-21 at the owner's request)
+
+Owner: replace "Shop Admin" in the browser title and on the sign-in / join pages with the site name from Content → Settings.
+
+**Files:** Create `apps/admin/src/lib/site-name.ts` (server-only `getSiteName(): Promise<SiteSettings['siteName']>` moved out of `app/(shell)/_components/brand-mark.tsx`, same fetch: `${API_ORIGIN}/api/content/settings`, `revalidate: 60`, 3 s timeout, `DEFAULT_SITE_SETTINGS.siteName` fallback). Modify `brand-mark.tsx` (use it), `app/layout.tsx` (`generateMetadata` → title `"<plain><accent> Admin"`, keep `robots`), `apps/admin/messages/{en,pl}.json` (`signInToShopAdmin`, `joinShopAdmin`, `notInvited` take `{site}`; PL wording names the site too), the sign-in / invite components that render them. Tests: `layout.test.ts`, the auth component tests, a `site-name.test.ts` (fallback on non-OK and on throw).
+
+- [ ] **Step 1: Failing tests** — metadata title is `"Blockhaus Admin"` with default settings and `"<name> Admin"` with a mocked settings response; sign-in heading reads "Sign in to Blockhaus Admin"; no admin string contains "Shop Admin".
+- [ ] **Step 2: Implement**; pass the name from the server page/layout to client components as a prop (client components cannot fetch server-only).
+- [ ] **Step 3: Run** `pnpm --filter @shop/admin test` → PASS. **Step 4: Commit** `feat(admin): admin shows the site name`
