@@ -12,7 +12,12 @@ export const FORM_MESSAGES = {
   chooseServer: 'Choose a server',
   chooseCategory: 'Choose a category',
   portRange: 'Use a port between 1 and 65535',
-  roleNameLength: 'Use 2 to 40 characters'
+  roleNameLength: 'Use 2 to 40 characters',
+  promoCodeFormat: 'Use 3–32 letters or digits',
+  percentRange: 'Use a whole percent from 1 to 100',
+  amountFormat: 'Use an amount above zero, like 5.00',
+  maxUsesFormat: 'Use a whole number from 1, or leave empty for unlimited',
+  endAfterStart: 'The end must be after the start'
 } as const
 
 const ALL: Record<string, string> = {...VALIDATION_MESSAGES, ...FORM_MESSAGES}

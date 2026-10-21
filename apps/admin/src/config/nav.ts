@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   ReceiptText,
   ScrollText,
+  TicketPercent,
   UserRound,
   Users
 } from 'lucide-react'
@@ -13,7 +14,7 @@ import type {Permission} from '@shop/shared/access'
 
 export const NAV: {
   href: string
-  key: 'home' | 'orders' | 'catalog' | 'content' | 'team' | 'audit' | 'account'
+  key: 'home' | 'orders' | 'promo' | 'catalog' | 'content' | 'team' | 'audit' | 'account'
   icon: LucideIcon
   permission?: Permission
   match?: string
@@ -21,6 +22,7 @@ export const NAV: {
   {href: '/', key: 'home', icon: LayoutGrid},
   {href: '/orders', key: 'orders', icon: ReceiptText, permission: 'order.read'},
   {href: '/catalog', key: 'catalog', icon: Boxes},
+  {href: '/promo-codes', key: 'promo', icon: TicketPercent, permission: 'promo.write'},
   {
     href: '/content/rules',
     key: 'content',

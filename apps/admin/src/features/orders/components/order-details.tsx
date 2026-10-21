@@ -86,7 +86,15 @@ export function OrderDetails({id}: {id: string}) {
           <dl className="tabular ml-auto grid w-full max-w-xs grid-cols-[1fr_auto] gap-x-6 gap-y-2 border-t border-border pt-4 text-[13px]">
             <dt className="text-muted">{t('subtotal')}</dt>
             <dd className="text-right">{money(order.subtotalMinor)}</dd>
-            <dt className="text-muted">{t('discount')}</dt>
+            <dt className="flex min-w-0 flex-wrap items-center gap-x-2 text-muted">
+              {t('discount')}
+              {order.promoCode && ' '}
+              {order.promoCode && (
+                <span className="rounded-full bg-card-raised px-2 font-mono text-[12px] [overflow-wrap:anywhere] text-fg">
+                  {order.promoCode}
+                </span>
+              )}
+            </dt>
             <dd className="text-right">{money(order.discountMinor)}</dd>
             <dt className="font-semibold">{t('total')}</dt>
             <dd className="text-right text-[15px] font-semibold">{money(order.totalMinor)}</dd>

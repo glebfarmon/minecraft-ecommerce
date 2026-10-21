@@ -14,6 +14,7 @@ const base = {
   totalMinor: 1500,
   subtotalMinor: 2000,
   discountMinor: 500,
+  promoCode: null,
   createdAt: '2026-10-12T09:30:00.000Z',
   paidAt: '2026-10-12T09:35:00.000Z',
   deliveryConsentAt: '2026-10-12T09:29:00.000Z',
@@ -45,6 +46,21 @@ describe('OrderDetails', () => {
     expect(screen.getByText('€15.00')).toBeInTheDocument()
     expect(screen.getByText('steve@example.com')).toBeInTheDocument()
     expect(screen.getByText('2026-10-12 09:29 UTC')).toBeInTheDocument()
+  })
+
+  it('shows the promo code next to the discount', async () => {
+    mock({promoCode: 'ASF14'})
+    renderWithStore(<OrderDetails id="o1" />)
+    const code = await screen.findByText('ASF14')
+    expect(code.closest('dt')).toHaveTextContent('Discount ASF14')
+    expect(screen.getByText('€5.00')).toBeInTheDocument()
+  })
+
+  it('shows no code for an order without one', async () => {
+    mock({})
+    renderWithStore(<OrderDetails id="o1" />)
+    expect(await screen.findByText('€5.00')).toBeInTheDocument()
+    expect(screen.getByText('Discount').tagName).toBe('DT')
   })
 
   it('copies the buyer email and confirms with a toast', async () => {

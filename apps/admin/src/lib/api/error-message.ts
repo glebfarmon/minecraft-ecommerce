@@ -25,7 +25,10 @@ const CODES = new Set([
   'rcon_key_missing',
   'not_published',
   'unknown_key',
-  'invalid_locale'
+  'invalid_locale',
+  'promo_locked',
+  'max_uses_below_used',
+  'code_taken'
 ])
 
 /** The entities an `in_use` answer counts; each has an ICU plural under `apiErrors.in_use_<entity>`. */
