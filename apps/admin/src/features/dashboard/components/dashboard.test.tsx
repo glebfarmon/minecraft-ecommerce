@@ -259,6 +259,40 @@ describe('Dashboard', () => {
     expect(requestedUrls(fetchMock).some(u => u.includes('range=30d'))).toBe(true)
   })
 
+  it('keeps the previous range on screen, busy, while the other range loads', async () => {
+    let release: () => void = () => undefined
+    jest.spyOn(global, 'fetch').mockImplementation(input => {
+      const url = new URL(String(input instanceof Request ? input.url : input))
+      if (!url.pathname.endsWith('/stats/orders'))
+        return Promise.resolve(Response.json({orders: [], nextCursor: null}))
+      if (url.searchParams.get('range') === '7d') return Promise.resolve(Response.json(stats()))
+      return new Promise(resolve => {
+        release = () => {
+          resolve(Response.json(stats({range: '30d', paidCount: 44})))
+        }
+      })
+    })
+    renderWithStore(<Dashboard />)
+    const paid = await screen.findByRole('region', {name: 'Paid orders'})
+    expect(paid).toHaveTextContent('20')
+    fireEvent.mouseDown(screen.getByRole('tab', {name: '30 days'}))
+    fireEvent.click(screen.getByRole('tab', {name: '30 days'}))
+    await waitFor(() => {
+      expect(
+        screen.getByRole('region', {name: 'Paid orders'}).closest('[aria-busy]')
+      ).toHaveAttribute('aria-busy', 'true')
+    })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'Paid orders'})).toHaveTextContent('20')
+    release()
+    await waitFor(() => {
+      expect(screen.getByRole('region', {name: 'Paid orders'})).toHaveTextContent('44')
+    })
+    expect(
+      screen.getByRole('region', {name: 'Paid orders'}).closest('[aria-busy="true"]')
+    ).toBeNull()
+  })
+
   it('offers a retry when statistics fail to load', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(new Response('boom', {status: 500}))
     renderWithStore(<Dashboard />)

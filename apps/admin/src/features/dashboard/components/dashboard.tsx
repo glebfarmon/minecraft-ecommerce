@@ -24,6 +24,7 @@ import {useState, useSyncExternalStore} from 'react'
 
 import {CURRENCIES, type Currency} from '@shop/shared/catalog'
 import {Button} from '@shop/ui/button'
+import {cn} from '@shop/ui/lib/utils'
 import {Tabs, TabsList, TabsTrigger} from '@shop/ui/tabs'
 
 import {CurrencyDonut} from './currency-donut'
@@ -246,9 +247,10 @@ export function Dashboard() {
     () => false
   )
   const query = useGetOrderStatsQuery({range, currency}, {skip: !hydrated})
-  // `currentData`, not `data`: after a switch the previous currency's numbers must not be shown
-  // under the new label while the new ones load.
-  const stats = query.currentData
+  // A range switch keeps the previous range on screen (dimmed, busy) until the new numbers
+  // arrive; a currency switch must not, so old-currency numbers never sit under the new label.
+  const stats = query.currentData ?? (query.data?.currency === currency ? query.data : undefined)
+  const busy = query.isFetching && stats !== query.currentData
   const held = useHoldLoading(!stats && !query.isError)
   return (
     <div className="grid gap-4">
@@ -289,7 +291,12 @@ export function Dashboard() {
       ) : !stats || held ? (
         <Loading />
       ) : (
-        <>
+        <div
+          aria-busy={busy}
+          className={cn(
+            'grid gap-4 transition-opacity duration-200 ease-out',
+            busy && 'opacity-60'
+          )}>
           <Kpis stats={stats} />
           {stats.awaitingRate > 0 && (
             <p className="text-[12px] text-muted">
@@ -305,7 +312,7 @@ export function Dashboard() {
             <TopProducts stats={stats} />
           </div>
           <LatestOrders />
-        </>
+        </div>
       )}
     </div>
   )

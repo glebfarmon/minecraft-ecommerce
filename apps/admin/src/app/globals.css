@@ -171,17 +171,7 @@ body {
   }
 }
 
-/* Charts: bars grow from the baseline, sparklines draw left to right. */
-.bar-grow {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: bar-grow 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes bar-grow {
-  from {
-    transform: scaleY(0);
-  }
-}
+/* Charts: sparklines draw left to right (bars animate in `DayChart`). */
 .line-draw {
   stroke-dasharray: 1;
   animation: line-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) both;

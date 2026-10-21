@@ -1,6 +1,7 @@
-import {useTranslations} from 'next-intl'
+'use client'
 
-import {cn} from '@shop/ui/lib/utils'
+import {motion} from 'motion/react'
+import {useTranslations} from 'next-intl'
 
 export function DayChart({
   days,
@@ -18,8 +19,6 @@ export function DayChart({
   return (
     <figure className="flex flex-col gap-2">
       <svg
-        // A new range replays the bars growing.
-        key={`${days[0]?.day ?? ''}-${String(days.length)}`}
         role="img"
         aria-label={t('chartTotal', {label, total: format(total), days: days.length})}
         viewBox="0 0 100 40"
@@ -28,17 +27,22 @@ export function DayChart({
         {days.map((d, i) => {
           const h = (d.value / max) * 36
           return (
-            <rect
-              key={d.day}
-              x={i * w + w * 0.15}
-              y={40 - Math.max(h, 0.6)}
-              width={w * 0.7}
-              height={Math.max(h, 0.6)}
+            <motion.rect
+              key={i}
               rx="0.8"
-              style={{animationDelay: `${String(i * 12)}ms`}}
-              className={cn('bar-grow', d.value === 0 ? 'fill-card-raised' : 'fill-current')}>
+              // Bars grow from the baseline on mount and slide to their new place and height when
+              // the range changes.
+              initial={{x: i * w + w * 0.15, y: 40, width: w * 0.7, height: 0}}
+              animate={{
+                x: i * w + w * 0.15,
+                y: 40 - Math.max(h, 0.6),
+                width: w * 0.7,
+                height: Math.max(h, 0.6)
+              }}
+              transition={{duration: 0.3, delay: i * 0.012, ease: [0.22, 1, 0.36, 1]}}
+              className={d.value === 0 ? 'fill-card-raised' : 'fill-current'}>
               <title>{`${d.day}: ${format(d.value)}`}</title>
-            </rect>
+            </motion.rect>
           )
         })}
       </svg>
