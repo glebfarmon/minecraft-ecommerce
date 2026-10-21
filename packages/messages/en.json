@@ -237,6 +237,7 @@
       "title": "The payment was not completed",
       "back": "Back to the shop"
     },
+    "promo": "Promo code {code}",
     "total": "Total",
     "closed": {
       "title": "This order is closed",

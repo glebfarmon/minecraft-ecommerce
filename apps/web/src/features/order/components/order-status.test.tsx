@@ -141,4 +141,23 @@ describe('OrderStatus', () => {
     await tick(60_000)
     expect(screen.getByText('order.pending.slow')).toBeInTheDocument()
   })
+
+  it('shows the promo row with the minus amount only when discounted', () => {
+    const {unmount} = render(<OrderStatus initial={{...base}} />)
+    expect(screen.queryByText(/order\.promo/)).not.toBeInTheDocument()
+    unmount()
+    render(
+      <OrderStatus
+        initial={{
+          ...base,
+          subtotalMinor: 1500,
+          discountMinor: 240,
+          promoCode: 'ASF14',
+          totalMinor: 1260
+        }}
+      />
+    )
+    expect(screen.getByText('order.promo')).toBeInTheDocument()
+    expect(screen.getByText(/^\u22122\.40\s€$/)).toBeInTheDocument()
+  })
 })

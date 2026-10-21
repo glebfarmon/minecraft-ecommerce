@@ -112,6 +112,12 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
             </ul>
           </section>
         ))}
+        {order.discountMinor > 0 && order.promoCode && (
+          <p className="flex justify-between border-t border-line pt-4">
+            <span>{t('promo', {code: order.promoCode})}</span>
+            <span>{`\u2212${formatPrice(order.discountMinor, order.currency, locale)}`}</span>
+          </p>
+        )}
         <p className="flex justify-between border-t border-line pt-4 text-lg font-semibold">
           <span>{t('total')}</span>
           <span>{formatPrice(order.totalMinor, order.currency, locale)}</span>

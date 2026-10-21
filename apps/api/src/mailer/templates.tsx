@@ -1,6 +1,6 @@
 import {Body, Container, Heading, Html, Link, Section, Text} from '@react-email/components'
 import {render} from '@react-email/render'
-import type {ReactElement} from 'react'
+import type {ReactElement, ReactNode} from 'react'
 
 import type {PublicOrder} from '@shop/shared/orders'
 
@@ -10,13 +10,7 @@ async function mail(subject: string, body: ReactElement): Promise<Omit<Mail, 'to
   return {subject, html: await render(body), text: await render(body, {plainText: true})}
 }
 
-const Layout = ({
-  children,
-  lang = 'en'
-}: {
-  children: ReactElement | (ReactElement | ReactElement[])[]
-  lang?: string
-}) => (
+const Layout = ({children, lang = 'en'}: {children: ReactNode; lang?: string}) => (
   <Html lang={lang}>
     <Body style={{fontFamily: 'Arial, sans-serif', backgroundColor: '#ffffff'}}>
       <Container style={{maxWidth: 480, padding: 24}}>{children}</Container>
@@ -61,6 +55,7 @@ const RECEIPT_TEXT = {
     heading: (nick: string) => `Thank you, ${nick}!`,
     order: (publicId: string) => `Order ${publicId}`,
     body: 'Your payment went through. Items are delivered to the game server shortly; this page shows the status:',
+    promo: (code: string) => `Promo code ${code}`,
     total: 'Total'
   },
   pl: {
@@ -68,6 +63,7 @@ const RECEIPT_TEXT = {
     heading: (nick: string) => `Dziękujemy, ${nick}!`,
     order: (publicId: string) => `Zamówienie ${publicId}`,
     body: 'Płatność przeszła. Przedmioty trafią na serwer gry wkrótce; status zamówienia:',
+    promo: (code: string) => `Kod promocyjny ${code}`,
     total: 'Razem'
   }
 } as const
@@ -94,6 +90,11 @@ export function orderReceiptMail(order: PublicOrder, locale: 'en' | 'pl', status
           ))}
         </Section>
       ))}
+      {order.discountMinor > 0 && order.promoCode ? (
+        <Text style={{margin: 0}}>
+          {`${t.promo(order.promoCode)}: \u2212${money(order.discountMinor)}`}
+        </Text>
+      ) : null}
       <Text style={{fontWeight: 700}}>{`${t.total}: ${money(order.totalMinor)}`}</Text>
     </Layout>
   )

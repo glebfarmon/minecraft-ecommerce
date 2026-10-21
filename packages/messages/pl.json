@@ -237,6 +237,7 @@
       "title": "Płatność nie została ukończona",
       "back": "Wróć do sklepu"
     },
+    "promo": "Kod promocyjny {code}",
     "total": "Razem",
     "closed": {
       "title": "To zamówienie jest zamknięte",
