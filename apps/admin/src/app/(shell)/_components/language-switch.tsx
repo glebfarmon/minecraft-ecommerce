@@ -1,7 +1,7 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import {RollingIndicator} from '@/components/rolling-indicator'
+import {PILL_FOCUS, RollingIndicator} from '@/components/rolling-indicator'
 import {type AdminLocale, LOCALE_COOKIE} from '@/i18n/locale'
 import {LayoutGroup} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
@@ -72,7 +72,8 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
                   choose(locale)
                 }}
                 className={cn(
-                  'relative isolate flex h-7 min-w-10 items-center justify-center rounded-full px-2 text-xs font-semibold tracking-wide transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none',
+                  'relative isolate flex h-7 min-w-10 items-center justify-center rounded-full px-2 text-xs font-semibold tracking-wide transition-colors duration-150',
+                  PILL_FOCUS,
                   checked ? 'text-fg' : 'text-muted hover:text-fg'
                 )}>
                 {checked && <RollingIndicator className="rounded-full bg-card-raised" />}

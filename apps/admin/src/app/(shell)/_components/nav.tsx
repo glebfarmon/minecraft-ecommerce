@@ -1,7 +1,7 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import {RollingIndicator} from '@/components/rolling-indicator'
+import {PILL_FOCUS, RollingIndicator} from '@/components/rolling-indicator'
 import {NAV} from '@/config/nav'
 import {LayoutGroup} from 'motion/react'
 import {useTranslations} from 'next-intl'
@@ -15,8 +15,6 @@ import {cn} from '@shop/ui/lib/utils'
 function isCurrent(pathname: string, base: string) {
   return pathname === base || (base !== '/' && pathname.startsWith(`${base}/`))
 }
-
-const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
 
 export function Nav({
   me,
@@ -48,7 +46,7 @@ export function Nav({
                 aria-current={current ? 'page' : undefined}
                 aria-label={rail ? label : undefined}
                 className={cn(
-                  FOCUS,
+                  PILL_FOCUS,
                   rail
                     ? 'relative isolate flex size-11 items-center justify-center rounded-full text-muted transition-colors hover:bg-card-raised'
                     : 'relative isolate flex items-center gap-3 rounded-full px-3 py-2.5 text-sm text-muted transition-colors hover:bg-card-raised',

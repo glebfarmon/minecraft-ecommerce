@@ -59,7 +59,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       value={value}
       className={cn(
-        'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:opacity-50 data-[state=active]:text-fg',
+        'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-1 focus-visible:ring-fg/25 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-50 data-[state=active]:text-fg',
         className
       )}
       {...props}>

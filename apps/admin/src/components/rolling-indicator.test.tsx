@@ -54,4 +54,11 @@ describe('Tabs indicator', () => {
       indicators(container)[0] as HTMLElement
     )
   })
+
+  it('tab triggers show keyboard focus without the accent ring', () => {
+    render(<Controlled />)
+    const cls = screen.getByRole('tab', {name: 'A'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:ring-fg/25')
+  })
 })

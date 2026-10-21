@@ -72,7 +72,12 @@ export function ServerCard({
     )
   return (
     <div className="relative isolate">
-      {selected && <RollingIndicator className="-inset-1 rounded-[24px] ring-2 ring-fg" />}
+      {selected && (
+        <RollingIndicator
+          className="-inset-1 ring-2 ring-fg"
+          style={{borderRadius: 'calc(var(--radius-card) + 4px)'}}
+        />
+      )}
       <button
         type="button"
         role="tab"

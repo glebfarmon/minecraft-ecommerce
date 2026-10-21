@@ -5,7 +5,9 @@ import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {useState} from 'react'
 
-import {RollingIndicator} from './rolling-indicator'
+import {cn} from '@shop/ui/lib/utils'
+
+import {PILL_FOCUS, RollingIndicator} from './rolling-indicator'
 
 type Item = {href: string; label: string}
 
@@ -42,7 +44,10 @@ export function SubNav({label, items}: {label: string; items: Item[]}) {
               if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
               setPending(i.href)
             }}
-            className="relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none aria-[current=page]:text-fg">
+            className={cn(
+              'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg aria-[current=page]:text-fg',
+              PILL_FOCUS
+            )}>
             {i.href === current && <RollingIndicator className="rounded-full bg-card-raised" />}
             {i.label}
           </Link>

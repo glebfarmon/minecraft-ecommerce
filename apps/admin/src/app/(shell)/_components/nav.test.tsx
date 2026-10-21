@@ -62,4 +62,10 @@ describe('Nav', () => {
     render(<Nav me={me([])} variant="rail" />)
     expect(screen.queryByRole('link', {name: 'Orders'})).not.toBeInTheDocument()
   })
+  it('rail links show keyboard focus without the accent ring', () => {
+    render(<Nav me={me([])} variant="rail" />)
+    const cls = screen.getByRole('link', {name: 'Catalog'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:ring-fg/25')
+  })
 })
