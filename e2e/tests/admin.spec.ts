@@ -414,6 +414,8 @@ test('the owner switches sub-navs, opens editors from pencils and the preview fo
 test('the rail marks a clicked page at once and its pill stays put inside a section', async ({
   page
 }) => {
+  // Signing in can wait up to 30 s for an unused TOTP step, as in the other owner tests.
+  test.setTimeout(180_000)
   // A slow server from the start, so no route is ready before the click: prefetches fail (the
   // loading fallback cannot commit early) and every other RSC request answers after 1.5 s.
   await page.route('**/*', async route => {
@@ -436,7 +438,7 @@ test('the rail marks a clicked page at once and its pill stays put inside a sect
   await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
   await page.unrouteAll({behavior: 'wait'})
 
-  // Catalog → product: the page scrolls to the top, the sticky rail does not move, nor its pill.
+  // Catalog → product: the page scrolls to the top, the fixed rail does not move, nor its pill.
   await page.setViewportSize({width: 1280, height: 480})
   await page.goto(`${ADMIN}/catalog`)
   const vip = page.getByRole('list', {name: 'Products in Ranks'}).getByRole('link', {name: 'VIP'})
