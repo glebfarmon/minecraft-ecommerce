@@ -6,6 +6,7 @@ import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
+import {copyText} from '@/lib/copy'
 import {ReceiptText, Search} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
@@ -36,6 +37,7 @@ function PageRows({
   onMore: (cursor: string) => void
 }) {
   const t = useTranslations('orders')
+  const tc = useTranslations('common')
   const f = useFormat()
   const router = useRouter()
   const page = useListAdminOrdersQuery({...query, cursor})
@@ -83,13 +85,13 @@ function PageRows({
           {
             label: t('copyNumber'),
             onSelect: () => {
-              void navigator.clipboard.writeText(o.publicId)
+              void copyText(o.publicId, t('orderNumberLabel'), tc)
             }
           },
           {
             label: t('copyEmail'),
             onSelect: () => {
-              void navigator.clipboard.writeText(o.email)
+              void copyText(o.email, t('emailLabel'), tc)
             }
           }
         ]}

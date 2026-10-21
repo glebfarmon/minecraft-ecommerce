@@ -1,5 +1,6 @@
 import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {TextsTable} from './texts-table'
@@ -137,6 +138,16 @@ describe('TextsTable', () => {
     })
     expect(calls[0]).toMatch(/^DELETE .*\/en\/rules\.title$/)
     expect(screen.getByLabelText('Override for rules.title')).toHaveValue('')
+    expect(await findToast()).toHaveTextContent('Text reset to the default.')
+  })
+
+  it('confirms a saved override with a toast', async () => {
+    mockApi(() => Response.json({}))
+    renderWithStore(<TextsTable />)
+    const hero = await screen.findByLabelText('Override for hero.title')
+    fireEvent.change(hero, {target: {value: 'Hello'}})
+    fireEvent.click(within(hero.closest('tr') as HTMLElement).getByRole('button', {name: 'Save'}))
+    expect(await findToast()).toHaveTextContent('Text saved')
   })
 
   it('loads the other locale from the PL tab', async () => {

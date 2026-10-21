@@ -5,9 +5,11 @@ import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
 import {type Tone, ToneDot} from '@/components/status-dot'
+import {notify} from '@/components/toaster'
 import {InviteFormSchema} from '@/features/team/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useDeleteApiAdminInvitesByIdMutation,
   useGetApiAdminInvitesQuery,
@@ -48,7 +50,6 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   const t = useTranslations('team')
   const uiLocale = useLocale()
   const errorText = useErrorText()
-  const apiError = useApiError()
   const invites = useGetApiAdminInvitesQuery()
   const roles = useGetApiAdminRolesQuery()
   const [create, {isLoading: creating}] = usePostApiAdminInvitesMutation()
@@ -56,8 +57,8 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   const [cancel] = useDeleteApiAdminInvitesByIdMutation()
   const [roleId, setRoleId] = useState('')
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
   const [confirming, setConfirming] = useState<string | null>(null)
-  const [notice, setNotice] = useMessage()
 
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(InviteFormSchema),
@@ -70,12 +71,11 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   )
   const chosenRole = roleId || assignable[0]?.id || ''
 
-  async function run(action: Promise<{error?: unknown}>, done?: string) {
+  async function run(action: Promise<{error?: unknown}>, done: string) {
     setError(null)
-    setNotice(null)
     const result = await action
-    if (result.error) setError(apiError(result.error))
-    else if (done) setNotice(done)
+    if (result.error) report(result.error)
+    else notify.ok(done)
     return !result.error
   }
 
@@ -122,11 +122,6 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
           </div>
         </FormSection>
       </form>
-      {notice && (
-        <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-          {notice}
-        </p>
-      )}
       {error && (
         <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
           {error}
@@ -141,7 +136,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
               variant="danger"
               onClick={() => {
                 setConfirming(null)
-                void run(cancel({id: target.id}))
+                void run(cancel({id: target.id}), t('inviteRevoked'))
               }}>
               {t('revokeInvite')}
             </Button>

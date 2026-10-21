@@ -7,6 +7,7 @@ import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
+import {copyText} from '@/lib/copy'
 import {ArrowLeft, Copy} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
@@ -43,6 +44,7 @@ function BackLink() {
 
 export function OrderDetails({id}: {id: string}) {
   const t = useTranslations('orders.detail')
+  const tc = useTranslations('common')
   const f = useFormat()
   const {data: order, isLoading, error} = useGetAdminOrderQuery({id})
   if (isLoading) return <SkeletonRows rows={6} />
@@ -117,7 +119,7 @@ export function OrderDetails({id}: {id: string}) {
                     aria-label={t('copyEmail')}
                     className="size-7 shrink-0"
                     onClick={() => {
-                      void navigator.clipboard.writeText(order.email)
+                      void copyText(order.email, t('emailLabel'), tc)
                     }}>
                     <Copy aria-hidden className="size-3.5" />
                   </Button>

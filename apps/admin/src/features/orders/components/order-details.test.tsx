@@ -1,5 +1,6 @@
 import {renderWithStore} from '@/test/render-with-store'
 import {screen} from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 import {OrderDetails} from './order-details'
 
@@ -43,6 +44,16 @@ describe('OrderDetails', () => {
     expect(screen.getByText('€15.00')).toBeInTheDocument()
     expect(screen.getByText('steve@example.com')).toBeInTheDocument()
     expect(screen.getByText('2026-10-12 09:29 UTC')).toBeInTheDocument()
+  })
+
+  it('copies the buyer email and confirms with a toast', async () => {
+    mock({})
+    const user = userEvent.setup()
+    const writeText = jest.spyOn(navigator.clipboard, 'writeText')
+    renderWithStore(<OrderDetails id="o1" />)
+    await user.click(await screen.findByRole('button', {name: 'Copy email'}))
+    expect(writeText).toHaveBeenCalledWith('steve@example.com')
+    expect(await screen.findByRole('status')).toHaveTextContent('Email copied')
   })
 
   it('links to the Stripe session', async () => {

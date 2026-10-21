@@ -1,5 +1,5 @@
-import {useApiError} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {useState} from 'react'
 
 /**
@@ -12,11 +12,11 @@ export function useOptimisticOrder<T extends {id: string}>(
   items: readonly T[],
   save: (ids: string[], base: string[]) => Promise<{error?: unknown}>
 ) {
-  const apiError = useApiError()
   const baseIds = items.map(i => i.id)
   const base = baseIds.join('\n')
   const [pending, setPending] = useState<{base: string; ids: string[]} | null>(null)
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
 
   const ordered =
     pending?.base === base ? pending.ids.flatMap(id => items.filter(i => i.id === id)) : [...items]
@@ -27,7 +27,7 @@ export function useOptimisticOrder<T extends {id: string}>(
     const result = await save(ids, baseIds)
     if (result.error) {
       setPending(null)
-      setError(apiError(result.error))
+      report(result.error)
     }
   }
 

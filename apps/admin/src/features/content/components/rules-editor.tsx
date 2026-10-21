@@ -1,6 +1,7 @@
 'use client'
 
 import {RichTextField} from '@/components/rich-text/rich-text-field'
+import {notify} from '@/components/toaster'
 import {type DragHandleProps, SortableList} from '@/features/catalog/components/sortable-list'
 import {RulesPreview} from '@/features/content/components/rules-preview'
 import {editionDate} from '@/features/content/lib/edition-date'
@@ -79,7 +80,6 @@ export function RulesEditor() {
   // The versions list runs the restore; sharing its state hands the restored draft to this form.
   const [, restored] = useRestoreRulesVersionMutation({fixedCacheKey: RESTORE_RULES_KEY})
   const [error, setError] = useMessage()
-  const [status, setStatus] = useMessage()
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [tab, setTab] = useState<Locale>('en')
 
@@ -120,7 +120,6 @@ export function RulesEditor() {
   if (restoredAt !== seenRestore) {
     setSeenRestore(restoredAt)
     setError(null)
-    setStatus(null)
     setConfirmPublish(false)
   }
 
@@ -144,32 +143,36 @@ export function RulesEditor() {
     if (first && !withErrors.includes(tab)) setTab(first)
   }
 
+  // A 409 belongs next to the form it concerns; any other refusal is a transient toast.
+  function fail(error: unknown) {
+    if (isStale(error)) setError(t('staleDraft'))
+    else notify.error(apiError(error))
+  }
+
   async function onSave(content: RulesDocument) {
     setError(null)
-    setStatus(null)
     setConfirmPublish(false)
     if (revision.current === null) return
     const result = await save({body: {content, revision: revision.current}})
     if (result.error) {
-      setError(isStale(result.error) ? t('staleDraft') : apiError(result.error))
+      fail(result.error)
       return
     }
     revision.current = result.data.revision
     // The saved content carries the ids given to new sections and rules.
     reset(documentToForm(result.data.content))
-    setStatus(t('draftSaved'))
+    notify.ok(t('draftSaved'))
   }
 
   async function onPublish() {
     setConfirmPublish(false)
     setError(null)
-    setStatus(null)
     if (revision.current === null) return
     // The revision this form shows: if someone saved since, the API refuses (409) instead of
     // publishing their edit unseen.
     const result = await publish({body: {revision: revision.current}})
-    if (result.error) setError(isStale(result.error) ? t('staleDraft') : apiError(result.error))
-    else setStatus(t('published'))
+    if (result.error) fail(result.error)
+    else notify.ok(t('published'))
   }
 
   const rootError = (() => {
@@ -209,7 +212,6 @@ export function RulesEditor() {
                 disabled={isDirty || busy}
                 title={isDirty ? t('saveBeforePublishing') : undefined}
                 onClick={() => {
-                  setStatus(null)
                   setConfirmPublish(true)
                 }}>
                 {t('publish')}
@@ -238,11 +240,6 @@ export function RulesEditor() {
           {error && (
             <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
               {error}
-            </p>
-          )}
-          {status && (
-            <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-              {status}
             </p>
           )}
           {rootError && <p className="text-sm text-destructive">{rootError}</p>}

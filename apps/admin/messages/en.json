@@ -6,7 +6,9 @@
     "edit": "Edit",
     "back": "Back",
     "loading": "Loading…",
-    "retry": "Retry"
+    "retry": "Retry",
+    "copied": "{label} copied",
+    "copyFailed": "Could not copy {label}"
   },
   "shell": {
     "language": "Language",
@@ -196,8 +198,11 @@
       "timeline": "Timeline",
       "created": "Created",
       "paid": "Paid",
-      "now": "Now"
-    }
+      "now": "Now",
+      "emailLabel": "Email"
+    },
+    "orderNumberLabel": "Order number",
+    "emailLabel": "Email"
   },
   "catalog": {
     "backToCatalog": "Back to catalog",
@@ -327,7 +332,13 @@
     "descriptionIn": "Description ({locale})",
     "grantCommands": "Grant commands",
     "revokeCommands": "Revoke commands",
-    "commandHint": "One command per line, without /."
+    "commandHint": "One command per line, without /.",
+    "serverCreated": "Server created.",
+    "serverDeleted": "Server deleted.",
+    "productCreated": "Product created.",
+    "productDeleted": "Product deleted.",
+    "categorySaved": "Category saved.",
+    "categoryDeleted": "Category deleted."
   },
   "content": {
     "loadingRules": "Loading rules…",
@@ -404,7 +415,9 @@
     "overrideFor": "Override for {key}",
     "rules": "Rules",
     "texts": "Texts",
-    "settings": "Settings"
+    "settings": "Settings",
+    "textSaved": "Text saved. Live on the site within a minute.",
+    "textReset": "Text reset to the default."
   },
   "team": {
     "couldNotLoadAdminsRefreshThe": "Could not load admins. Refresh the page.",
@@ -466,7 +479,14 @@
     "saveRole": "Save role",
     "deleteRole": "Delete role",
     "saveName": "Save {name}",
-    "deleteName": "Delete {name}"
+    "deleteName": "Delete {name}",
+    "inviteRevoked": "Invite revoked.",
+    "adminRemoved": "Admin removed.",
+    "adminReset": "Two-factor reset. They set it up again at the next sign-in.",
+    "adminRoleChanged": "Role changed. They are signed out.",
+    "roleCreated": "Role created.",
+    "roleSaved": "Role saved.",
+    "roleDeleted": "Role deleted."
   },
   "audit": {
     "auditLog": "Audit log",
@@ -545,5 +565,11 @@
     "italicHint": "Italic ⌘I",
     "underline": "Underline",
     "underlineHint": "Underline ⌘U"
+  },
+  "toast": {
+    "done": "Done",
+    "error": "Error",
+    "dismiss": "Dismiss",
+    "notifications": "Notifications"
   }
 }

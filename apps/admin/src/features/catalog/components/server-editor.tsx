@@ -4,10 +4,12 @@ import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
+import {notify} from '@/components/toaster'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useCreateCatalogServerMutation,
   useDeleteCatalogServerMutation,
@@ -44,14 +46,13 @@ const EMPTY: ServerForm = {
 export function ServerEditor({id, canEdit, canRcon}: Props) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
-  const apiError = useApiError()
   const router = useRouter()
   const server = useGetCatalogServerQuery({id: id ?? ''}, {skip: !id})
   const [create, {isLoading: creating}] = useCreateCatalogServerMutation()
   const [update, {isLoading: updating}] = useUpdateCatalogServerMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogServerMutation()
   const [error, setError] = useMessage()
-  const [saved, setSaved] = useState(false)
+  const report = useReportError(setError)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const form = useForm<ServerForm>({
@@ -85,22 +86,24 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   async function save(v: ServerForm) {
     setError(null)
-    setSaved(false)
     if (!id) {
       const {slug, name, accent, onAccent} = v
       const result = await create({body: {slug, name, accent, onAccent}})
-      if (result.error) setError(apiError(result.error))
-      else router.replace(`/catalog/servers/${result.data.id}`)
+      if (result.error) report(result.error)
+      else {
+        notify.ok(t('serverCreated'))
+        router.replace(`/catalog/servers/${result.data.id}`)
+      }
       return
     }
     if (version.current === null) return
     const result = await update({id, body: {...v, version: version.current}})
     if (result.error) {
-      setError(apiError(result.error))
+      report(result.error)
       return
     }
     version.current = result.data.version
-    setSaved(true)
+    notify.ok(t('savedLiveOnTheSiteWithin'))
   }
 
   async function onDelete() {
@@ -108,8 +111,11 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiError(result.error))
-    else router.push('/catalog')
+    if (result.error) report(result.error)
+    else {
+      notify.ok(t('serverDeleted'))
+      router.push('/catalog')
+    }
   }
 
   const errorOf = (name: FieldPath<ServerForm>) => errorText(errors[name]?.message)
@@ -161,11 +167,6 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
         {error && (
           <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
             {error}
-          </p>
-        )}
-        {saved && (
-          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 

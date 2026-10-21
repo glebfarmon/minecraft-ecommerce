@@ -1,6 +1,7 @@
 import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setMarkdown} from '@/test/rich-field'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ProductEditor} from './product-editor'
@@ -256,6 +257,14 @@ describe('ProductEditor', () => {
       expect(sent).toMatchObject({version: 1, prices: {EUR: 549, PLN: null}})
     })
     expect(screen.getByLabelText('Price EUR')).toHaveValue('5,49')
+  })
+
+  it('confirms a saved product with a toast and shows no inline banner', async () => {
+    mockApi(() => Response.json({...draft, version: 2}))
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    fireEvent.change(await screen.findByLabelText('Price EUR'), {target: {value: '5,49'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await findToast()).toHaveTextContent('Saved. Live on the site within a minute.')
   })
 
   it('is read-only without catalog.write', async () => {

@@ -6,7 +6,9 @@
     "edit": "Edytuj",
     "back": "Wstecz",
     "loading": "Ładowanie…",
-    "retry": "Spróbuj ponownie"
+    "retry": "Spróbuj ponownie",
+    "copied": "Skopiowano: {label}",
+    "copyFailed": "Nie udało się skopiować: {label}"
   },
   "shell": {
     "language": "Język",
@@ -196,8 +198,11 @@
       "timeline": "Oś czasu",
       "created": "Utworzono",
       "paid": "Opłacono",
-      "now": "Teraz"
-    }
+      "now": "Teraz",
+      "emailLabel": "E-mail"
+    },
+    "orderNumberLabel": "Numer zamówienia",
+    "emailLabel": "E-mail"
   },
   "catalog": {
     "backToCatalog": "Wróć do katalogu",
@@ -327,7 +332,13 @@
     "descriptionIn": "Opis ({locale})",
     "grantCommands": "Polecenia nadania",
     "revokeCommands": "Polecenia odebrania",
-    "commandHint": "Jedno polecenie w wierszu, bez /."
+    "commandHint": "Jedno polecenie w wierszu, bez /.",
+    "serverCreated": "Serwer utworzony.",
+    "serverDeleted": "Serwer usunięty.",
+    "productCreated": "Produkt utworzony.",
+    "productDeleted": "Produkt usunięty.",
+    "categorySaved": "Kategoria zapisana.",
+    "categoryDeleted": "Kategoria usunięta."
   },
   "content": {
     "loadingRules": "Wczytywanie zasad…",
@@ -404,7 +415,9 @@
     "overrideFor": "Nadpisanie dla {key}",
     "rules": "Zasady",
     "texts": "Teksty",
-    "settings": "Ustawienia"
+    "settings": "Ustawienia",
+    "textSaved": "Tekst zapisany. Na stronie w ciągu minuty.",
+    "textReset": "Tekst przywrócony do domyślnego."
   },
   "team": {
     "couldNotLoadAdminsRefreshThe": "Nie udało się wczytać administratorów. Odśwież stronę.",
@@ -466,7 +479,14 @@
     "saveRole": "Zapisz rolę",
     "deleteRole": "Usuń rolę",
     "saveName": "Zapisz {name}",
-    "deleteName": "Usuń {name}"
+    "deleteName": "Usuń {name}",
+    "inviteRevoked": "Zaproszenie anulowane.",
+    "adminRemoved": "Administrator usunięty.",
+    "adminReset": "Uwierzytelnianie dwuskładnikowe zresetowane. Skonfigurują je przy następnym logowaniu.",
+    "adminRoleChanged": "Rola zmieniona. Administrator został wylogowany.",
+    "roleCreated": "Rola utworzona.",
+    "roleSaved": "Rola zapisana.",
+    "roleDeleted": "Rola usunięta."
   },
   "audit": {
     "auditLog": "Dziennik audytu",
@@ -545,5 +565,11 @@
     "italicHint": "Kursywa ⌘I",
     "underline": "Podkreślenie",
     "underlineHint": "Podkreślenie ⌘U"
+  },
+  "toast": {
+    "done": "Gotowe",
+    "error": "Błąd",
+    "dismiss": "Zamknij",
+    "notifications": "Powiadomienia"
   }
 }

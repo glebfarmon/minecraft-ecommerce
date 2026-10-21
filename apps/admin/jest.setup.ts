@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import {toast} from 'sonner'
 
 // Tests stub the network with jest.spyOn(global, 'fetch'); never leak a stub into the next test.
 afterEach(() => {
@@ -31,3 +32,8 @@ if (typeof Range !== 'undefined') {
   Range.prototype.getBoundingClientRect = () => rect
   document.elementFromPoint = () => null
 }
+
+// Toasts live in a module-level store; one test's toast must not appear in the next test's toaster.
+afterEach(() => {
+  toast.dismiss()
+})

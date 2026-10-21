@@ -1,4 +1,5 @@
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {ServerEditor} from './server-editor'
@@ -70,6 +71,16 @@ describe('ServerEditor', () => {
     await waitFor(() => {
       expect(sent).toMatchObject({name: 'Survival+', version: 4})
     })
+    expect(await findToast()).toHaveTextContent('Saved. Live on the site within a minute.')
+  })
+
+  it('shows a refused save other than 409 as an error toast', async () => {
+    mockApi(() => Response.json({statusCode: 403, message: 'forbidden'}, {status: 403}))
+    renderWithStore(<ServerEditor id="s1" canEdit canRcon={false} />)
+    fireEvent.change(await screen.findByLabelText('Name'), {target: {value: 'Survival+'}})
+    fireEvent.click(screen.getByRole('button', {name: 'Save'}))
+    expect(await findToast('alert')).toHaveTextContent('Error')
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
   })
 
   it('sends the loaded version on every Save after a 409', async () => {

@@ -1,5 +1,6 @@
 import {useListCatalogProductsQuery} from '@/lib/api/generated'
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -129,6 +130,7 @@ describe('CategoriesTable', () => {
     await waitFor(() => {
       expect(methods).toContain('DELETE')
     })
+    expect(await findToast()).toHaveTextContent('Category deleted.')
   })
 
   it('initialEdit opens the edit form for that category', async () => {

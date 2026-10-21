@@ -2,9 +2,11 @@
 
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
+import {notify} from '@/components/toaster'
 import {RoleNameSchema} from '@/features/team/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useDeleteApiAdminRolesByIdMutation,
   useGetApiAdminRolesQuery,
@@ -43,7 +45,6 @@ export function RolesMatrix({
 }) {
   const t = useTranslations('team')
   const errorText = useErrorText()
-  const apiError = useApiError()
   const roles = useGetApiAdminRolesQuery()
   const [createRole, {isLoading: creating}] = usePostApiAdminRolesMutation()
   const [updateRole] = usePatchApiAdminRolesByIdMutation()
@@ -52,6 +53,7 @@ export function RolesMatrix({
   const [newPermissions, setNewPermissions] = useState<Permission[]>([])
   const [confirming, setConfirming] = useState<{id: string; kind: 'save' | 'delete'} | null>(null)
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
 
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(RoleNameSchema),
@@ -62,15 +64,16 @@ export function RolesMatrix({
   if (roles.isLoading) return <p>{t('loadingRoles')}</p>
   if (roles.isError) return <p role="alert">{t('couldNotLoadRolesRefreshThe')}</p>
 
-  async function run(action: Promise<{error?: unknown}>) {
+  async function run(action: Promise<{error?: unknown}>, done: string) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiError(result.error))
+    if (result.error) report(result.error)
+    else notify.ok(done)
     return !result.error
   }
 
   const onCreate = handleSubmit(async ({name}) => {
-    const ok = await run(createRole({body: {name, permissions: newPermissions}}))
+    const ok = await run(createRole({body: {name, permissions: newPermissions}}), t('roleCreated'))
     if (ok) {
       reset()
       setNewPermissions([])
@@ -137,14 +140,15 @@ export function RolesMatrix({
                               onClick={() => {
                                 setConfirming(null)
                                 if (confirming.kind === 'delete') {
-                                  void run(deleteRole({id: role.id}))
+                                  void run(deleteRole({id: role.id}), t('roleDeleted'))
                                   return
                                 }
                                 void run(
                                   updateRole({
                                     id: role.id,
                                     body: {name: role.name, permissions: draft}
-                                  })
+                                  }),
+                                  t('roleSaved')
                                 ).then(ok => {
                                   if (ok)
                                     setDrafts(d =>

@@ -1,9 +1,9 @@
 'use client'
 
+import {notify} from '@/components/toaster'
 import {editionDate} from '@/features/content/lib/edition-date'
 import {RESTORE_RULES_KEY} from '@/features/content/lib/rules-form'
 import {useApiError} from '@/hooks/use-error-text'
-import {useMessage} from '@/hooks/use-message'
 import {
   type ListRulesVersionsApiResponse,
   useListRulesVersionsQuery,
@@ -26,15 +26,11 @@ export function VersionsList() {
   const [restore, {isLoading: restoring}] = useRestoreRulesVersionMutation({
     fixedCacheKey: RESTORE_RULES_KEY
   })
-  const [error, setError] = useMessage()
-  const [restored, setRestored] = useState(false)
 
   async function onRestore(id: number) {
-    setError(null)
-    setRestored(false)
     const result = await restore({id: String(id)})
-    if (result.error) setError(apiError(result.error))
-    else setRestored(true)
+    if (result.error) notify.error(apiError(result.error))
+    else notify.ok(t('restoredToTheDraftAbovePublish'))
   }
 
   return (
@@ -44,16 +40,6 @@ export function VersionsList() {
       <h2 id="rules-versions" className="text-[15px] font-semibold">
         {t('publishedEditions')}
       </h2>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      {restored && (
-        <p role="status" className="text-sm">
-          {t('restoredToTheDraftAbovePublish')}
-        </p>
-      )}
       {first.isLoading && <p className="text-[13px] text-muted">{t('loadingEditions')}</p>}
       {first.isError && <p role="alert">{t('couldNotLoadTheEditionsRefresh')}</p>}
       {first.data?.versions.length === 0 && (

@@ -3,8 +3,8 @@
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
-import {useApiError} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   type ListCatalogProductsApiResponse,
   type ListCatalogServersApiResponse,
@@ -86,7 +86,6 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
 
 function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
   const t = useTranslations('catalog')
-  const apiError = useApiError()
   const [setCategories] = useSetCatalogServerCategoriesMutation()
   const allCategories = useListCatalogCategoriesQuery()
   const products = useListCatalogProductsQuery({serverId: server.id})
@@ -94,6 +93,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
     setCategories({id: server.id, body: {categoryIds, base}})
   )
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
   const [attach, setAttach] = useState('')
 
   /** Attach or detach, starting from the list as shown; the API refuses it if that is out of date. */
@@ -103,7 +103,7 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
       id: server.id,
       body: {categoryIds: ids, base: categories.base}
     })
-    if (result.error) setError(apiError(result.error))
+    if (result.error) report(result.error)
   }
 
   const unattached = (allCategories.data ?? []).filter(

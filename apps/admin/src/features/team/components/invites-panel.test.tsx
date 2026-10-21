@@ -1,5 +1,6 @@
 import {renderWithProviders} from '@/test/render-with-providers'
 import {renderWithStore} from '@/test/render-with-store'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -135,6 +136,7 @@ describe('InvitesPanel', () => {
     expect(req.method).toBe('POST')
     expect(req.url).toMatch(/\/api\/admin\/invites$/)
     expect(await req.clone().json()).toEqual({email: 'new@x.io', roleId: 'r2'})
+    expect(await findToast()).toHaveTextContent('Invite sent to new@x.io.')
   })
 
   it('does not offer OWNER as an invite role', async () => {
@@ -153,6 +155,7 @@ describe('InvitesPanel', () => {
     const req = await mutation(fetchMock)
     expect(req.method).toBe('POST')
     expect(req.url).toMatch(/\/api\/admin\/invites\/i1\/resend$/)
+    expect(await findToast()).toHaveTextContent('Invite re-sent to open@x.io.')
   })
 
   it('sends nothing on Revoke until confirmed and offers to keep the invite', async () => {
@@ -183,7 +186,7 @@ describe('InvitesPanel', () => {
     mockApi({status: 503, message: 'mail_failed'})
     renderWithStore(<InvitesPanel />)
     await choose('open@x.io', 'Resend')
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Use Resend/)
+    expect(await findToast('alert')).toHaveTextContent(/Use Resend/)
   })
 
   it('shows an empty state without invites', async () => {

@@ -5,6 +5,7 @@ import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
+import {notify} from '@/components/toaster'
 import {useApiError} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
 import {
@@ -135,13 +136,17 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
     setError(null)
     const result = await set({locale, key: message.key, body: {value: draft}})
     if (result.error) setError(apiError(result.error))
+    else notify.ok(t('textSaved'))
   }
 
   async function onReset() {
     setError(null)
     const result = await reset({locale, key: message.key})
     if (result.error) setError(apiError(result.error))
-    else setDraft('')
+    else {
+      setDraft('')
+      notify.ok(t('textReset'))
+    }
   }
 
   return (

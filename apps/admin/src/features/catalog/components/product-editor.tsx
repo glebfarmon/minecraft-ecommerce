@@ -3,6 +3,7 @@
 import {FormSection} from '@/components/form-section'
 import {RichTextField} from '@/components/rich-text/rich-text-field'
 import {SkeletonRows} from '@/components/skeleton'
+import {notify} from '@/components/toaster'
 import {SectionsEditor} from '@/features/catalog/components/sections-editor'
 import {
   emptyProductForm,
@@ -11,8 +12,9 @@ import {
   productToForm
 } from '@/features/catalog/lib/product-form'
 import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   useCreateCatalogProductMutation,
   useDeleteCatalogProductMutation,
@@ -67,7 +69,6 @@ type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: bool
 export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
-  const apiError = useApiError()
   const router = useRouter()
   const product = useGetCatalogProductQuery({id: id ?? ''}, {skip: !id})
   const servers = useListCatalogServersQuery()
@@ -75,7 +76,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const [update, {isLoading: updating}] = useUpdateCatalogProductMutation()
   const [remove, {isLoading: removing}] = useDeleteCatalogProductMutation()
   const [error, setError] = useMessage()
-  const [saved, setSaved] = useState(false)
+  const report = useReportError(setError)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [tab, setTab] = useState<'en' | 'pl'>('en')
   // Set when Save is refused because the product is enabled but incomplete.
@@ -133,24 +134,26 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
 
   async function save(v: ProductForm) {
     setError(null)
-    setSaved(false)
     const blocked = v.isActive && missingForActive(formToCreate(v)).length > 0
     setBlockedActive(blocked)
     if (blocked) return
     if (!id) {
       const result = await create({body: formToCreate(v)})
-      if (result.error) setError(apiError(result.error))
-      else router.replace(`/catalog/products/${result.data.id}`)
+      if (result.error) report(result.error)
+      else {
+        notify.ok(t('productCreated'))
+        router.replace(`/catalog/products/${result.data.id}`)
+      }
       return
     }
     if (version.current === null) return
     const result = await update({id, body: formToUpdate(v, version.current)})
     if (result.error) {
-      setError(apiError(result.error))
+      report(result.error)
       return
     }
     version.current = result.data.version
-    setSaved(true)
+    notify.ok(t('savedLiveOnTheSiteWithin'))
   }
 
   async function onDelete() {
@@ -158,8 +161,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
     setError(null)
     setConfirmDelete(false)
     const result = await remove({id, version: String(version.current)})
-    if (result.error) setError(apiError(result.error))
-    else router.push('/catalog')
+    if (result.error) report(result.error)
+    else {
+      notify.ok(t('productDeleted'))
+      router.push('/catalog')
+    }
   }
 
   const errorOf = (name: FieldPath<ProductForm>) =>
@@ -238,11 +244,6 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
         {error && (
           <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
             {error}
-          </p>
-        )}
-        {saved && (
-          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 

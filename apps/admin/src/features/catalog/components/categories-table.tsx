@@ -4,9 +4,11 @@ import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
 import {SkeletonRows} from '@/components/skeleton'
+import {notify} from '@/components/toaster'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
-import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
+import {useReportError} from '@/hooks/use-report-error'
 import {
   type ListCatalogCategoriesApiResponse,
   useCreateCatalogCategoryMutation,
@@ -38,7 +40,6 @@ import {ProductIcon} from './product-icon'
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
 export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
   const t = useTranslations('catalog')
-  const apiError = useApiError()
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
   const [update] = useUpdateCatalogCategoryMutation()
@@ -46,6 +47,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   const [editing, setEditing] = useState<string | null>(initialEdit ?? null)
   const [confirming, setConfirming] = useState<string | null>(null)
   const [error, setError] = useMessage()
+  const report = useReportError(setError)
   const {register, handleSubmit, control, reset} = useForm({
     resolver: valibotResolver(CategoryFormSchema),
     defaultValues: {slug: '', en: '', pl: '', icon: 'crown' as const}
@@ -60,16 +62,17 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       </p>
     )
 
-  async function run(action: Promise<{error?: unknown}>) {
+  async function run(action: Promise<{error?: unknown}>, done: string) {
     setError(null)
     const result = await action
-    if (result.error) setError(apiError(result.error))
+    if (result.error) report(result.error)
+    else notify.ok(done)
     return !result.error
   }
 
   const onCreate = handleSubmit(async values => {
     const body = {slug: values.slug, names: {en: values.en, pl: values.pl}, icon: values.icon}
-    if (await run(create({body}))) reset()
+    if (await run(create({body}), t('categorySaved'))) reset()
   })
 
   const list = categories.data ?? []
@@ -113,7 +116,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
                     icon: values.icon,
                     version: editingCategory.version
                   }
-                })
+                }),
+                t('categorySaved')
               )
             )
               setEditing(null)
@@ -128,7 +132,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
             onClick={() => {
               setConfirming(null)
               void run(
-                remove({id: confirmingCategory.id, version: String(confirmingCategory.version)})
+                remove({id: confirmingCategory.id, version: String(confirmingCategory.version)}),
+                t('categoryDeleted')
               )
             }}>
             {t('confirmDelete')}

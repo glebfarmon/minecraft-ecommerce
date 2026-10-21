@@ -1,5 +1,6 @@
 import {renderWithStore} from '@/test/render-with-store'
 import {markdownOf, setLink, setMarkdown} from '@/test/rich-field'
+import {findToast} from '@/test/toast'
 import {fireEvent, screen, waitFor, within} from '@testing-library/react'
 
 import {RulesEditor} from './rules-editor'
@@ -63,6 +64,22 @@ describe('RulesEditor', () => {
       expect(saveBody(s).revision).toBe(4)
       expect(saveBody(s).content.sections[0]?.items[0]?.text.en).toBe('Be very **kind**.')
     }
+  })
+
+  it('confirms a saved draft with a toast, not an inline banner', async () => {
+    mockApi(() => Response.json({...draft, revision: 5}))
+    renderWithStore(<RulesEditor />)
+    setMarkdown(await screen.findByLabelText('Rule 1.1 (EN)'), 'Be very **kind**.')
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    expect(await findToast()).toHaveTextContent('Draft saved')
+  })
+
+  it('shows a refused save other than 409 as an error toast', async () => {
+    mockApi(() => Response.json({statusCode: 500, message: 'boom'}, {status: 500}))
+    renderWithStore(<RulesEditor />)
+    setMarkdown(await screen.findByLabelText('Rule 1.1 (EN)'), 'Be very **kind**.')
+    fireEvent.click(screen.getByRole('button', {name: 'Save draft'}))
+    expect(await findToast('alert')).toHaveTextContent('Something went wrong')
   })
 
   it('locks the fields while a save is running, so typing is not lost to the reload', async () => {
@@ -173,10 +190,9 @@ describe('RulesEditor', () => {
     expect(screen.getByText(`Publish as the edition of ${today}?`)).toBeInTheDocument()
     expect(sent).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', {name: 'Publish now'}))
-    // dnd-kit adds its own live regions, so find our status by its text.
-    expect(
-      await screen.findByText('Published. Visible on the site within about a minute.')
-    ).toHaveAttribute('role', 'status')
+    expect(await findToast()).toHaveTextContent(
+      'Published. Visible on the site within about a minute.'
+    )
     // The revision the editor loaded: the API refuses it if someone saved since (409 stale).
     expect(sent).toEqual([
       {method: 'POST', path: '/api/admin/content/rules/publish', body: {revision: 4}}

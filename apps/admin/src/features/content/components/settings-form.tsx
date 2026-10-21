@@ -2,13 +2,14 @@
 
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
+import {notify} from '@/components/toaster'
 import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/content/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
 import {useMessage} from '@/hooks/use-message'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
 import {useTranslations} from 'next-intl'
-import {type ReactNode, useEffect, useRef, useState} from 'react'
+import {type ReactNode, useEffect, useRef} from 'react'
 import {type FieldPath, useForm, useFormState, useWatch} from 'react-hook-form'
 
 import {Button} from '@shop/ui/button'
@@ -24,7 +25,6 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
   const settings = useGetContentSettingsQuery()
   const [update, {isLoading: saving}] = useUpdateContentSettingsMutation()
   const [error, setError] = useMessage()
-  const [saved, setSaved] = useState(false)
 
   const form = useForm<SettingsForm>({
     resolver: valibotResolver(SettingsFormSchema),
@@ -52,15 +52,16 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
 
   async function save(v: SettingsForm) {
     setError(null)
-    setSaved(false)
     if (version.current === null) return
     const result = await update({body: {...toSettings(v), version: version.current}})
     if (result.error) {
-      setError(apiError(result.error))
+      // A 409 belongs next to the form; any other refusal is a transient toast.
+      if ((result.error as {status?: unknown}).status === 409) setError(apiError(result.error))
+      else notify.error(apiError(result.error))
       return
     }
     version.current = result.data.version
-    setSaved(true)
+    notify.ok(t('savedLiveOnTheSiteWithin'))
   }
 
   const errorOf = (name: FieldPath<SettingsForm>) => errorText(errors[name]?.message)
@@ -79,11 +80,6 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
         {error && (
           <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
             {error}
-          </p>
-        )}
-        {saved && (
-          <p role="status" className="rounded-plate bg-ok-soft px-4 py-3 text-ok">
-            {t('savedLiveOnTheSiteWithin')}
           </p>
         )}
 
