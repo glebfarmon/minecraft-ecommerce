@@ -348,6 +348,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
   permissions: (
@@ -358,6 +359,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -489,6 +491,7 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -504,6 +507,7 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -517,6 +521,7 @@ export type PostApiAdminRolesApiArg = {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
 }
@@ -532,6 +537,7 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -546,6 +552,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
 }
@@ -1450,6 +1457,9 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   nick: string
   email: string
   currency: 'EUR' | 'PLN'
+  subtotalMinor: number
+  discountMinor: number
+  promoCode: string | null
   totalMinor: number
   servers: {
     serverName: string
@@ -1466,8 +1476,6 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
   deliveryConsentAt: string
-  subtotalMinor: number
-  discountMinor: number
 }
 export type GetAdminOrderApiArg = {
   id: string
