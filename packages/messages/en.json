@@ -43,8 +43,20 @@
     },
     "promo": {
       "toggle": "Have a promo code?",
-      "label": "Promo code (optional)",
-      "hint": "We check it when you pay."
+      "label": "Promo code",
+      "apply": "Apply",
+      "remove": "Remove promo code {code}",
+      "discount": "Discount",
+      "reasons": {
+        "not_found": "We don't know this code. Check the spelling.",
+        "not_started": "This code isn't active yet.",
+        "expired": "This code has expired.",
+        "used_up": "This code has been used up.",
+        "not_applicable": "This code doesn't apply to the items in your cart.",
+        "wrong_currency": "This code works in another currency. Switch the currency or remove the code.",
+        "network": "Couldn't check the code. Try again.",
+        "rate_limited": "Too many tries. Wait a minute and try again."
+      }
     },
     "delivery": "I agree to immediate delivery and understand that I lose my right of withdrawal once the items are delivered.",
     "terms": "I accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>.",

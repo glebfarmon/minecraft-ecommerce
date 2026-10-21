@@ -56,6 +56,15 @@ describe('createOrder', () => {
     })
   })
 
+  it('maps a promo failure on 409 to promo with the reason', async () => {
+    const fetchFn = reply(409, {statusCode: 409, message: 'promo', issues: {reason: 'used_up'}})
+    expect(await createOrder({...body, promoCode: 'ASF14'}, fetchFn)).toEqual({
+      ok: false,
+      error: 'promo',
+      reason: 'used_up'
+    })
+  })
+
   it('maps a failed captcha on 400 to turnstile', async () => {
     const result = await createOrder(body, reply(400, {message: 'turnstile_failed'}))
     expect(result).toEqual({ok: false, error: 'turnstile'})

@@ -43,8 +43,20 @@
     },
     "promo": {
       "toggle": "Masz kod promocyjny?",
-      "label": "Kod promocyjny (opcjonalnie)",
-      "hint": "Sprawdzimy go przy płatności."
+      "label": "Kod promocyjny",
+      "apply": "Zastosuj",
+      "remove": "Usuń kod promocyjny {code}",
+      "discount": "Rabat",
+      "reasons": {
+        "not_found": "Nie znamy tego kodu. Sprawdź pisownię.",
+        "not_started": "Ten kod jeszcze nie działa.",
+        "expired": "Ten kod wygasł.",
+        "used_up": "Ten kod został już wykorzystany.",
+        "not_applicable": "Ten kod nie obejmuje produktów w Twoim koszyku.",
+        "wrong_currency": "Ten kod działa w innej walucie. Zmień walutę lub usuń kod.",
+        "network": "Nie udało się sprawdzić kodu. Spróbuj ponownie.",
+        "rate_limited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie."
+      }
     },
     "delivery": "Chcę natychmiastowej dostawy i wiem, że po jej wykonaniu tracę prawo do odstąpienia od zakupu.",
     "terms": "Akceptuję <terms>Regulamin</terms> i <privacy>Politykę prywatności</privacy>.",
