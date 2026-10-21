@@ -5,7 +5,7 @@ import {DataTable} from '@/components/data-table'
 import {DayChart} from '@/components/day-chart'
 import {EmptyState} from '@/components/empty-state'
 import {KpiCard} from '@/components/kpi-card'
-import {Skeleton, SkeletonRows} from '@/components/skeleton'
+import {Skeleton, SkeletonRows, SkeletonStatus} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
@@ -207,18 +207,28 @@ function LatestOrders() {
 function Loading() {
   const t = useTranslations('dashboard')
   return (
-    <div role="status" className="grid gap-4">
-      <span className="sr-only">{t('loadingStats')}</span>
+    <SkeletonStatus label={t('loadingStats')} className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({length: 5}, (_, i) => (
-          <Skeleton key={i} className="h-36 rounded-card" />
+          <div key={i} className="flex h-36 flex-col justify-between rounded-card bg-card p-5">
+            <Skeleton className="h-3 w-2/5 rounded-full" />
+            <Skeleton className="h-8 w-3/5" />
+          </div>
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <Skeleton className="h-64 rounded-card" />
-        <Skeleton className="h-64 rounded-card" />
+        <div className="flex h-64 flex-col gap-4 rounded-card bg-card p-5">
+          <Skeleton className="h-3 w-1/4 rounded-full" />
+          <Skeleton className="flex-1" />
+        </div>
+        <div className="flex h-64 flex-col gap-3 rounded-card bg-card p-5">
+          <Skeleton className="h-3 w-1/3 rounded-full" />
+          {Array.from({length: 4}, (_, i) => (
+            <Skeleton key={i} className="h-8" />
+          ))}
+        </div>
       </div>
-    </div>
+    </SkeletonStatus>
   )
 }
 

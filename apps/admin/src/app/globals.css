@@ -149,6 +149,28 @@ body {
   }
 }
 
+/* Skeletons: a slow diagonal sweep over the raised card ground (motion always runs, DESIGN.md). */
+.skeleton {
+  background-color: var(--color-card-raised);
+  background-image: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.06) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
 /* Charts: bars grow from the baseline, sparklines draw left to right. */
 .bar-grow {
   transform-box: fill-box;

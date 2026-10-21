@@ -1,5 +1,5 @@
 import {renderWithIntl as render} from '@/test/render-with-providers'
-import {screen} from '@testing-library/react'
+import {act, screen} from '@testing-library/react'
 import {Inbox} from 'lucide-react'
 
 import {Card} from './card'
@@ -43,6 +43,20 @@ describe('layout components', () => {
   it('SkeletonRows is hidden from assistive tech and announces loading once', () => {
     render(<SkeletonRows rows={3} />)
     expect(screen.getByRole('status')).toHaveTextContent('Loading…')
+  })
+
+  it('SkeletonRows draws its blocks only after the show delay', () => {
+    jest.useFakeTimers()
+    try {
+      const {container} = render(<SkeletonRows rows={3} />)
+      expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
+      act(() => {
+        jest.advanceTimersByTime(200)
+      })
+      expect(container.querySelectorAll('.skeleton')).toHaveLength(3)
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('FormSection groups fields under a heading', () => {
