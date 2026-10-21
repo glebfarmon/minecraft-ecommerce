@@ -477,7 +477,6 @@
     "details": "Details",
     "beforeAfter": "Before / after",
     "nothingLoggedYet": "Nothing logged yet.",
-    "loadMore": "Load more",
     "actionStartsWith": "Action starts with",
     "role": "role.",
     "from": "From",
@@ -486,7 +485,12 @@
     "whoChangedWhatNewestFirst": "Who changed what, newest first.",
     "forbidden": "You do not have permission to read the audit log.",
     "loadFailed": "Could not load the audit log. Try again.",
-    "system": "System"
+    "system": "System",
+    "pager": "Pages",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "page": "Page {n}",
+    "anyone": "Anyone"
   },
   "auth": {
     "backupCodes": "Backup codes",

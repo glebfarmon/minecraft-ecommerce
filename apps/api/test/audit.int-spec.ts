@@ -58,6 +58,38 @@ describe('audit log', () => {
     expect(text).not.toMatch(/otpauth:|"otp":"\d|backupCodes":\[|"secret":"[^[]/)
   })
 
+  it('walks 120 rows in keyset pages, each id exactly once, and filters by actor', async () => {
+    const admin = await signInAdmin(app, prisma, 'pat@example.com', 'ADMIN')
+    const actor = await prisma.user.findUniqueOrThrow({where: {email: 'pat@example.com'}})
+    const base = Date.now() + 3_600_000
+    await prisma.auditLog.createMany({
+      data: Array.from({length: 120}, (_, i) => ({
+        actorId: actor.id,
+        action: 'paging.test',
+        ip: '10.0.0.9',
+        // Pairs share a timestamp, so the id tiebreak is exercised.
+        createdAt: new Date(base - Math.floor(i / 2) * 1000)
+      }))
+    })
+    type Page = {entries: {id: string; actor: {id: string} | null}[]; nextCursor: string | null}
+    const ids: string[] = []
+    let cursor: string | null = null
+    let pages = 0
+    do {
+      const res: {body: Page} = await admin
+        .get('/api/admin/audit')
+        .query({actorId: actor.id, action: 'paging.', ...(cursor ? {cursor} : {})})
+        .expect(200)
+      ids.push(...res.body.entries.map(e => e.id))
+      expect(res.body.entries.every(e => e.actor?.id === actor.id)).toBe(true)
+      cursor = res.body.nextCursor
+      pages++
+    } while (cursor)
+    expect(pages).toBe(3)
+    expect(ids).toHaveLength(120)
+    expect(new Set(ids).size).toBe(120)
+  })
+
   it('forbids the log to a role without audit.read', async () => {
     const support = await signInAdmin(app, prisma, 'sue@example.com', 'SUPPORT')
     await support.get('/api/admin/audit').expect(403)

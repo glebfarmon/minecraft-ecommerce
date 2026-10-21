@@ -260,6 +260,10 @@ model AuditLog {
 
   @@index([createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])
+  // Action prefix filter (LIKE 'x%'). The migration creates it with the text_pattern_ops operator
+  // class (needed for prefix LIKE under non-C collations). Prisma's `ops: raw(...)` is not read back
+  // from the database, so it would report drift; the plain declaration here matches without it.
+  @@index([action, createdAt(sort: Desc)])
   @@map("audit_logs")
 }
 

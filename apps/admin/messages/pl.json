@@ -477,7 +477,6 @@
     "details": "Szczegóły",
     "beforeAfter": "Przed / po",
     "nothingLoggedYet": "Nic jeszcze nie zapisano.",
-    "loadMore": "Wczytaj więcej",
     "actionStartsWith": "Akcja zaczyna się od",
     "role": "role.",
     "from": "Od",
@@ -486,7 +485,12 @@
     "whoChangedWhatNewestFirst": "Kto co zmienił, od najnowszych.",
     "forbidden": "Nie masz uprawnień do przeglądania dziennika audytu.",
     "loadFailed": "Nie udało się wczytać dziennika audytu. Spróbuj ponownie.",
-    "system": "System"
+    "system": "System",
+    "pager": "Strony",
+    "previousPage": "Poprzednia strona",
+    "nextPage": "Następna strona",
+    "page": "Strona {n}",
+    "anyone": "Ktokolwiek"
   },
   "auth": {
     "backupCodes": "Kody zapasowe",
