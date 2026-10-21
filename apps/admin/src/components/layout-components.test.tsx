@@ -35,6 +35,14 @@ describe('layout components', () => {
     expect(screen.getByText('All orders, newest first.')).toBeInTheDocument()
   })
 
+  it('PageHeader renders the back link before the title', () => {
+    render(<PageHeader title="Order" back={{href: '/orders', label: 'Back to orders'}} />)
+    const link = screen.getByRole('link', {name: 'Back to orders'})
+    const h1 = screen.getByRole('heading', {level: 1})
+    expect(link).toHaveAttribute('href', '/orders')
+    expect(link.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('EmptyState shows its sentence and action', () => {
     render(<EmptyState icon={Inbox} title="No orders yet." action={<a href="/x">Open shop</a>} />)
     expect(screen.getByText('No orders yet.')).toBeInTheDocument()
