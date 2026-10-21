@@ -408,6 +408,44 @@ test('the owner switches sub-navs, opens editors from pencils and the preview fo
   await expect(page).toHaveURL(/\/catalog\/servers\/\w+$/)
 })
 
+test('the rail marks a clicked page at once and its pill stays put inside a section', async ({
+  page
+}) => {
+  await signInOwner(page)
+  const rail = page.getByRole('navigation', {name: 'Admin'})
+  const pill = page.locator('aside [data-slot=rolling-indicator]')
+
+  // A slow server: every RSC request (prefetch or navigation) answers after 1.5 s.
+  await page.route('**/*', async route => {
+    if (route.request().headers().rsc === '1') await new Promise(r => setTimeout(r, 1500))
+    await route.fallback()
+  })
+  const orders = rail.getByRole('link', {name: 'Orders'})
+  await orders.click()
+  await expect(orders).toHaveAttribute('aria-current', 'page', {timeout: 300})
+  await expect(orders.locator('[data-slot=rolling-indicator]')).toHaveCount(1, {timeout: 300})
+  await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
+  await page.unrouteAll({behavior: 'wait'})
+
+  // Catalog → product: the page scrolls to the top, the sticky rail does not move, nor its pill.
+  await page.setViewportSize({width: 1280, height: 480})
+  await page.goto(`${ADMIN}/catalog`)
+  const vip = page.getByRole('list', {name: 'Products in Ranks'}).getByRole('link', {name: 'VIP'})
+  await expect(vip).toBeVisible()
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight)
+  })
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  await expect(vip).toBeInViewport()
+  const top = () => pill.evaluate(el => Math.round(el.getBoundingClientRect().top))
+  const before = await top()
+  await vip.click()
+  await page.waitForTimeout(100)
+  expect(await top()).toBe(before)
+  await expect(page).toHaveURL(/\/catalog\/products\/\w+$/)
+  expect(await top()).toBe(before)
+})
+
 test('the owner switches the admin to Polish, it persists and the 390 px layout holds', async ({
   page
 }) => {

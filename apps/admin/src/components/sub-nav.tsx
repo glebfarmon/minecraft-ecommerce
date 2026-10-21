@@ -1,9 +1,9 @@
 'use client'
 
+import {usePendingHref} from '@/hooks/use-pending-href'
 import {LayoutGroup} from 'motion/react'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
-import {useState} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
 import {PILL_FOCUS} from '@shop/ui/pill-focus'
@@ -25,12 +25,7 @@ function matching(items: Item[], pathname: string) {
  */
 export function SubNav({label, items}: {label: string; items: Item[]}) {
   const pathname = usePathname()
-  const [pending, setPending] = useState<string | null>(null)
-  const [seenPath, setSeenPath] = useState(pathname)
-  if (seenPath !== pathname) {
-    setSeenPath(pathname)
-    setPending(null)
-  }
+  const {pending, mark} = usePendingHref(pathname)
   const current = pending ?? matching(items, pathname)
 
   return (
@@ -41,10 +36,7 @@ export function SubNav({label, items}: {label: string; items: Item[]}) {
             key={i.href}
             href={i.href}
             aria-current={i.href === current ? 'page' : undefined}
-            onClick={e => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-              setPending(i.href)
-            }}
+            onClick={mark(i.href)}
             className={cn(
               'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg aria-[current=page]:text-fg',
               PILL_FOCUS

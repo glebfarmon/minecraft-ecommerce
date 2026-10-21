@@ -1,5 +1,5 @@
 import {renderWithIntl} from '@/test/render-with-providers'
-import {screen} from '@testing-library/react'
+import {fireEvent, screen} from '@testing-library/react'
 import type {ReactElement} from 'react'
 
 import {TooltipProvider} from '@shop/ui/tooltip'
@@ -21,6 +21,9 @@ const me = (permissions: string[]) =>
   }) as never
 
 describe('Nav', () => {
+  beforeEach(() => {
+    mockPath = '/team'
+  })
   it('shows only sections the admin may open', () => {
     render(<Nav me={me(['admin.invite'])} variant="rail" />)
     expect(screen.getByRole('link', {name: 'Team'})).toHaveAttribute('aria-current', 'page')
@@ -68,6 +71,28 @@ describe('Nav', () => {
     expect(cls).not.toContain('ring-accent')
     expect(cls).toContain('focus-visible:after:z-10')
     expect(cls).toContain('focus-visible:after:ring-fg/40')
+  })
+  it('a click moves the current mark and the indicator before the path changes', () => {
+    mockPath = '/'
+    render(<Nav me={me(['order.read'])} variant="rail" />)
+    const orders = screen.getByRole('link', {name: 'Orders'})
+    fireEvent.click(orders)
+    expect(orders).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', {name: 'Home'})).not.toHaveAttribute('aria-current')
+    expect(orders.querySelector('[data-slot=rolling-indicator]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-slot=rolling-indicator]')).toHaveLength(1)
+  })
+  it('a click still calls onNavigate (the sheet closes)', () => {
+    const onNavigate = jest.fn()
+    render(<Nav me={me([])} variant="sheet" onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByRole('link', {name: 'Catalog'}))
+    expect(onNavigate).toHaveBeenCalledTimes(1)
+  })
+  it('a ctrl-click leaves the current mark where it is', () => {
+    mockPath = '/'
+    render(<Nav me={me(['order.read'])} variant="rail" />)
+    fireEvent.click(screen.getByRole('link', {name: 'Orders'}), {ctrlKey: true})
+    expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute('aria-current', 'page')
   })
   it('sheet links use the same focus layer', () => {
     render(<Nav me={me([])} variant="sheet" />)
