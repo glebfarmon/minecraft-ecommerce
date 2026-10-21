@@ -4,6 +4,7 @@ import {DataTable} from '@/components/data-table'
 import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -42,7 +43,8 @@ export function AdminsTable({
   const [error, setError] = useMessage()
   const report = useReportError(setError)
 
-  if (admins.isLoading) return <SkeletonRows rows={3} />
+  const loadingHeld = useHoldLoading(admins.isLoading)
+  if (loadingHeld) return <SkeletonRows rows={3} />
   if (admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>
 
   const assignable = (roles.data ?? []).filter(

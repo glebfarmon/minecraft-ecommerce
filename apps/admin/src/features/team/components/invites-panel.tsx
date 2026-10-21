@@ -8,6 +8,7 @@ import {type Tone, ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
 import {InviteFormSchema} from '@/features/team/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -51,6 +52,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
   const uiLocale = useLocale()
   const errorText = useErrorText()
   const invites = useGetApiAdminInvitesQuery()
+  const loadingHeld = useHoldLoading(invites.isLoading)
   const roles = useGetApiAdminRolesQuery()
   const [create, {isLoading: creating}] = usePostApiAdminInvitesMutation()
   const [resend] = usePostApiAdminInvitesByIdResendMutation()
@@ -151,7 +153,7 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
           </div>
         </div>
       )}
-      {invites.isLoading && <SkeletonRows rows={3} />}
+      {loadingHeld && <SkeletonRows rows={3} />}
       {invites.isError && (
         <p role="alert" className="rounded-card bg-card p-5">
           {t('couldNotLoadInvitesRefreshThe')}

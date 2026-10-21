@@ -1,3 +1,4 @@
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {renderWithIntl as render} from '@/test/render-with-providers'
 import {act, screen} from '@testing-library/react'
 import {Inbox} from 'lucide-react'
@@ -70,5 +71,49 @@ describe('layout components', () => {
     expect(screen.getByRole('group', {name: 'Prices'})).toContainElement(
       screen.getByLabelText('EUR')
     )
+  })
+})
+
+function Consumer({loading}: {loading: boolean}) {
+  const held = useHoldLoading(loading)
+  return held ? <SkeletonRows rows={2} /> : <p>data</p>
+}
+
+describe('skeleton hold', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('keeps the skeleton until 600 ms when the load ends at 250 ms', () => {
+    const {container, rerender} = render(<Consumer loading />)
+    act(() => {
+      jest.advanceTimersByTime(250)
+    })
+    expect(container.querySelectorAll('.skeleton')).toHaveLength(2)
+    rerender(<Consumer loading={false} />)
+    expect(container.querySelectorAll('.skeleton')).toHaveLength(2)
+    act(() => {
+      jest.advanceTimersByTime(349)
+    })
+    expect(screen.queryByText('data')).not.toBeInTheDocument()
+    act(() => {
+      jest.advanceTimersByTime(1)
+    })
+    expect(screen.getByText('data')).toBeInTheDocument()
+    expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
+  })
+
+  it('shows data at 150 ms without ever drawing blocks', () => {
+    const {container, rerender} = render(<Consumer loading />)
+    act(() => {
+      jest.advanceTimersByTime(150)
+    })
+    expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
+    rerender(<Consumer loading={false} />)
+    expect(screen.getByText('data')).toBeInTheDocument()
+    expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
   })
 })

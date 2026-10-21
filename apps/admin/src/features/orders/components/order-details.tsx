@@ -6,6 +6,7 @@ import {PageHeader} from '@/components/page-header'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useGetAdminOrderQuery} from '@/lib/api/generated'
 import {copyText} from '@/lib/copy'
 import {ArrowLeft, Copy} from 'lucide-react'
@@ -47,7 +48,8 @@ export function OrderDetails({id}: {id: string}) {
   const tc = useTranslations('common')
   const f = useFormat()
   const {data: order, isLoading, error} = useGetAdminOrderQuery({id})
-  if (isLoading) return <SkeletonRows rows={6} />
+  const held = useHoldLoading(isLoading)
+  if (held) return <SkeletonRows rows={6} />
   if (!order)
     return (
       <div className="flex flex-col gap-6">

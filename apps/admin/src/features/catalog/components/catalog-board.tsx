@@ -3,6 +3,7 @@
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
 import {SkeletonRows} from '@/components/skeleton'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -44,7 +45,8 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  if (servers.isLoading) return <SkeletonRows rows={4} />
+  const held = useHoldLoading(servers.isLoading)
+  if (held) return <SkeletonRows rows={4} />
   if (servers.isError) return <p role="alert">{t('couldNotLoadTheCatalogRefresh')}</p>
   const selected = tabs.items.find(s => s.id === selectedId) ?? tabs.items[0]
 

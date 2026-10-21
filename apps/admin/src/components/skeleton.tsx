@@ -14,15 +14,17 @@ export function Skeleton({className}: {className?: string}) {
 export function SkeletonStatus({
   label,
   className,
+  style,
   children
 }: {
   label: string
   className?: string
+  style?: React.CSSProperties
   children: React.ReactNode
 }) {
   const visible = useDelayedFlag(true)
   return (
-    <div role="status" className={className}>
+    <div role="status" className={className} style={style}>
       <span className="sr-only">{label}</span>
       {visible ? children : null}
     </div>
@@ -32,7 +34,10 @@ export function SkeletonStatus({
 export function SkeletonRows({rows = 5}: {rows?: number}) {
   const t = useTranslations('common')
   return (
-    <SkeletonStatus label={t('loading')} className="flex flex-col gap-2">
+    <SkeletonStatus
+      label={t('loading')}
+      className="flex flex-col gap-2"
+      style={{minHeight: rows * 48 + (rows - 1) * 8}}>
       {Array.from({length: rows}, (_, i) => (
         <div
           key={i}

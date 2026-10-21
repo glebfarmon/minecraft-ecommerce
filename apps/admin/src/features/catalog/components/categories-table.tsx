@@ -7,6 +7,7 @@ import {SkeletonRows} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -54,7 +55,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   })
   const {errors} = useFormState({control})
 
-  if (categories.isLoading) return <SkeletonRows />
+  const held = useHoldLoading(categories.isLoading)
+  if (held) return <SkeletonRows />
   if (categories.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">

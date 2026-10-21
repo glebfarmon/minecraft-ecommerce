@@ -13,6 +13,7 @@ import {
 } from '@/features/catalog/lib/product-form'
 import {type ProductForm, ProductFormSchema} from '@/features/catalog/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -117,7 +118,8 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
   const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
 
-  if (id && product.isLoading) return <SkeletonRows rows={6} />
+  const held = useHoldLoading(Boolean(id) && product.isLoading)
+  if (held) return <SkeletonRows rows={6} />
   if (id && !product.data) return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
 
   const server = servers.data?.find(s => s.id === values.serverId)

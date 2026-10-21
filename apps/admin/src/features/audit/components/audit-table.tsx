@@ -4,6 +4,7 @@ import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {SkeletonRows} from '@/components/skeleton'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {
   type GetApiAdminAuditApiArg,
   useGetApiAdminAdminsQuery,
@@ -53,7 +54,8 @@ function PageRows({
   useEffect(() => {
     if (entries) onActors(entries.flatMap(e => (e.actor ? [e.actor] : [])))
   }, [entries, onActors])
-  if (page.isLoading) return <SkeletonRows />
+  const held = useHoldLoading(page.isLoading)
+  if (held) return <SkeletonRows />
   if (page.isError || !page.data)
     return (
       <p role="alert" className="rounded-card bg-card p-5">

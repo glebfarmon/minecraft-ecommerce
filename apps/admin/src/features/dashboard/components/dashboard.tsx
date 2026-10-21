@@ -9,6 +9,7 @@ import {Skeleton, SkeletonRows, SkeletonStatus} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useReportCurrency} from '@/hooks/use-report-currency'
 import {
   type GetOrderStatsApiResponse,
@@ -166,6 +167,7 @@ function LatestOrders() {
   const t = useTranslations('dashboard')
   const f = useFormat()
   const page = useListAdminOrdersQuery({})
+  const held = useHoldLoading(page.isLoading)
   return (
     <Card
       title={t('latestOrders')}
@@ -174,7 +176,7 @@ function LatestOrders() {
           {t('viewAll')}
         </Link>
       }>
-      {page.isLoading ? (
+      {held ? (
         <SkeletonRows rows={5} />
       ) : page.isError || !page.data ? (
         <p className="text-muted">{t('ordersFailed')}</p>
@@ -247,6 +249,7 @@ export function Dashboard() {
   // `currentData`, not `data`: after a switch the previous currency's numbers must not be shown
   // under the new label while the new ones load.
   const stats = query.currentData
+  const held = useHoldLoading(!stats && !query.isError)
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap justify-end gap-3">
@@ -283,7 +286,7 @@ export function Dashboard() {
             {common('retry')}
           </Button>
         </div>
-      ) : !stats ? (
+      ) : !stats || held ? (
         <Loading />
       ) : (
         <>

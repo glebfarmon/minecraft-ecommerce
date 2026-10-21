@@ -8,6 +8,7 @@ import {notify} from '@/components/toaster'
 import {RconPanel} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -77,7 +78,8 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   const values = useWatch({control}) as ServerForm
 
-  if (id && server.isLoading) return <SkeletonRows rows={4} />
+  const held = useHoldLoading(Boolean(id) && server.isLoading)
+  if (held) return <SkeletonRows rows={4} />
   if (id && !server.data) return <p role="alert">{t('couldNotLoadTheServerRefresh')}</p>
 
   // The slug stays locked while the stored server is enabled.

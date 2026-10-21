@@ -5,6 +5,7 @@ import {EmptyState} from '@/components/empty-state'
 import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
 import {copyText} from '@/lib/copy'
 import {ReceiptText, Search} from 'lucide-react'
@@ -41,7 +42,8 @@ function PageRows({
   const f = useFormat()
   const router = useRouter()
   const page = useListAdminOrdersQuery({...query, cursor})
-  if (page.isLoading) return <SkeletonRows />
+  const held = useHoldLoading(page.isLoading)
+  if (held) return <SkeletonRows />
   if (page.isError || !page.data)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
