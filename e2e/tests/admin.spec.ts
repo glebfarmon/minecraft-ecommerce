@@ -441,8 +441,10 @@ test('the rail marks a clicked page at once and its pill stays put inside a sect
   await page.goto(`${ADMIN}/catalog`)
   const vip = page.getByRole('list', {name: 'Products in Ranks'}).getByRole('link', {name: 'VIP'})
   await expect(vip).toBeVisible()
-  await page.evaluate(() => {
-    window.scrollTo(0, document.documentElement.scrollHeight)
+  // Scroll the card to the middle of the viewport: the page is scrolled (header and servers sit
+  // above it) and the card stays clickable; the very bottom can push it out of a 480 px view.
+  await vip.evaluate(el => {
+    el.scrollIntoView({block: 'center'})
   })
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
   await expect(vip).toBeInViewport()
