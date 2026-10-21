@@ -94,8 +94,11 @@ test('a SUPPORT admin cannot open the audit log', async ({page, browser}) => {
   await page.getByRole('link', {name: 'Orders'}).click()
   await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
   await expect(page.getByLabel('Search by nick, email or order number')).toBeVisible()
-  const res = await page.goto(`${ADMIN}/audit`)
-  expect(res?.status()).toBe(404)
+  // The shell's loading.tsx streams the response, so a notFound() below it is a soft 404: status 200
+  // with the not-found UI (Next streaming contract). What matters is that no audit data renders.
+  await page.goto(`${ADMIN}/audit`)
+  await expect(page.getByText('This page could not be found.')).toBeVisible()
+  await expect(page.getByRole('heading', {name: 'Audit log'})).toHaveCount(0)
 })
 
 test('a signed-in session without TOTP is sent to /2fa', async ({page}) => {
