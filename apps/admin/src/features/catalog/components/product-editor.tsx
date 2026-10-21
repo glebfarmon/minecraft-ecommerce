@@ -1,9 +1,8 @@
 'use client'
 
 import {FormSection} from '@/components/form-section'
-import {plainText} from '@/components/rich-text/markdown-doc'
 import {RichTextField} from '@/components/rich-text/rich-text-field'
-import {SkeletonRows} from '@/components/skeleton'
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {SectionsEditor} from '@/features/catalog/components/sections-editor'
 import {
@@ -52,7 +51,8 @@ import {Textarea} from '@shop/ui/textarea'
 
 import {CommandHelp} from './command-help'
 import {EditorLayout} from './editor-layout'
-import {ProductCard} from './product-card'
+import {ProductCardSkeleton} from './product-card'
+import {ProductPreview} from './product-preview'
 
 const MISSING_KEY = {
   'price.EUR': 'missingPriceEUR',
@@ -66,9 +66,16 @@ const LOCALES = [
   {locale: 'pl', tab: 'PL'}
 ] as const
 
-type Props = {id?: string; serverId?: string; categoryId?: string; canEdit: boolean}
+type Props = {
+  id?: string
+  serverId?: string
+  categoryId?: string
+  canEdit: boolean
+  /** The route's loading state: the editor's layout with placeholders, before the id is known. */
+  skeleton?: boolean
+}
 
-export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
+export function ProductEditor({id, serverId, categoryId, canEdit, skeleton = false}: Props) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
   const router = useRouter()
@@ -119,9 +126,11 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   /** The commands field the admin typed in last; `{nick}` goes in at its caret. */
   const [lastCommand, setLastCommand] = useState<'grant' | 'revoke'>('grant')
 
-  const held = useHoldLoading(Boolean(id) && product.isLoading)
-  if (held) return <SkeletonRows rows={6} />
-  if (id && !product.data) return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
+  const loading = useHoldLoading(Boolean(id) && product.isLoading) || skeleton
+  if (!loading && id && !product.data)
+    return <p role="alert">{t('couldNotLoadTheProductRefresh')}</p>
+  /** While loading, a stored value's control is a placeholder of its size; its label stays. */
+  const slot = (input: ReactNode, size = 'h-9') => (loading ? <Skeleton className={size} /> : input)
 
   const server = servers.data?.find(s => s.id === values.serverId)
   // The tile icon belongs to the category; until one is chosen the preview shows the default.
@@ -216,31 +225,40 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
   const storedName = product.data?.translations.en?.name || product.data?.slug
   return (
     <EditorLayout
+      loading={loading}
       title={id ? storedName || t('product') : t('newProduct')}
+      previewTitle={t('previewIn', {locale: tab.toUpperCase()})}
       preview={
-        <ProductCard
-          accent={server?.accent ?? 'var(--color-accent)'}
-          description={plainText(values.translations.en.description || '')}
-          product={{
-            name: values.translations.en.name || values.slug || t('newProduct'),
-            mark: values.mark || values.translations.en.name || '',
-            icon,
-            kind: values.kind,
-            isActive: values.isActive,
-            // A half-typed price is not a number yet; show it as missing, not NaN.
-            prices: {
-              EUR: Number.isFinite(draft.prices.EUR) ? draft.prices.EUR : null,
-              PLN: Number.isFinite(draft.prices.PLN) ? draft.prices.PLN : null
-            },
-            missing
-          }}
-        />
+        loading ? (
+          <ProductCardSkeleton />
+        ) : (
+          <ProductPreview
+            // What the site shows in this language: the PL translation, or EN when there is none.
+            translation={draft.translations[tab] ?? draft.translations.en}
+            card={{
+              accent: server?.accent ?? 'var(--color-accent)',
+              product: {
+                name: values.translations.en.name || values.slug || t('newProduct'),
+                mark: values.mark || values.translations.en.name || '',
+                icon,
+                kind: values.kind,
+                isActive: values.isActive,
+                // A half-typed price is not a number yet; show it as missing, not NaN.
+                prices: {
+                  EUR: Number.isFinite(draft.prices.EUR) ? draft.prices.EUR : null,
+                  PLN: Number.isFinite(draft.prices.PLN) ? draft.prices.PLN : null
+                },
+                missing
+              }
+            }}
+          />
+        )
       }>
       <form
         onSubmit={e => void handleSubmit(save, onInvalid)(e)}
         noValidate
         className="flex flex-col gap-4">
-        {incomplete && (
+        {incomplete && !loading && (
           <p className="rounded-plate bg-warn-soft px-4 py-3 text-[13px] text-warn">
             {t('missingToEnable', {what: missingText})}
           </p>
@@ -258,64 +276,70 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'serverId',
             t('server'),
-            <Controller
-              control={control}
-              name="serverId"
-              render={({field: f}) => (
-                <Select
-                  {...fieldProps('serverId')}
-                  value={f.value}
-                  placeholder={t('chooseAServer')}
-                  options={(servers.data ?? []).map(s => ({value: s.id, label: s.name}))}
-                  onValueChange={v => {
-                    f.onChange(v)
-                    const next = servers.data?.find(s => s.id === v)
-                    if (!next?.categories.some(c => c.id === values.categoryId))
-                      setValue('categoryId', '')
-                  }}
-                />
-              )}
-            />
+            slot(
+              <Controller
+                control={control}
+                name="serverId"
+                render={({field: f}) => (
+                  <Select
+                    {...fieldProps('serverId')}
+                    value={f.value}
+                    placeholder={t('chooseAServer')}
+                    options={(servers.data ?? []).map(s => ({value: s.id, label: s.name}))}
+                    onValueChange={v => {
+                      f.onChange(v)
+                      const next = servers.data?.find(s => s.id === v)
+                      if (!next?.categories.some(c => c.id === values.categoryId))
+                        setValue('categoryId', '')
+                    }}
+                  />
+                )}
+              />
+            )
           )}
           {field(
             'categoryId',
             t('category'),
-            <Controller
-              control={control}
-              name="categoryId"
-              render={({field: f}) => (
-                <Select
-                  {...fieldProps('categoryId')}
-                  value={f.value}
-                  placeholder={t('chooseACategory')}
-                  options={(server?.categories ?? []).map(c => ({value: c.id, label: c.name}))}
-                  onValueChange={f.onChange}
-                />
-              )}
-            />,
+            slot(
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({field: f}) => (
+                  <Select
+                    {...fieldProps('categoryId')}
+                    value={f.value}
+                    placeholder={t('chooseACategory')}
+                    options={(server?.categories ?? []).map(c => ({value: c.id, label: c.name}))}
+                    onValueChange={f.onChange}
+                  />
+                )}
+              />
+            ),
             t('iconFromCategory')
           )}
-          {field('slug', t('slug'), <Input {...fieldProps('slug')} {...register('slug')} />)}
-          {field('mark', t('mark'), <Input {...fieldProps('mark')} {...register('mark')} />)}
+          {field('slug', t('slug'), slot(<Input {...fieldProps('slug')} {...register('slug')} />))}
+          {field('mark', t('mark'), slot(<Input {...fieldProps('mark')} {...register('mark')} />))}
           {field(
             'kind',
             t('kind'),
-            <Controller
-              control={control}
-              name="kind"
-              render={({field: f}) => (
-                <Select
-                  {...fieldProps('kind')}
-                  value={f.value}
-                  options={PRODUCT_KINDS.map(k => ({value: k, label: k}))}
-                  onValueChange={v => {
-                    f.onChange(v)
-                    // Duration is hidden for other kinds; a leftover value would fail validation there.
-                    if (v !== 'TIMED') setValue('durationDays', '')
-                  }}
-                />
-              )}
-            />
+            slot(
+              <Controller
+                control={control}
+                name="kind"
+                render={({field: f}) => (
+                  <Select
+                    {...fieldProps('kind')}
+                    value={f.value}
+                    options={PRODUCT_KINDS.map(k => ({value: k, label: k}))}
+                    onValueChange={v => {
+                      f.onChange(v)
+                      // Duration is hidden for other kinds; a leftover value would fail validation there.
+                      if (v !== 'TIMED') setValue('durationDays', '')
+                    }}
+                  />
+                )}
+              />
+            )
           )}
           {values.kind === 'TIMED' &&
             field(
@@ -328,25 +352,28 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
               />
             )}
           <div className="flex flex-wrap items-center gap-2 md:col-span-2">
-            <Controller
-              control={control}
-              name="isActive"
-              render={({field: f}) => (
-                <Checkbox
-                  id={fieldId('isActive')}
-                  ref={f.ref}
-                  checked={f.value}
-                  // An enabled product keeps its checkbox, so it can always be unticked.
-                  disabled={incomplete && !f.value}
-                  aria-invalid={activeError ? true : undefined}
-                  aria-describedby={activeError ? `${fieldId('isActive')}-error` : undefined}
-                  onBlur={f.onBlur}
-                  onCheckedChange={checked => {
-                    f.onChange(checked === true)
-                  }}
-                />
-              )}
-            />
+            {slot(
+              <Controller
+                control={control}
+                name="isActive"
+                render={({field: f}) => (
+                  <Checkbox
+                    id={fieldId('isActive')}
+                    ref={f.ref}
+                    checked={f.value}
+                    // An enabled product keeps its checkbox, so it can always be unticked.
+                    disabled={incomplete && !f.value}
+                    aria-invalid={activeError ? true : undefined}
+                    aria-describedby={activeError ? `${fieldId('isActive')}-error` : undefined}
+                    onBlur={f.onBlur}
+                    onCheckedChange={checked => {
+                      f.onChange(checked === true)
+                    }}
+                  />
+                )}
+              />,
+              'size-4 rounded-[5px]'
+            )}
             <Label htmlFor={fieldId('isActive')}>{t('enabled')}</Label>
             {activeError && (
               <p id={`${fieldId('isActive')}-error`} className="w-full text-xs text-destructive">
@@ -363,12 +390,24 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'prices.EUR',
             t('priceEUR'),
-            <Input inputMode="decimal" {...fieldProps('prices.EUR')} {...register('prices.EUR')} />
+            slot(
+              <Input
+                inputMode="decimal"
+                {...fieldProps('prices.EUR')}
+                {...register('prices.EUR')}
+              />
+            )
           )}
           {field(
             'prices.PLN',
             t('pricePLN'),
-            <Input inputMode="decimal" {...fieldProps('prices.PLN')} {...register('prices.PLN')} />
+            slot(
+              <Input
+                inputMode="decimal"
+                {...fieldProps('prices.PLN')}
+                {...register('prices.PLN')}
+              />
+            )
           )}
         </FormSection>
 
@@ -398,35 +437,45 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
                   {field(
                     `translations.${locale}.name`,
                     t('nameIn', {locale: label}),
-                    <Input
-                      {...fieldProps(`translations.${locale}.name`)}
-                      {...register(`translations.${locale}.name`)}
-                    />
+                    slot(
+                      <Input
+                        {...fieldProps(`translations.${locale}.name`)}
+                        {...register(`translations.${locale}.name`)}
+                      />
+                    )
                   )}
                   {field(
                     `translations.${locale}.description`,
                     t('descriptionIn', {locale: label}),
-                    <Controller
+                    slot(
+                      <Controller
+                        control={control}
+                        name={`translations.${locale}.description`}
+                        render={({field: input}) => (
+                          <RichTextField
+                            {...fieldProps(`translations.${locale}.description`)}
+                            aria-labelledby={`${fieldId(`translations.${locale}.description`)}-label`}
+                            value={input.value || ''}
+                            onChange={input.onChange}
+                            multiline
+                            disabled={!canEdit}
+                          />
+                        )}
+                      />,
+                      'h-16'
+                    )
+                  )}
+                  {/* The stored sections are data; the Add button under them is all that stays. */}
+                  {loading ? (
+                    <Skeleton className="h-9 w-24 rounded-full" />
+                  ) : (
+                    <SectionsEditor
+                      locale={locale}
                       control={control}
-                      name={`translations.${locale}.description`}
-                      render={({field: input}) => (
-                        <RichTextField
-                          {...fieldProps(`translations.${locale}.description`)}
-                          aria-labelledby={`${fieldId(`translations.${locale}.description`)}-label`}
-                          value={input.value || ''}
-                          onChange={input.onChange}
-                          multiline
-                          disabled={!canEdit}
-                        />
-                      )}
+                      register={register}
+                      disabled={!canEdit}
                     />
                   )}
-                  <SectionsEditor
-                    locale={locale}
-                    control={control}
-                    register={register}
-                    disabled={!canEdit}
-                  />
                 </fieldset>
               </TabsContent>
             ))}
@@ -440,25 +489,41 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
           {field(
             'grant',
             t('grantCommands'),
-            <Textarea className="font-mono" {...fieldProps('grant')} {...commandProps('grant')} />,
+            slot(
+              <Textarea
+                className="font-mono"
+                {...fieldProps('grant')}
+                {...commandProps('grant')}
+              />,
+              'h-24'
+            ),
             t('commandHint'),
             true
           )}
           {field(
             'revoke',
             t('revokeCommands'),
-            <Textarea
-              className="font-mono"
-              {...fieldProps('revoke')}
-              {...commandProps('revoke')}
-            />,
+            slot(
+              <Textarea
+                className="font-mono"
+                {...fieldProps('revoke')}
+                {...commandProps('revoke')}
+              />,
+              'h-24'
+            ),
             t('commandHint'),
             true
           )}
           <CommandHelp onInsert={insertToken} />
         </FormSection>
 
-        {canEdit && (
+        {canEdit && loading && (
+          <div aria-hidden className="flex gap-2">
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-24 rounded-full" />
+          </div>
+        )}
+        {canEdit && !loading && (
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>
               {t('save')}

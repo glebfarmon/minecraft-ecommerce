@@ -19,6 +19,7 @@ const base = {
   deliveryConsentAt: '2026-10-12T09:29:00.000Z',
   locale: 'en',
   stripeSessionId: 'cs_test_123',
+  stripePaymentIntentId: 'pi_test_456',
   servers: [
     {
       serverName: 'Survival',
@@ -56,23 +57,43 @@ describe('OrderDetails', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Email copied')
   })
 
-  it('links to the Stripe session', async () => {
+  it('links the payment in the Stripe dashboard, which has no page for a session', async () => {
     mock({})
     renderWithStore(<OrderDetails id="o1" />)
-    const link = await screen.findByRole('link', {name: /cs_test_123/})
-    expect(link).toHaveAttribute(
-      'href',
-      'https://dashboard.stripe.com/test/checkout/sessions/cs_test_123'
-    )
+    const link = await screen.findByRole('link', {name: /pi_test_456/})
+    expect(link).toHaveAttribute('href', 'https://dashboard.stripe.com/test/payments/pi_test_456')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(screen.getByText('cs_test_123')).toBeInTheDocument()
+  })
+
+  it('links a live payment without the test path', async () => {
+    mock({stripeSessionId: 'cs_live_1', stripePaymentIntentId: 'pi_1'})
+    renderWithStore(<OrderDetails id="o1" />)
+    expect(await screen.findByRole('link', {name: /pi_1/})).toHaveAttribute(
+      'href',
+      'https://dashboard.stripe.com/payments/pi_1'
+    )
+  })
+
+  it('shows an unpaid order, or one from the fake gateway, without a Stripe link', async () => {
+    mock({stripePaymentIntentId: null})
+    const {unmount} = renderWithStore(<OrderDetails id="o1" />)
+    await screen.findByText('Survival')
+    expect(screen.queryByRole('link', {name: /pi_/})).not.toBeInTheDocument()
+    expect(screen.getByText('Stripe payment').nextElementSibling).toHaveTextContent('—')
+    unmount()
+    jest.restoreAllMocks()
+    mock({stripeSessionId: 'cs_fake_1', stripePaymentIntentId: 'pi_fake_1'})
+    renderWithStore(<OrderDetails id="o1" />)
+    expect(await screen.findByText('pi_fake_1')).toBeInTheDocument()
+    expect(screen.queryByRole('link', {name: /pi_fake_1/})).not.toBeInTheDocument()
   })
 
   it('shows a dash when there is no Stripe session', async () => {
     mock({stripeSessionId: null})
     renderWithStore(<OrderDetails id="o1" />)
     await screen.findByText('Survival')
-    expect(screen.queryByRole('link', {name: /cs_test/})).not.toBeInTheDocument()
     expect(screen.getByText('Stripe session').nextElementSibling).toHaveTextContent('—')
   })
 })

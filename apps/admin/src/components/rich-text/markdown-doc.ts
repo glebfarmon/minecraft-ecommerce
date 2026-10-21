@@ -87,11 +87,3 @@ export function fromDoc(doc: JSONContent): string {
   })
   return toMarkdown(build(runs, 0))
 }
-
-/** The text as shown without formatting: marks and escapes gone, lines kept. */
-export function plainText(markdown: string): string {
-  const [paragraph] = toDoc(markdown, {multiline: true, links: true}).content ?? []
-  return (paragraph?.content ?? [])
-    .map(n => (n.type === 'hardBreak' ? '\n' : (n.text ?? '')))
-    .join('')
-}

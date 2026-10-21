@@ -4,7 +4,7 @@ import {createTranslator} from 'next-intl'
 
 import type {Me} from '@shop/shared/access'
 
-import en from '../../../messages/en.json'
+import en from '../../../../messages/en.json'
 import HomePage from './page'
 
 let mockMe: Me

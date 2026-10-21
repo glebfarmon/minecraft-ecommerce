@@ -1,51 +1,13 @@
 'use client'
 
 import {Hint} from '@/components/hint'
+import {RichText} from '@/components/rich-text/rich-text'
 import {useTranslations} from 'next-intl'
-import {Fragment, type ReactNode} from 'react'
 
-import {type RichNode, type RulesDocument, parseRich} from '@shop/shared/rules'
+import type {RulesDocument} from '@shop/shared/rules'
 
 type Locale = 'en' | 'pl'
 type Text = {en: string; pl?: string}
-
-function render(nodes: RichNode[]): ReactNode {
-  return nodes.map((node, i) => {
-    switch (node.type) {
-      case 'strong':
-        return (
-          <strong key={i} className="font-semibold">
-            {render(node.children)}
-          </strong>
-        )
-      case 'em':
-        return <em key={i}>{render(node.children)}</em>
-      case 'u':
-        return (
-          <u key={i} className="underline-offset-2">
-            {render(node.children)}
-          </u>
-        )
-      case 'link':
-        return (
-          <a
-            key={i}
-            href={node.href}
-            className="text-accent underline underline-offset-2"
-            {...(node.href.startsWith('https://')
-              ? {target: '_blank', rel: 'noopener noreferrer'}
-              : {})}>
-            {render(node.children)}
-          </a>
-        )
-      case 'text':
-        return <Fragment key={i}>{node.value}</Fragment>
-    }
-  })
-}
-
-/** Rule mini-markdown with the admin's tokens; unsafe links come back from `parseRich` as text. */
-const RichText = ({text}: {text: string}) => render(parseRich(text))
 
 /** The text the site shows in `locale`: PL falls back to EN when empty, as the public API does. */
 function Localized({text, locale}: {text: Text; locale: Locale}) {

@@ -1,7 +1,6 @@
 'use client'
 
 import {DataTable} from '@/components/data-table'
-import {SkeletonRows} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
@@ -27,9 +26,12 @@ const OWNER = 'OWNER'
 
 export function AdminsTable({
   canChangeRoles,
-  held = PERMISSIONS
+  held = PERMISSIONS,
+  skeleton = false
 }: {
   canChangeRoles: boolean
+  /** The route's loading state: this layout with placeholders. */
+  skeleton?: boolean
   /** Permissions the viewer holds; roles needing more cannot be handed out (the API enforces it). */
   held?: readonly Permission[]
 }) {
@@ -43,9 +45,8 @@ export function AdminsTable({
   const [error, setError] = useMessage()
   const report = useReportError(setError)
 
-  const loadingHeld = useHoldLoading(admins.isLoading)
-  if (loadingHeld) return <SkeletonRows rows={3} />
-  if (admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>
+  const loadingHeld = useHoldLoading(admins.isLoading) || skeleton
+  if (!loadingHeld && admins.isError) return <p role="alert">{t('couldNotLoadAdminsRefreshThe')}</p>
 
   const assignable = (roles.data ?? []).filter(
     r => r.name !== OWNER && r.permissions.every(p => held.includes(p))
@@ -143,6 +144,7 @@ export function AdminsTable({
       )}
       <DataTable
         caption={t('admins')}
+        loading={loadingHeld ? 3 : undefined}
         rows={list}
         rowKey={a => a.id}
         rowLabel={a => a.email}
@@ -165,7 +167,8 @@ export function AdminsTable({
                 tone={a.twoFactorEnabled ? 'ok' : 'warn'}
                 label={a.twoFactorEnabled ? t('on') : t('off')}
               />
-            )
+            ),
+            placeholder: 'h-6 w-20 rounded-full'
           },
           {
             header: t('status'),
@@ -174,7 +177,8 @@ export function AdminsTable({
                 <ToneDot tone="ok" label={t('active')} />
               ) : (
                 <ToneDot tone="idle" label={t('removed')} />
-              )
+              ),
+            placeholder: 'h-6 w-20 rounded-full'
           }
         ]}
         menu={a =>

@@ -211,4 +211,28 @@ describe('DataTable', () => {
       expect(push).not.toHaveBeenCalled()
     })
   })
+
+  it('loads as the same table: real headers, placeholder rows, nothing to click', () => {
+    const {container} = render(
+      <DataTable
+        caption="Orders"
+        rows={[] as Row[]}
+        loading={3}
+        rowKey={r => r.id}
+        columns={[
+          {header: 'Nick', cell: r => r.nick, primary: true},
+          {header: 'Status', cell: r => r.email, placeholder: 'h-6 w-20 rounded-full'}
+        ]}
+        menu={() => [{label: 'Open', onSelect: jest.fn()}]}
+        empty={<p>No orders</p>}
+      />
+    )
+    expect(screen.getByRole('status', {name: 'Orders'})).toHaveTextContent('Loading…')
+    const table = container.querySelector('table') as HTMLElement
+    expect(within(table).getByText('Status')).toBeInTheDocument()
+    expect(table.querySelectorAll('tbody tr')).toHaveLength(3)
+    expect(table.querySelector('.skeleton.w-20')).not.toBeNull()
+    expect(screen.queryByText('No orders')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
 })

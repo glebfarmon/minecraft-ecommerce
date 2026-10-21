@@ -15,6 +15,8 @@ export type PaymentEvent =
       type: string
       sessionId: string
       orderId: string | null
+      /** The Stripe payment (`pi_…`); null when Stripe sent none. */
+      paymentIntentId: string | null
       amountTotal: number
       currency: string
     }

@@ -2,10 +2,10 @@
 
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
-import {SkeletonRows} from '@/components/skeleton'
+import {Skeleton} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
-import {RconPanel} from '@/features/catalog/components/rcon-panel'
+import {RconPanel, RconPanelSkeleton} from '@/features/catalog/components/rcon-panel'
 import {type ServerForm, ServerFormSchema} from '@/features/catalog/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
@@ -30,9 +30,15 @@ import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
 
 import {EditorLayout} from './editor-layout'
-import {ServerCard} from './server-card'
+import {ServerCard, ServerCardSkeleton} from './server-card'
 
-type Props = {id?: string; canEdit: boolean; canRcon: boolean}
+type Props = {
+  id?: string
+  canEdit: boolean
+  canRcon: boolean
+  /** The route's loading state: the editor's layout with placeholders, before the id is known. */
+  skeleton?: boolean
+}
 
 const HEX = /^#[0-9a-f]{6}$/i
 
@@ -44,7 +50,7 @@ const EMPTY: ServerForm = {
   isActive: false
 }
 
-export function ServerEditor({id, canEdit, canRcon}: Props) {
+export function ServerEditor({id, canEdit, canRcon, skeleton = false}: Props) {
   const t = useTranslations('catalog')
   const errorText = useErrorText()
   const router = useRouter()
@@ -78,9 +84,10 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   const values = useWatch({control}) as ServerForm
 
-  const held = useHoldLoading(Boolean(id) && server.isLoading)
-  if (held) return <SkeletonRows rows={4} />
-  if (id && !server.data) return <p role="alert">{t('couldNotLoadTheServerRefresh')}</p>
+  const loading = useHoldLoading(Boolean(id) && server.isLoading) || skeleton
+  if (!loading && id && !server.data) return <p role="alert">{t('couldNotLoadTheServerRefresh')}</p>
+  /** While loading, a stored value's control is a placeholder of its size; its label stays. */
+  const slot = (input: ReactNode, size = 'h-9') => (loading ? <Skeleton className={size} /> : input)
 
   // The slug stays locked while the stored server is enabled.
   const locked = server.data?.isActive === true
@@ -129,17 +136,21 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
   const colorField = (name: 'accent' | 'onAccent', label: string) => (
     <Field name={name} label={label} error={errorOf(name)}>
       <div className="flex items-center gap-2">
-        <Input {...fieldProps(name)} {...register(name)} />
-        <input
-          type="color"
-          aria-hidden
-          tabIndex={-1}
-          className="size-9 shrink-0 cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0 transition-transform hover:scale-105 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0"
-          value={HEX.test(values[name]) ? values[name] : '#000000'}
-          onChange={e => {
-            setValue(name, e.target.value, {shouldDirty: true, shouldValidate: true})
-          }}
-        />
+        {slot(<Input {...fieldProps(name)} {...register(name)} />, 'h-9 flex-1')}
+        {loading ? (
+          <Skeleton className="size-9 shrink-0 rounded-full" />
+        ) : (
+          <input
+            type="color"
+            aria-hidden
+            tabIndex={-1}
+            className="size-9 shrink-0 cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0 transition-transform hover:scale-105 [&::-moz-color-swatch]:rounded-full [&::-moz-color-swatch]:border-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0"
+            value={HEX.test(values[name]) ? values[name] : '#000000'}
+            onChange={e => {
+              setValue(name, e.target.value, {shouldDirty: true, shouldValidate: true})
+            }}
+          />
+        )}
       </div>
     </Field>
   )
@@ -151,19 +162,24 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
 
   return (
     <EditorLayout
+      loading={loading}
       title={id ? server.data?.name || t('server') : t('newServer')}
       preview={
-        <ServerCard
-          server={{
-            name: values.name || t('server'),
-            accent: values.accent,
-            onAccent: values.onAccent,
-            isActive: values.isActive,
-            productCount: server.data?.productCount ?? 0,
-            rcon: server.data?.rcon ?? null,
-            rconPasswordSet: server.data?.rconPasswordSet ?? false
-          }}
-        />
+        loading ? (
+          <ServerCardSkeleton />
+        ) : (
+          <ServerCard
+            server={{
+              name: values.name || t('server'),
+              accent: values.accent,
+              onAccent: values.onAccent,
+              isActive: values.isActive,
+              productCount: server.data?.productCount ?? 0,
+              rcon: server.data?.rcon ?? null,
+              rconPasswordSet: server.data?.rconPasswordSet ?? false
+            }}
+          />
+        )
       }>
       <form onSubmit={e => void handleSubmit(save)(e)} noValidate className="flex flex-col gap-4">
         {error && (
@@ -175,47 +191,56 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
         <fieldset disabled={!canEdit} className="min-w-0">
           <FormSection title={t('basics')} description={t('howTheServerAppearsInThe')}>
             <Field name="name" label={t('name')} error={errorOf('name')}>
-              <Input {...fieldProps('name')} {...register('name')} />
+              {slot(<Input {...fieldProps('name')} {...register('name')} />)}
             </Field>
             <Field
               name="slug"
               label={t('slug')}
               error={errorOf('slug')}
               hint={locked ? t('disableToChangeSlug') : undefined}>
-              <Input {...fieldProps('slug')} readOnly={locked} {...register('slug')} />
+              {slot(<Input {...fieldProps('slug')} readOnly={locked} {...register('slug')} />)}
             </Field>
             {colorField('accent', t('accent'))}
             {colorField('onAccent', t('textColor'))}
-            {lowContrast && (
+            {lowContrast && !loading && (
               <div className="md:col-span-2">
                 <ToneDot tone="warn" label={t('lowContrast')} />
                 <span className="ml-2 text-[13px] text-muted">{t('textOnTheAccentNeedsA')}</span>
               </div>
             )}
-            {id && (
+            {(id || skeleton) && (
               <div className="flex items-center gap-2 md:col-span-2">
-                <Controller
-                  control={control}
-                  name="isActive"
-                  render={({field: f}) => (
-                    <Checkbox
-                      id="server-isActive"
-                      ref={f.ref}
-                      checked={f.value}
-                      onBlur={f.onBlur}
-                      onCheckedChange={checked => {
-                        f.onChange(checked === true)
-                      }}
-                    />
-                  )}
-                />
+                {slot(
+                  <Controller
+                    control={control}
+                    name="isActive"
+                    render={({field: f}) => (
+                      <Checkbox
+                        id="server-isActive"
+                        ref={f.ref}
+                        checked={f.value}
+                        onBlur={f.onBlur}
+                        onCheckedChange={checked => {
+                          f.onChange(checked === true)
+                        }}
+                      />
+                    )}
+                  />,
+                  'size-4 rounded-[5px]'
+                )}
                 <Label htmlFor="server-isActive">{t('enabled')}</Label>
               </div>
             )}
           </FormSection>
         </fieldset>
 
-        {canEdit && (
+        {canEdit && loading && (
+          <div aria-hidden className="flex gap-2">
+            <Skeleton className="h-9 w-20 rounded-full" />
+            <Skeleton className="h-9 w-24 rounded-full" />
+          </div>
+        )}
+        {canEdit && !loading && (
           <div className="flex gap-2">
             <Button type="submit" disabled={busy}>
               {t('save')}
@@ -243,9 +268,9 @@ export function ServerEditor({id, canEdit, canRcon}: Props) {
         )}
       </form>
 
-      {canRcon && server.data && (
+      {canRcon && (loading || server.data) && (
         <Card title={t('rcon')}>
-          <RconPanel server={server.data} />
+          {server.data && !loading ? <RconPanel server={server.data} /> : <RconPanelSkeleton />}
         </Card>
       )}
     </EditorLayout>

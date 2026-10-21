@@ -36,18 +36,30 @@ describe('ServerEditor', () => {
     mockApi()
     renderWithStore(<ServerEditor id="s1" canEdit canRcon={false} />)
     const region = await screen.findByRole('region', {name: 'Preview'})
-    const preview = within(region).getByText('Survival').parentElement as HTMLElement
+    const preview = (await within(region).findByText('Survival')).parentElement as HTMLElement
     expect(preview).toHaveStyle({background: '#ff6b1a', color: '#000000'})
     fireEvent.change(screen.getByLabelText('Accent'), {target: {value: '#2266ff'}})
     expect(preview).toHaveStyle({background: '#2266ff'})
   })
 
+  it('loads in its own layout: labels and sections stay, values are placeholders', () => {
+    mockApi()
+    renderWithStore(<ServerEditor canEdit canRcon skeleton />)
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…')
+    expect(screen.getByText('Basics')).toBeInTheDocument()
+    expect(screen.getByText('Accent')).toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'Preview'})).toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'RCON'})).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument()
+  })
+
   it('warns when the text colour has too little contrast with the accent', async () => {
     mockApi()
     renderWithStore(<ServerEditor id="s1" canEdit canRcon={false} />)
-    await screen.findByRole('region', {name: 'Preview'})
+    const accent = await screen.findByLabelText('Accent')
     expect(screen.queryByText('Low contrast')).not.toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Accent'), {target: {value: '#ffffff'}})
+    fireEvent.change(accent, {target: {value: '#ffffff'}})
     fireEvent.change(screen.getByLabelText('Text color'), {target: {value: '#ffc857'}})
     expect(await screen.findByText('Low contrast')).toBeInTheDocument()
   })

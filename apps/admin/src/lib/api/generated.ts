@@ -84,7 +84,8 @@ const injectedRtkApi = api.injectEndpoints({
           action: queryArg.action,
           from: queryArg['from'],
           to: queryArg.to,
-          cursor: queryArg.cursor
+          cursor: queryArg.cursor,
+          limit: queryArg.limit
         }
       })
     }),
@@ -575,6 +576,7 @@ export type GetApiAdminAuditApiArg = {
   from?: string
   to?: string
   cursor?: string
+  limit?: '25' | '50' | '100'
 }
 export type ListCatalogServersApiResponse = /** status 200 Servers */ {
   id: string
@@ -1462,6 +1464,7 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   id: string
   locale: 'en' | 'pl'
   stripeSessionId: string | null
+  stripePaymentIntentId: string | null
   deliveryConsentAt: string
   subtotalMinor: number
   discountMinor: number

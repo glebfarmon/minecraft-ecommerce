@@ -7,7 +7,7 @@ import {Card} from './card'
 import {EmptyState} from './empty-state'
 import {FormSection} from './form-section'
 import {PageHeader} from './page-header'
-import {SkeletonRows} from './skeleton'
+import {Skeleton} from './skeleton'
 
 describe('layout components', () => {
   it('Card is a named region with an optional action', () => {
@@ -49,25 +49,6 @@ describe('layout components', () => {
     expect(screen.getByRole('link', {name: 'Open shop'})).toBeInTheDocument()
   })
 
-  it('SkeletonRows is hidden from assistive tech and announces loading once', () => {
-    render(<SkeletonRows rows={3} />)
-    expect(screen.getByRole('status')).toHaveTextContent('Loading…')
-  })
-
-  it('SkeletonRows draws its blocks only after the show delay', () => {
-    jest.useFakeTimers()
-    try {
-      const {container} = render(<SkeletonRows rows={3} />)
-      expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
-      act(() => {
-        jest.advanceTimersByTime(200)
-      })
-      expect(container.querySelectorAll('.skeleton')).toHaveLength(3)
-    } finally {
-      jest.useRealTimers()
-    }
-  })
-
   it('FormSection groups fields under a heading', () => {
     render(
       <FormSection title="Prices">
@@ -84,7 +65,14 @@ describe('layout components', () => {
 
 function Consumer({loading}: {loading: boolean}) {
   const held = useHoldLoading(loading)
-  return held ? <SkeletonRows rows={2} /> : <p>data</p>
+  return held ? (
+    <>
+      <Skeleton />
+      <Skeleton />
+    </>
+  ) : (
+    <p>data</p>
+  )
 }
 
 describe('skeleton hold', () => {
@@ -114,12 +102,12 @@ describe('skeleton hold', () => {
     expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
   })
 
-  it('shows data at 150 ms without ever drawing blocks', () => {
+  // The blocks of a load this fast never show: `.skeleton` fades in only after 200 ms (CSS).
+  it('shows data at once when the load ends at 150 ms', () => {
     const {container, rerender} = render(<Consumer loading />)
     act(() => {
       jest.advanceTimersByTime(150)
     })
-    expect(container.querySelectorAll('.skeleton')).toHaveLength(0)
     rerender(<Consumer loading={false} />)
     expect(screen.getByText('data')).toBeInTheDocument()
     expect(container.querySelectorAll('.skeleton')).toHaveLength(0)

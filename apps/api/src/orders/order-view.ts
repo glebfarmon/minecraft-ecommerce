@@ -47,6 +47,7 @@ export function toAdminOrder(order: OrderWithItems): AdminOrder {
     id: order.id,
     locale: order.locale,
     stripeSessionId: order.stripeSessionId,
+    stripePaymentIntentId: order.stripePaymentIntentId,
     deliveryConsentAt: order.deliveryConsentAt.toISOString(),
     subtotalMinor: order.subtotalMinor,
     discountMinor: order.discountMinor

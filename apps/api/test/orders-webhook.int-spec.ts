@@ -59,6 +59,7 @@ describe('POST /api/webhooks/stripe', () => {
     const order = await ctx.prisma.order.findUniqueOrThrow({where: {publicId}})
     expect(order.status).toBe('PAID')
     expect(order.paidAt).not.toBeNull()
+    expect(order.stripePaymentIntentId).toMatch(/^pi_fake_/)
     const mails = ctx.mailer.sent.filter(
       m => m.to === 'steve@example.com' && m.subject.includes(publicId)
     )

@@ -39,6 +39,7 @@ export class AuditService {
   }
 
   async page(q: AuditQuery): Promise<AuditPage> {
+    const size = q.limit ?? PAGE
     const rows = await this.prisma.auditLog.findMany({
       where: {
         actorId: q.actorId,
@@ -50,10 +51,10 @@ export class AuditService {
       },
       include: {actor: {select: {id: true, email: true}}},
       orderBy: [{createdAt: 'desc'}, {id: 'desc'}],
-      take: PAGE + 1,
+      take: size + 1,
       ...(q.cursor ? {cursor: {id: q.cursor}, skip: 1} : {})
     })
-    const entries = rows.slice(0, PAGE).map(r => ({
+    const entries = rows.slice(0, size).map(r => ({
       id: r.id,
       actor: r.actor,
       action: r.action,
@@ -64,6 +65,6 @@ export class AuditService {
       ip: r.ip,
       createdAt: r.createdAt.toISOString()
     }))
-    return {entries, nextCursor: rows.length > PAGE ? (entries.at(-1)?.id ?? null) : null}
+    return {entries, nextCursor: rows.length > size ? (entries.at(-1)?.id ?? null) : null}
   }
 }

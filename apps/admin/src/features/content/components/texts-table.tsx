@@ -3,7 +3,7 @@
 import {Card} from '@/components/card'
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
-import {SkeletonRows} from '@/components/skeleton'
+import {Skeleton} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
 import {useApiError} from '@/hooks/use-error-text'
@@ -31,7 +31,8 @@ type Message = ListContentMessagesApiResponse[number]
 
 const LONG_TEXT = 80
 
-export function TextsTable() {
+/** `skeleton`: the route's loading state, this layout with placeholders. */
+export function TextsTable({skeleton = false}: {skeleton?: boolean}) {
   const t = useTranslations('content')
   const [locale, setLocale] = useState<Locale>('en')
   const [search, setSearch] = useState('')
@@ -60,25 +61,25 @@ export function TextsTable() {
         </div>
       </div>
       <TabsContent value={locale}>
-        <Messages key={locale} locale={locale} search={search} />
+        <Messages key={locale} locale={locale} search={search} skeleton={skeleton} />
       </TabsContent>
     </Tabs>
   )
 }
 
-function Messages({locale, search}: {locale: Locale; search: string}) {
+function Messages({locale, search, skeleton}: {locale: Locale; search: string; skeleton: boolean}) {
   const t = useTranslations('content')
   const messages = useListContentMessagesQuery({locale})
   // currentData, not data: while another locale loads, data still holds the previous one.
   const data = messages.currentData
-  const held = useHoldLoading(!data && !messages.isError)
-  if (messages.isError)
+  const held = useHoldLoading(!data && !messages.isError) || skeleton
+  if (!skeleton && messages.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {t('couldNotLoadTheTextsRefresh')}
       </p>
     )
-  if (!data || held) return <SkeletonRows />
+  if (!data || held) return <MessagesLoading />
   const q = search.trim().toLowerCase()
   const shown = data.filter(
     m =>
@@ -207,5 +208,47 @@ function TextRow({locale, message}: {locale: Locale; message: Message}) {
         </div>
       </TableCell>
     </TableRow>
+  )
+}
+
+/** A group card with the same table and headers, each row's texts and field as placeholders. */
+function MessagesLoading() {
+  const t = useTranslations('content')
+  const tc = useTranslations('common')
+  return (
+    <div className="flex flex-col gap-4">
+      <span role="status" className="sr-only">
+        {tc('loading')}
+      </span>
+      <Card title={<Skeleton className="h-4 w-24 rounded-full" />}>
+        <Table aria-hidden>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="hidden md:table-cell">{t('key')}</TableHead>
+              <TableHead>{t('default')}</TableHead>
+              <TableHead>{t('override')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({length: 5}, (_, i) => (
+              <TableRow key={i}>
+                <TableCell className="hidden align-top md:table-cell">
+                  <Skeleton className="h-3 w-32 rounded-full" />
+                </TableCell>
+                <TableCell className="max-w-xs align-top">
+                  <Skeleton className={`h-3.5 rounded-full ${i % 2 ? 'w-4/5' : 'w-3/5'}`} />
+                </TableCell>
+                <TableCell className="min-w-40 align-top">
+                  <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-9" />
+                    <Skeleton className="h-8 w-16 rounded-full" />
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </div>
   )
 }

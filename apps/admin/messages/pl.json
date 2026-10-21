@@ -194,6 +194,7 @@
       "payment": "Płatność",
       "currency": "Waluta",
       "stripeSession": "Sesja Stripe",
+      "stripePayment": "Płatność Stripe",
       "deliveryConsent": "Zgoda na dostawę",
       "timeline": "Oś czasu",
       "created": "Utworzono",
@@ -207,6 +208,7 @@
   "catalog": {
     "backToCatalog": "Wróć do katalogu",
     "preview": "Podgląd",
+    "previewIn": "Podgląd · {locale}",
     "variables": "Zmienne",
     "theBuyersNickname": "Nick kupującego",
     "example": "Przykład:",
@@ -223,7 +225,6 @@
     "createCategory": "Utwórz kategorię",
     "editCategory": "Edytuj kategorię",
     "detach": "Odłącz",
-    "loadingProducts": "Wczytywanie produktów…",
     "noProducts": "Brak produktów.",
     "couldNotLoadCategoriesRefreshThe": "Nie udało się wczytać kategorii. Odśwież stronę.",
     "newCategory": "Nowa kategoria",
@@ -347,7 +348,6 @@
     "categoryDeleted": "Kategoria usunięta."
   },
   "content": {
-    "loadingRules": "Wczytywanie zasad…",
     "couldNotLoadTheRulesRefresh": "Nie udało się wczytać zasad. Odśwież stronę.",
     "language": "Język",
     "unsavedChanges": "Niezapisane zmiany",
@@ -364,7 +364,6 @@
     "en": "EN",
     "preview": "Podgląd",
     "noSectionsYet": "Brak sekcji.",
-    "loadingSettings": "Wczytywanie ustawień…",
     "couldNotLoadTheSettingsRefresh": "Nie udało się wczytać ustawień. Odśwież stronę.",
     "savedLiveOnTheSiteWithin": "Zapisano. Na stronie za około minutę.",
     "brand": "Marka",
@@ -389,7 +388,6 @@
     "reset": "Resetuj",
     "publishedEditions": "Opublikowane edycje",
     "restoredToTheDraftAbovePublish": "Przywrócono do wersji roboczej powyżej. Opublikuj ją, aby pokazać na stronie.",
-    "loadingEditions": "Wczytywanie edycji…",
     "couldNotLoadTheEditionsRefresh": "Nie udało się wczytać edycji. Odśwież stronę.",
     "nothingPublishedYet": "Nic jeszcze nie opublikowano.",
     "loadMore": "Wczytaj więcej",
@@ -450,7 +448,6 @@
     "resend": "Wyślij ponownie",
     "revoke": "Cofnij",
     "noPendingInvites": "Brak oczekujących zaproszeń.",
-    "loadingRoles": "Wczytywanie ról…",
     "couldNotLoadRolesRefreshThe": "Nie udało się wczytać ról. Odśwież stronę.",
     "rolePermissions": "Uprawnienia ról",
     "changingARoleSignsOutEveryone": "Zmiana roli wylogowuje wszystkich, którzy ją mają. Możesz nadawać tylko uprawnienia, które sam posiadasz. Role systemowe są tylko do odczytu.",
@@ -505,8 +502,6 @@
     "nothingLoggedYet": "Nic jeszcze nie zapisano.",
     "actionStartsWith": "Akcja zaczyna się od",
     "role": "role.",
-    "from": "Od",
-    "to": "Do",
     "applyFilters": "Zastosuj filtry",
     "whoChangedWhatNewestFirst": "Kto co zmienił, od najnowszych.",
     "forbidden": "Nie masz uprawnień do przeglądania dziennika audytu.",
@@ -516,7 +511,9 @@
     "previousPage": "Poprzednia strona",
     "nextPage": "Następna strona",
     "page": "Strona {n}",
-    "anyone": "Ktokolwiek"
+    "anyone": "Ktokolwiek",
+    "dates": "Daty",
+    "rowsPerPage": "Wierszy na stronę"
   },
   "auth": {
     "backupCodes": "Kody zapasowe",
@@ -577,5 +574,10 @@
     "error": "Błąd",
     "dismiss": "Zamknij",
     "notifications": "Powiadomienia"
+  },
+  "datePicker": {
+    "anyTime": "Dowolny czas",
+    "clear": "Wyczyść",
+    "done": "Gotowe"
   }
 }

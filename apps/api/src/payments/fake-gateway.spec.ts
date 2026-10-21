@@ -26,7 +26,8 @@ describe('FakeGateway', () => {
       orderId: 'o1',
       amountTotal: 998,
       currency: 'EUR',
-      sessionId: s.sessionId
+      sessionId: s.sessionId,
+      paymentIntentId: expect.stringMatching(/^pi_fake_/) as unknown
     })
   })
   it('rejects a tampered body', async () => {

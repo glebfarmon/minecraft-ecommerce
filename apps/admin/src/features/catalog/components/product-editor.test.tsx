@@ -177,22 +177,71 @@ describe('ProductEditor', () => {
     })
   })
 
+  it('loads in its own layout: labels, sections and tabs stay, values are placeholders', () => {
+    mockApi()
+    renderWithStore(<ProductEditor canEdit skeleton />)
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…')
+    for (const legend of ['Basics', 'Prices', 'Texts', 'Commands'])
+      expect(screen.getByText(legend)).toBeInTheDocument()
+    expect(screen.getByText('Price EUR')).toBeInTheDocument()
+    expect(screen.getByRole('tab', {name: 'PL'})).toBeInTheDocument()
+    expect(screen.getByRole('region', {name: 'Preview · EN'})).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', {name: 'Save'})).not.toBeInTheDocument()
+  })
+
   it('updates the preview card as the name is typed', async () => {
     mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)
     const name = await screen.findByLabelText('Name (EN)')
     fireEvent.change(name, {target: {value: 'Probe Deluxe'}})
-    const preview = screen.getByRole('region', {name: 'Preview'})
+    const preview = screen.getByRole('region', {name: 'Preview · EN'})
     expect(await within(preview).findByText('Probe Deluxe')).toBeInTheDocument()
   })
 
-  it('shows the English description as plain text in the preview card', async () => {
+  it('shows the description with its formatting in the preview', async () => {
     mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)
     const box = await screen.findByRole('textbox', {name: 'Description (EN)'})
-    setMarkdown(box, 'Fly **fast** and more')
-    const preview = screen.getByRole('region', {name: 'Preview'})
-    expect(await within(preview).findByText('Fly fast and more')).toBeInTheDocument()
+    setMarkdown(box, 'Fly **fast** and *more*')
+    const preview = screen.getByRole('region', {name: 'Preview · EN'})
+    expect((await within(preview).findByText('fast')).tagName).toBe('STRONG')
+    expect(within(preview).getByText('more').tagName).toBe('EM')
+  })
+
+  it('shows the extra sections of the tab being edited, falling back to English', async () => {
+    const withSections = {
+      ...draft,
+      translations: {
+        en: {
+          name: 'Probe',
+          description: '',
+          sections: [{title: 'Commands', entries: [{cmd: '/fly', text: 'Fly', cooldown: '1h'}]}]
+        },
+        pl: null
+      }
+    }
+    jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
+      const req = input instanceof Request ? input : new Request(String(input), init)
+      const url = new URL(req.url)
+      if (url.pathname === '/api/admin/catalog/servers')
+        return Promise.resolve(Response.json(servers))
+      if (url.pathname === '/api/admin/catalog/products/p1')
+        return Promise.resolve(Response.json(withSections))
+      return Promise.resolve(Response.json([]))
+    })
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const preview = await screen.findByRole('region', {name: 'Preview · EN'})
+    expect(await within(preview).findByRole('heading', {name: 'Commands'})).toBeInTheDocument()
+    expect(within(preview).getByText('/fly')).toBeInTheDocument()
+    expect(within(preview).getByText('1h')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', {name: 'PL'}))
+    const pl = screen.getByRole('region', {name: 'Preview · PL'})
+    // No Polish translation yet: the site shows the English one.
+    expect(within(pl).getByRole('heading', {name: 'Commands'})).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Name (PL)'), {target: {value: 'Sonda'}})
+    expect(within(pl).queryByRole('heading', {name: 'Commands'})).not.toBeInTheDocument()
   })
 
   it('clicking {nick} inserts it at the caret of the grant field', async () => {

@@ -107,6 +107,7 @@ export const AdminOrderSchema = v.object({
   id: v.string(),
   locale: LocaleSchema,
   stripeSessionId: v.nullable(v.string()),
+  stripePaymentIntentId: v.nullable(v.string()),
   deliveryConsentAt: Iso,
   subtotalMinor: Minor,
   discountMinor: Minor

@@ -1,5 +1,6 @@
 'use client'
 
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {type RconForm, RconFormSchema} from '@/features/catalog/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
@@ -173,6 +174,25 @@ function Field({
           {error}
         </p>
       )}
+    </div>
+  )
+}
+
+/** `RconPanel` while the server loads: its grid with the labels, values as placeholders. */
+export function RconPanelSkeleton() {
+  const t = useTranslations('catalog')
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {[t('host'), t('port'), t('newPassword')].map(label => (
+        <div key={label} className="flex flex-col gap-1">
+          <Label>{label}</Label>
+          <Skeleton className="h-9" />
+        </div>
+      ))}
+      <div aria-hidden className="flex flex-wrap gap-2 md:col-span-2">
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-36 rounded-full" />
+      </div>
     </div>
   )
 }

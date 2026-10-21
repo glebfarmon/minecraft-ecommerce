@@ -194,6 +194,7 @@
       "payment": "Payment",
       "currency": "Currency",
       "stripeSession": "Stripe session",
+      "stripePayment": "Stripe payment",
       "deliveryConsent": "Delivery consent",
       "timeline": "Timeline",
       "created": "Created",
@@ -207,6 +208,7 @@
   "catalog": {
     "backToCatalog": "Back to catalog",
     "preview": "Preview",
+    "previewIn": "Preview · {locale}",
     "variables": "Variables",
     "theBuyersNickname": "The buyer’s nickname",
     "example": "Example:",
@@ -223,7 +225,6 @@
     "createCategory": "Create category",
     "editCategory": "Edit category",
     "detach": "Detach",
-    "loadingProducts": "Loading products…",
     "noProducts": "No products.",
     "couldNotLoadCategoriesRefreshThe": "Could not load categories. Refresh the page.",
     "newCategory": "New category",
@@ -347,7 +348,6 @@
     "categoryDeleted": "Category deleted."
   },
   "content": {
-    "loadingRules": "Loading rules…",
     "couldNotLoadTheRulesRefresh": "Could not load the rules. Refresh the page.",
     "language": "Language",
     "unsavedChanges": "Unsaved changes",
@@ -364,7 +364,6 @@
     "en": "EN",
     "preview": "Preview",
     "noSectionsYet": "No sections yet.",
-    "loadingSettings": "Loading settings…",
     "couldNotLoadTheSettingsRefresh": "Could not load the settings. Refresh the page.",
     "savedLiveOnTheSiteWithin": "Saved. Live on the site within a minute.",
     "brand": "Brand",
@@ -389,7 +388,6 @@
     "reset": "Reset",
     "publishedEditions": "Published editions",
     "restoredToTheDraftAbovePublish": "Restored to the draft above. Publish it to show it on the site.",
-    "loadingEditions": "Loading editions…",
     "couldNotLoadTheEditionsRefresh": "Could not load the editions. Refresh the page.",
     "nothingPublishedYet": "Nothing published yet.",
     "loadMore": "Load more",
@@ -450,7 +448,6 @@
     "resend": "Resend",
     "revoke": "Revoke",
     "noPendingInvites": "No pending invites.",
-    "loadingRoles": "Loading roles…",
     "couldNotLoadRolesRefreshThe": "Could not load roles. Refresh the page.",
     "rolePermissions": "Role permissions",
     "changingARoleSignsOutEveryone": "Changing a role signs out everyone who has it. You can only give out permissions you hold. System roles are read-only.",
@@ -505,8 +502,6 @@
     "nothingLoggedYet": "Nothing logged yet.",
     "actionStartsWith": "Action starts with",
     "role": "role.",
-    "from": "From",
-    "to": "To",
     "applyFilters": "Apply filters",
     "whoChangedWhatNewestFirst": "Who changed what, newest first.",
     "forbidden": "You do not have permission to read the audit log.",
@@ -516,7 +511,9 @@
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "page": "Page {n}",
-    "anyone": "Anyone"
+    "anyone": "Anyone",
+    "dates": "Dates",
+    "rowsPerPage": "Rows per page"
   },
   "auth": {
     "backupCodes": "Backup codes",
@@ -577,5 +574,10 @@
     "error": "Error",
     "dismiss": "Dismiss",
     "notifications": "Notifications"
+  },
+  "datePicker": {
+    "anyTime": "Any time",
+    "clear": "Clear",
+    "done": "Done"
   }
 }

@@ -2,7 +2,7 @@
 
 import {EmptyState} from '@/components/empty-state'
 import {Hint} from '@/components/hint'
-import {SkeletonRows} from '@/components/skeleton'
+import {Skeleton} from '@/components/skeleton'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
@@ -21,22 +21,25 @@ import {Pencil, Plus, Tags} from 'lucide-react'
 import {LayoutGroup} from 'motion/react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
-import {useState} from 'react'
+import {type CSSProperties, type ReactNode, useState} from 'react'
 
 import {Button} from '@shop/ui/button'
 
 import {useOptimisticOrder} from '../lib/optimistic-order'
 import {AddCard} from './add-card'
 import {DragHandle} from './drag-handle'
-import {ProductCard} from './product-card'
+import {ProductCard, ProductCardSkeleton} from './product-card'
 import {ProductIcon} from './product-icon'
-import {ServerCard} from './server-card'
+import {ServerCard, ServerCardSkeleton} from './server-card'
 import {SortableList} from './sortable-list'
 
 type Server = ListCatalogServersApiResponse[number]
 type Product = ListCatalogProductsApiResponse[number]
 
-export function CatalogBoard({canEdit}: {canEdit: boolean}) {
+const PRODUCT_GRID = 'grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+
+/** `skeleton`: the route's loading state, the board's layout with placeholders. */
+export function CatalogBoard({canEdit, skeleton = false}: {canEdit: boolean; skeleton?: boolean}) {
   const t = useTranslations('catalog')
   const servers = useListCatalogServersQuery()
   const [orderServers] = useOrderCatalogServersMutation()
@@ -46,13 +49,15 @@ export function CatalogBoard({canEdit}: {canEdit: boolean}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const held = useHoldLoading(servers.isLoading)
-  if (held) return <SkeletonRows rows={4} />
+  if (held || skeleton) return <BoardLoading canEdit={canEdit} />
   if (servers.isError) return <p role="alert">{t('couldNotLoadTheCatalogRefresh')}</p>
   const selected = tabs.items.find(s => s.id === selectedId) ?? tabs.items[0]
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-3 overflow-x-auto p-1 pb-2">
+      {/* The scroll box clips on both axes: 8px of padding holds the selection ring (4px out plus
+          a 2px line) and the focus ring; the negative margin keeps the cards on the page edge. */}
+      <div className="-m-2 flex gap-3 overflow-x-auto p-2">
         <div role="tablist" aria-label={t('server')}>
           <LayoutGroup id="servers">
             <SortableList
@@ -111,26 +116,24 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
     c => !server.categories.some(sc => sc.id === c.id)
   )
 
-  const attachMenu = (
+  /** The list unfolds from the middle of its trigger, under where the admin clicked. */
+  const attachMenu = (trigger: ReactNode) => (
     <Menu.Root modal={false}>
-      <Menu.Trigger asChild>
-        <Button variant="outline">
-          <Plus aria-hidden />
-          {t('attachCategory')}
-        </Button>
-      </Menu.Trigger>
+      <Menu.Trigger asChild>{trigger}</Menu.Trigger>
       <Menu.Portal>
         <Menu.Content
-          align="start"
+          align="center"
           sideOffset={6}
-          className="menu-content z-50 min-w-56 rounded-plate border border-border bg-card-raised p-1 shadow-xl shadow-black/40">
-          {unattached.map(c => (
+          collisionPadding={16}
+          className="menu-unfold z-50 w-72 max-w-[calc(100vw-2rem)] rounded-plate border border-border bg-card-raised p-1 shadow-xl shadow-black/40">
+          {unattached.map((c, i) => (
             <Menu.Item
               key={c.id}
+              style={{'--i': i} as CSSProperties}
               onSelect={() => void save([...categories.items.map(x => x.id), c.id])}
-              className="flex h-9 cursor-pointer items-center gap-2.5 rounded-[10px] px-3 text-[13px] text-fg outline-none data-[highlighted]:bg-card">
-              <ProductIcon name={c.icon} className="size-4 text-muted" />
-              {c.names.en}
+              className="menu-unfold-item flex h-9 cursor-pointer items-center gap-2.5 rounded-[10px] px-3 text-[13px] text-fg outline-none data-[highlighted]:bg-card">
+              <ProductIcon name={c.icon} className="size-4 shrink-0 text-muted" />
+              <span className="truncate">{c.names.en}</span>
             </Menu.Item>
           ))}
         </Menu.Content>
@@ -150,7 +153,13 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           action={
             canEdit && (
               <div className="flex flex-col items-center gap-3">
-                {unattached.length > 0 && attachMenu}
+                {unattached.length > 0 &&
+                  attachMenu(
+                    <Button variant="outline">
+                      <Plus aria-hidden />
+                      {t('attachCategory')}
+                    </Button>
+                  )}
                 <Button asChild variant="outline">
                   <Link href="/catalog/categories">{t('createCategory')}</Link>
                 </Button>
@@ -212,7 +221,17 @@ function ServerColumn({server, canEdit}: {server: Server; canEdit: boolean}) {
           )}
         </SortableList>
       )}
-      {canEdit && unattached.length > 0 && categories.items.length > 0 && attachMenu}
+      {canEdit &&
+        unattached.length > 0 &&
+        categories.items.length > 0 &&
+        attachMenu(
+          <button
+            type="button"
+            className="flex h-12 items-center justify-center gap-2 rounded-card border border-dashed border-border px-4 text-[13px] font-medium text-muted transition-colors hover:bg-card hover:text-fg focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none data-[state=open]:bg-card data-[state=open]:text-fg">
+            <Plus aria-hidden className="size-4" />
+            {t('attachCategory')}
+          </button>
+        )}
     </section>
   )
 }
@@ -238,7 +257,7 @@ function ProductList({
   const list = useOptimisticOrder(products, (ids, base) =>
     order({serverId: server.id, categoryId, body: {ids, base}})
   )
-  if (status === 'loading') return <p className="text-[13px] text-muted">{t('loadingProducts')}</p>
+  if (status === 'loading') return <ProductGridLoading />
   if (status === 'failed') return null
   if (products.length === 0) return <p className="text-[13px] text-muted">{t('noProducts')}</p>
   return (
@@ -249,7 +268,7 @@ function ProductList({
         disabled={!canEdit}
         items={list.items}
         direction="grid"
-        className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+        className={PRODUCT_GRID}
         onMove={ids => void list.move(ids)}>
         {(p, handle) => (
           <ProductCard
@@ -261,5 +280,49 @@ function ProductList({
         )}
       </SortableList>
     </>
+  )
+}
+
+function ProductGridLoading() {
+  const tc = useTranslations('common')
+  return (
+    <div role="status" className={PRODUCT_GRID}>
+      <span className="sr-only">{tc('loading')}</span>
+      {Array.from({length: 4}, (_, i) => (
+        <ProductCardSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
+/** The board as it will be: the server strip, then one server's first category and its products. */
+function BoardLoading({canEdit}: {canEdit: boolean}) {
+  const t = useTranslations('catalog')
+  const tc = useTranslations('common')
+  return (
+    <div className="flex flex-col gap-6">
+      <span role="status" className="sr-only">
+        {tc('loading')}
+      </span>
+      <div className="-m-2 flex gap-3 overflow-x-hidden p-2">
+        {Array.from({length: 3}, (_, i) => (
+          <ServerCardSkeleton key={i} />
+        ))}
+        {canEdit && (
+          <AddCard href="/catalog/servers/new" label={t('server2')} className="min-w-40 shrink-0" />
+        )}
+      </div>
+      <section aria-hidden className="flex flex-col gap-6">
+        <Skeleton className="my-1 h-5 w-40 rounded-full" />
+        <div className="flex flex-col gap-3">
+          <div className="flex h-7 items-center gap-2">
+            <Skeleton className="h-4 w-28 rounded-full" />
+            {canEdit && <Skeleton className="ml-auto h-4 w-14 rounded-full" />}
+          </div>
+          <ProductGridLoading />
+          {canEdit && <div className="h-12 rounded-card border border-dashed border-border" />}
+        </div>
+      </section>
+    </div>
   )
 }

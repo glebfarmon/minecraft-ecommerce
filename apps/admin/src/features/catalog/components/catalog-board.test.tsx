@@ -287,10 +287,12 @@ describe('CatalogBoard', () => {
     })
   })
 
-  it('says products are loading instead of claiming there are none', async () => {
+  it('shows product placeholders while products load, not "No products"', async () => {
     mockApi(undefined, () => new Promise<Response>(() => undefined))
-    renderWithStore(<CatalogBoard canEdit />)
-    expect((await screen.findAllByText('Loading products…')).length).toBeGreaterThan(0)
+    const {container} = renderWithStore(<CatalogBoard canEdit />)
+    expect(await screen.findByRole('heading', {name: 'Ranks'})).toBeInTheDocument()
+    expect(screen.getAllByRole('status').some(s => s.textContent === 'Loading…')).toBe(true)
+    expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
     expect(screen.queryByText('No products.')).not.toBeInTheDocument()
   })
 
