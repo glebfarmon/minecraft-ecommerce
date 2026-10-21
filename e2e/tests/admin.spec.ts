@@ -411,19 +411,25 @@ test('the owner switches sub-navs, opens editors from pencils and the preview fo
 test('the rail marks a clicked page at once and its pill stays put inside a section', async ({
   page
 }) => {
+  // A slow server from the start, so no route is ready before the click: prefetches fail (the
+  // loading fallback cannot commit early) and every other RSC request answers after 1.5 s.
+  await page.route('**/*', async route => {
+    const headers = route.request().headers()
+    if (headers['next-router-prefetch']) return route.abort()
+    if (headers.rsc === '1') await new Promise(r => setTimeout(r, 1500))
+    return route.fallback()
+  })
   await signInOwner(page)
   const rail = page.getByRole('navigation', {name: 'Admin'})
-  const pill = page.locator('aside [data-slot=rolling-indicator]')
+  // Scoped to the nav: the aside also holds the language switch and its own pill.
+  const pill = rail.locator('[data-slot=rolling-indicator]')
 
-  // A slow server: every RSC request (prefetch or navigation) answers after 1.5 s.
-  await page.route('**/*', async route => {
-    if (route.request().headers().rsc === '1') await new Promise(r => setTimeout(r, 1500))
-    await route.fallback()
-  })
   const orders = rail.getByRole('link', {name: 'Orders'})
   await orders.click()
   await expect(orders).toHaveAttribute('aria-current', 'page', {timeout: 300})
   await expect(orders.locator('[data-slot=rolling-indicator]')).toHaveCount(1, {timeout: 300})
+  // Still on the dashboard: the mark comes from the click, not from the committed path.
+  expect(new URL(page.url()).pathname).toBe('/')
   await expect(page.getByRole('heading', {name: 'Orders', exact: true})).toBeVisible()
   await page.unrouteAll({behavior: 'wait'})
 
