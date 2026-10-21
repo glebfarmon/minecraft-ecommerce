@@ -5,6 +5,7 @@ import {LayoutGroup, motion} from 'motion/react'
 import * as React from 'react'
 
 import {cn} from './lib/utils'
+import {PILL_FOCUS} from './pill-focus'
 
 /** The active value, so the trigger that owns it can draw the rolling indicator. */
 const ActiveContext = React.createContext<string | undefined>(undefined)
@@ -59,6 +60,7 @@ function TabsTrigger({
       data-slot="tabs-trigger"
       value={value}
       className={cn(
+        PILL_FOCUS,
         'relative isolate inline-flex h-8 items-center rounded-full px-3 text-[13px] font-medium text-muted transition-colors hover:text-fg focus-visible:ring-1 focus-visible:ring-fg/25 focus-visible:outline-none focus-visible:ring-inset disabled:opacity-50 data-[state=active]:text-fg',
         className
       )}

@@ -22,6 +22,13 @@ describe('LanguageSwitch', () => {
     expect(en.querySelector('[data-slot="rolling-indicator"]')).toBeInTheDocument()
   })
 
+  it('shows keyboard focus on a layer above the pill, not the accent', () => {
+    renderWithProviders(<LanguageSwitch orientation="vertical" />)
+    const cls = screen.getByRole('radio', {name: 'English'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:after:z-10')
+  })
+
   it('names itself in the chosen language', () => {
     renderWithProviders(<LanguageSwitch orientation="horizontal" />, {locale: 'pl'})
     expect(screen.getByRole('radiogroup', {name: 'Język'})).toBeInTheDocument()

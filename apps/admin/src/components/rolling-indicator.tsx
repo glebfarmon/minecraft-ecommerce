@@ -5,12 +5,6 @@ import {type MotionStyle, motion} from 'motion/react'
 import {cn} from '@shop/ui/lib/utils'
 
 /**
- * Keyboard focus of a control whose selection is drawn by a `RollingIndicator`: a quiet inset ring, never the accent (it would fight the pill). Other controls keep `ring-accent`.
- */
-export const PILL_FOCUS =
-  'focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-fg/25 focus-visible:outline-none'
-
-/**
  * The pill that rolls to the chosen item. Render it inside the active item only (which needs
  * `relative isolate`), within a `LayoutGroup` that names the set it rolls across.
  */

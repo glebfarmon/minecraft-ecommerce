@@ -62,6 +62,7 @@ describe('SubNav', () => {
     render(<SubNav label="Content" items={CONTENT} />)
     const cls = screen.getByRole('link', {name: 'Texts'}).className
     expect(cls).not.toContain('ring-accent')
-    expect(cls).toContain('focus-visible:ring-fg/25')
+    expect(cls).toContain('focus-visible:after:z-10')
+    expect(cls).toContain('focus-visible:after:ring-fg/40')
   })
 })

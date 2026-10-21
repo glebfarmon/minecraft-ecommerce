@@ -6,8 +6,9 @@ import {usePathname} from 'next/navigation'
 import {useState} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
+import {PILL_FOCUS} from '@shop/ui/pill-focus'
 
-import {PILL_FOCUS, RollingIndicator} from './rolling-indicator'
+import {RollingIndicator} from './rolling-indicator'
 
 type Item = {href: string; label: string}
 

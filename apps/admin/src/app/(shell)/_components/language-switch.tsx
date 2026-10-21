@@ -1,7 +1,7 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import {PILL_FOCUS, RollingIndicator} from '@/components/rolling-indicator'
+import {RollingIndicator} from '@/components/rolling-indicator'
 import {type AdminLocale, LOCALE_COOKIE} from '@/i18n/locale'
 import {LayoutGroup} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
@@ -9,6 +9,7 @@ import {useRouter} from 'next/navigation'
 import {useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
+import {PILL_FOCUS} from '@shop/ui/pill-focus'
 
 const OPTIONS: {locale: AdminLocale; label: string; name: string}[] = [
   {locale: 'en', label: 'EN', name: 'English'},

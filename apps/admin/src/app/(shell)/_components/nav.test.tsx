@@ -66,6 +66,13 @@ describe('Nav', () => {
     render(<Nav me={me([])} variant="rail" />)
     const cls = screen.getByRole('link', {name: 'Catalog'}).className
     expect(cls).not.toContain('ring-accent')
-    expect(cls).toContain('focus-visible:ring-fg/25')
+    expect(cls).toContain('focus-visible:after:z-10')
+    expect(cls).toContain('focus-visible:after:ring-fg/40')
+  })
+  it('sheet links use the same focus layer', () => {
+    render(<Nav me={me([])} variant="sheet" />)
+    const cls = screen.getByRole('link', {name: 'Catalog'}).className
+    expect(cls).not.toContain('ring-accent')
+    expect(cls).toContain('focus-visible:after:z-10')
   })
 })

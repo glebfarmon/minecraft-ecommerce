@@ -1,7 +1,7 @@
 'use client'
 
 import {Hint} from '@/components/hint'
-import {PILL_FOCUS, RollingIndicator} from '@/components/rolling-indicator'
+import {RollingIndicator} from '@/components/rolling-indicator'
 import {NAV} from '@/config/nav'
 import {LayoutGroup} from 'motion/react'
 import {useTranslations} from 'next-intl'
@@ -11,6 +11,7 @@ import {Fragment} from 'react'
 
 import {type Me, hasPermission} from '@shop/shared/access'
 import {cn} from '@shop/ui/lib/utils'
+import {PILL_FOCUS} from '@shop/ui/pill-focus'
 
 function isCurrent(pathname: string, base: string) {
   return pathname === base || (base !== '/' && pathname.startsWith(`${base}/`))

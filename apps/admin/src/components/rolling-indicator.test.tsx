@@ -59,6 +59,7 @@ describe('Tabs indicator', () => {
     render(<Controlled />)
     const cls = screen.getByRole('tab', {name: 'A'}).className
     expect(cls).not.toContain('ring-accent')
-    expect(cls).toContain('focus-visible:ring-fg/25')
+    expect(cls).toContain('focus-visible:after:z-10')
+    expect(cls).toContain('focus-visible:after:ring-fg/40')
   })
 })
