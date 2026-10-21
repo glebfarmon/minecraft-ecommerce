@@ -64,11 +64,11 @@
 
 The unit test "the preview follows the language tab, there and back" passes, so the failure is browser-only. Use superpowers:systematic-debugging.
 
-- [ ] **Step 1: Reproduce in a browser** — `pnpm dev`, open `http://localhost:3001/content/rules`, click PL, then EN. Record: does `onValueChange('en')` fire (temporary `console.log`), is the EN trigger covered (`document.elementFromPoint` at its centre), does focus jump into a PL `contenteditable`. Candidate causes in order: an element overlaying the tab list (sticky preview / bubble menu), a PL `RichTextField` blur/validation path calling `setTab`, Radix automatic activation fighting the controlled `value`.
-- [ ] **Step 2: Write the failing e2e** `content-rules-tabs.spec.ts`: sign in (existing e2e helper), go to `/content/rules`, click `tab PL` → expect `aria-selected=true`; click `tab EN` → expect EN `aria-selected=true` and `Rule 1.1 (EN)` visible. Run `pnpm test:e2e -- content-rules-tabs` → FAIL.
-- [ ] **Step 3: Fix the root cause**; add a unit test pinning it if it is reproducible in jsdom.
-- [ ] **Step 4: Run** the e2e and `pnpm --filter @shop/admin test -- rules-editor` → PASS.
-- [ ] **Step 5: Commit** `fix(admin): rules language tabs switch back from PL to EN`
+- [x] **Step 1: Reproduce in a browser** — `pnpm dev`, open `http://localhost:3001/content/rules`, click PL, then EN. Record: does `onValueChange('en')` fire (temporary `console.log`), is the EN trigger covered (`document.elementFromPoint` at its centre), does focus jump into a PL `contenteditable`. Candidate causes in order: an element overlaying the tab list (sticky preview / bubble menu), a PL `RichTextField` blur/validation path calling `setTab`, Radix automatic activation fighting the controlled `value`.
+- [x] **Step 2: Write the failing e2e** `content-rules-tabs.spec.ts`: sign in (existing e2e helper), go to `/content/rules`, click `tab PL` → expect `aria-selected=true`; click `tab EN` → expect EN `aria-selected=true` and `Rule 1.1 (EN)` visible. Run `pnpm test:e2e -- content-rules-tabs` → FAIL.
+- [x] **Step 3: Fix the root cause**; add a unit test pinning it if it is reproducible in jsdom.
+- [x] **Step 4: Run** the e2e and `pnpm --filter @shop/admin test -- rules-editor` → PASS.
+- [x] **Step 5: Commit** `fix(admin): rules language tabs switch back from PL to EN`
 
 ### Task 2: No RCON, no purchase
 
@@ -85,15 +85,15 @@ The unit test "the preview follows the language tab, there and back" passes, so 
 - Produces: `CatalogServerSchema` gains `purchasable: v.boolean()`.
 - Produces: `PricingProduct.server` gains `purchasable: boolean`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `rcon-ready.spec.ts`: all set + valid key → `true`; missing host / port / password → `false`; key missing or 31 bytes → `false`.
   - `order-pricing.spec.ts`: `it('refuses a product whose server cannot deliver')` — server `purchasable: false` → `{unavailable: [{server, slug}]}`.
   - `catalog.mapper.spec.ts`: server row without RCON → `purchasable: false`; mapper output still never contains `rcon`.
-- [ ] **Step 2: Run** `pnpm --filter @shop/api test -- rcon-ready order-pricing catalog.mapper` → FAIL.
-- [ ] **Step 3: Implement.** `orders.service.ts` maps each loaded product's server through `rconReady` before `priceLines`; `priceLines` treats `!product.server.purchasable` like inactive. `catalog.service` selects the three RCON columns; the mapper emits `purchasable` and drops the columns. Do not drop products from the catalog: the storefront shows them.
-- [ ] **Step 4: Web.** `AddToCart` takes `purchasable: boolean`; when false renders a disabled button with `catalog.unavailable` and no cart write. Cart lines of an unpurchasable server render as unavailable (reuse the existing inactive-line UI if `loadCart` has one, otherwise mark the line and block checkout). Test in the component's `*.test.tsx`: disabled button, no `addToCart` call.
-- [ ] **Step 5: Run** `pnpm test` → PASS; `pnpm test:int` for orders.
-- [ ] **Step 6: Commit** `feat: block purchases from servers without RCON`; delete memory note `checkout-requires-rcon` after merge.
+- [x] **Step 2: Run** `pnpm --filter @shop/api test -- rcon-ready order-pricing catalog.mapper` → FAIL.
+- [x] **Step 3: Implement.** `orders.service.ts` maps each loaded product's server through `rconReady` before `priceLines`; `priceLines` treats `!product.server.purchasable` like inactive. `catalog.service` selects the three RCON columns; the mapper emits `purchasable` and drops the columns. Do not drop products from the catalog: the storefront shows them.
+- [x] **Step 4: Web.** `AddToCart` takes `purchasable: boolean`; when false renders a disabled button with `catalog.unavailable` and no cart write. Cart lines of an unpurchasable server render as unavailable (reuse the existing inactive-line UI if `loadCart` has one, otherwise mark the line and block checkout). Test in the component's `*.test.tsx`: disabled button, no `addToCart` call.
+- [x] **Step 5: Run** `pnpm test` → PASS; `pnpm test:int` for orders.
+- [x] **Step 6: Commit** `feat: block purchases from servers without RCON`; delete memory note `checkout-requires-rcon` after merge.
 
 ### Task 3: Icon belongs to the category
 
@@ -110,13 +110,13 @@ The unit test "the preview follows the language tab, there and back" passes, so 
 - Public `CatalogProduct.icon` stays (web unchanged): mapper sets it from `p.category.icon`.
 - Admin product list item keeps `icon` (read-only, from category) so `ProductCard` is unchanged.
 
-- [ ] **Step 1: Failing tests** — catalog mapper: product's `icon` equals its category's; admin categories service: create/update persists `icon`; product input with `icon` is rejected by the schema (`v.strictObject` or ignored — match what the schema does for unknown keys today).
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Migration SQL** — add column with default `'crown'`; backfill: `UPDATE categories c SET icon = (SELECT p.icon FROM products p WHERE p."categoryId" = c.id GROUP BY p.icon ORDER BY count(*) DESC, min(p."sortOrder") LIMIT 1) WHERE EXISTS (…)`; then drop `products.icon`. Check column names against the existing migrations before writing.
-- [ ] **Step 4: Implement API + seed**, update OpenAPI, `pnpm --filter @shop/admin codegen`.
-- [ ] **Step 5: Admin UI** — category forms get the icon `Select` (options `PRODUCT_ICONS`, each with its `ProductIcon` drawn); product editor loses the field and shows "Icon comes from the category" hint under the category select.
-- [ ] **Step 6: Run** `pnpm test && pnpm test:int` → PASS.
-- [ ] **Step 7: Commit** `feat: move the product icon to the category`
+- [x] **Step 1: Failing tests** — catalog mapper: product's `icon` equals its category's; admin categories service: create/update persists `icon`; product input with `icon` is rejected by the schema (`v.strictObject` or ignored — match what the schema does for unknown keys today).
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Migration SQL** — add column with default `'crown'`; backfill: `UPDATE categories c SET icon = (SELECT p.icon FROM products p WHERE p."categoryId" = c.id GROUP BY p.icon ORDER BY count(*) DESC, min(p."sortOrder") LIMIT 1) WHERE EXISTS (…)`; then drop `products.icon`. Check column names against the existing migrations before writing.
+- [x] **Step 4: Implement API + seed**, update OpenAPI, `pnpm --filter @shop/admin codegen`.
+- [x] **Step 5: Admin UI** — category forms get the icon `Select` (options `PRODUCT_ICONS`, each with its `ProductIcon` drawn); product editor loses the field and shows "Icon comes from the category" hint under the category select.
+- [x] **Step 6: Run** `pnpm test && pnpm test:int` → PASS.
+- [x] **Step 7: Commit** `feat: move the product icon to the category`
 
 ### Task 4: Audit log — pager and actor filter
 
@@ -133,10 +133,10 @@ Answer to "10 000 rows": the API already pages by keyset (`cursor` = last id, `O
 
 - Consumes: `GET /api/admin/audit?actorId=&action=&from=&to=&cursor=` (exists), admins list query from the team API (`useList…AdminsQuery`, name from `generated.ts`).
 
-- [ ] **Step 1: Failing tests** (admin): `it('pages forward and back')` — page 1 → Next → page 2 rows only, label "Page 2"; Prev → page 1 from cache; Next disabled when `nextCursor` is null. `it('filters by actor')` — options are "Anyone" (no `actorId`) + admins by email; choosing an admin sends their `actorId`. `it('resets to page 1 when filters change')`.
-- [ ] **Step 2: Implement** — state `cursors: (string|undefined)[]` + `pageIndex`; render one `PageRows` for `cursors[pageIndex]`; Next pushes `nextCursor` (or reuses the stored one), Prev decrements. Actor `Select` in the filter form. Int spec: 120 rows → three pages cover all ids exactly once.
-- [ ] **Step 3: Run** `pnpm --filter @shop/admin test -- audit-table` and `pnpm test:int` → PASS.
-- [ ] **Step 4: Commit** `feat(admin): audit pager and actor filter`
+- [x] **Step 1: Failing tests** (admin): `it('pages forward and back')` — page 1 → Next → page 2 rows only, label "Page 2"; Prev → page 1 from cache; Next disabled when `nextCursor` is null. `it('filters by actor')` — options are "Anyone" (no `actorId`) + admins by email; choosing an admin sends their `actorId`. `it('resets to page 1 when filters change')`.
+- [x] **Step 2: Implement** — state `cursors: (string|undefined)[]` + `pageIndex`; render one `PageRows` for `cursors[pageIndex]`; Next pushes `nextCursor` (or reuses the stored one), Prev decrements. Actor `Select` in the filter form. Int spec: 120 rows → three pages cover all ids exactly once.
+- [x] **Step 3: Run** `pnpm --filter @shop/admin test -- audit-table` and `pnpm test:int` → PASS.
+- [x] **Step 4: Commit** `feat(admin): audit pager and actor filter`
 
 ### Task 5: Emails use the site name
 
@@ -144,19 +144,19 @@ Answer to "10 000 rows": the API already pages by keyset (`cursor` = last id, `O
 
 **Interfaces:** `signInCodeMail(code, brand)`, `inviteMail(url, roleName, brand)`, `twoFactorResetMail(brand)`; `brand = siteName.plain + siteName.accent` from `ContentService.settings()` (falls back to `DEFAULT_SITE_SETTINGS`). Better Auth `appName` / TOTP `issuer` stay static (read at boot) but use `DEFAULT_SITE_SETTINGS` instead of `'Shop Admin'`.
 
-- [ ] **Step 1: Failing test** — `inviteMail(url, 'Owner', 'BlockHaus')` subject `'You are invited to BlockHaus Admin'`; no template contains `Shop Admin`.
-- [ ] **Step 2: Implement**, inject `ContentService` where mails are sent.
-- [ ] **Step 3: Run** `pnpm --filter @shop/api test -- templates` → PASS.
-- [ ] **Step 4: Commit** `feat(api): emails carry the site name`
+- [x] **Step 1: Failing test** — `inviteMail(url, 'Owner', 'BlockHaus')` subject `'You are invited to BlockHaus Admin'`; no template contains `Shop Admin`.
+- [x] **Step 2: Implement**, inject `ContentService` where mails are sent.
+- [x] **Step 3: Run** `pnpm --filter @shop/api test -- templates` → PASS.
+- [x] **Step 4: Commit** `feat(api): emails carry the site name`
 
 ### Task 6: Admin is never indexed
 
 **Files:** Create `apps/admin/src/app/robots.ts` (`{rules: {userAgent: '*', disallow: '/'}}`); modify `apps/admin/next.config.ts` (`headers()` → `X-Robots-Tag: noindex, nofollow` on `/:path*`). Test: `apps/admin/src/app/robots.test.ts`.
 
-- [ ] **Step 1: Failing test** — `robots()` disallows `/`; `nextConfig.headers()` includes the tag for `/:path*`.
-- [ ] **Step 2: Implement**; check `apps/admin/src/proxy.ts`/middleware lets `/robots.txt` through without a session.
-- [ ] **Step 3: Run** → PASS. After deploy: `curl -sI https://admin.glebus.app/login | grep -i x-robots`.
-- [ ] **Step 4: Commit** `chore(admin): disallow indexing`
+- [x] **Step 1: Failing test** — `robots()` disallows `/`; `nextConfig.headers()` includes the tag for `/:path*`.
+- [x] **Step 2: Implement**; check `apps/admin/src/proxy.ts`/middleware lets `/robots.txt` through without a session.
+- [x] **Step 3: Run** → PASS. After deploy: `curl -sI https://admin.glebus.app/login | grep -i x-robots`.
+- [x] **Step 4: Commit** `chore(admin): disallow indexing`
 
 ### Task 7: Toasts
 
@@ -169,10 +169,10 @@ Answer to "10 000 rows": the API already pages by keyset (`cursor` = last id, `O
 
 **Interfaces:** `notify.ok(text: string)`, `notify.error(text: string)` exported from `components/toaster.tsx`; `copyText(text: string, label: string)` in `apps/admin/src/lib/copy.ts` → writes the clipboard, then `notify.ok(t('common.copied', {label}))`, or `notify.error` on rejection.
 
-- [ ] **Step 1: Failing tests** — `copyText` success → toast "Email copied"; rejected clipboard → error toast. Rules editor save → toast "Draft saved" (no inline status banner).
-- [ ] **Step 2: Implement** toaster + `copyText`, then migrate call sites one feature at a time; remove `useMessage` state that becomes unused.
-- [ ] **Step 3: Run** `pnpm --filter @shop/admin test` → PASS; check 390 px.
-- [ ] **Step 4: Commit** `feat(admin): toasts for copy, save and errors`
+- [x] **Step 1: Failing tests** — `copyText` success → toast "Email copied"; rejected clipboard → error toast. Rules editor save → toast "Draft saved" (no inline status banner).
+- [x] **Step 2: Implement** toaster + `copyText`, then migrate call sites one feature at a time; remove `useMessage` state that becomes unused.
+- [x] **Step 3: Run** `pnpm --filter @shop/admin test` → PASS; check 390 px.
+- [x] **Step 4: Commit** `feat(admin): toasts for copy, save and errors`
 
 ### Task 8: Skeletons that look like the page and do not flash
 
@@ -185,10 +185,10 @@ Answer to "10 000 rows": the API already pages by keyset (`cursor` = last id, `O
 
 Proposal implemented: (a) shimmer — a 1.4 s diagonal gradient sweep on `card-raised` instead of `animate-pulse` opacity blinking; static under reduced motion; (b) shapes — `SkeletonRows` rows get an inner line (60% + 20% widths) like table rows, dashboard `Loading` mirrors KPI cards (label line + big number line), chart and table; (c) delay — nothing for the first 200 ms (most cached loads finish), then at least 400 ms so it never blinks.
 
-- [ ] **Step 1: Failing tests** (fake timers) — inactive → false; active 150 ms then inactive → never true; active 250 ms → true at 200, inactive at 300 → still true until 600.
-- [ ] **Step 2: Implement** hook, `Skeleton` uses `.skeleton`; `SkeletonRows` and `Loading` render nothing until the flag is true (keep `role="status"` text from the start for screen readers).
-- [ ] **Step 3: Run** tests → PASS; visually check `/`, `/orders`, `/content/rules` with network throttled.
-- [ ] **Step 4: Commit** `feat(admin): shaped shimmer skeletons with a show delay`
+- [x] **Step 1: Failing tests** (fake timers) — inactive → false; active 150 ms then inactive → never true; active 250 ms → true at 200, inactive at 300 → still true until 600.
+- [x] **Step 2: Implement** hook, `Skeleton` uses `.skeleton`; `SkeletonRows` and `Loading` render nothing until the flag is true (keep `role="status"` text from the start for screen readers).
+- [x] **Step 3: Run** tests → PASS; visually check `/`, `/orders`, `/content/rules` with network throttled.
+- [x] **Step 4: Commit** `feat(admin): shaped shimmer skeletons with a show delay`
 
 ### Task 9: Pill controls without the green ring; server card ring
 
@@ -196,11 +196,11 @@ Proposal implemented: (a) shimmer — a 1.4 s diagonal gradient sweep on `card-r
 
 Decision: controls whose selection is drawn by a `RollingIndicator` (rail, sheet nav, sub-nav, tabs, language) show keyboard focus as the hover state plus an inset `focus-visible:ring-1 focus-visible:ring-fg/25` — no accent. Buttons, inputs and links elsewhere keep `ring-accent`.
 
-- [ ] **Step 1: Failing test** — rendered `SubNav` link / `TabsTrigger` / rail link class lists contain no `ring-accent`.
-- [ ] **Step 2: Implement** a shared `PILL_FOCUS` constant in `apps/admin/src/components/rolling-indicator.tsx` (and the same classes inline in `packages/ui/src/tabs.tsx`, which cannot import admin).
-- [ ] **Step 3: Server card** — the indicator radius must be the card radius + 4 px (`-inset-1`): read `--radius-card` in `globals.css` and use `rounded-[calc(var(--radius-card)+4px)]`; set `style={{borderRadius: …}}` on the `motion.span` so Motion corrects the radius during the layout animation (Context7: Motion layout borderRadius correction). Verify in the browser that the ring hugs the card in rest and in motion.
-- [ ] **Step 4: Run** tests → PASS.
-- [ ] **Step 5: Commit** `fix(admin): pill focus without the accent ring, even server ring`
+- [x] **Step 1: Failing test** — rendered `SubNav` link / `TabsTrigger` / rail link class lists contain no `ring-accent`.
+- [x] **Step 2: Implement** a shared `PILL_FOCUS` constant in `apps/admin/src/components/rolling-indicator.tsx` (and the same classes inline in `packages/ui/src/tabs.tsx`, which cannot import admin).
+- [x] **Step 3: Server card** — the indicator radius must be the card radius + 4 px (`-inset-1`): read `--radius-card` in `globals.css` and use `rounded-[calc(var(--radius-card)+4px)]`; set `style={{borderRadius: …}}` on the `motion.span` so Motion corrects the radius during the layout animation (Context7: Motion layout borderRadius correction). Verify in the browser that the ring hugs the card in rest and in motion.
+- [x] **Step 4: Run** tests → PASS.
+- [x] **Step 5: Commit** `fix(admin): pill focus without the accent ring, even server ring`
 
 ### Task 10: Rail nav moves at click; no replay on catalog → product
 
@@ -212,11 +212,11 @@ Decision: controls whose selection is drawn by a `RollingIndicator` (rail, sheet
 
 **Interfaces:** `usePendingHref(pathname: string): {pending: string | null; mark: (href: string) => (e: MouseEvent) => void}` — `mark` ignores modified/non-primary clicks; pending clears when the pathname changes.
 
-- [ ] **Step 1: Failing unit test** — click "Orders" in `Nav` while `usePathname` still returns `/` → Orders link has `aria-current="page"` and holds the indicator.
-- [ ] **Step 2: Implement** the hook, use it in `SubNav` (behaviour unchanged, its tests stay green) and `Nav` (current = pending item if any, else `isCurrent`).
-- [ ] **Step 3: Debug the catalog replay** (systematic-debugging): on `/catalog` click a product card; watch the rail indicator. Check in order: does the indicator unmount/remount (React DevTools / a mount `console.log`) — `(sections)` layout exit or a `Hint` re-key; does Motion see a viewport jump because the page scrolls to top while the rail is sticky/fixed → fix with `layoutRoot` on the rail container or `layoutDependency={currentHref}` on the indicator. Write the e2e first: navigate `/catalog` → product, assert the indicator's `getBoundingClientRect().top` is equal before and 100 ms after the click.
-- [ ] **Step 4: Run** unit + e2e → PASS.
-- [ ] **Step 5: Commit** `fix(admin): rail indicator moves on click and stays put inside a section`
+- [x] **Step 1: Failing unit test** — click "Orders" in `Nav` while `usePathname` still returns `/` → Orders link has `aria-current="page"` and holds the indicator.
+- [x] **Step 2: Implement** the hook, use it in `SubNav` (behaviour unchanged, its tests stay green) and `Nav` (current = pending item if any, else `isCurrent`).
+- [x] **Step 3: Debug the catalog replay** (systematic-debugging): on `/catalog` click a product card; watch the rail indicator. Check in order: does the indicator unmount/remount (React DevTools / a mount `console.log`) — `(sections)` layout exit or a `Hint` re-key; does Motion see a viewport jump because the page scrolls to top while the rail is sticky/fixed → fix with `layoutRoot` on the rail container or `layoutDependency={currentHref}` on the indicator. Write the e2e first: navigate `/catalog` → product, assert the indicator's `getBoundingClientRect().top` is equal before and 100 ms after the click.
+- [x] **Step 4: Run** unit + e2e → PASS.
+- [x] **Step 5: Commit** `fix(admin): rail indicator moves on click and stays put inside a section`
 
 ### Task 11: Dashboard range switch animates instead of blanking
 
@@ -224,18 +224,18 @@ Decision: controls whose selection is drawn by a `RollingIndicator` (rail, sheet
 
 **Interfaces:** in `Dashboard`, `shown = query.currentData ?? (query.data && lastArgs.currency === currency ? query.data : undefined)` where the previous data is reused only when the currency is unchanged (a currency switch still must not show old-currency numbers). While `query.isFetching && shown !== query.currentData`, the content wrapper gets `aria-busy` and `opacity-60 transition-opacity`.
 
-- [ ] **Step 1: Failing test** — switch 7d → 30d with the 30d response pending: KPI cards stay mounted with 7d values and `aria-busy="true"`; no `Loading` status; on resolve values are the 30d ones. Currency switch still shows `Loading`.
-- [ ] **Step 2: Implement**; KPIs already count up (`useCountUp`) — make sure it animates from the previous value, not 0. Chart bars: animate `height`/`y` (SVG attributes via Motion `motion.rect` or CSS `transition` on `transform: scaleY`), 300 ms ease-out, off under reduced motion. Donut arcs transition `stroke-dasharray`.
-- [ ] **Step 3: Run** `pnpm --filter @shop/admin test -- dashboard` → PASS; check rapid 7d↔30d clicks end on the last range.
-- [ ] **Step 4: Commit** `feat(admin): animate dashboard range changes`
+- [x] **Step 1: Failing test** — switch 7d → 30d with the 30d response pending: KPI cards stay mounted with 7d values and `aria-busy="true"`; no `Loading` status; on resolve values are the 30d ones. Currency switch still shows `Loading`.
+- [x] **Step 2: Implement**; KPIs already count up (`useCountUp`) — make sure it animates from the previous value, not 0. Chart bars: animate `height`/`y` (SVG attributes via Motion `motion.rect` or CSS `transition` on `transform: scaleY`), 300 ms ease-out, off under reduced motion. Donut arcs transition `stroke-dasharray`.
+- [x] **Step 3: Run** `pnpm --filter @shop/admin test -- dashboard` → PASS; check rapid 7d↔30d clicks end on the last range.
+- [x] **Step 4: Commit** `feat(admin): animate dashboard range changes`
 
 ### Task 12: Latest orders rows are links
 
 **Files:** `features/dashboard/components/dashboard.tsx` (`LatestOrders`), `dashboard.test.tsx`.
 
-- [ ] **Step 1: Failing test** — clicking the nick cell of a latest-order row navigates to `/orders/<id>` (mock router / assert the row link click).
-- [ ] **Step 2: Implement** — pass `rowHref={o => `/orders/${o.id}`}` to `DataTable`; the order cell renders plain `o.publicId` (DataTable adds the link).
-- [ ] **Step 3: Run** → PASS. **Step 4: Commit** `fix(admin): latest orders rows open the order`
+- [x] **Step 1: Failing test** — clicking the nick cell of a latest-order row navigates to `/orders/<id>` (mock router / assert the row link click).
+- [x] **Step 2: Implement** — pass `rowHref={o => `/orders/${o.id}`}` to `DataTable`; the order cell renders plain `o.publicId` (DataTable adds the link).
+- [x] **Step 3: Run** → PASS. **Step 4: Commit** `fix(admin): latest orders rows open the order`
 
 ### Task 13: Back links on the left
 
@@ -243,34 +243,34 @@ Decision: controls whose selection is drawn by a `RollingIndicator` (rail, sheet
 
 **Interfaces:** `PageHeader` gains `back?: {href: string; label: string}` — a ghost `Button asChild` with `ArrowLeft`, rendered above the title, aligned left (`-ml-3` so the icon lines up with the title).
 
-- [ ] **Step 1: Failing test** — `PageHeader` with `back` renders the link before the `h1` in DOM order.
-- [ ] **Step 2: Implement**; `EditorLayout` and `OrderDetails` pass `back` instead of `actions={<BackLink/>}`; delete `BackLink`.
-- [ ] **Step 3: Run** → PASS. **Step 4: Commit** `fix(admin): back links sit on the left`
+- [x] **Step 1: Failing test** — `PageHeader` with `back` renders the link before the `h1` in DOM order.
+- [x] **Step 2: Implement**; `EditorLayout` and `OrderDetails` pass `back` instead of `actions={<BackLink/>}`; delete `BackLink`.
+- [x] **Step 3: Run** → PASS. **Step 4: Commit** `fix(admin): back links sit on the left`
 
 ### Task 14: Catalog editor polish
 
 **Files:** `features/catalog/components/product-card.tsx`, `product-editor.tsx`, `sections-editor.tsx`, `catalog-board.tsx`, messages; tests next to each.
 
-- [ ] **Step 1: Tests first** — `ProductCard` link has no `group-hover:underline`; preview `ProductCard` with `description` renders it (2 lines, `line-clamp-2`, muted); sections editor block has no `border` class.
-- [ ] **Step 2: Hover** — remove `group-hover:underline` (the card already changes background on hover).
-- [ ] **Step 3: Preview description** — `ProductCard` gains optional `description?: string`, shown only when passed; the editor passes the EN description as plain text (strip markdown with the existing rich-text helper, `fromDoc`/`markdown-doc` in `components/rich-text/`).
-- [ ] **Step 4: Sections block** — `sections-editor.tsx:111` replace `rounded-lg border p-3` with `rounded-plate bg-card-raised p-3` (Tailwind 4 `border` defaults to `currentColor`, hence the white line). Grep admin for other bare `border` without a colour and fix the same way.
-- [ ] **Step 5: Attach category** — replace the label + select + button row with a compact "＋ Attach category" outline button that opens a `Select`-style menu (Radix DropdownMenu, already a dependency) listing unattached categories with their icons; choosing one attaches it at once (no second "Attach" click). Hidden when nothing is left to attach. Test: choosing a category calls `setCategories` with the appended id.
-- [ ] **Step 6: Run** catalog tests → PASS. **Step 7: Commit** `fix(admin): catalog editor polish`
+- [x] **Step 1: Tests first** — `ProductCard` link has no `group-hover:underline`; preview `ProductCard` with `description` renders it (2 lines, `line-clamp-2`, muted); sections editor block has no `border` class.
+- [x] **Step 2: Hover** — remove `group-hover:underline` (the card already changes background on hover).
+- [x] **Step 3: Preview description** — `ProductCard` gains optional `description?: string`, shown only when passed; the editor passes the EN description as plain text (strip markdown with the existing rich-text helper, `fromDoc`/`markdown-doc` in `components/rich-text/`).
+- [x] **Step 4: Sections block** — `sections-editor.tsx:111` replace `rounded-lg border p-3` with `rounded-plate bg-card-raised p-3` (Tailwind 4 `border` defaults to `currentColor`, hence the white line). Grep admin for other bare `border` without a colour and fix the same way.
+- [x] **Step 5: Attach category** — replace the label + select + button row with a compact "＋ Attach category" outline button that opens a `Select`-style menu (Radix DropdownMenu, already a dependency) listing unattached categories with their icons; choosing one attaches it at once (no second "Attach" click). Hidden when nothing is left to attach. Test: choosing a category calls `setCategories` with the appended id.
+- [x] **Step 6: Run** catalog tests → PASS. **Step 7: Commit** `fix(admin): catalog editor polish`
 
 ### Task 15: Mobile menu animation
 
 **Files:** `app/(shell)/_components/mobile-nav.tsx` (+ test), `app/globals.css` if keyframes are used.
 
-- [ ] **Step 1: Implement** — Radix Dialog with `forceMount` + Motion `AnimatePresence`: overlay fades 0 → 60% (200 ms); sheet slides from `x: -100%` with spring (`bounce: 0, duration: 0.35`, same as `RollingIndicator`); close reverses; the burger icon morphs `Menu` → `X` (rotate + crossfade, 200 ms). Reduced motion: opacity only.
-- [ ] **Step 2: Test** — opening renders the dialog; after closing, the dialog is removed once the exit finishes (`waitFor`).
-- [ ] **Step 3: Run** → PASS; check at 390 px. **Step 4: Commit** `feat(admin): animated mobile menu`
+- [x] **Step 1: Implement** — Radix Dialog with `forceMount` + Motion `AnimatePresence`: overlay fades 0 → 60% (200 ms); sheet slides from `x: -100%` with spring (`bounce: 0, duration: 0.35`, same as `RollingIndicator`); close reverses; the burger icon morphs `Menu` → `X` (rotate + crossfade, 200 ms). Reduced motion: opacity only.
+- [x] **Step 2: Test** — opening renders the dialog; after closing, the dialog is removed once the exit finishes (`waitFor`).
+- [x] **Step 3: Run** → PASS; check at 390 px. **Step 4: Commit** `feat(admin): animated mobile menu`
 
 ### Final
 
-- [ ] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:int && pnpm test:e2e`
-- [ ] `graphify update .`
-- [ ] Tick the boxes above; superpowers:finishing-a-development-branch.
+- [x] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:int && pnpm test:e2e`
+- [x] `graphify update .`
+- [x] Tick the boxes above; superpowers:finishing-a-development-branch.
 
 ### Task 16: Admin UI shows the site name (added 2026-10-21 at the owner's request)
 
@@ -278,6 +278,6 @@ Owner: replace "Shop Admin" in the browser title and on the sign-in / join pages
 
 **Files:** Create `apps/admin/src/lib/site-name.ts` (server-only `getSiteName(): Promise<SiteSettings['siteName']>` moved out of `app/(shell)/_components/brand-mark.tsx`, same fetch: `${API_ORIGIN}/api/content/settings`, `revalidate: 60`, 3 s timeout, `DEFAULT_SITE_SETTINGS.siteName` fallback). Modify `brand-mark.tsx` (use it), `app/layout.tsx` (`generateMetadata` → title `"<plain><accent> Admin"`, keep `robots`), `apps/admin/messages/{en,pl}.json` (`signInToShopAdmin`, `joinShopAdmin`, `notInvited` take `{site}`; PL wording names the site too), the sign-in / invite components that render them. Tests: `layout.test.ts`, the auth component tests, a `site-name.test.ts` (fallback on non-OK and on throw).
 
-- [ ] **Step 1: Failing tests** — metadata title is `"Blockhaus Admin"` with default settings and `"<name> Admin"` with a mocked settings response; sign-in heading reads "Sign in to Blockhaus Admin"; no admin string contains "Shop Admin".
-- [ ] **Step 2: Implement**; pass the name from the server page/layout to client components as a prop (client components cannot fetch server-only).
-- [ ] **Step 3: Run** `pnpm --filter @shop/admin test` → PASS. **Step 4: Commit** `feat(admin): admin shows the site name`
+- [x] **Step 1: Failing tests** — metadata title is `"Blockhaus Admin"` with default settings and `"<name> Admin"` with a mocked settings response; sign-in heading reads "Sign in to Blockhaus Admin"; no admin string contains "Shop Admin".
+- [x] **Step 2: Implement**; pass the name from the server page/layout to client components as a prop (client components cannot fetch server-only).
+- [x] **Step 3: Run** `pnpm --filter @shop/admin test` → PASS. **Step 4: Commit** `feat(admin): admin shows the site name`
