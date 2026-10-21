@@ -8,7 +8,8 @@ import {
   CreateOrderRequestSchema,
   type CreateOrderResponse,
   PUBLIC_ID_PATTERN,
-  type PublicOrder
+  type PublicOrder,
+  type RecentPurchases
 } from '@shop/shared/orders'
 
 import {clientIp} from '../common/client-ip'
@@ -27,6 +28,12 @@ export class OrdersController {
     @Req() req: IncomingMessage
   ): Promise<CreateOrderResponse> {
     return this.orders.create(body, clientIp(req.headers, req.socket.remoteAddress))
+  }
+
+  @Get('recent')
+  @Header('Cache-Control', 'public, max-age=0, s-maxage=30')
+  recent(): Promise<RecentPurchases> {
+    return this.orders.recentPurchases()
   }
 
   @Get(':publicId')

@@ -6,39 +6,49 @@ import {useLocale, useTranslations} from 'next-intl'
 import type {CSSProperties} from 'react'
 
 import type {CatalogResponse} from '@shop/shared/catalog'
+import type {RecentPurchase} from '@shop/shared/orders'
 
-// TEMP: placeholder purchases to preview the design. Remove when SSE arrives with the API.
-const STUB_ROWS = [
-  {id: '1', player: 'Notch_fan', server: 'survival', slug: 'vip', minutesAgo: 1},
-  {id: '2', player: 'Creeper77', server: 'survival', slug: 'starter-kit', minutesAgo: 3},
-  {id: '3', player: 'xX_Alex_Xx', server: 'anarchy', slug: 'warlord', minutesAgo: 6},
-  {id: '4', player: 'Steve2012', server: 'survival', slug: 'mythic-case', minutesAgo: 9},
-  {id: '5', player: 'EnderQueen', server: 'minigames', slug: 'champion', minutesAgo: 12},
-  {id: '6', player: 'PixelBaker', server: 'survival', slug: 'coins-5000', minutesAgo: 17},
-  {id: '7', player: 'Zombie_Rick', server: 'anarchy', slug: 'pvp-kit', minutesAgo: 24},
-  {id: '8', player: 'Kasia_PL', server: 'minigames', slug: 'cosmetic-case', minutesAgo: 31},
-  {id: '9', player: 'RedstoneRay', server: 'survival', slug: 'legend', minutesAgo: 44},
-  {id: '10', player: 'Golem_99', server: 'anarchy', slug: 'chaos-case', minutesAgo: 58}
-]
-
-function purchases(catalog: CatalogResponse) {
-  return STUB_ROWS.flatMap(({server, slug, ...rest}) => {
+function purchases(catalog: CatalogResponse, recent: RecentPurchase[]) {
+  const now = Date.now()
+  return recent.flatMap(({server, product: slug, paidAt, ...rest}) => {
     const product = catalog.products.find(p => p.server === server && p.slug === slug)
     const owner = catalog.servers.find(s => s.slug === server)
     return product && owner
-      ? [{...rest, product, accent: owner.accent, onAccent: owner.onAccent}]
+      ? [
+          {
+            ...rest,
+            product,
+            accent: owner.accent,
+            onAccent: owner.onAccent,
+            msAgo: Math.max(0, now - Date.parse(paidAt))
+          }
+        ]
       : []
   })
 }
 
 type Purchase = ReturnType<typeof purchases>[number]
 
+const AGO_UNITS = [
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000]
+] as const
+
+/** `3 min ago`, `2 hr ago`, `yesterday`: the largest unit that fits, minutes at the least. */
+function formatAgo(ms: number, locale: string) {
+  const [unit, size] = AGO_UNITS.find(([, size]) => ms >= size) ?? AGO_UNITS[2]
+  return new Intl.RelativeTimeFormat(locale, {numeric: 'auto', style: 'short'}).format(
+    -Math.floor(ms / size),
+    unit
+  )
+}
+
 /** Below this many purchases a looping marquee would repeat the same donors, so the row stays still. */
 const MARQUEE_MIN = 6
 
 function Item({purchase: p}: {purchase: Purchase}) {
   const locale = useLocale()
-  const ago = new Intl.RelativeTimeFormat(locale, {numeric: 'auto', style: 'short'})
   return (
     <li
       style={{'--accent': p.accent, '--on-accent': p.onAccent} as CSSProperties}
@@ -47,13 +57,13 @@ function Item({purchase: p}: {purchase: Purchase}) {
         <ProductPlate product={p.product} size="thumb" />
       </span>
       <span className="flex max-w-[190px] min-w-0 flex-col">
-        <span className="truncate text-sm leading-tight font-semibold">{p.player}</span>
+        <span className="truncate text-sm leading-tight font-semibold">{p.nick}</span>
         <span className="truncate text-xs text-muted">
-          {p.product.name} · {ago.format(-p.minutesAgo, 'minute')}
+          {p.product.name} · {formatAgo(p.msAgo, locale)}
         </span>
       </span>
       <span className="font-display text-lg leading-none font-semibold text-accent tabular-nums">
-        {formatPrice(p.product.prices.EUR, 'EUR', locale)}
+        {formatPrice(p.amountMinor, p.currency, locale)}
       </span>
     </li>
   )
@@ -81,11 +91,17 @@ function Row({purchases, hidden}: {purchases: Purchase[]; hidden?: boolean}) {
   )
 }
 
-/** Purchase feed (SSE arrives with the API). Empty and short feeds sit still; a full one runs as a right-to-left marquee. */
-export function LiveFeed({catalog}: {catalog: CatalogResponse | null}) {
+/** Purchase feed of the latest paid orders. Empty and short feeds sit still; a full one runs as a right-to-left marquee. */
+export function LiveFeed({
+  catalog,
+  recent
+}: {
+  catalog: CatalogResponse | null
+  recent: RecentPurchase[]
+}) {
   const t = useTranslations('feed')
   if (!catalog) return null
-  const items = purchases(catalog)
+  const items = purchases(catalog, recent)
   const full = items.length >= MARQUEE_MIN
   return (
     <section aria-labelledby="feed-title" className="border-b border-line py-10">

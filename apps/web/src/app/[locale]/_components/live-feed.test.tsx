@@ -1,6 +1,8 @@
 import {TEST_CATALOG} from '@/features/catalog/test-catalog'
 import {render, screen} from '@testing-library/react'
 
+import type {RecentPurchase} from '@shop/shared/orders'
+
 import {LiveFeed} from './live-feed'
 
 jest.mock('next-intl', () => ({
@@ -8,53 +10,54 @@ jest.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key
 }))
 
-const base = TEST_CATALOG.products.find(p => p.slug === 'vip')
-if (!base) throw new Error('fixture lost vip')
-
-const extraProducts = [
-  ['survival', 'starter-kit'],
-  ['anarchy', 'warlord'],
-  ['survival', 'coins-5000'],
-  ['minigames', 'champion']
-].map(([server, slug]) => ({
-  ...base,
-  server: server ?? '',
-  slug: slug ?? '',
-  name: slug ?? ''
-}))
+const purchase = (n: number, server = 'survival', product = 'vip'): RecentPurchase => ({
+  id: String(n),
+  nick: `Buyer_${String(n)}`,
+  server,
+  product,
+  currency: 'EUR',
+  amountMinor: 499,
+  paidAt: new Date(Date.now() - n * 60_000).toISOString()
+})
 
 const marquee = () => document.querySelector('.feed-marquee')
 
 describe('LiveFeed', () => {
-  it('shows only purchases whose product is still in the catalog', () => {
-    render(<LiveFeed catalog={TEST_CATALOG} />)
-    // Of the stub purchases, only vip, legend, mythic-case and pvp-kit exist in the fixture.
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
-    expect(screen.queryByText(/champion/i)).toBeNull()
+  it('shows each purchase with its nick, product, real amount and age', () => {
+    render(<LiveFeed catalog={TEST_CATALOG} recent={[purchase(3)]} />)
+    expect(screen.getByText('Buyer_3')).toBeInTheDocument()
+    expect(screen.getByText(/3 min\. ago/)).toBeInTheDocument()
+    expect(screen.getByText(/^4\.99\s€$/)).toBeInTheDocument()
     expect(marquee()).toBeNull()
   })
 
+  it('skips purchases whose product is no longer in the catalog', () => {
+    render(
+      <LiveFeed catalog={TEST_CATALOG} recent={[purchase(1), purchase(2, 'survival', 'gone')]} />
+    )
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+  })
+
   it('runs a full feed as a marquee with the loop copy hidden from assistive tech', () => {
-    const catalog = {...TEST_CATALOG, products: [...TEST_CATALOG.products, ...extraProducts]}
-    const {container} = render(<LiveFeed catalog={catalog} />)
+    const recent = Array.from({length: 6}, (_, i) => purchase(i + 1))
+    const {container} = render(<LiveFeed catalog={TEST_CATALOG} recent={recent} />)
     expect(marquee()).not.toBeNull()
-    // 8 purchases; the hidden loop copy is left out of the accessibility tree.
-    expect(screen.getAllByRole('listitem')).toHaveLength(8)
+    expect(screen.getAllByRole('listitem')).toHaveLength(6)
     const lists = container.querySelectorAll('.feed-marquee ul')
     expect(lists).toHaveLength(2)
-    expect(container.querySelectorAll('.feed-marquee li')).toHaveLength(16)
+    expect(container.querySelectorAll('.feed-marquee li')).toHaveLength(12)
     expect(lists[0]).not.toHaveAttribute('aria-hidden')
     expect(lists[1]).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('shows the empty message when no stub product is in the catalog', () => {
-    render(<LiveFeed catalog={{...TEST_CATALOG, products: []}} />)
+  it('shows the empty message when there are no purchases', () => {
+    render(<LiveFeed catalog={TEST_CATALOG} recent={[]} />)
     expect(screen.getByText('empty')).toBeInTheDocument()
     expect(marquee()).toBeNull()
   })
 
   it('renders nothing without a catalog', () => {
-    const {container} = render(<LiveFeed catalog={null} />)
+    const {container} = render(<LiveFeed catalog={null} recent={[purchase(1)]} />)
     expect(container).toBeEmptyDOMElement()
   })
 })

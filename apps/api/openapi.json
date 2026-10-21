@@ -5971,6 +5971,70 @@
         "tags": ["Orders"]
       }
     },
+    "/api/orders/recent": {
+      "get": {
+        "operationId": "getRecentPurchases",
+        "summary": "The latest paid purchases, for the storefront feed",
+        "description": "Up to 10 paid lines, newest first: buyer nick, product, server, amount and time. Nothing else about the buyer or the order is exposed. No session needed. Cached for 30 seconds.",
+        "responses": {
+          "200": {
+            "description": "The latest purchases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "purchases": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "nick": {
+                            "type": "string"
+                          },
+                          "server": {
+                            "type": "string"
+                          },
+                          "product": {
+                            "type": "string"
+                          },
+                          "currency": {
+                            "enum": ["EUR", "PLN"],
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "paidAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "nick",
+                          "server",
+                          "product",
+                          "currency",
+                          "amountMinor",
+                          "paidAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["purchases"]
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Orders"]
+      }
+    },
     "/api/orders/{publicId}": {
       "get": {
         "operationId": "getPublicOrder",
