@@ -293,6 +293,38 @@ describe('Dashboard', () => {
     ).toBeNull()
   })
 
+  it('opens the order when the whole latest-orders row is clicked', async () => {
+    jest.spyOn(global, 'fetch').mockImplementation(input => {
+      const url = new URL(String(input instanceof Request ? input.url : input))
+      if (url.pathname.endsWith('/stats/orders')) return Promise.resolve(Response.json(stats()))
+      return Promise.resolve(
+        Response.json({
+          orders: [
+            {
+              id: 'o1',
+              publicId: 'ORD-1',
+              nick: 'Steve',
+              totalMinor: 500,
+              currency: 'EUR',
+              status: 'PAID'
+            }
+          ],
+          nextCursor: null
+        })
+      )
+    })
+    renderWithStore(<Dashboard />)
+    const nick = (await screen.findAllByText('Steve'))[0] as HTMLElement
+    const link = screen.getAllByRole('link', {name: 'ORD-1'})[0] as HTMLAnchorElement
+    expect(link).toHaveAttribute('href', '/orders/o1')
+    const click = jest.fn((e: Event) => {
+      e.preventDefault()
+    })
+    link.addEventListener('click', click)
+    fireEvent.click(nick)
+    expect(click).toHaveBeenCalledTimes(1)
+  })
+
   it('offers a retry when statistics fail to load', async () => {
     jest.spyOn(global, 'fetch').mockResolvedValue(new Response('boom', {status: 500}))
     renderWithStore(<Dashboard />)

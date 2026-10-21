@@ -186,15 +186,12 @@ function LatestOrders() {
           caption={t('latestOrders')}
           rows={page.data.orders.slice(0, 5)}
           rowKey={o => o.id}
+          rowHref={o => `/orders/${o.id}`}
           columns={[
             {
               header: t('colOrder'),
               primary: true,
-              cell: o => (
-                <Link href={`/orders/${o.id}`} className="font-mono hover:underline">
-                  {o.publicId}
-                </Link>
-              )
+              cell: o => <span className="font-mono">{o.publicId}</span>
             },
             {header: t('colNick'), cell: o => o.nick},
             {header: t('colTotal'), cell: o => f.money(o.totalMinor, o.currency)},
