@@ -24,6 +24,9 @@ const base: PublicOrder = {
   nick: 'Steve',
   email: 'a***@example.com',
   currency: 'EUR',
+  subtotalMinor: 1500,
+  discountMinor: 0,
+  promoCode: null,
   totalMinor: 1500,
   servers: [
     {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 1000}]},

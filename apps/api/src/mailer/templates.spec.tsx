@@ -8,6 +8,9 @@ const order: PublicOrder = {
   nick: 'Steve_1',
   email: 's***@example.com',
   currency: 'EUR',
+  subtotalMinor: 499,
+  discountMinor: 0,
+  promoCode: null,
   totalMinor: 499,
   servers: [
     {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 299}]},

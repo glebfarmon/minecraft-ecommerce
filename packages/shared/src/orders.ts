@@ -1,6 +1,10 @@
 import * as v from 'valibot'
 
 import {CurrencySchema, LocaleSchema} from './catalog'
+import {OrderLinesSchema} from './order-lines'
+import {LoosePromoCodeSchema} from './promo'
+
+export {OrderLinesSchema}
 
 export const ORDER_STATUSES = [
   'PENDING',
@@ -13,40 +17,24 @@ export const ORDER_STATUSES = [
 export const OrderStatusSchema = v.picklist(ORDER_STATUSES)
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-/** Same caps as the storefront cart (`apps/web/src/config/cart.ts`). */
-export const ORDER_MAX_LINES = 30
-export const ORDER_MAX_QTY = 99
+export {ORDER_MAX_LINES, ORDER_MAX_QTY} from './order-lines'
 /** The game server's nickname rule; RCON commands are rendered only from nicks that pass it. */
 export const NICK_PATTERN = /^[A-Za-z0-9_]{3,16}$/
 export const PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{22}$/
 
-const SLUG = /^[a-z0-9-]{1,40}$/
 const Minor = v.pipe(v.number(), v.integer(), v.minValue(0))
 const Iso = v.pipe(v.string(), v.isoTimestamp())
 
-const OrderLineSchema = v.strictObject({
-  server: v.pipe(v.string(), v.regex(SLUG)),
-  slug: v.pipe(v.string(), v.regex(SLUG)),
-  quantity: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(ORDER_MAX_QTY))
-})
-
 export const CreateOrderRequestSchema = v.strictObject({
-  lines: v.pipe(
-    v.array(OrderLineSchema),
-    v.minLength(1),
-    v.maxLength(ORDER_MAX_LINES),
-    v.check(
-      lines => new Set(lines.map(l => `${l.server}/${l.slug}`)).size === lines.length,
-      'duplicate line'
-    )
-  ),
+  lines: OrderLinesSchema,
   currency: CurrencySchema,
   locale: LocaleSchema,
   nick: v.pipe(v.string(), v.trim(), v.regex(NICK_PATTERN)),
   email: v.pipe(v.string(), v.trim(), v.maxLength(254), v.email()),
   deliveryConsent: v.literal(true),
   termsAccepted: v.literal(true),
-  turnstileToken: v.pipe(v.string(), v.minLength(1), v.maxLength(2048))
+  turnstileToken: v.pipe(v.string(), v.minLength(1), v.maxLength(2048)),
+  promoCode: v.optional(LoosePromoCodeSchema)
 })
 export type CreateOrderRequest = v.InferOutput<typeof CreateOrderRequestSchema>
 
@@ -71,6 +59,9 @@ export const PublicOrderSchema = v.object({
   nick: v.string(),
   email: v.string(),
   currency: CurrencySchema,
+  subtotalMinor: Minor,
+  discountMinor: Minor,
+  promoCode: v.nullable(v.string()),
   totalMinor: Minor,
   servers: v.array(OrderServerGroupSchema),
   createdAt: Iso,
@@ -122,9 +113,7 @@ export const AdminOrderSchema = v.object({
   locale: LocaleSchema,
   stripeSessionId: v.nullable(v.string()),
   stripePaymentIntentId: v.nullable(v.string()),
-  deliveryConsentAt: Iso,
-  subtotalMinor: Minor,
-  discountMinor: Minor
+  deliveryConsentAt: Iso
 })
 export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
 

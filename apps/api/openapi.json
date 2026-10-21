@@ -266,7 +266,8 @@
                               "catalog.write",
                               "server.rcon",
                               "content.write",
-                              "order.read"
+                              "order.read",
+                              "promo.write"
                             ],
                             "type": "string"
                           }
@@ -284,7 +285,8 @@
                           "catalog.write",
                           "server.rcon",
                           "content.write",
-                          "order.read"
+                          "order.read",
+                          "promo.write"
                         ],
                         "type": "string"
                       }
@@ -1011,7 +1013,8 @@
                             "catalog.write",
                             "server.rcon",
                             "content.write",
-                            "order.read"
+                            "order.read",
+                            "promo.write"
                           ],
                           "type": "string"
                         }
@@ -1055,7 +1058,8 @@
                         "catalog.write",
                         "server.rcon",
                         "content.write",
-                        "order.read"
+                        "order.read",
+                        "promo.write"
                       ],
                       "type": "string"
                     }
@@ -1094,7 +1098,8 @@
                           "catalog.write",
                           "server.rcon",
                           "content.write",
-                          "order.read"
+                          "order.read",
+                          "promo.write"
                         ],
                         "type": "string"
                       }
@@ -1155,7 +1160,8 @@
                         "catalog.write",
                         "server.rcon",
                         "content.write",
-                        "order.read"
+                        "order.read",
+                        "promo.write"
                       ],
                       "type": "string"
                     }
@@ -1194,7 +1200,8 @@
                           "catalog.write",
                           "server.rcon",
                           "content.write",
-                          "order.read"
+                          "order.read",
+                          "promo.write"
                         ],
                         "type": "string"
                       }
@@ -5918,6 +5925,10 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 2048
+                  },
+                  "promoCode": {
+                    "type": "string",
+                    "maxLength": 64
                   }
                 },
                 "required": [
@@ -6075,6 +6086,24 @@
                       "enum": ["EUR", "PLN"],
                       "type": "string"
                     },
+                    "subtotalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "discountMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "promoCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "totalMinor": {
                       "type": "integer",
                       "minimum": 0
@@ -6132,6 +6161,9 @@
                     "nick",
                     "email",
                     "currency",
+                    "subtotalMinor",
+                    "discountMinor",
+                    "promoCode",
                     "totalMinor",
                     "servers",
                     "createdAt",
@@ -6328,6 +6360,24 @@
                       "enum": ["EUR", "PLN"],
                       "type": "string"
                     },
+                    "subtotalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "discountMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "promoCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "totalMinor": {
                       "type": "integer",
                       "minimum": 0
@@ -6408,14 +6458,6 @@
                     "deliveryConsentAt": {
                       "type": "string",
                       "format": "date-time"
-                    },
-                    "subtotalMinor": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "discountMinor": {
-                      "type": "integer",
-                      "minimum": 0
                     }
                   },
                   "required": [
@@ -6424,6 +6466,9 @@
                     "nick",
                     "email",
                     "currency",
+                    "subtotalMinor",
+                    "discountMinor",
+                    "promoCode",
                     "totalMinor",
                     "servers",
                     "createdAt",
@@ -6432,9 +6477,7 @@
                     "locale",
                     "stripeSessionId",
                     "stripePaymentIntentId",
-                    "deliveryConsentAt",
-                    "subtotalMinor",
-                    "discountMinor"
+                    "deliveryConsentAt"
                   ]
                 }
               }

@@ -8,7 +8,8 @@ export const PERMISSIONS = [
   'catalog.write',
   'server.rcon',
   'content.write',
-  'order.read'
+  'order.read',
+  'promo.write'
 ] as const
 export type Permission = (typeof PERMISSIONS)[number]
 export const PermissionSchema = v.picklist(PERMISSIONS)
@@ -23,7 +24,8 @@ export const SYSTEM_ROLES: Record<SystemRoleName, readonly Permission[]> = {
     'catalog.write',
     'server.rcon',
     'content.write',
-    'order.read'
+    'order.read',
+    'promo.write'
   ],
   SUPPORT: ['order.read']
 }
