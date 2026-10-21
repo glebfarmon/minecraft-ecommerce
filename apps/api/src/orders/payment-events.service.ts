@@ -53,10 +53,17 @@ export class PaymentEventsService {
       }
 
       if (event.kind === 'failed') {
-        await tx.order.updateMany({
+        const expired = await tx.order.updateMany({
           where: {id: order.id, status: 'PENDING'},
           data: {status: 'EXPIRED'}
         })
+        if (expired.count === 1 && order.promoCodeId !== null) {
+          // Give the use back; the guard keeps the counter from going below zero.
+          await tx.promoCode.updateMany({
+            where: {id: order.promoCodeId, usedCount: {gt: 0}},
+            data: {usedCount: {decrement: 1}}
+          })
+        }
         return null
       }
 
@@ -75,10 +82,25 @@ export class PaymentEventsService {
       // Conditional update: when two different paid events race, the second one blocks on the
       // row lock, re-checks the WHERE against the committed PAID row and updates nothing.
       const paidAt = new Date()
-      const {count} = await tx.order.updateMany({
-        where: {id: order.id, status: {in: ['PENDING', 'EXPIRED']}},
-        data: {status: 'PAID', paidAt, stripePaymentIntentId: event.paymentIntentId}
+      const paidData = {
+        status: 'PAID' as const,
+        paidAt,
+        stripePaymentIntentId: event.paymentIntentId
+      }
+      const late = await tx.order.updateMany({
+        where: {id: order.id, status: 'EXPIRED'},
+        data: paidData
       })
+      if (late.count === 1 && order.promoCodeId !== null) {
+        // The expiry released the use; a paid order owns it again, even past maxUses.
+        await tx.promoCode.update({
+          where: {id: order.promoCodeId},
+          data: {usedCount: {increment: 1}}
+        })
+      }
+      const {count} = late.count
+        ? late
+        : await tx.order.updateMany({where: {id: order.id, status: 'PENDING'}, data: paidData})
       return count === 1
         ? {
             ...order,

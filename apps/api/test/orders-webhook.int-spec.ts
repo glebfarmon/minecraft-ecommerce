@@ -16,7 +16,7 @@ afterAll(async () => {
 type Signed = {body: string; signature: string}
 type EventType = 'checkout.session.completed' | 'checkout.session.expired'
 
-async function createOrder(locale: 'en' | 'pl' = 'en') {
+async function createOrder(locale: 'en' | 'pl' = 'en', promoCode?: string) {
   const res = await request(ctx.app.getHttpServer())
     .post('/api/orders')
     .send({
@@ -27,6 +27,7 @@ async function createOrder(locale: 'en' | 'pl' = 'en') {
       email: 'steve@example.com',
       deliveryConsent: true,
       termsAccepted: true,
+      ...(promoCode ? {promoCode} : {}),
       turnstileToken: 'XXXX.DUMMY.TOKEN.XXXX'
     })
     .expect(201)
@@ -178,5 +179,51 @@ describe('POST /api/webhooks/stripe', () => {
     spy.mockRestore()
     expect(await statusOf(publicId)).toBe('PAID')
     expect(receipts(publicId)).toHaveLength(0)
+  })
+})
+
+describe('promo uses and webhooks', () => {
+  const makePromo = (code: string, maxUses: number) =>
+    ctx.prisma.promoCode.create({data: {code, kind: 'PERCENT', value: 10, maxUses}})
+  const used = async (id: string) =>
+    (await ctx.prisma.promoCode.findUniqueOrThrow({where: {id}})).usedCount
+
+  it('releases the use when the order expires, once', async () => {
+    const promo = await makePromo('WHEXPIRE', 5)
+    const {sessionId} = await createOrder('en', 'WHEXPIRE')
+    expect(await used(promo.id)).toBe(1)
+    await deliver(sessionId, 'checkout.session.expired').expect(200)
+    expect(await used(promo.id)).toBe(0)
+    await deliver(sessionId, 'checkout.session.expired').expect(200) // different event id
+    expect(await used(promo.id)).toBe(0)
+  })
+
+  it('does not release on a replayed expiry event', async () => {
+    const promo = await makePromo('WHREPLAY', 5)
+    await ctx.prisma.promoCode.update({where: {id: promo.id}, data: {usedCount: 2}})
+    const {sessionId} = await createOrder('en', 'WHREPLAY')
+    const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.expired')
+    await post(signed).expect(200)
+    await post(signed).expect(200)
+    expect(await used(promo.id)).toBe(2)
+  })
+
+  it('re-takes the use on a late payment even past maxUses', async () => {
+    const promo = await makePromo('WHLATE', 1)
+    const {publicId, sessionId} = await createOrder('en', 'WHLATE')
+    await deliver(sessionId, 'checkout.session.expired').expect(200)
+    expect(await used(promo.id)).toBe(0)
+    await createOrder('en', 'WHLATE') // takes the only use meanwhile
+    expect(await used(promo.id)).toBe(1)
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    expect(await statusOf(publicId)).toBe('PAID')
+    expect(await used(promo.id)).toBe(2)
+  })
+
+  it('leaves usedCount unchanged on a normal payment', async () => {
+    const promo = await makePromo('WHPAID', 5)
+    const {sessionId} = await createOrder('en', 'WHPAID')
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    expect(await used(promo.id)).toBe(1)
   })
 })
