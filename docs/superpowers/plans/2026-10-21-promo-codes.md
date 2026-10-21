@@ -60,11 +60,11 @@
 - Produces (`@shop/shared/orders`): export `OrderLinesSchema` (the existing lines array pipe, extracted); `CreateOrderRequestSchema` gains `promoCode: v.optional(LoosePromoCodeSchema)`; `PublicOrderSchema` gains `subtotalMinor`, `discountMinor`, `promoCode: nullable(string)` (remove the now-duplicate `subtotalMinor`/`discountMinor` from `AdminOrderSchema`).
 - Produces (`@shop/shared/access`): `'promo.write'` in `PERMISSIONS` and in `SYSTEM_ROLES.ADMIN`.
 
-- [ ] **Step 1: Write failing tests** in `promo.spec.ts`: `PromoCodeSchema` turns `' asf14 '` into `'ASF14'` and rejects `'AS'`, `'ASF-14'`; `LoosePromoCodeSchema` accepts `'ASF-14'` as `'ASF-14'`; input schema rejects `PERCENT` 0 and 101, `PERCENT` with currency, `FIXED` without currency, `endsAt <= startsAt`. In `orders.spec.ts`: `promoCode` optional; `PublicOrder` requires `discountMinor`. In `access.spec.ts`: ADMIN contains `promo.write`, SUPPORT does not.
-- [ ] **Step 2: Run** `pnpm --filter @shop/shared test` — FAIL (module missing).
-- [ ] **Step 3: Implement** the schemas above.
-- [ ] **Step 4: Run** `pnpm --filter @shop/shared test` — PASS. `pnpm typecheck` will fail in `apps/api` (`toPublicOrder`) — fix by adding the three fields there (`promoCode` column comes in Task 2; until then map `null`).
-- [ ] **Step 5: Commit** `feat(shared): promo code contracts and promo.write permission`
+- [x] **Step 1: Write failing tests** in `promo.spec.ts`: `PromoCodeSchema` turns `' asf14 '` into `'ASF14'` and rejects `'AS'`, `'ASF-14'`; `LoosePromoCodeSchema` accepts `'ASF-14'` as `'ASF-14'`; input schema rejects `PERCENT` 0 and 101, `PERCENT` with currency, `FIXED` without currency, `endsAt <= startsAt`. In `orders.spec.ts`: `promoCode` optional; `PublicOrder` requires `discountMinor`. In `access.spec.ts`: ADMIN contains `promo.write`, SUPPORT does not.
+- [x] **Step 2: Run** `pnpm --filter @shop/shared test` — FAIL (module missing).
+- [x] **Step 3: Implement** the schemas above.
+- [x] **Step 4: Run** `pnpm --filter @shop/shared test` — PASS. `pnpm typecheck` will fail in `apps/api` (`toPublicOrder`) — fix by adding the three fields there (`promoCode` column comes in Task 2; until then map `null`).
+- [x] **Step 5: Commit** `feat(shared): promo code contracts and promo.write permission`
 
 ### Task 2: Database
 
@@ -83,11 +83,11 @@
 - Permission migration: same idempotent `UPDATE "roles"` as `20261017100100_order_read_permission`, adding `promo.write` to `ADMIN`.
 - Category/product deletion: a scope link makes the FK refuse; `CategoriesService.remove` / `ProductsService.remove` already map P2003 to `inUse` — verify the product path does too.
 
-- [ ] **Step 1: Write failing int test** `promo-schema.int-spec.ts`: two live rows with `ASF14` → second insert fails; soft-deleted `ASF14` + a new live `ASF14` → both exist; deleting a product linked to a promo → FK error; ADMIN role has `promo.write` after migrations.
-- [ ] **Step 2: Run** `pnpm --filter @shop/api test:int -- promo-schema` — FAIL.
-- [ ] **Step 3: Edit schema, generate migrations** (`pnpm --filter @shop/api prisma migrate dev --name promo_codes --create-only`, append the index SQL if needed; second migration for the permission). Map `promoCode` in `toPublicOrder` from the column.
-- [ ] **Step 4: Run** the int test and `pnpm --filter @shop/api test:int -- orders-schema` — PASS.
-- [ ] **Step 5: Commit** `feat(api): promo code tables`
+- [x] **Step 1: Write failing int test** `promo-schema.int-spec.ts`: two live rows with `ASF14` → second insert fails; soft-deleted `ASF14` + a new live `ASF14` → both exist; deleting a product linked to a promo → FK error; ADMIN role has `promo.write` after migrations.
+- [x] **Step 2: Run** `pnpm --filter @shop/api test:int -- promo-schema` — FAIL.
+- [x] **Step 3: Edit schema, generate migrations** (`pnpm --filter @shop/api prisma migrate dev --name promo_codes --create-only`, append the index SQL if needed; second migration for the permission). Map `promoCode` in `toPublicOrder` from the column.
+- [x] **Step 4: Run** the int test and `pnpm --filter @shop/api test:int -- orders-schema` — PASS.
+- [x] **Step 5: Commit** `feat(api): promo code tables`
 
 ### Task 3: Promo rules (pure)
 
@@ -105,11 +105,11 @@
   - `computeDiscount(row: PromoRow, lines: DiscountLine[], currency: Currency): {discountMinor: number} | {reason: 'not_applicable' | 'wrong_currency'}` — eligible = lines whose product or category is in scope (both lists empty = all); `FIXED` with other currency → `wrong_currency` (checked first); eligible 0 → `not_applicable`; `PERCENT` → `Math.floor(eligible * value / 100)`; `FIXED` → `min(value, eligible)`; then cap at `subtotal - STRIPE_MINIMUM[currency]`; result ≤ 0 → `not_applicable`
   - `promoStatus(row: PromoRow, now: Date): PromoStatus` — `disabled` if inactive, else `scheduled` / `expired` / `used_up` / `active` by the same checks
 
-- [ ] **Step 1: Write failing tests**: 15% of eligible 1999 → 299; fixed 500 on eligible 300 → 300; fixed EUR on PLN order → `wrong_currency`; category scope picks only that category's lines; product scope; empty scope = all; cap: subtotal 300 EUR, 50% → 150, 90% → 250 (capped), subtotal 50 → `not_applicable`; `window boundaries` (`startsAt == now` ok, `endsAt == now` → `expired`); `used_up` with `usedCount == maxUses`; `maxUses null` never `used_up`; `promoStatus` for each status.
-- [ ] **Step 2: Run** `pnpm --filter @shop/api test -- promo-rules` — FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — PASS.
-- [ ] **Step 5: Commit** `feat(api): promo code rules`
+- [x] **Step 1: Write failing tests**: 15% of eligible 1999 → 299; fixed 500 on eligible 300 → 300; fixed EUR on PLN order → `wrong_currency`; category scope picks only that category's lines; product scope; empty scope = all; cap: subtotal 300 EUR, 50% → 150, 90% → 250 (capped), subtotal 50 → `not_applicable`; `window boundaries` (`startsAt == now` ok, `endsAt == now` → `expired`); `used_up` with `usedCount == maxUses`; `maxUses null` never `used_up`; `promoStatus` for each status.
+- [x] **Step 2: Run** `pnpm --filter @shop/api test -- promo-rules` — FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — PASS.
+- [x] **Step 5: Commit** `feat(api): promo code rules`
 
 ### Task 4: Public validate endpoint
 
@@ -127,11 +127,11 @@
   - `POST /api/promo/validate` (`@AllowAnonymous`, `@HttpCode(200)`): body `ValidatePromoRequestSchema`, returns `ValidatePromoResponse`. Unavailable lines → the same 409 `unavailable` as orders.
   - Rate limit `promo: 20` (`RATE_LIMIT_PROMO`), throttler named `promo` on `POST ^/api/promo/validate`.
 
-- [ ] **Step 1: Write failing int test** `promo-validate.int-spec.ts`: valid code → `{ok: true, discountMinor, totalMinor}`; each reason reachable; `normalizes and never 400s on odd input` (`' asf14 '` → ok, `'ASF-14'` → `{ok:false, reason:'not_found'}`, a 65-char code → 400 from the schema); soft-deleted and disabled → `not_found`; validate does not change `usedCount`. Extend `rate-limit.int-spec.ts`: 21st request in a minute → 429.
-- [ ] **Step 2: Run** — FAIL.
-- [ ] **Step 3: Implement** service, controller, throttler, OpenAPI path (`operationId: validatePromoCode`, tag `orders`), `.env.example` line.
-- [ ] **Step 4: Run** int tests + `pnpm --filter @shop/api test` (openapi spec) — PASS.
-- [ ] **Step 5: Commit** `feat(api): validate promo codes`
+- [x] **Step 1: Write failing int test** `promo-validate.int-spec.ts`: valid code → `{ok: true, discountMinor, totalMinor}`; each reason reachable; `normalizes and never 400s on odd input` (`' asf14 '` → ok, `'ASF-14'` → `{ok:false, reason:'not_found'}`, a 65-char code → 400 from the schema); soft-deleted and disabled → `not_found`; validate does not change `usedCount`. Extend `rate-limit.int-spec.ts`: 21st request in a minute → 429.
+- [x] **Step 2: Run** — FAIL.
+- [x] **Step 3: Implement** service, controller, throttler, OpenAPI path (`operationId: validatePromoCode`, tag `orders`), `.env.example` line.
+- [x] **Step 4: Run** int tests + `pnpm --filter @shop/api test` (openapi spec) — PASS.
+- [x] **Step 5: Commit** `feat(api): validate promo codes`
 
 ### Task 5: Orders apply and reserve the code; Stripe coupon
 
@@ -173,11 +173,11 @@
 - `failed` event: when the `PENDING → EXPIRED` update changed a row and `order.promoCodeId` is set, in the same transaction `usedCount − 1` where `usedCount > 0`.
 - `paid` event: split the status update into `EXPIRED → PAID` first, then `PENDING → PAID`; when the `EXPIRED → PAID` one changed the row and `promoCodeId` is set, `usedCount + 1` unconditionally (may exceed `maxUses`). Both updates keep the existing fields (`paidAt`, `stripePaymentIntentId`).
 
-- [ ] **Step 1: Write failing int tests**: expiry of a promo order → `usedCount` back to 0; duplicate expiry event → still 0 (dedupe + conditional update); late payment after expiry → `usedCount` 1 even when `maxUses` was reached by another order meanwhile; normal payment → `usedCount` unchanged.
-- [ ] **Step 2: Run** `test:int -- orders-webhook` — FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — PASS.
-- [ ] **Step 5: Commit** `feat(api): release promo uses of expired orders`
+- [x] **Step 1: Write failing int tests**: expiry of a promo order → `usedCount` back to 0; duplicate expiry event → still 0 (dedupe + conditional update); late payment after expiry → `usedCount` 1 even when `maxUses` was reached by another order meanwhile; normal payment → `usedCount` unchanged.
+- [x] **Step 2: Run** `test:int -- orders-webhook` — FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — PASS.
+- [x] **Step 5: Commit** `feat(api): release promo uses of expired orders`
 
 ### Task 7: Player sees the discount after paying
 
@@ -190,11 +190,11 @@
 - Consumes: `PublicOrder.subtotalMinor`, `discountMinor`, `promoCode` (Task 1).
 - Receipt and order page: when `discountMinor > 0`, a row between the lines and the total — EN `Promo code {code}` / PL `Kod promocyjny {code}`, amount `−{money}`. No row otherwise.
 
-- [ ] **Step 1: Write failing tests**: template renders `Promo code ASF14` and `−€2.40` for a discounted order and no such row for a plain one (EN and PL); order page the same.
-- [ ] **Step 2: Run** api + web tests — FAIL.
-- [ ] **Step 3: Implement** (web key `order.promo`).
-- [ ] **Step 4: Run** — PASS.
-- [ ] **Step 5: Commit** `feat(api,web): show the promo discount on the receipt and order page`
+- [x] **Step 1: Write failing tests**: template renders `Promo code ASF14` and `−€2.40` for a discounted order and no such row for a plain one (EN and PL); order page the same.
+- [x] **Step 2: Run** api + web tests — FAIL.
+- [x] **Step 3: Implement** (web key `order.promo`).
+- [x] **Step 4: Run** — PASS.
+- [x] **Step 5: Commit** `feat(api,web): show the promo discount on the receipt and order page`
 
 ### Task 8: Admin promo API
 
@@ -215,11 +215,11 @@
   - `DELETE /:id?version=` → 204 soft delete (`deletePromoCode`), audited `promo.delete`
 - `locked = usedCount > 0 || _count.orders > 0`. Update of a locked code changing `code`, `kind`, `value`, `currency`, `categoryIds` or `productIds` → `conflict('promo_locked')`. `maxUses < usedCount` → `conflict('max_uses_below_used')`. Duplicate live code → `conflict('code_taken')`. Unknown category/product id → `badRequest('invalid')`.
 
-- [ ] **Step 1: Write failing int tests**: CRUD round-trip; list hides soft-deleted; `promo_locked` for a used code's value but not for its `endsAt`; `max_uses_below_used`; `code_taken`; stale `version` → 409 `stale`; SUPPORT gets 403; audit rows written.
-- [ ] **Step 2: Run** — FAIL.
-- [ ] **Step 3: Implement**; OpenAPI paths with `operationId`s above, tag `promo-codes`; regenerate `openapi.json`.
-- [ ] **Step 4: Run** `test:int -- promo-admin` and `pnpm --filter @shop/api test` (`admin-routes.spec.ts`) — PASS.
-- [ ] **Step 5: Commit** `feat(api): admin promo codes`
+- [x] **Step 1: Write failing int tests**: CRUD round-trip; list hides soft-deleted; `promo_locked` for a used code's value but not for its `endsAt`; `max_uses_below_used`; `code_taken`; stale `version` → 409 `stale`; SUPPORT gets 403; audit rows written.
+- [x] **Step 2: Run** — FAIL.
+- [x] **Step 3: Implement**; OpenAPI paths with `operationId`s above, tag `promo-codes`; regenerate `openapi.json`.
+- [x] **Step 4: Run** `test:int -- promo-admin` and `pnpm --filter @shop/api test` (`admin-routes.spec.ts`) — PASS.
+- [x] **Step 5: Commit** `feat(api): admin promo codes`
 
 ### Task 9: Admin promo pages
 
@@ -239,11 +239,11 @@
   - Order details: show `promoCode` next to the discount.
 - UI follows `DESIGN.md` (one accent card per screen, status = dot + label, `ring-accent` focus, no horizontal scroll at 390 px).
 
-- [ ] **Step 1: Write failing tests**: `generateCode` format over 1 000 runs and no `O I 0 1`; dice calls `onCode` with a valid code (reduced motion mocked); table shows `3 / ∞` and status labels; editor disables locked fields and shows the hint; editor sends `currency: null` for percent; messages parity test still passes with new keys.
-- [ ] **Step 2: Run** `pnpm --filter @shop/admin test` — FAIL.
-- [ ] **Step 3: Implement** (run codegen first).
-- [ ] **Step 4: Run** admin tests + typecheck — PASS. Look at the page at 390 px and desktop.
-- [ ] **Step 5: Commit** `feat(admin): promo codes pages`
+- [x] **Step 1: Write failing tests**: `generateCode` format over 1 000 runs and no `O I 0 1`; dice calls `onCode` with a valid code (reduced motion mocked); table shows `3 / ∞` and status labels; editor disables locked fields and shows the hint; editor sends `currency: null` for percent; messages parity test still passes with new keys.
+- [x] **Step 2: Run** `pnpm --filter @shop/admin test` — FAIL.
+- [x] **Step 3: Implement** (run codegen first).
+- [x] **Step 4: Run** admin tests + typecheck — PASS. Look at the page at 390 px and desktop.
+- [x] **Step 5: Commit** `feat(admin): promo codes pages`
 
 ### Task 10: Promo code in the checkout summary
 
@@ -264,11 +264,11 @@
   - Message keys under `checkout.promo`: `toggle`, `label`, `apply`, `remove`, `discount`, `reasons.{not_found,not_started,expired,used_up,not_applicable,wrong_currency,network,rate_limited}`.
 - **Visual design via the `impeccable` skill** (spec: reveal, chip, discount row, number animation; existing web tokens; Motion). `AnimatedMoney` exposes the final value to screen readers through a polite live region and renders the final value instantly under reduced motion.
 
-- [ ] **Step 1: Write failing tests**: `validatePromo` maps 200 ok/not ok, 429, network; `createOrder` maps 409 `promo`; checkout applies a code (discount row, total = subtotal − discount, `promoCode` sent), `drops the code when the cart no longer qualifies`, `drops a fixed code on currency switch`, shows the reason on order-time `used_up`; `AnimatedMoney` renders the final text under reduced motion.
-- [ ] **Step 2: Run** `pnpm --filter @shop/web test` — FAIL.
-- [ ] **Step 3: Invoke `impeccable`** for the summary design, then implement.
-- [ ] **Step 4: Run** web tests + typecheck — PASS. Check the modal at 390 px and desktop, light/dark if applicable.
-- [ ] **Step 5: Commit** `feat(web): promo codes at checkout`
+- [x] **Step 1: Write failing tests**: `validatePromo` maps 200 ok/not ok, 429, network; `createOrder` maps 409 `promo`; checkout applies a code (discount row, total = subtotal − discount, `promoCode` sent), `drops the code when the cart no longer qualifies`, `drops a fixed code on currency switch`, shows the reason on order-time `used_up`; `AnimatedMoney` renders the final text under reduced motion.
+- [x] **Step 2: Run** `pnpm --filter @shop/web test` — FAIL.
+- [x] **Step 3: Invoke `impeccable`** for the summary design, then implement.
+- [x] **Step 4: Run** web tests + typecheck — PASS. Check the modal at 390 px and desktop, light/dark if applicable.
+- [x] **Step 5: Commit** `feat(web): promo codes at checkout`
 
 ### Task 11: End-to-end and docs
 
@@ -276,8 +276,8 @@
 
 - Modify: `e2e/tests/checkout.spec.ts`, `e2e/tests/admin.spec.ts`, `apps/api/src/seed/` (only if e2e needs a seeded code — prefer creating it through the admin in the test), `CLAUDE.md`, this plan (tick boxes)
 
-- [ ] **Step 1: Write e2e**: admin creates `E2E10` (10 %) via the UI using the dice then typing over; player applies `e2e10` at checkout, sees the discount, the fake payment page shows the discounted total, the order page shows `Promo code E2E10`.
-- [ ] **Step 2: Run** `pnpm test:e2e` — PASS.
-- [ ] **Step 3: Add** one `CLAUDE.md` architecture line: promo codes live in `orders/promo` (`/api/promo/validate`, admin `/api/admin/promo-codes` with `promo.write`); the use is reserved as the last statement of the order transaction and released on expiry; soft delete via `deletedAt`.
-- [ ] **Step 4: Run** the full gate + `test:int`.
-- [ ] **Step 5: Commit** `test(e2e): promo codes` and `docs: promo codes`
+- [x] **Step 1: Write e2e**: admin creates `E2E10` (10 %) via the UI using the dice then typing over; player applies `e2e10` at checkout, sees the discount, the fake payment page shows the discounted total, the order page shows `Promo code E2E10`.
+- [x] **Step 2: Run** `pnpm test:e2e` — PASS.
+- [x] **Step 3: Add** one `CLAUDE.md` architecture line: promo codes live in `orders/promo` (`/api/promo/validate`, admin `/api/admin/promo-codes` with `promo.write`); the use is reserved as the last statement of the order transaction and released on expiry; soft delete via `deletedAt`.
+- [x] **Step 4: Run** the full gate + `test:int`.
+- [x] **Step 5: Commit** `test(e2e): promo codes` and `docs: promo codes`
