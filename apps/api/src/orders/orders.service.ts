@@ -1,4 +1,4 @@
-import {Inject, Injectable, Logger} from '@nestjs/common'
+import {HttpException, Inject, Injectable, Logger} from '@nestjs/common'
 
 import type {Currency, Locale} from '@shop/shared/catalog'
 import type {
@@ -10,11 +10,13 @@ import type {
 
 import {rconReady} from '../catalog-admin/rcon/rcon-ready'
 import {badGateway, badRequest, conflict, notFound} from '../common/http-errors'
+import type {Prisma} from '../generated/prisma/client'
 import {PAYMENTS_GATEWAY, type PaymentsGateway} from '../payments/payments-gateway'
 import {PrismaService} from '../prisma/prisma.service'
 import {type PricedItem, priceLines} from './order-pricing'
 import {localePrefix, toPublicOrder} from './order-view'
 import type {DiscountLine} from './promo/promo-rules'
+import {PromoService} from './promo/promo.service'
 import {newPublicId} from './public-id'
 import {publicWebOrigin} from './public-origin'
 import {TURNSTILE, type TurnstileVerifier} from './turnstile'
@@ -31,7 +33,8 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(PAYMENTS_GATEWAY) private readonly gateway: PaymentsGateway,
-    @Inject(TURNSTILE) private readonly turnstile: TurnstileVerifier
+    @Inject(TURNSTILE) private readonly turnstile: TurnstileVerifier,
+    private readonly promos: PromoService
   ) {
     this.origin = publicWebOrigin()
   }
@@ -39,10 +42,17 @@ export class OrdersService {
   async create(req: CreateOrderRequest, ip: string): Promise<CreateOrderResponse> {
     if (!(await this.turnstile.verify(req.turnstileToken, ip))) throw badRequest('turnstile_failed')
 
-    const {items} = await this.priceRequest(req.lines, req.currency, req.locale)
+    const {items, discountLines} = await this.priceRequest(req.lines, req.currency, req.locale)
 
+    let promo: {id: string; code: string} | null = null
+    let discount = 0
+    if (req.promoCode !== undefined) {
+      const result = await this.promos.evaluate(req.promoCode, discountLines, req.currency)
+      if (!result.ok) throw conflict('promo', {reason: result.reason})
+      promo = result.promo
+      discount = result.discountMinor
+    }
     const subtotal = items.reduce((sum, i) => sum + i.unitAmountMinor * i.quantity, 0)
-    const discount = 0 // until 4b
     const total = subtotal - discount
     const publicId = newPublicId()
     const prefix = localePrefix(req.locale)
@@ -60,6 +70,8 @@ export class OrdersService {
               subtotalMinor: subtotal,
               discountMinor: discount,
               totalMinor: total,
+              promoCodeId: promo?.id ?? null,
+              promoCode: promo?.code ?? null,
               deliveryConsentAt: new Date(),
               items: {create: items}
             }
@@ -77,21 +89,41 @@ export class OrdersService {
               quantity: i.quantity
             })),
             successUrl: `${this.origin}${prefix}/order/${publicId}`,
-            cancelUrl: `${this.origin}${prefix || '/'}`
+            cancelUrl: `${this.origin}${prefix || '/'}`,
+            discount: promo && {minor: discount, code: promo.code}
           })
           await tx.order.update({
             where: {id: order.id},
             data: {stripeSessionId: created.sessionId}
           })
+          // Last, so the code's row is locked only for the commit, not the gateway round-trip.
+          // Losing the race rolls the order back; the session already opened is never shown to
+          // anyone and expires on its own (its webhook names an unknown order and is logged).
+          if (promo && !(await this.reservePromo(tx, promo.id)))
+            throw conflict('promo', {reason: 'used_up'})
           return created
         },
         {timeout: 15_000}
       )
       return {publicId, redirectUrl: session.url}
     } catch (error) {
+      if (error instanceof HttpException) throw error
       this.logger.error('creating the payment session failed', error)
       throw badGateway('payments_unavailable')
     }
+  }
+
+  /**
+   * Takes one use of a live code; false when it is used up, disabled or deleted. Under READ
+   * COMMITTED a concurrent taker waits on the row lock and then re-checks the condition, so a
+   * `maxUses` code is never over-redeemed.
+   */
+  private async reservePromo(tx: Prisma.TransactionClient, id: string): Promise<boolean> {
+    const updated = await tx.$executeRaw`
+      UPDATE promo_codes SET "usedCount" = "usedCount" + 1, "updatedAt" = now()
+      WHERE id = ${id} AND "deletedAt" IS NULL AND "isActive"
+        AND ("maxUses" IS NULL OR "usedCount" < "maxUses")`
+    return updated === 1
   }
 
   /**

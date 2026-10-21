@@ -7,6 +7,8 @@ export type SessionRequest = {
   lines: SessionLine[]
   successUrl: string
   cancelUrl: string
+  /** A promo discount off the whole order; the lines keep their full unit prices. */
+  discount: {minor: number; code: string} | null
 }
 export type PaymentEvent =
   | {

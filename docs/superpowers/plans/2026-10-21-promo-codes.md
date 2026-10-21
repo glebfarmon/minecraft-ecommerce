@@ -155,11 +155,11 @@
     (`updateMany` with the same `where` is fine); 0 rows → throw `conflict('promo', {reason: 'used_up'})`.
   - The `catch` around the transaction rethrows `HttpException`s and only maps other errors to `badGateway('payments_unavailable')`.
 
-- [ ] **Step 1: Write failing tests**: unit — Stripe gateway passes a coupon only when discounted, fake gateway charges the discounted total. Int (`orders-create`) — order with code stores `discountMinor`, `promoCode`, `promoCodeId`, `usedCount` becomes 1; `used_up at order time is 409 promo, not 502`; bad code → 409 `promo` with reason and no order row. Int (`promo-concurrency`) — 20 parallel `POST /api/orders` with a `maxUses: 1` code (fake gateway, Turnstile stub) → exactly one 201, nineteen 409 `promo`, `usedCount == 1`, one order row.
-- [ ] **Step 2: Run** — FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `pnpm --filter @shop/api test` and `test:int -- orders-create promo-concurrency fake-payment` — PASS.
-- [ ] **Step 5: Commit** `feat(api): apply and reserve promo codes on orders`
+- [x] **Step 1: Write failing tests**: unit — Stripe gateway passes a coupon only when discounted, fake gateway charges the discounted total. Int (`orders-create`) — order with code stores `discountMinor`, `promoCode`, `promoCodeId`, `usedCount` becomes 1; `used_up at order time is 409 promo, not 502`; bad code → 409 `promo` with reason and no order row. Int (`promo-concurrency`) — 20 parallel `POST /api/orders` with a `maxUses: 1` code (fake gateway, Turnstile stub) → exactly one 201, nineteen 409 `promo`, `usedCount == 1`, one order row.
+- [x] **Step 2: Run** — FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** `pnpm --filter @shop/api test` and `test:int -- orders-create promo-concurrency fake-payment` — PASS.
+- [x] **Step 5: Commit** `feat(api): apply and reserve promo codes on orders`
 
 ### Task 6: Webhook releases and re-takes the use
 

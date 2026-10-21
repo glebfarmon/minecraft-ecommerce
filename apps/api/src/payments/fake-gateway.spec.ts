@@ -8,7 +8,8 @@ const req = {
   locale: 'en' as const,
   lines: [{name: 'VIP', unitAmountMinor: 499, quantity: 2}],
   successUrl: 'http://w/ok',
-  cancelUrl: 'http://w/'
+  cancelUrl: 'http://w/',
+  discount: null
 }
 
 describe('FakeGateway', () => {
@@ -28,6 +29,15 @@ describe('FakeGateway', () => {
       currency: 'EUR',
       sessionId: s.sessionId,
       paymentIntentId: expect.stringMatching(/^pi_fake_/) as unknown
+    })
+  })
+  it('charges the discounted total', async () => {
+    const s = await gw.createSession({...req, discount: {minor: 100, code: 'ASF14'}})
+    expect(gw.session(s.sessionId)?.discount).toEqual({minor: 100, code: 'ASF14'})
+    const {body, signature} = gw.signedEvent(s.sessionId, 'checkout.session.completed')
+    expect(gw.parseWebhook(Buffer.from(body), signature)).toMatchObject({
+      kind: 'paid',
+      amountTotal: 898
     })
   })
   it('rejects a tampered body', async () => {
