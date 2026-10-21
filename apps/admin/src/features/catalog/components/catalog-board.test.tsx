@@ -88,6 +88,7 @@ function mockApi(
           {
             id: 'c-extra',
             slug: 'extra',
+            icon: 'coins',
             names: {en: 'Extra', pl: 'Ekstra'},
             version: 1,
             productCount: 0,
@@ -159,11 +160,36 @@ describe('CatalogBoard', () => {
     fireEvent.click(await screen.findByRole('tab', {name: /Anarchy/}))
     const empty = (await screen.findByText('No categories on Anarchy yet.'))
       .parentElement as HTMLElement
-    expect(within(empty).getByLabelText('Attach category')).toBeInTheDocument()
+    expect(within(empty).getByRole('button', {name: 'Attach category'})).toBeInTheDocument()
     expect(within(empty).getByRole('link', {name: 'Create category'})).toHaveAttribute(
       'href',
       '/catalog/categories'
     )
+  })
+
+  it('choosing a category from the attach menu attaches it at once', async () => {
+    const calls: unknown[] = []
+    mockApi((url, req) => {
+      void req
+        .clone()
+        .json()
+        .then(b => calls.push([url.pathname, b]))
+      return Response.json({})
+    })
+    renderWithStore(<CatalogBoard canEdit />)
+    const trigger = await screen.findByRole('button', {name: 'Attach category'})
+    trigger.focus()
+    fireEvent.keyDown(trigger, {key: 'Enter'})
+    fireEvent.click(await screen.findByRole('menuitem', {name: 'Extra'}))
+    await waitFor(() => {
+      expect(calls).toContainEqual([
+        '/api/admin/catalog/servers/s1/categories',
+        {
+          categoryIds: ['c-ranks', 'c-kits', 'c-tools', 'c-extra'],
+          base: ['c-ranks', 'c-kits', 'c-tools']
+        }
+      ])
+    })
   })
 
   it('clicking the server plate selects it and does not navigate', async () => {

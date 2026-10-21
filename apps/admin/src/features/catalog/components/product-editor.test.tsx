@@ -186,6 +186,15 @@ describe('ProductEditor', () => {
     expect(await within(preview).findByText('Probe Deluxe')).toBeInTheDocument()
   })
 
+  it('shows the English description as plain text in the preview card', async () => {
+    mockApi()
+    renderWithStore(<ProductEditor id="p1" canEdit />)
+    const box = await screen.findByRole('textbox', {name: 'Description (EN)'})
+    setMarkdown(box, 'Fly **fast** and more')
+    const preview = screen.getByRole('region', {name: 'Preview'})
+    expect(await within(preview).findByText('Fly fast and more')).toBeInTheDocument()
+  })
+
   it('clicking {nick} inserts it at the caret of the grant field', async () => {
     mockApi()
     renderWithStore(<ProductEditor id="p1" canEdit />)

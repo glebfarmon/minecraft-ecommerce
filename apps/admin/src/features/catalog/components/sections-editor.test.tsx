@@ -37,6 +37,14 @@ describe('SectionsEditor', () => {
     expect(latest?.translations.en.sections).toEqual([])
   })
 
+  it('draws a section block without a border (Tailwind 4 borders default to currentColor)', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', {name: '+ Section'}))
+    const block = screen.getByLabelText('Section title').closest('div.rounded-plate') as HTMLElement
+    expect(block).toBeInTheDocument()
+    expect(block.className).not.toMatch(/(^|\s)border(\s|$)/)
+  })
+
   it('hides the editing buttons when disabled', () => {
     render(<Harness disabled />)
     expect(screen.queryByRole('button', {name: '+ Section'})).not.toBeInTheDocument()

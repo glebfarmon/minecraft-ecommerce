@@ -1,6 +1,7 @@
 'use client'
 
 import {FormSection} from '@/components/form-section'
+import {plainText} from '@/components/rich-text/markdown-doc'
 import {RichTextField} from '@/components/rich-text/rich-text-field'
 import {SkeletonRows} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
@@ -219,6 +220,7 @@ export function ProductEditor({id, serverId, categoryId, canEdit}: Props) {
       preview={
         <ProductCard
           accent={server?.accent ?? 'var(--color-accent)'}
+          description={plainText(values.translations.en.description || '')}
           product={{
             name: values.translations.en.name || values.slug || t('newProduct'),
             mark: values.mark || values.translations.en.name || '',
