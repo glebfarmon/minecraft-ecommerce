@@ -9,7 +9,7 @@ export function Card({
   className,
   children
 }: {
-  title?: string
+  title?: ReactNode
   action?: ReactNode
   tone?: 'default' | 'accent'
   className?: string

@@ -2,7 +2,6 @@
 
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
-import {SkeletonRows} from '@/components/skeleton'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
@@ -29,22 +28,23 @@ function PageRows({
   cursor,
   isFirst,
   isLast,
-  onMore
+  onMore,
+  skeleton
 }: {
   query: Query
   cursor: string | undefined
   isFirst: boolean
   isLast: boolean
   onMore: (cursor: string) => void
+  skeleton: boolean
 }) {
   const t = useTranslations('orders')
   const tc = useTranslations('common')
   const f = useFormat()
   const router = useRouter()
   const page = useListAdminOrdersQuery({...query, cursor})
-  const held = useHoldLoading(page.isLoading)
-  if (held) return <SkeletonRows />
-  if (page.isError || !page.data)
+  const held = useHoldLoading(page.isLoading) || skeleton
+  if (!held && (page.isError || !page.data))
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {(page.error as {status?: unknown} | undefined)?.status === 403
@@ -52,12 +52,13 @@ function PageRows({
           : t('loadFailed')}
       </p>
     )
-  const next = page.data.nextCursor
+  const next = held ? null : (page.data?.nextCursor ?? null)
   return (
     <>
       <DataTable
         caption={t('title')}
-        rows={page.data.orders}
+        loading={held ? 8 : undefined}
+        rows={page.data?.orders ?? []}
         rowKey={o => o.id}
         rowLabel={o => o.publicId}
         rowHref={o => `/orders/${o.id}`}
@@ -75,7 +76,11 @@ function PageRows({
             cell: o => f.money(o.totalMinor, o.currency),
             className: 'tabular text-right'
           },
-          {header: t('colStatus'), cell: o => <StatusDot status={o.status} />}
+          {
+            header: t('colStatus'),
+            cell: o => <StatusDot status={o.status} />,
+            placeholder: 'h-6 w-20 rounded-full'
+          }
         ]}
         menu={o => [
           {
@@ -114,7 +119,14 @@ function PageRows({
   )
 }
 
-export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
+export function OrdersTable({
+  initialQ = '',
+  skeleton = false
+}: {
+  initialQ?: string
+  /** The route's loading state: this layout with placeholders. */
+  skeleton?: boolean
+}) {
   const t = useTranslations('orders')
   const status_ = useTranslations('status')
   const [draft, setDraft] = useState(initialQ)
@@ -182,6 +194,7 @@ export function OrdersTable({initialQ = ''}: {initialQ?: string}) {
             cursor={cursor}
             isFirst={i === 0}
             isLast={i === cursors.length - 1}
+            skeleton={skeleton}
             onMore={next => {
               setCursors(c => [...c, next])
             }}

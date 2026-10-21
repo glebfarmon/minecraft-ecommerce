@@ -160,7 +160,24 @@ body {
   );
   background-size: 200% 100%;
   background-repeat: no-repeat;
-  animation: skeleton-shimmer 1.4s linear infinite;
+  /* Placeholders hold their space at once but show only after 200 ms, so a fast load never
+     flashes them; the page's static text is there from the start. */
+  animation:
+    skeleton-appear 160ms ease-out 200ms both,
+    skeleton-shimmer 1.4s linear infinite;
+}
+/* On the accent card the raised grey would read as a hole: a tint of its text colour instead. */
+.skeleton.skeleton-on-accent {
+  background-color: color-mix(in oklab, var(--color-on-accent) 12%, transparent);
+}
+/* Inside a raised plate the placeholder sits a step lower, on the card ground. */
+.skeleton.skeleton-on-raised {
+  background-color: var(--color-card);
+}
+@keyframes skeleton-appear {
+  from {
+    opacity: 0;
+  }
 }
 @keyframes skeleton-shimmer {
   from {
@@ -172,16 +189,17 @@ body {
 }
 
 /* Charts: sparklines draw left to right (bars animate in `DayChart`). */
+/* A wipe, not a dash: dashes measured against pathLength break when a stretched spark scales
+   unevenly with a non-scaling stroke. The 4px overhang keeps the stroke's edges unclipped. */
 .line-draw {
-  stroke-dasharray: 1;
   animation: line-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes line-draw {
   from {
-    stroke-dashoffset: 1;
+    clip-path: inset(-4px 100% -4px -4px);
   }
   to {
-    stroke-dashoffset: 0;
+    clip-path: inset(-4px -4px -4px -4px);
   }
 }
 
@@ -206,6 +224,22 @@ body {
   }
 }
 
+/* Pick-from-list menus (attach a category) unfold out of the middle of their trigger like the select list. */
+.menu-unfold {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: select-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu-unfold[data-side='top'] {
+  animation-name: select-in-top;
+}
+.menu-unfold[data-state='closed'] {
+  animation: select-out 120ms ease-in both;
+}
+.menu-unfold[data-state='open'] .menu-unfold-item {
+  animation: select-item-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 18ms), 126ms);
+}
+
 /* Select: the list unfolds out of the field, options follow in a short cascade, the check draws. */
 .select-content {
   transform-origin: var(--radix-select-content-transform-origin);
@@ -224,6 +258,101 @@ body {
 .check-draw {
   stroke-dasharray: 1;
   animation: check-draw 160ms ease-out 80ms both;
+}
+
+/* Popovers (the date picker) unfold out of their field like the select list. */
+.popover-content {
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: select-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.popover-content[data-side='top'] {
+  animation-name: select-in-top;
+}
+.popover-content[data-state='closed'] {
+  animation: select-out 120ms ease-in both;
+}
+
+/* Calendar range: accent days at the ends joined by a soft band. Rows and columns number the
+   cells so the sheen below runs across the chosen days in reading order. */
+.cal tr > :nth-child(2) {
+  --col: 1;
+}
+.cal tr > :nth-child(3) {
+  --col: 2;
+}
+.cal tr > :nth-child(4) {
+  --col: 3;
+}
+.cal tr > :nth-child(5) {
+  --col: 4;
+}
+.cal tr > :nth-child(6) {
+  --col: 5;
+}
+.cal tr > :nth-child(7) {
+  --col: 6;
+}
+.cal tbody tr:nth-child(2) {
+  --row: 1;
+}
+.cal tbody tr:nth-child(3) {
+  --row: 2;
+}
+.cal tbody tr:nth-child(4) {
+  --row: 3;
+}
+.cal tbody tr:nth-child(5) {
+  --row: 4;
+}
+.cal tbody tr:nth-child(6) {
+  --row: 5;
+}
+.cal-today .cal-day-button {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.cal-range-middle {
+  background: var(--color-accent-soft);
+}
+.cal-range-start:not(.cal-range-end) {
+  background: linear-gradient(to right, transparent 50%, var(--color-accent-soft) 50%);
+}
+.cal-range-end:not(.cal-range-start) {
+  background: linear-gradient(to left, transparent 50%, var(--color-accent-soft) 50%);
+}
+.cal-range-start .cal-day-button,
+.cal-range-end .cal-day-button {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+/* A light sweeps over each newly chosen day, a beat later per cell: after the second click it
+   flows from the first day to the last. The light spans 40–60% of a 250% wide layer and starts and
+   ends past the cell edges (the tilt included), so nothing of it stays behind. */
+.cal-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 40%, rgb(255 255 255 / 0.4) 50%, transparent 60%)
+    no-repeat;
+  background-size: 250% 100%;
+  animation: cal-sheen 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc((var(--row, 0) * 7 + var(--col, 0)) * 16ms), 560ms);
+}
+.cal-range-start::after,
+.cal-range-end::after {
+  border-radius: 9999px;
+}
+
+@keyframes cal-sheen {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
 }
 
 @keyframes select-in {

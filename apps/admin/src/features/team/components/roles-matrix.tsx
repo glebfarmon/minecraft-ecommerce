@@ -2,9 +2,11 @@
 
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {RoleNameSchema} from '@/features/team/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
 import {
@@ -44,6 +46,7 @@ export function RolesMatrix({
   held?: readonly Permission[]
 }) {
   const t = useTranslations('team')
+  const tc = useTranslations('common')
   const errorText = useErrorText()
   const roles = useGetApiAdminRolesQuery()
   const [createRole, {isLoading: creating}] = usePostApiAdminRolesMutation()
@@ -61,8 +64,8 @@ export function RolesMatrix({
   })
   const {errors} = useFormState({control})
 
-  if (roles.isLoading) return <p>{t('loadingRoles')}</p>
-  if (roles.isError) return <p role="alert">{t('couldNotLoadRolesRefreshThe')}</p>
+  const loading = useHoldLoading(roles.isLoading)
+  if (!loading && roles.isError) return <p role="alert">{t('couldNotLoadRolesRefreshThe')}</p>
 
   async function run(action: Promise<{error?: unknown}>, done: string) {
     setError(null)
@@ -87,6 +90,11 @@ export function RolesMatrix({
           {error}
         </p>
       )}
+      {loading && (
+        <span role="status" className="sr-only">
+          {tc('loading')}
+        </span>
+      )}
       <Card title={t('rolePermissions')}>
         <p className="-mt-2 text-[13px] text-muted">{t('changingARoleSignsOutEveryone')}</p>
         <Table>
@@ -100,102 +108,117 @@ export function RolesMatrix({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(roles.data ?? []).map(role => {
-              const draft = drafts[role.id] ?? role.permissions
-              const locked = role.isSystem || !editable
-              const dirty = !sameSet(draft, role.permissions)
-              return (
-                <TableRow key={role.id}>
-                  <TableCell className={cn(STICKY, 'font-medium whitespace-nowrap')}>
-                    {role.name}
-                    {role.isSystem && (
-                      <span className="font-normal text-muted"> {t('system')}</span>
-                    )}
+            {loading &&
+              Array.from({length: 3}, (_, i) => (
+                <TableRow key={i} aria-hidden>
+                  <TableCell className={STICKY}>
+                    <Skeleton className="h-3.5 w-24 rounded-full" />
                   </TableCell>
                   {PERMISSIONS.map(p => (
                     <TableCell key={p}>
-                      <Checkbox
-                        aria-label={`${role.name} ${p}`}
-                        checked={draft.includes(p)}
-                        disabled={locked || !held.includes(p)}
-                        onCheckedChange={on => {
-                          setDrafts(d => ({...d, [role.id]: toggle(draft, p, on === true)}))
-                        }}
-                      />
+                      <Skeleton className="size-4 rounded-[5px]" />
                     </TableCell>
                   ))}
-                  <TableCell>
-                    {!locked &&
-                      (confirming?.id === role.id ? (
-                        <div className="flex flex-col gap-2">
-                          <p className="text-sm">
-                            {confirming.kind === 'save'
-                              ? t('confirmSaveRole', {name: role.name})
-                              : t('confirmDeleteRole', {name: role.name})}
-                          </p>
+                  <TableCell />
+                </TableRow>
+              ))}
+            {!loading &&
+              (roles.data ?? []).map(role => {
+                const draft = drafts[role.id] ?? role.permissions
+                const locked = role.isSystem || !editable
+                const dirty = !sameSet(draft, role.permissions)
+                return (
+                  <TableRow key={role.id}>
+                    <TableCell className={cn(STICKY, 'font-medium whitespace-nowrap')}>
+                      {role.name}
+                      {role.isSystem && (
+                        <span className="font-normal text-muted"> {t('system')}</span>
+                      )}
+                    </TableCell>
+                    {PERMISSIONS.map(p => (
+                      <TableCell key={p}>
+                        <Checkbox
+                          aria-label={`${role.name} ${p}`}
+                          checked={draft.includes(p)}
+                          disabled={locked || !held.includes(p)}
+                          onCheckedChange={on => {
+                            setDrafts(d => ({...d, [role.id]: toggle(draft, p, on === true)}))
+                          }}
+                        />
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      {!locked &&
+                        (confirming?.id === role.id ? (
+                          <div className="flex flex-col gap-2">
+                            <p className="text-sm">
+                              {confirming.kind === 'save'
+                                ? t('confirmSaveRole', {name: role.name})
+                                : t('confirmDeleteRole', {name: role.name})}
+                            </p>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant={confirming.kind === 'delete' ? 'danger' : 'default'}
+                                onClick={() => {
+                                  setConfirming(null)
+                                  if (confirming.kind === 'delete') {
+                                    void run(deleteRole({id: role.id}), t('roleDeleted'))
+                                    return
+                                  }
+                                  void run(
+                                    updateRole({
+                                      id: role.id,
+                                      body: {name: role.name, permissions: draft}
+                                    }),
+                                    t('roleSaved')
+                                  ).then(ok => {
+                                    if (ok)
+                                      setDrafts(d =>
+                                        Object.fromEntries(
+                                          Object.entries(d).filter(([id]) => id !== role.id)
+                                        )
+                                      )
+                                  })
+                                }}>
+                                {confirming.kind === 'save' ? t('saveRole') : t('deleteRole')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  setConfirming(null)
+                                }}>
+                                {t('back')}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
                           <div className="flex gap-2">
                             <Button
                               type="button"
-                              variant={confirming.kind === 'delete' ? 'danger' : 'default'}
+                              aria-label={t('saveName', {name: role.name})}
+                              disabled={!dirty}
                               onClick={() => {
-                                setConfirming(null)
-                                if (confirming.kind === 'delete') {
-                                  void run(deleteRole({id: role.id}), t('roleDeleted'))
-                                  return
-                                }
-                                void run(
-                                  updateRole({
-                                    id: role.id,
-                                    body: {name: role.name, permissions: draft}
-                                  }),
-                                  t('roleSaved')
-                                ).then(ok => {
-                                  if (ok)
-                                    setDrafts(d =>
-                                      Object.fromEntries(
-                                        Object.entries(d).filter(([id]) => id !== role.id)
-                                      )
-                                    )
-                                })
+                                setConfirming({id: role.id, kind: 'save'})
                               }}>
-                              {confirming.kind === 'save' ? t('saveRole') : t('deleteRole')}
+                              {t('save')}
                             </Button>
                             <Button
                               type="button"
                               variant="outline"
+                              aria-label={t('deleteName', {name: role.name})}
                               onClick={() => {
-                                setConfirming(null)
+                                setConfirming({id: role.id, kind: 'delete'})
                               }}>
-                              {t('back')}
+                              {t('delete')}
                             </Button>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            aria-label={t('saveName', {name: role.name})}
-                            disabled={!dirty}
-                            onClick={() => {
-                              setConfirming({id: role.id, kind: 'save'})
-                            }}>
-                            {t('save')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            aria-label={t('deleteName', {name: role.name})}
-                            onClick={() => {
-                              setConfirming({id: role.id, kind: 'delete'})
-                            }}>
-                            {t('delete')}
-                          </Button>
-                        </div>
-                      ))}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
+                        ))}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
           </TableBody>
         </Table>
       </Card>

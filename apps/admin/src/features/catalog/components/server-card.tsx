@@ -111,3 +111,15 @@ export function ServerCard({
     </div>
   )
 }
+
+/** `ServerCard` while its server loads: a shimmering card of the same size and lines. */
+export function ServerCardSkeleton() {
+  const line = 'rounded-full bg-white/[0.06]'
+  return (
+    <div aria-hidden className={cn(CARD, 'skeleton')}>
+      <span className={cn(line, 'h-6 w-28')} />
+      <span className={cn(line, 'h-5 w-20')} />
+      <span className={cn(line, 'h-5 w-24')} />
+    </div>
+  )
+}

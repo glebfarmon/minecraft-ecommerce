@@ -3,7 +3,6 @@
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
-import {SkeletonRows} from '@/components/skeleton'
 import {type Tone, ToneDot} from '@/components/status-dot'
 import {notify} from '@/components/toaster'
 import {InviteFormSchema} from '@/features/team/schemas'
@@ -153,16 +152,16 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
           </div>
         </div>
       )}
-      {loadingHeld && <SkeletonRows rows={3} />}
       {!loadingHeld && invites.isError && (
         <p role="alert" className="rounded-card bg-card p-5">
           {t('couldNotLoadInvitesRefreshThe')}
         </p>
       )}
-      {!loadingHeld && invites.data && (
+      {(loadingHeld || invites.data) && (
         <DataTable
           caption={t('invites')}
-          rows={invites.data}
+          loading={loadingHeld ? 3 : undefined}
+          rows={invites.data ?? []}
           rowKey={i => i.id}
           rowLabel={i => i.email}
           columns={[
@@ -173,7 +172,8 @@ export function InvitesPanel({held = PERMISSIONS}: {held?: readonly Permission[]
               cell: i => {
                 const status = statusOf(i)
                 return <ToneDot tone={STATUS_TONE[status]} label={t(`inviteStatus${status}`)} />
-              }
+              },
+              placeholder: 'h-6 w-20 rounded-full'
             },
             {
               header: t('expires'),

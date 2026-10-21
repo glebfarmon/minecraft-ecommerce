@@ -2,9 +2,11 @@
 
 import {Card} from '@/components/card'
 import {FormSection} from '@/components/form-section'
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {type SettingsForm, SettingsFormSchema, toSettings} from '@/features/content/schemas'
 import {useApiError, useErrorText} from '@/hooks/use-error-text'
+import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useGetContentSettingsQuery, useUpdateContentSettingsMutation} from '@/lib/api/generated'
 import {valibotResolver} from '@hookform/resolvers/valibot'
@@ -18,8 +20,9 @@ import {Label} from '@shop/ui/label'
 
 const EMPTY: SettingsForm = {plain: '', accent: '', serverIp: '', discordUrl: '', supportEmail: ''}
 
-export function SettingsForm({canEdit}: {canEdit: boolean}) {
+export function SettingsForm({canEdit, skeleton = false}: {canEdit: boolean; skeleton?: boolean}) {
   const t = useTranslations('content')
+  const tc = useTranslations('common')
   const errorText = useErrorText()
   const apiError = useApiError()
   const settings = useGetContentSettingsQuery()
@@ -47,8 +50,8 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once; refetches must not reset
   }, [isLoaded])
 
-  if (settings.isLoading) return <p>{t('loadingSettings')}</p>
-  if (!settings.data) return <p role="alert">{t('couldNotLoadTheSettingsRefresh')}</p>
+  const loading = useHoldLoading(settings.isLoading) || skeleton
+  if (!loading && !settings.data) return <p role="alert">{t('couldNotLoadTheSettingsRefresh')}</p>
 
   async function save(v: SettingsForm) {
     setError(null)
@@ -64,6 +67,8 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
     notify.ok(t('savedLiveOnTheSiteWithin'))
   }
 
+  /** While loading, a stored value's control is a placeholder of its size; its label stays. */
+  const slot = (input: ReactNode, size = 'h-9') => (loading ? <Skeleton className={size} /> : input)
   const errorOf = (name: FieldPath<SettingsForm>) => errorText(errors[name]?.message)
   const fieldProps = (name: FieldPath<SettingsForm>) => ({
     'id': `settings-${name}`,
@@ -77,6 +82,11 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
       noValidate
       className="grid items-start gap-4 xl:grid-cols-[1fr_20rem]">
       <div className="flex min-w-0 flex-col gap-4">
+        {loading && (
+          <span role="status" className="sr-only">
+            {tc('loading')}
+          </span>
+        )}
         {error && (
           <p role="alert" className="rounded-plate bg-bad-soft px-4 py-3 text-bad">
             {error}
@@ -88,10 +98,10 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
           description={t('theWordmarkInTheSiteHeader')}
           disabled={!canEdit}>
           <Field name="plain" label={t('siteName')} error={errorOf('plain')}>
-            <Input {...fieldProps('plain')} {...register('plain')} />
+            {slot(<Input {...fieldProps('plain')} {...register('plain')} />)}
           </Field>
           <Field name="accent" label={t('accentPart')} error={errorOf('accent')}>
-            <Input {...fieldProps('accent')} {...register('accent')} />
+            {slot(<Input {...fieldProps('accent')} {...register('accent')} />)}
           </Field>
         </FormSection>
 
@@ -100,17 +110,18 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
           description={t('shownInTheFooterAndOn')}
           disabled={!canEdit}>
           <Field name="serverIp" label={t('serverAddress')} error={errorOf('serverIp')}>
-            <Input {...fieldProps('serverIp')} {...register('serverIp')} />
+            {slot(<Input {...fieldProps('serverIp')} {...register('serverIp')} />)}
           </Field>
           <Field name="discordUrl" label={t('discordLink')} error={errorOf('discordUrl')}>
-            <Input {...fieldProps('discordUrl')} {...register('discordUrl')} />
+            {slot(<Input {...fieldProps('discordUrl')} {...register('discordUrl')} />)}
           </Field>
           <Field name="supportEmail" label={t('supportEmail')} error={errorOf('supportEmail')}>
-            <Input {...fieldProps('supportEmail')} {...register('supportEmail')} />
+            {slot(<Input {...fieldProps('supportEmail')} {...register('supportEmail')} />)}
           </Field>
         </FormSection>
 
-        {canEdit && (
+        {canEdit && loading && <Skeleton className="h-9 w-20 rounded-full" />}
+        {canEdit && !loading && (
           <div>
             <Button type="submit" disabled={saving}>
               {t('save')}
@@ -120,12 +131,16 @@ export function SettingsForm({canEdit}: {canEdit: boolean}) {
       </div>
 
       <Card title={t('preview')}>
-        <p data-testid="wordmark-preview" className="text-xl font-semibold break-all">
-          {values.plain}
-          <span data-accent className="text-accent">
-            {values.accent}
-          </span>
-        </p>
+        {loading ? (
+          <Skeleton className="my-1 h-5 w-2/3 rounded-full" />
+        ) : (
+          <p data-testid="wordmark-preview" className="text-xl font-semibold break-all">
+            {values.plain}
+            <span data-accent className="text-accent">
+              {values.accent}
+            </span>
+          </p>
+        )}
       </Card>
     </form>
   )

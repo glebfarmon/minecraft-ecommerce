@@ -41,6 +41,15 @@ const stats = (over: Partial<Record<string, unknown>> = {}) => ({
 })
 
 /** Answers with `body`, or with `byCurrency(currency)` so a switch can be told from stale data. */
+/** A KPI or chart card once the figures are in: the cards are on screen, titled, while they load. */
+async function findCard(name: string) {
+  await waitFor(() => {
+    expect(screen.queryByText(STATS_LOADING)).not.toBeInTheDocument()
+  })
+  return screen.getByRole('region', {name})
+}
+const STATS_LOADING = /^(Loading statistics…|Wczytywanie statystyk…)$/
+
 function mockApi(body: object | ((currency: string) => object)) {
   return jest.spyOn(global, 'fetch').mockImplementation(input => {
     const url = new URL(String(input instanceof Request ? input.url : input))
@@ -67,7 +76,7 @@ describe('Dashboard', () => {
   it('speaks Polish', async () => {
     mockApi(stats())
     renderWithProviders(<Dashboard />, {locale: 'pl'})
-    const revenue = await screen.findByRole('region', {name: 'Przychód'})
+    const revenue = await findCard('Przychód')
     expect(revenue).toHaveTextContent('12,50')
     expect(screen.getByRole('region', {name: 'Opłacone zamówienia'})).toBeInTheDocument()
     expect(screen.getByRole('region', {name: 'Średnie zamówienie'})).toBeInTheDocument()
@@ -77,7 +86,7 @@ describe('Dashboard', () => {
   it('shows revenue, paid orders, average order, conversion and LTV in one currency', async () => {
     mockApi(stats())
     renderWithStore(<Dashboard />)
-    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    const revenue = await findCard('Revenue')
     expect(revenue).toHaveTextContent('€12.50')
     expect(revenue).toHaveTextContent('+25%')
     expect(screen.getByRole('region', {name: 'Paid orders'})).toHaveTextContent('20')
@@ -109,7 +118,7 @@ describe('Dashboard', () => {
       stats({currency, revenueMinor: currency === 'PLN' ? 5375 : 1250})
     )
     renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     fireEvent.mouseDown(screen.getByRole('tab', {name: 'PLN'}))
     fireEvent.click(screen.getByRole('tab', {name: 'PLN'}))
     await waitFor(() => {
@@ -134,19 +143,20 @@ describe('Dashboard', () => {
       })
     })
     renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     fireEvent.mouseDown(screen.getByRole('tab', {name: 'PLN'}))
     fireEvent.click(screen.getByRole('tab', {name: 'PLN'}))
-    expect(await screen.findByRole('status')).toHaveTextContent('Loading statistics')
-    expect(screen.queryByRole('region', {name: 'Revenue'})).not.toBeInTheDocument()
+    expect(await screen.findByText('Loading statistics…')).toBeInTheDocument()
+    // The card stays in place as a placeholder; no euro figure sits under the PLN label.
+    expect(screen.getByRole('region', {name: 'Revenue'})).not.toHaveTextContent('€')
     release()
-    expect(await screen.findByRole('region', {name: 'Revenue'})).toBeInTheDocument()
+    expect(await findCard('Revenue')).toBeInTheDocument()
   })
 
   it('remembers the chosen currency across a remount', async () => {
     mockApi((currency: string) => stats({currency}))
     const first = renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     fireEvent.mouseDown(screen.getByRole('tab', {name: 'PLN'}))
     fireEvent.click(screen.getByRole('tab', {name: 'PLN'}))
     await waitFor(() => {
@@ -156,7 +166,7 @@ describe('Dashboard', () => {
     const fetchMock = mockApi((currency: string) => stats({currency}))
     fetchMock.mockClear()
     renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     expect(
       requestedUrls(fetchMock).every(u => !u.includes('stats/orders') || u.includes('currency=PLN'))
     ).toBe(true)
@@ -166,7 +176,7 @@ describe('Dashboard', () => {
   it('hides the vs-previous delta when the previous period had orders without a rate', async () => {
     mockApi(stats({previousAwaitingRate: 1}))
     renderWithStore(<Dashboard />)
-    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    const revenue = await findCard('Revenue')
     expect(revenue).toHaveTextContent('€12.50')
     expect(revenue).not.toHaveTextContent('+25%')
   })
@@ -174,7 +184,7 @@ describe('Dashboard', () => {
   it('rolls an indicator on the currency tabs', async () => {
     mockApi(stats())
     renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     const tab = screen
       .getByRole('tablist', {name: 'Currency'})
       .querySelector('[aria-selected="true"] [data-slot="tabs-indicator"]')
@@ -193,7 +203,7 @@ describe('Dashboard', () => {
       })
     )
     renderWithStore(<Dashboard />)
-    expect(await screen.findByRole('region', {name: 'Average order'})).toHaveTextContent('—')
+    expect(await findCard('Average order')).toHaveTextContent('—')
     expect(screen.getByRole('region', {name: 'LTV'})).toHaveTextContent('—')
     expect(screen.getByText(/2 orders waiting for an exchange rate/)).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/NaN/)
@@ -211,7 +221,7 @@ describe('Dashboard', () => {
       })
     )
     renderWithStore(<Dashboard />)
-    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    const revenue = await findCard('Revenue')
     expect(revenue).toHaveTextContent('—')
     expect(revenue).not.toHaveTextContent('€0.00')
     expect(revenue).not.toHaveTextContent('−100%')
@@ -220,7 +230,7 @@ describe('Dashboard', () => {
   it('hides the vs-previous delta while some orders await a rate', async () => {
     mockApi(stats({awaitingRate: 1}))
     renderWithStore(<Dashboard />)
-    const revenue = await screen.findByRole('region', {name: 'Revenue'})
+    const revenue = await findCard('Revenue')
     expect(revenue).toHaveTextContent('€12.50')
     expect(revenue).not.toHaveTextContent('+25%')
   })
@@ -243,7 +253,7 @@ describe('Dashboard', () => {
       })
     )
     renderWithStore(<Dashboard />)
-    expect(await screen.findByRole('region', {name: 'Conversion'})).toHaveTextContent('—')
+    expect(await findCard('Conversion')).toHaveTextContent('—')
     expect(screen.getByText('No sales in this range.')).toBeInTheDocument()
     expect(screen.queryByText(/waiting for an exchange rate/)).not.toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/NaN/)
@@ -252,10 +262,10 @@ describe('Dashboard', () => {
   it('switches the range to 30 days', async () => {
     const fetchMock = mockApi(stats())
     renderWithStore(<Dashboard />)
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     fireEvent.mouseDown(screen.getByRole('tab', {name: '30 days'}))
     fireEvent.click(screen.getByRole('tab', {name: '30 days'}))
-    await screen.findByRole('region', {name: 'Revenue'})
+    await findCard('Revenue')
     expect(requestedUrls(fetchMock).some(u => u.includes('range=30d'))).toBe(true)
   })
 
@@ -273,7 +283,7 @@ describe('Dashboard', () => {
       })
     })
     renderWithStore(<Dashboard />)
-    const paid = await screen.findByRole('region', {name: 'Paid orders'})
+    const paid = await findCard('Paid orders')
     expect(paid).toHaveTextContent('20')
     fireEvent.mouseDown(screen.getByRole('tab', {name: '30 days'}))
     fireEvent.click(screen.getByRole('tab', {name: '30 days'}))

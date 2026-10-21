@@ -1,6 +1,7 @@
 'use client'
 
 import {RichTextField} from '@/components/rich-text/rich-text-field'
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {type DragHandleProps, SortableList} from '@/features/catalog/components/sortable-list'
 import {RulesPreview} from '@/features/content/components/rules-preview'
@@ -69,7 +70,8 @@ const textPath = (section: number, locale: Locale, item?: number) =>
     : `${sectionPath(section)}.items.${String(item)}.text.${locale}`) as TextPath
 const fieldId = (name: string) => `rules-${name.replace(/\./g, '-')}`
 
-export function RulesEditor() {
+/** `skeleton`: the route's loading state, this layout with placeholders. */
+export function RulesEditor({skeleton = false}: {skeleton?: boolean}) {
   const t = useTranslations('content')
   const uiLocale = useLocale()
   const errorText = useErrorText()
@@ -123,7 +125,7 @@ export function RulesEditor() {
     setConfirmPublish(false)
   }
 
-  if (draft.isLoading) return <p>{t('loadingRules')}</p>
+  if (draft.isLoading || skeleton) return <RulesEditorLoading />
   if (!draft.data) return <p role="alert">{t('couldNotLoadTheRulesRefresh')}</p>
 
   const busy = saving || publishing || restored.isLoading
@@ -500,6 +502,66 @@ function ConfirmDelete({label, onConfirm}: {label: string; onConfirm: () => void
         }}>
         {t('cancel')}
       </Button>
+    </div>
+  )
+}
+
+/** The editor as it will be: tabs, the section cards and the preview, the texts as placeholders. */
+function RulesEditorLoading() {
+  const t = useTranslations('content')
+  const tc = useTranslations('common')
+  return (
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+      <span role="status" className="sr-only">
+        {tc('loading')}
+      </span>
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Tabs value="en">
+            <TabsList aria-label={t('language')}>
+              {LOCALES.map(l => (
+                <TabsTrigger key={l} value={l} disabled>
+                  {l.toUpperCase()}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <div aria-hidden className="flex gap-2">
+            <Skeleton className="h-9 w-28 rounded-full" />
+            <Skeleton className="h-9 w-24 rounded-full" />
+          </div>
+        </div>
+        {[1, 2].map(n => (
+          <div key={n} aria-hidden className="flex flex-col gap-3 rounded-card bg-card p-5">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">
+                {t('sectionTitle', {n: String(n), tag: 'EN'})}
+              </span>
+              <Skeleton className="h-9" />
+            </div>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="w-9 shrink-0 pt-2 text-sm text-muted-foreground tabular-nums">
+                  {`${String(n)}.${String(i)}`}
+                </span>
+                <Skeleton className="h-16 flex-1" />
+              </div>
+            ))}
+            <Skeleton className="h-9 w-28 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <section aria-hidden className="flex flex-col gap-4 rounded-card bg-card p-5">
+        <h2 className="text-[15px] font-semibold">{t('previewIn', {locale: 'EN'})}</h2>
+        {[1, 2].map(n => (
+          <div key={n} className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-1/2 rounded-full" />
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-3.5 w-11/12 rounded-full" />
+            ))}
+          </div>
+        ))}
+      </section>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import {DataTable} from '@/components/data-table'
 import {DayChart} from '@/components/day-chart'
 import {EmptyState} from '@/components/empty-state'
 import {KpiCard} from '@/components/kpi-card'
-import {Skeleton, SkeletonRows, SkeletonStatus} from '@/components/skeleton'
+import {Skeleton} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
 import {StatusDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
@@ -35,6 +35,11 @@ type Stats = GetOrderStatsApiResponse
 const LINK =
   'text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full'
 
+/** Revenue leads on the left over two rows; the other four sit 2 × 2 beside it, each wide enough for a full amount. */
+const KPI_GRID =
+  'grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]'
+const HERO_CELL = 'sm:col-span-2 xl:col-span-1 xl:row-span-2'
+
 function Kpis({stats}: {stats: Stats}) {
   const t = useTranslations('dashboard')
   const f = useFormat()
@@ -48,8 +53,10 @@ function Kpis({stats}: {stats: Stats}) {
   const change = partialChange ? null : delta(stats.revenueMinor, stats.previousRevenueMinor)
   const paidChange = delta(stats.paidCount, stats.previousPaidCount)
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div className={KPI_GRID}>
       <KpiCard
+        hero
+        className={HERO_CELL}
         label={t('revenue')}
         value={noneConverted ? '—' : f.money(stats.revenueMinor, currency)}
         count={
@@ -177,14 +184,13 @@ function LatestOrders() {
           {t('viewAll')}
         </Link>
       }>
-      {held ? (
-        <SkeletonRows rows={5} />
-      ) : page.isError || !page.data ? (
+      {!held && (page.isError || !page.data) ? (
         <p className="text-muted">{t('ordersFailed')}</p>
       ) : (
         <DataTable
           caption={t('latestOrders')}
-          rows={page.data.orders.slice(0, 5)}
+          loading={held ? 5 : undefined}
+          rows={page.data?.orders.slice(0, 5) ?? []}
           rowKey={o => o.id}
           rowHref={o => `/orders/${o.id}`}
           columns={[
@@ -195,7 +201,11 @@ function LatestOrders() {
             },
             {header: t('colNick'), cell: o => o.nick},
             {header: t('colTotal'), cell: o => f.money(o.totalMinor, o.currency)},
-            {header: t('colStatus'), cell: o => <StatusDot status={o.status} />}
+            {
+              header: t('colStatus'),
+              cell: o => <StatusDot status={o.status} />,
+              placeholder: 'h-6 w-20 rounded-full'
+            }
           ]}
           empty={<EmptyState icon={ReceiptText} title={t('noOrdersYet')} />}
         />
@@ -204,35 +214,91 @@ function LatestOrders() {
   )
 }
 
-function Loading() {
-  const t = useTranslations('dashboard')
+/** A donut ring of the charts' size (`Donut` is a 96px ring). */
+function DonutSkeleton() {
   return (
-    <SkeletonStatus label={t('loadingStats')} className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({length: 5}, (_, i) => (
-          <div key={i} className="flex h-36 flex-col justify-between rounded-card bg-card p-5">
-            <Skeleton className="h-3 w-2/5 rounded-full" />
-            <Skeleton className="h-8 w-3/5" />
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <div className="flex h-64 flex-col gap-4 rounded-card bg-card p-5">
-          <Skeleton className="h-3 w-1/4 rounded-full" />
-          <Skeleton className="flex-1" />
-        </div>
-        <div className="flex h-64 flex-col gap-3 rounded-card bg-card p-5">
-          <Skeleton className="h-3 w-1/3 rounded-full" />
-          {Array.from({length: 4}, (_, i) => (
-            <Skeleton key={i} className="h-8" />
-          ))}
-        </div>
-      </div>
-    </SkeletonStatus>
+    <div aria-hidden className="skeleton grid size-24 shrink-0 place-items-center rounded-full">
+      <div className="size-[62px] rounded-full bg-card" />
+    </div>
   )
 }
 
-export function Dashboard() {
+/** The dashboard as it will be: the same grids, cards and titles, the figures as placeholders. */
+function Loading() {
+  const t = useTranslations('dashboard')
+  const legend = (n: number) => (
+    <ul aria-hidden className="flex flex-col gap-2">
+      {Array.from({length: n}, (_, i) => (
+        <li key={i} className="flex items-center gap-3">
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-4 w-8 rounded-full" />
+        </li>
+      ))}
+    </ul>
+  )
+  return (
+    <div className="grid gap-4">
+      <span role="status" className="sr-only">
+        {t('loadingStats')}
+      </span>
+      <div className={KPI_GRID}>
+        <KpiCard
+          hero
+          loading
+          tone="accent"
+          className={HERO_CELL}
+          label={t('revenue')}
+          value=""
+          hint=" "
+          spark={[]}
+        />
+        <KpiCard loading label={t('paidOrders')} value="" hint=" " spark={[]} />
+        <KpiCard loading label={t('averageOrder')} value="" />
+        <KpiCard loading label={t('conversion')} value="" hint=" " />
+        <KpiCard loading label={t('ltv')} value="" hint=" " />
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+        <Card title={t('revenuePerDay')}>
+          <div aria-hidden className="flex flex-col gap-2">
+            <Skeleton className="h-40" />
+            <div className="flex justify-between">
+              <Skeleton className="h-3 w-10 rounded-full" />
+              <Skeleton className="h-3 w-10 rounded-full" />
+            </div>
+          </div>
+        </Card>
+        <Card title={t('ordersByStatus')}>
+          <div className="flex flex-wrap items-center gap-6">
+            <DonutSkeleton />
+            {legend(3)}
+          </div>
+        </Card>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card title={t('paidByCurrency')}>
+          <div className="flex flex-wrap items-center gap-6">
+            <DonutSkeleton />
+            {legend(2)}
+          </div>
+        </Card>
+        <Card title={t('topProducts')}>
+          <ol aria-hidden className="flex flex-col gap-1.5">
+            {Array.from({length: 3}, (_, i) => (
+              <li
+                key={i}
+                className="skeleton flex h-[44px] items-center gap-3 rounded-plate px-4"
+              />
+            ))}
+          </ol>
+        </Card>
+      </div>
+      <LatestOrders />
+    </div>
+  )
+}
+
+/** `skeleton`: the route's loading state, this layout with placeholders. */
+export function Dashboard({skeleton = false}: {skeleton?: boolean}) {
   const t = useTranslations('dashboard')
   const common = useTranslations('common')
   const [range, setRange] = useState<Range>('7d')
@@ -248,7 +314,7 @@ export function Dashboard() {
   // arrive; a currency switch must not, so old-currency numbers never sit under the new label.
   const stats = query.currentData ?? (query.data?.currency === currency ? query.data : undefined)
   const busy = query.isFetching && stats !== query.currentData
-  const held = useHoldLoading(!stats && !query.isError)
+  const held = useHoldLoading(!stats && !query.isError) || skeleton
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap justify-end gap-3">
@@ -276,7 +342,7 @@ export function Dashboard() {
           </TabsList>
         </Tabs>
       </div>
-      {query.isError ? (
+      {query.isError && !skeleton ? (
         <div
           role="alert"
           className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-card p-5">

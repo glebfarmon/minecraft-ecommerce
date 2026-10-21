@@ -7,13 +7,28 @@ import type {MouseEvent, ReactNode} from 'react'
 import {cn} from '@shop/ui/lib/utils'
 
 import {RowMenu, type RowMenuItem} from './row-menu'
+import {Skeleton} from './skeleton'
 
 export type Column<T> = {
   header: string
   cell: (r: T) => ReactNode
   className?: string
   primary?: boolean
+  /** The placeholder's shape while loading; a text line by default. A status pill is `h-6 w-20 rounded-full`. */
+  placeholder?: string
 }
+
+/** Placeholder rows go from long to short and back, so they read as rows of text, not a grid. */
+const WIDTHS = ['w-3/5', 'w-4/5', 'w-1/2', 'w-2/3', 'w-3/4']
+const placeholderOf = (c: {placeholder?: string; className?: string}, i: number) => (
+  <Skeleton
+    className={cn(
+      c.placeholder ?? cn('h-3.5 rounded-full', WIDTHS[i % WIDTHS.length]),
+      // A right-aligned column (money) keeps its placeholder on the right.
+      c.className?.includes('text-right') && 'ml-auto'
+    )}
+  />
+)
 
 export function DataTable<T>({
   caption,
@@ -24,7 +39,8 @@ export function DataTable<T>({
   menu,
   empty,
   rowHref,
-  onRowClick
+  onRowClick,
+  loading
 }: {
   caption: string
   rows: T[]
@@ -38,8 +54,21 @@ export function DataTable<T>({
   rowHref?: (r: T) => string
   /** The whole row runs this instead, for rows whose detail opens in place. */
   onRowClick?: (r: T) => void
+  /** Rows still loading: this many rows of the same table, headers included, with placeholders. */
+  loading?: number
 }) {
   const t = useTranslations('table')
+  const common = useTranslations('common')
+  if (loading)
+    return (
+      <Loading
+        caption={caption}
+        columns={columns}
+        rows={loading}
+        menu={Boolean(menu)}
+        label={common('loading')}
+      />
+    )
   if (rows.length === 0) return <>{empty}</>
   const primary = columns.find(c => c.primary) ?? columns[0]
   const clickable = Boolean(rowHref ?? onRowClick)
@@ -149,4 +178,79 @@ export function DataTable<T>({
 /** A row with nothing to do (e.g. the owner) gets no menu button at all. */
 function RowActions({label, items}: {label: string; items: RowMenuItem[]}) {
   return items.length > 0 ? <RowMenu label={label} items={items} /> : null
+}
+
+/** The table and the phone list of `DataTable`, with placeholders where the cells go. */
+function Loading<T>({
+  caption,
+  columns,
+  rows,
+  menu,
+  label
+}: {
+  caption: string
+  columns: Column<T>[]
+  rows: number
+  menu: boolean
+  label: string
+}) {
+  const primary = columns.find(c => c.primary) ?? columns[0]
+  const keys = Array.from({length: rows}, (_, i) => i)
+  return (
+    <div role="status" aria-label={caption}>
+      <span className="sr-only">{label}</span>
+      <table aria-hidden className="hidden w-full border-separate border-spacing-y-1.5 md:table">
+        <thead>
+          <tr>
+            {columns.map(c => (
+              <th key={c.header} scope="col" className="label-caps px-4 pb-1 text-left">
+                {c.header}
+              </th>
+            ))}
+            {menu && <th className="w-12" />}
+          </tr>
+        </thead>
+        <tbody>
+          {keys.map(r => (
+            <tr key={r}>
+              {columns.map((c, i) => (
+                <td
+                  key={c.header}
+                  className={cn(
+                    'h-12 bg-card px-4 py-3',
+                    i === 0 && 'rounded-l-plate',
+                    i === columns.length - 1 && !menu && 'rounded-r-plate'
+                  )}>
+                  {placeholderOf(c, r + i)}
+                </td>
+              ))}
+              {menu && (
+                <td className="rounded-r-plate bg-card px-2">
+                  <Skeleton className="ml-auto size-9 rounded-full" />
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul aria-hidden className="flex flex-col gap-2 md:hidden">
+        {keys.map(r => (
+          <li key={r} className="flex items-start gap-3 rounded-plate bg-card p-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Skeleton className={cn('my-1 h-4 rounded-full', WIDTHS[r % WIDTHS.length])} />
+              {columns
+                .filter(c => c !== primary)
+                .map((c, i) => (
+                  <div key={c.header} className="flex items-center gap-2 text-[13px]">
+                    <span className="w-20 shrink-0 text-muted">{c.header}</span>
+                    {placeholderOf(c, r + i + 1)}
+                  </div>
+                ))}
+            </div>
+            {menu && <Skeleton className="size-9 shrink-0 rounded-full" />}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }

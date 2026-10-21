@@ -3,7 +3,7 @@
 import {Hint} from '@/components/hint'
 import {RollingIndicator} from '@/components/rolling-indicator'
 import {type AdminLocale, LOCALE_COOKIE} from '@/i18n/locale'
-import {LayoutGroup} from 'motion/react'
+import {LayoutGroup, motion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
 import {useRouter} from 'next/navigation'
 import {useId} from 'react'
@@ -40,7 +40,11 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
 
   return (
     <LayoutGroup id={group}>
-      <div
+      {/* The rail is sticky: as a layout root, Motion measures the pill against the switch, not
+          the page, so the scroll reset of a navigation does not fly it in from below. */}
+      <motion.div
+        layout
+        layoutRoot
         role="radiogroup"
         aria-label={t('language')}
         className={cn(
@@ -83,7 +87,7 @@ export function LanguageSwitch({orientation}: {orientation: 'vertical' | 'horizo
             </Hint>
           )
         })}
-      </div>
+      </motion.div>
     </LayoutGroup>
   )
 }

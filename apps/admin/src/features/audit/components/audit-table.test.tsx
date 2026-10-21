@@ -153,12 +153,24 @@ describe('AuditTable', () => {
     })
   })
 
-  it('filters by date range covering whole days in UTC', async () => {
+  it('filters by a date range picked in the calendar, covering whole days in UTC', async () => {
     const fetchMock = mockApi()
     renderWithStore(<AuditTable />)
     await screen.findAllByText('admin.role_changed')
-    fireEvent.change(screen.getByLabelText('From'), {target: {value: '2026-10-01'}})
-    fireEvent.change(screen.getByLabelText('To'), {target: {value: '2026-10-05'}})
+    const field = screen.getByRole('button', {name: 'Dates'})
+    expect(field).toHaveTextContent('Any time')
+    fireEvent.click(field)
+    const dialog = await screen.findByRole('dialog')
+    // The calendar opens on the current month; walk to October 2026.
+    const caption = () => within(dialog).getByRole('grid').getAttribute('aria-label') ?? ''
+    for (let i = 0; i < 240 && !caption().includes('October 2026'); i++) {
+      const later = new Date(`1 ${caption()}`) > new Date(2026, 9, 1)
+      fireEvent.click(within(dialog).getByRole('button', {name: later ? /previous/i : /next/i}))
+    }
+    fireEvent.click(within(dialog).getByRole('button', {name: /(^|\s)1 October 2026/}))
+    fireEvent.click(within(dialog).getByRole('button', {name: /(^|\s)5 October 2026/}))
+    expect(field).toHaveTextContent('Oct 1 – 5, 2026')
+    fireEvent.click(within(dialog).getByRole('button', {name: 'Done'}))
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))
     await waitFor(() => {
       expect(
@@ -171,10 +183,29 @@ describe('AuditTable', () => {
     })
   })
 
+  it('asks for 50 rows by default and starts over from page 1 at another page size', async () => {
+    const fetchMock = mockApi()
+    renderWithStore(<AuditTable />)
+    await screen.findAllByText('admin.role_changed')
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}))
+    await screen.findAllByText('role.deleted')
+    const audit = () => requestedUrls(fetchMock).filter(u => u.pathname.endsWith('/admin/audit'))
+    expect(audit().every(u => u.searchParams.get('limit') === '50')).toBe(true)
+    fireEvent.click(screen.getByRole('combobox', {name: 'Rows per page'}))
+    fireEvent.click(await screen.findByRole('option', {name: '100'}))
+    expect(await screen.findByText('Page 1')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        audit().some(u => u.searchParams.get('limit') === '100' && !u.searchParams.has('cursor'))
+      ).toBe(true)
+    })
+  })
+
   it('resets to page 1 when filters change', async () => {
     mockApi()
     renderWithStore(<AuditTable />)
-    fireEvent.click(await screen.findByRole('button', {name: 'Next page'}))
+    await screen.findAllByText('admin.role_changed')
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}))
     await screen.findAllByText('role.deleted')
     fireEvent.change(screen.getByLabelText('Action starts with'), {target: {value: 'invite.'}})
     fireEvent.click(screen.getByRole('button', {name: 'Apply filters'}))

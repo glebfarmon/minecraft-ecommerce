@@ -1,3 +1,4 @@
+import {Skeleton} from '@/components/skeleton'
 import {ToneDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import type {ListCatalogProductsApiResponse} from '@/lib/api/generated'
@@ -23,14 +24,11 @@ export function ProductCard({
   product,
   accent,
   href,
-  description,
   handle
 }: {
   product: Pick<Product, 'name' | 'mark' | 'icon' | 'kind' | 'isActive' | 'prices' | 'missing'>
   accent: string
   href?: string
-  /** Plain text; the editor's preview passes it, the board's cards do not. */
-  description?: string
   handle?: DragHandleProps
 }) {
   const t = useTranslations('catalog')
@@ -60,7 +58,6 @@ export function ProductCard({
         ) : (
           <p className="truncate font-semibold">{product.name}</p>
         )}
-        {description && <p className="line-clamp-2 text-[13px] text-muted">{description}</p>}
         <p className="tabular text-[13px] text-muted">{prices(product, f.money)}</p>
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex h-6 items-center rounded-full bg-card-raised px-2.5 text-[12px] text-muted">
@@ -78,5 +75,19 @@ export function ProductCard({
         />
       )}
     </article>
+  )
+}
+
+/** `ProductCard` while its product loads: the same plate, well and lines. */
+export function ProductCardSkeleton() {
+  return (
+    <div aria-hidden className="flex flex-col gap-3 rounded-card bg-card p-3">
+      <Skeleton className="aspect-[16/10]" />
+      <div className="flex flex-col gap-1.5 px-1 pb-1">
+        <Skeleton className="h-5 w-2/3 rounded-full" />
+        <Skeleton className="h-4 w-1/2 rounded-full" />
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+    </div>
   )
 }

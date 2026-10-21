@@ -1,5 +1,6 @@
 'use client'
 
+import {Skeleton} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {editionDate} from '@/features/content/lib/edition-date'
 import {RESTORE_RULES_KEY} from '@/features/content/lib/rules-form'
@@ -18,7 +19,8 @@ type Version = ListRulesVersionsApiResponse['versions'][number]
 type Restore = (id: number) => Promise<void>
 
 /** Published editions, newest first, each one restorable into the draft. */
-export function VersionsList() {
+/** `skeleton`: the route's loading state, this layout with placeholders. */
+export function VersionsList({skeleton = false}: {skeleton?: boolean}) {
   const t = useTranslations('content')
   const apiError = useApiError()
   const first = useListRulesVersionsQuery({})
@@ -40,12 +42,26 @@ export function VersionsList() {
       <h2 id="rules-versions" className="text-[15px] font-semibold">
         {t('publishedEditions')}
       </h2>
-      {first.isLoading && <p className="text-[13px] text-muted">{t('loadingEditions')}</p>}
-      {first.isError && <p role="alert">{t('couldNotLoadTheEditionsRefresh')}</p>}
-      {first.data?.versions.length === 0 && (
+      {(first.isLoading || skeleton) && (
+        <ul aria-hidden className="flex flex-col gap-1.5">
+          {Array.from({length: 3}, (_, i) => (
+            <li
+              key={i}
+              className="flex h-[62px] items-center gap-4 rounded-plate bg-card-raised px-4">
+              <div className="mr-auto flex flex-col gap-2">
+                <Skeleton className="skeleton-on-raised h-3.5 w-36 rounded-full" />
+                <Skeleton className="skeleton-on-raised h-3 w-24 rounded-full" />
+              </div>
+              <Skeleton className="skeleton-on-raised h-9 w-24 rounded-full" />
+            </li>
+          ))}
+        </ul>
+      )}
+      {!skeleton && first.isError && <p role="alert">{t('couldNotLoadTheEditionsRefresh')}</p>}
+      {!skeleton && first.data?.versions.length === 0 && (
         <p className="text-[13px] text-muted">{t('nothingPublishedYet')}</p>
       )}
-      {first.data && first.data.versions.length > 0 && (
+      {!skeleton && first.data && first.data.versions.length > 0 && (
         // A new publish changes the newest edition: start again from the first page.
         <Pages
           key={first.data.versions[0]?.id}

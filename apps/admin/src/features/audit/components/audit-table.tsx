@@ -1,8 +1,8 @@
 'use client'
 
 import {DataTable} from '@/components/data-table'
+import {DateRangePicker} from '@/components/date-range-picker'
 import {EmptyState} from '@/components/empty-state'
-import {SkeletonRows} from '@/components/skeleton'
 import {useFormat} from '@/hooks/use-format'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {
@@ -14,6 +14,7 @@ import {ChevronLeft, ChevronRight, ScrollText} from 'lucide-react'
 import {useTranslations} from 'next-intl'
 import {useCallback, useEffect, useState} from 'react'
 
+import {AUDIT_PAGE_SIZES, type AuditPageSize} from '@shop/shared/access'
 import {Button} from '@shop/ui/button'
 import {Input} from '@shop/ui/input'
 import {Label} from '@shop/ui/label'
@@ -25,8 +26,9 @@ const NO_FILTERS: Filters = {actorId: '', action: '', from: '', to: ''}
 const ANYONE = 'anyone'
 
 /** Whole days in UTC: the "to" day is included up to its last millisecond. */
-function toQuery(f: Filters): Omit<GetApiAdminAuditApiArg, 'cursor'> {
+function toQuery(f: Filters, limit: AuditPageSize): Omit<GetApiAdminAuditApiArg, 'cursor'> {
   return {
+    limit: String(limit) as GetApiAdminAuditApiArg['limit'],
     actorId: f.actorId || undefined,
     action: f.action.trim() || undefined,
     from: f.from ? `${f.from}T00:00:00.000Z` : undefined,
@@ -38,14 +40,20 @@ function PageRows({
   query,
   cursor,
   pageIndex,
+  pageSize,
   onPage,
-  onActors
+  onPageSize,
+  onActors,
+  skeleton
 }: {
   query: Omit<GetApiAdminAuditApiArg, 'cursor'>
   cursor: string | undefined
   pageIndex: number
+  pageSize: AuditPageSize
   onPage: (direction: 1 | -1, nextCursor: string | null) => void
+  onPageSize: (size: AuditPageSize) => void
   onActors: (actors: {id: string; email: string}[]) => void
+  skeleton: boolean
 }) {
   const t = useTranslations('audit')
   const f = useFormat()
@@ -54,9 +62,8 @@ function PageRows({
   useEffect(() => {
     if (entries) onActors(entries.flatMap(e => (e.actor ? [e.actor] : [])))
   }, [entries, onActors])
-  const held = useHoldLoading(page.isLoading)
-  if (held) return <SkeletonRows />
-  if (page.isError || !page.data)
+  const held = useHoldLoading(page.isLoading) || skeleton
+  if (!held && (page.isError || !page.data))
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {(page.error as {status?: unknown} | undefined)?.status === 403
@@ -64,12 +71,13 @@ function PageRows({
           : t('loadFailed')}
       </p>
     )
-  const next = page.data.nextCursor
+  const next = held ? null : (page.data?.nextCursor ?? null)
   return (
     <>
       <DataTable
         caption={t('auditLog')}
-        rows={page.data.entries}
+        loading={held ? Math.min(pageSize, 10) : undefined}
+        rows={page.data?.entries ?? []}
         rowKey={e => e.id}
         columns={[
           {header: t('action'), primary: true, cell: e => e.action, className: 'font-mono'},
@@ -101,38 +109,55 @@ function PageRows({
           pageIndex === 0 ? <EmptyState icon={ScrollText} title={t('nothingLoggedYet')} /> : null
         }
       />
-      <nav aria-label={t('pager')} className="flex items-center justify-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label={t('previousPage')}
-          disabled={pageIndex === 0}
-          onClick={() => {
-            onPage(-1, next)
-          }}>
-          <ChevronLeft aria-hidden className="size-4" />
-        </Button>
-        <span aria-live="polite" className="tabular text-sm text-muted">
-          {t('page', {n: pageIndex + 1})}
-        </span>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label={t('nextPage')}
-          disabled={!next}
-          onClick={() => {
-            onPage(1, next)
-          }}>
-          <ChevronRight aria-hidden className="size-4" />
-        </Button>
-      </nav>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="audit-page-size" className="text-muted">
+            {t('rowsPerPage')}
+          </Label>
+          <Select
+            id="audit-page-size"
+            className="w-20"
+            value={String(pageSize)}
+            options={AUDIT_PAGE_SIZES.map(n => ({value: String(n), label: String(n)}))}
+            onValueChange={v => {
+              onPageSize(Number(v) as AuditPageSize)
+            }}
+          />
+        </div>
+        <nav aria-label={t('pager')} className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={t('previousPage')}
+            disabled={pageIndex === 0}
+            onClick={() => {
+              onPage(-1, next)
+            }}>
+            <ChevronLeft aria-hidden className="size-4" />
+          </Button>
+          <span aria-live="polite" className="tabular text-sm text-muted">
+            {t('page', {n: pageIndex + 1})}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={t('nextPage')}
+            disabled={!next}
+            onClick={() => {
+              onPage(1, next)
+            }}>
+            <ChevronRight aria-hidden className="size-4" />
+          </Button>
+        </nav>
+      </div>
     </>
   )
 }
 
-export function AuditTable() {
+/** `skeleton`: the route's loading state, this layout with placeholders. */
+export function AuditTable({skeleton = false}: {skeleton?: boolean}) {
   const t = useTranslations('audit')
   const [draft, setDraft] = useState<Filters>(NO_FILTERS)
   const [applied, setApplied] = useState<Filters>(NO_FILTERS)
@@ -140,7 +165,8 @@ export function AuditTable() {
   const [cursors, setCursors] = useState<(string | undefined)[]>([undefined])
   const [pageIndex, setPageIndex] = useState(0)
   const [seen, setSeen] = useState<Record<string, string>>({})
-  const query = toQuery(applied)
+  const [pageSize, setPageSize] = useState<AuditPageSize>(50)
+  const query = toQuery(applied, pageSize)
   // The admins list needs admin.invite, which an auditor may lack: then the options are the
   // actors seen in the pages loaded so far.
   const admins = useGetApiAdminAdminsQuery()
@@ -194,25 +220,14 @@ export function AuditTable() {
             }}
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="audit-from">{t('from')}</Label>
-          <Input
-            id="audit-from"
-            type="date"
-            value={draft.from}
-            onChange={e => {
-              setDraft(d => ({...d, from: e.target.value}))
-            }}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="audit-to">{t('to')}</Label>
-          <Input
-            id="audit-to"
-            type="date"
-            value={draft.to}
-            onChange={e => {
-              setDraft(d => ({...d, to: e.target.value}))
+        <div className="flex min-w-0 flex-col gap-1">
+          <Label htmlFor="audit-dates">{t('dates')}</Label>
+          <DateRangePicker
+            id="audit-dates"
+            className="w-64 max-w-full"
+            value={{from: draft.from, to: draft.to}}
+            onChange={range => {
+              setDraft(d => ({...d, ...range}))
             }}
           />
         </div>
@@ -224,6 +239,14 @@ export function AuditTable() {
           query={query}
           cursor={cursors[pageIndex]}
           pageIndex={pageIndex}
+          pageSize={pageSize}
+          skeleton={skeleton}
+          onPageSize={size => {
+            // Cursors belong to a page size: start over from the first page.
+            setPageSize(size)
+            setCursors([undefined])
+            setPageIndex(0)
+          }}
           onActors={rememberActors}
           onPage={(direction, nextCursor) => {
             if (direction === -1) {

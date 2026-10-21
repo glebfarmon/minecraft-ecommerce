@@ -3,7 +3,6 @@
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
 import {FormSection} from '@/components/form-section'
-import {SkeletonRows} from '@/components/skeleton'
 import {notify} from '@/components/toaster'
 import {type CategoryForm, CategoryFormSchema} from '@/features/catalog/schemas'
 import {useErrorText} from '@/hooks/use-error-text'
@@ -39,7 +38,16 @@ import {Select} from '@shop/ui/select'
 import {ProductIcon} from './product-icon'
 
 /** `initialEdit` opens that category's form, e.g. from the catalog board's pencil. */
-export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initialEdit?: string}) {
+export function CategoriesTable({
+  canEdit,
+  initialEdit,
+  skeleton = false
+}: {
+  canEdit: boolean
+  initialEdit?: string
+  /** The route's loading state: the form and the table's headers, placeholder rows. */
+  skeleton?: boolean
+}) {
   const t = useTranslations('catalog')
   const categories = useListCatalogCategoriesQuery()
   const [create, {isLoading: creating}] = useCreateCatalogCategoryMutation()
@@ -55,9 +63,8 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
   })
   const {errors} = useFormState({control})
 
-  const held = useHoldLoading(categories.isLoading)
-  if (held) return <SkeletonRows />
-  if (categories.isError)
+  const held = useHoldLoading(categories.isLoading) || skeleton
+  if (!held && categories.isError)
     return (
       <p role="alert" className="rounded-card bg-card p-5">
         {t('couldNotLoadCategoriesRefreshThe')}
@@ -151,6 +158,7 @@ export function CategoriesTable({canEdit, initialEdit}: {canEdit: boolean; initi
       )}
       <DataTable
         caption={t('categories')}
+        loading={held ? 6 : undefined}
         rows={list}
         rowKey={c => c.id}
         rowLabel={c => c.names.en}
