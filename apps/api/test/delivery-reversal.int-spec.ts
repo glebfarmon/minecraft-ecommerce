@@ -1,10 +1,13 @@
 import {Logger} from '@nestjs/common'
 
+import type {DeliveryQueue} from '../src/delivery/delivery-queue'
 import {
   cancelUnsentDeliveries,
   restoreOrderDeliveries,
   reverseOrderDeliveries
 } from '../src/delivery/delivery-reversal'
+import {DeliveryService} from '../src/delivery/delivery.service'
+import type {RconSender} from '../src/delivery/rcon-sender'
 import type {DeliveryStatus, Product} from '../src/generated/prisma/client'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {seedCatalog} from '../src/seed/seed-catalog'
@@ -254,6 +257,11 @@ describe('restoreOrderDeliveries', () => {
       {product: permanent, status: 'PENDING'}
     ])
     await reverse(o.id)
+    // Item 0's REVOKE ran, so it is restored; item 3 was cancelled unsent, so it gets one too.
+    await prisma.delivery.updateMany({
+      where: {kind: 'REVOKE', orderItem: {orderId: o.id}},
+      data: {status: 'DONE'}
+    })
     await prisma.product.update({
       where: {id: permanent.id},
       data: {grantCommands: ['give {nick} dirt']}
@@ -267,7 +275,7 @@ describe('restoreOrderDeliveries', () => {
     const rows = await prisma.delivery.findMany({
       where: {kind: 'RESTORE', orderItem: {orderId: o.id}}
     })
-    expect(rows).toHaveLength(2)
+    expect(rows).toHaveLength(3)
     expect(ids.sort()).toEqual(rows.map(r => r.id).sort())
     const grants = await prisma.delivery.findMany({where: {id: {in: grantDeliveries}}})
     const byItem = new Map(rows.map(r => [r.orderItemId, r]))
@@ -285,6 +293,8 @@ describe('restoreOrderDeliveries', () => {
       serverId: timed.serverId,
       commands: ['lp user Steve parent add vip']
     })
+    expect(byItem.get(o.items[3]?.id ?? '')?.commands).toEqual(['give Steve diamond'])
+    expect(byItem.has(o.items[2]?.id ?? '')).toBe(false)
   })
 })
 
@@ -402,11 +412,104 @@ describe('reversal edge cases', () => {
   it('restoring twice creates the RESTOREs once and clears reversedAt', async () => {
     const {order: o, grantDeliveries} = await order([{product: permanent}])
     await reverse(o.id)
+    // The REVOKE ran; one still PENDING would be cancelled instead (see the 5b review cases).
+    await prisma.delivery.updateMany({
+      where: {kind: 'REVOKE', orderItem: {orderId: o.id}},
+      data: {status: 'DONE'}
+    })
     expect(await restore(o.id)).toHaveLength(1)
     expect(await restore(o.id)).toEqual([])
     expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
     expect(
       await prisma.delivery.count({where: {kind: 'RESTORE', orderItem: {orderId: o.id}}})
     ).toBe(1)
+  })
+})
+
+describe('restoreOrderDeliveries after 5b review', () => {
+  const restores = (orderId: string) =>
+    prisma.delivery.findMany({where: {kind: 'RESTORE', orderItem: {orderId}}})
+  const unused = {} as RconSender
+  const queue: DeliveryQueue = {enqueue: () => Promise.resolve()}
+  const complete = (id: string) =>
+    prisma.$transaction(tx => new DeliveryService(prisma, unused, queue).complete(tx, id))
+
+  it('a GRANT cancelled unsent is restored, and completing it delivers the order with the clock set', async () => {
+    const grant = await mkGrant(null)
+    const {order: o, grantDeliveries} = await order([
+      {product: timed, grantId: grant.id, status: 'PENDING', quantity: 2}
+    ])
+    await reverse(o.id)
+    expect((await deliveryRow(grantDeliveries[0])).status).toBe('CANCELLED')
+    const ids = await restore(o.id)
+    expect(ids).toHaveLength(1)
+    expect(await deliveryRow(ids[0])).toMatchObject({
+      kind: 'RESTORE',
+      grantId: grant.id,
+      commands: ['lp user Steve parent add vip']
+    })
+    const before = Date.now()
+    await complete(ids[0] ?? '')
+    expect(await deliveryRow(ids[0])).toMatchObject({status: 'DONE'})
+    expect((await prisma.order.findUniqueOrThrow({where: {id: o.id}})).status).toBe('DELIVERED')
+    const row = await grantRow(grant.id)
+    expect(row.revokedAt).toBeNull()
+    expect(Math.abs((row.expiresAt?.getTime() ?? 0) - (before + 14 * DAY_MS))).toBeLessThan(5_000)
+    expect(await restore(o.id)).toEqual([])
+  })
+
+  it.each([
+    ['PENDING', 0],
+    ['FAILED', 0]
+  ] as const)(
+    'a REVOKE still %s (commandsDone %d) is cancelled and nothing is restored',
+    async (status, commandsDone) => {
+      const {order: o, grantDeliveries} = await order([{product: permanent}])
+      await reverse(o.id)
+      const [revoke] = await revokes(o.id)
+      await prisma.delivery.update({where: {id: revoke?.id ?? ''}, data: {status, commandsDone}})
+      expect(await restore(o.id)).toEqual([])
+      expect((await deliveryRow(revoke?.id)).status).toBe('CANCELLED')
+      expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
+      expect(await restores(o.id)).toHaveLength(0)
+      expect(await restore(o.id)).toEqual([])
+    }
+  )
+
+  it.each([
+    ['DONE', 1],
+    ['FAILED', 1],
+    ['RUNNING', 0],
+    ['NEEDS_REVIEW', 0]
+  ] as const)(
+    'a REVOKE %s (commandsDone %d) may have run: the item is restored',
+    async (status, commandsDone) => {
+      const {order: o} = await order([{product: permanent}])
+      await reverse(o.id)
+      const [revoke] = await revokes(o.id)
+      await prisma.delivery.update({where: {id: revoke?.id ?? ''}, data: {status, commandsDone}})
+      const ids = await restore(o.id)
+      expect(ids).toHaveLength(1)
+      expect((await deliveryRow(revoke?.id)).status).toBe(status)
+      expect(await deliveryRow(ids[0])).toMatchObject({
+        kind: 'RESTORE',
+        commands: ['give Steve diamond']
+      })
+      expect(await restore(o.id)).toEqual([])
+    }
+  )
+
+  it('a timed item whose REVOKE never ran gets its shrunk time back instead of a RESTORE', async () => {
+    const grant = await mkGrant(new Date(now.getTime() + 7 * DAY_MS))
+    const {order: o} = await order([{product: timed, grantId: grant.id}])
+    await reverse(o.id)
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: now, revokedAt: now})
+    const [revoke] = await revokes(o.id)
+    expect(await restore(o.id)).toEqual([])
+    expect((await deliveryRow(revoke?.id)).status).toBe('CANCELLED')
+    expect(await grantRow(grant.id)).toMatchObject({
+      expiresAt: new Date(now.getTime() + 7 * DAY_MS),
+      revokedAt: null
+    })
   })
 })

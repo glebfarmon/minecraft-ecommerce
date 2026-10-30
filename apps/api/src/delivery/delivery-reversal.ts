@@ -157,11 +157,25 @@ async function takeGrantShare(
   return {revoke: true, shrunk: false}
 }
 
+/** A REVOKE that sent nothing yet; the same filter `cancelUnsentDeliveries` uses. */
+const UNSENT: Prisma.DeliveryWhereInput = {
+  OR: [{status: 'PENDING'}, {status: 'FAILED', commandsDone: 0}]
+}
+
 /**
- * Plans the RESTORE deliveries of a won dispute (spec §5.2): one per GRANT row of the order that
- * the reversal took something from (`reversedAt` set), running exactly the commands stored on that
- * GRANT, and clears `reversedAt`. Idempotent: a second call finds nothing to restore. Callers still
- * guard it with the conditional `DISPUTED → PAID` update. Returns the new ids for enqueueing.
+ * Plans the RESTORE deliveries of a won dispute (spec §5.2), inside the caller's transaction, under
+ * the same lock order as the reversal (the order row, then grants in id order). Per GRANT row:
+ * - reversed (`reversedAt` set) with a REVOKE that sent nothing (`PENDING`, or `FAILED` with no
+ *   command done): the REVOKE becomes `CANCELLED` and no RESTORE is made, since nothing reached the
+ *   game; a timed `DONE` row gets the share the reversal shrank back (`revokedAt` cleared; the
+ *   expiry job takes the grant back if that time has run out meanwhile);
+ * - reversed otherwise (its REVOKE may have run, or a timed item was only shrunk): a RESTORE;
+ * - `CANCELLED` (the reversal cancelled it before anything was sent): a RESTORE too, whose
+ *   completion adds the bought time the original never added.
+ * A RESTORE runs exactly the commands stored on its GRANT. `reversedAt` is cleared on every row it
+ * handled, and a cancelled GRANT whose item already has a RESTORE is skipped, so a second call
+ * creates nothing. Callers still guard it with the conditional `DISPUTED → PAID` update.
+ * Returns the new ids for enqueueing.
  */
 export async function restoreOrderDeliveries(
   tx: Prisma.TransactionClient,
@@ -169,11 +183,30 @@ export async function restoreOrderDeliveries(
 ): Promise<string[]> {
   await lockOrder(tx, orderId)
   const rows = await tx.delivery.findMany({
-    where: {orderItem: {orderId}, kind: 'GRANT', reversedAt: {not: null}},
-    orderBy: {id: 'asc'}
+    // Only a reversal cancels a GRANT, and a refund is terminal (never restored), so every
+    // CANCELLED GRANT of an order that reaches here was cancelled by the dispute: no marker needed.
+    where: {
+      orderItem: {orderId},
+      kind: 'GRANT',
+      OR: [{reversedAt: {not: null}}, {status: 'CANCELLED'}]
+    },
+    include: {
+      orderItem: {select: {quantity: true, product: {select: {durationDays: true}}}}
+    },
+    // Locks shared grants in one order, as the reversal does.
+    orderBy: [{grantId: 'asc'}, {id: 'asc'}]
   })
   const ids: string[] = []
   for (const row of rows) {
+    if (row.reversedAt === null) {
+      const restored = await tx.delivery.count({
+        where: {orderItemId: row.orderItemId, kind: 'RESTORE'}
+      })
+      if (restored > 0) continue
+    } else {
+      await tx.delivery.update({where: {id: row.id}, data: {reversedAt: null}})
+      if (await cancelUnsentRevoke(tx, row)) continue
+    }
     const created = await tx.delivery.create({
       data: {
         orderItemId: row.orderItemId,
@@ -186,10 +219,47 @@ export async function restoreOrderDeliveries(
     })
     ids.push(created.id)
   }
-  if (rows.length > 0)
-    await tx.delivery.updateMany({
-      where: {id: {in: rows.map(r => r.id)}},
-      data: {reversedAt: null}
-    })
   return ids
+}
+
+type Restorable = Prisma.DeliveryGetPayload<{
+  include: {orderItem: {select: {quantity: true; product: {select: {durationDays: true}}}}}
+}>
+
+/**
+ * Cancels the item's latest REVOKE if it sent nothing; true when it did (then the item needs no
+ * RESTORE). The update is conditional, so a REVOKE a worker claimed meanwhile counts as sent.
+ */
+async function cancelUnsentRevoke(tx: Prisma.TransactionClient, row: Restorable) {
+  if (row.orderItemId === null) return false
+  const revoke = await tx.delivery.findFirst({
+    where: {orderItemId: row.orderItemId, kind: 'REVOKE', status: {not: 'CANCELLED'}},
+    orderBy: [{createdAt: 'desc'}, {id: 'desc'}],
+    select: {id: true}
+  })
+  if (!revoke) return false
+  const {count} = await tx.delivery.updateMany({
+    where: {id: revoke.id, ...UNSENT},
+    data: {status: 'CANCELLED'}
+  })
+  if (count !== 1) return false
+  const durationDays = row.orderItem?.product.durationDays
+  if (row.grantId !== null && row.status === 'DONE' && durationDays) {
+    // The reversal shrank this row's share off the clock and revoked the grant: give it back.
+    await tx.$queryRaw`SELECT 1 FROM "grants" WHERE "id" = ${row.grantId} FOR UPDATE`
+    const grant = await tx.grant.findUniqueOrThrow({where: {id: row.grantId}})
+    if (grant.expiresAt !== null)
+      await tx.grant.update({
+        where: {id: row.grantId},
+        data: {
+          expiresAt: shrinkGrantExpiry(
+            grant.expiresAt,
+            -durationDays,
+            row.orderItem?.quantity ?? 1
+          ),
+          revokedAt: null
+        }
+      })
+  }
+  return true
 }
