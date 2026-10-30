@@ -124,7 +124,7 @@ export class DeliveryService {
       // Serializes the last two deliveries of one order, so one of them sees both DONE.
       await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${item.orderId} FOR UPDATE`
       const open = await tx.delivery.count({
-        where: {orderItem: {orderId: item.orderId}, status: {not: 'DONE'}}
+        where: {orderItem: {orderId: item.orderId}, status: {notIn: ['DONE', 'CANCELLED']}}
       })
       if (open === 0)
         await tx.order.updateMany({

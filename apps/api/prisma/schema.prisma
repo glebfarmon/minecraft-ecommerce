@@ -329,34 +329,40 @@ enum OrderStatus {
 }
 
 model Order {
-  id                String      @id @default(cuid())
-  publicId          String      @unique
-  nick              String
-  email             String
-  locale            Locale
-  currency          Currency
-  subtotalMinor     Int
-  discountMinor     Int         @default(0)
-  totalMinor        Int
-  status            OrderStatus @default(PENDING)
-  stripeSessionId   String?     @unique
+  id                    String      @id @default(cuid())
+  publicId              String      @unique
+  nick                  String
+  email                 String
+  locale                Locale
+  currency              Currency
+  subtotalMinor         Int
+  discountMinor         Int         @default(0)
+  totalMinor            Int
+  status                OrderStatus @default(PENDING)
+  stripeSessionId       String?     @unique
   /// Set by the paid webhook; the admin links the payment in the Stripe dashboard with it.
   stripePaymentIntentId String?
-  deliveryConsentAt DateTime
-  paidAt            DateTime?
-  eurPlnRate        Decimal?    @db.Decimal(10, 4)
-  rateDate          DateTime?   @db.Date
-  totalEurMinor     Int?
-  totalPlnMinor     Int?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  promoCodeId       String?
+  deliveryConsentAt     DateTime
+  paidAt                DateTime?
+  /// Set when the admin asks for a refund; cleared if Stripe refuses it.
+  refundRequestedAt     DateTime?
+  /// Whether the refund also revokes the delivered goods; decided at request time.
+  refundRevoke          Boolean?
+  refundedAt            DateTime?
+  eurPlnRate            Decimal?    @db.Decimal(10, 4)
+  rateDate              DateTime?   @db.Date
+  totalEurMinor         Int?
+  totalPlnMinor         Int?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  promoCodeId           String?
   /// The code text as typed at checkout; kept even if the promo is later soft-deleted.
-  promoCode         String?
-  promo             PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
-  items             OrderItem[]
+  promoCode             String?
+  promo                 PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
+  items                 OrderItem[]
 
   @@index([email])
+  @@index([stripePaymentIntentId])
   @@index([promoCodeId])
   @@index([status, createdAt])
   @@index([createdAt])
@@ -364,7 +370,7 @@ model Order {
 }
 
 model OrderItem {
-  id              String  @id @default(cuid())
+  id              String     @id @default(cuid())
   orderId         String
   productId       String
   serverId        String
@@ -372,9 +378,9 @@ model OrderItem {
   unitAmountMinor Int
   productName     String
   serverName      String
-  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  server          Server  @relation(fields: [serverId], references: [id], onDelete: Restrict)
+  order           Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  server          Server     @relation(fields: [serverId], references: [id], onDelete: Restrict)
   deliveries      Delivery[]
 
   @@index([orderId])
@@ -443,6 +449,7 @@ model PromoCodeProduct {
 enum DeliveryKind {
   GRANT
   REVOKE
+  RESTORE
 }
 
 enum DeliveryStatus {
@@ -451,6 +458,7 @@ enum DeliveryStatus {
   DONE
   FAILED
   NEEDS_REVIEW
+  CANCELLED
 }
 
 model Delivery {

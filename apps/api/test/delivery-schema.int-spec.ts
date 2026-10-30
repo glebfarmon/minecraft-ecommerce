@@ -86,6 +86,35 @@ describe('delivery schema', () => {
     expect(await ctx.prisma.delivery.findUnique({where: {id: delivery.id}})).toBeNull()
   })
 
+  it('stores a RESTORE delivery with the CANCELLED status', async () => {
+    const grant = await newGrant('Herobrine')
+    const delivery = await ctx.prisma.delivery.create({
+      data: {
+        grantId: grant.id,
+        serverId: grant.serverId,
+        kind: 'RESTORE',
+        status: 'CANCELLED',
+        commands: ['say back']
+      }
+    })
+    expect(delivery.kind).toBe('RESTORE')
+    expect(delivery.status).toBe('CANCELLED')
+  })
+
+  it('stores the refund fields on an order', async () => {
+    const {order} = await newOrder()
+    const at = new Date('2026-10-30T12:00:00Z')
+    const updated = await ctx.prisma.order.update({
+      where: {id: order.id},
+      data: {refundRequestedAt: at, refundRevoke: true, refundedAt: at}
+    })
+    expect(updated.refundRequestedAt).toEqual(at)
+    expect(updated.refundRevoke).toBe(true)
+    expect(updated.refundedAt).toEqual(at)
+    expect(order.refundRequestedAt).toBeNull()
+    expect(order.refundRevoke).toBeNull()
+  })
+
   it('gives the ADMIN role delivery.resolve', async () => {
     const rows = await ctx.prisma.$queryRaw<{permissions: string[]}[]>`
       SELECT "permissions" FROM "roles" WHERE "name" = 'ADMIN'`

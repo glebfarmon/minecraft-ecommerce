@@ -113,6 +113,12 @@ describe('publicDeliveryState', () => {
   it('is delivered when all DONE', () => {
     expect(publicDeliveryState('DELIVERED', ['DONE', 'DONE'])).toBe('delivered')
   })
+  it('ignores CANCELLED deliveries', () => {
+    expect(publicDeliveryState('PAID', ['DONE', 'CANCELLED'])).toBe('delivered')
+    expect(publicDeliveryState('PAID', ['CANCELLED', 'RUNNING'])).toBe('delivering')
+    expect(publicDeliveryState('PAID', ['CANCELLED', 'FAILED'])).toBe('delayed')
+    expect(publicDeliveryState('PAID', ['CANCELLED'])).toBe('none')
+  })
   it('is delivering otherwise', () => {
     expect(publicDeliveryState('PAID', ['DONE', 'RUNNING'])).toBe('delivering')
     expect(publicDeliveryState('PAID', ['PENDING'])).toBe('delivering')

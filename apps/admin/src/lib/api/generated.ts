@@ -388,6 +388,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'order.read'
       | 'promo.write'
       | 'delivery.resolve'
+      | 'order.refund'
     )[]
   }
   permissions: (
@@ -400,6 +401,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     | 'order.read'
     | 'promo.write'
     | 'delivery.resolve'
+    | 'order.refund'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -533,6 +535,7 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
     | 'order.read'
     | 'promo.write'
     | 'delivery.resolve'
+    | 'order.refund'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -550,6 +553,7 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
     | 'order.read'
     | 'promo.write'
     | 'delivery.resolve'
+    | 'order.refund'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -565,6 +569,7 @@ export type PostApiAdminRolesApiArg = {
       | 'order.read'
       | 'promo.write'
       | 'delivery.resolve'
+      | 'order.refund'
     )[]
   }
 }
@@ -582,6 +587,7 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
     | 'order.read'
     | 'promo.write'
     | 'delivery.resolve'
+    | 'order.refund'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -598,6 +604,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'order.read'
       | 'promo.write'
       | 'delivery.resolve'
+      | 'order.refund'
     )[]
   }
 }
@@ -1480,8 +1487,8 @@ export type UpdateContentSettingsApiArg = {
 }
 export type RetryDeliveryApiResponse = /** status 201 The delivery, now `PENDING` */ {
   id: string
-  kind: 'GRANT' | 'REVOKE'
-  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  kind: 'GRANT' | 'REVOKE' | 'RESTORE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED'
   serverName: string
   productName: string | null
   commands: string[]
@@ -1497,8 +1504,8 @@ export type RetryDeliveryApiArg = {
 }
 export type MarkDeliveryDoneApiResponse = /** status 201 The delivery, now `DONE` */ {
   id: string
-  kind: 'GRANT' | 'REVOKE'
-  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  kind: 'GRANT' | 'REVOKE' | 'RESTORE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED'
   serverName: string
   productName: string | null
   commands: string[]
@@ -1560,8 +1567,8 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   deliveryConsentAt: string
   deliveries: {
     id: string
-    kind: 'GRANT' | 'REVOKE'
-    status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+    kind: 'GRANT' | 'REVOKE' | 'RESTORE'
+    status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED'
     serverName: string
     productName: string | null
     commands: string[]

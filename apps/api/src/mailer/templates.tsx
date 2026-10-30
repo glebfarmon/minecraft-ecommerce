@@ -102,7 +102,7 @@ export function orderReceiptMail(order: PublicOrder, locale: 'en' | 'pl', status
 
 export interface DeliveryAlertItem {
   deliveryId: string
-  kind: 'GRANT' | 'REVOKE'
+  kind: 'GRANT' | 'REVOKE' | 'RESTORE'
   /** Null for a grant's REVOKE, which belongs to no order. */
   orderPublicId: string | null
   nick: string

@@ -222,14 +222,16 @@
       "title": "Deliveries",
       "kind": {
         "GRANT": "Grant",
-        "REVOKE": "Revoke"
+        "REVOKE": "Revoke",
+        "RESTORE": "Restore"
       },
       "status": {
         "PENDING": "Pending",
         "RUNNING": "Running",
         "DONE": "Done",
         "FAILED": "Failed",
-        "NEEDS_REVIEW": "Needs review"
+        "NEEDS_REVIEW": "Needs review",
+        "CANCELLED": "Cancelled"
       },
       "attempts": "Attempts: {count}",
       "nextAttempt": "Next attempt {time}",

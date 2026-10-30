@@ -1,6 +1,13 @@
 import * as v from 'valibot'
 
-export const DELIVERY_STATUSES = ['PENDING', 'RUNNING', 'DONE', 'FAILED', 'NEEDS_REVIEW'] as const
+export const DELIVERY_STATUSES = [
+  'PENDING',
+  'RUNNING',
+  'DONE',
+  'FAILED',
+  'NEEDS_REVIEW',
+  'CANCELLED'
+] as const
 export const DeliveryStatusSchema = v.picklist(DELIVERY_STATUSES)
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number]
 
@@ -12,7 +19,7 @@ const Iso = v.pipe(v.string(), v.isoTimestamp())
 
 export const AdminDeliverySchema = v.object({
   id: v.string(),
-  kind: v.picklist(['GRANT', 'REVOKE']),
+  kind: v.picklist(['GRANT', 'REVOKE', 'RESTORE']),
   status: DeliveryStatusSchema,
   serverName: v.string(),
   productName: v.nullable(v.string()),

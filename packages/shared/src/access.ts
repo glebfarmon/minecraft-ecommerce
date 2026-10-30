@@ -10,7 +10,8 @@ export const PERMISSIONS = [
   'content.write',
   'order.read',
   'promo.write',
-  'delivery.resolve'
+  'delivery.resolve',
+  'order.refund'
 ] as const
 export type Permission = (typeof PERMISSIONS)[number]
 export const PermissionSchema = v.picklist(PERMISSIONS)

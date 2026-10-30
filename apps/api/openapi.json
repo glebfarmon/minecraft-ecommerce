@@ -268,7 +268,8 @@
                               "content.write",
                               "order.read",
                               "promo.write",
-                              "delivery.resolve"
+                              "delivery.resolve",
+                              "order.refund"
                             ],
                             "type": "string"
                           }
@@ -288,7 +289,8 @@
                           "content.write",
                           "order.read",
                           "promo.write",
-                          "delivery.resolve"
+                          "delivery.resolve",
+                          "order.refund"
                         ],
                         "type": "string"
                       }
@@ -1017,7 +1019,8 @@
                             "content.write",
                             "order.read",
                             "promo.write",
-                            "delivery.resolve"
+                            "delivery.resolve",
+                            "order.refund"
                           ],
                           "type": "string"
                         }
@@ -1063,7 +1066,8 @@
                         "content.write",
                         "order.read",
                         "promo.write",
-                        "delivery.resolve"
+                        "delivery.resolve",
+                        "order.refund"
                       ],
                       "type": "string"
                     }
@@ -1104,7 +1108,8 @@
                           "content.write",
                           "order.read",
                           "promo.write",
-                          "delivery.resolve"
+                          "delivery.resolve",
+                          "order.refund"
                         ],
                         "type": "string"
                       }
@@ -1167,7 +1172,8 @@
                         "content.write",
                         "order.read",
                         "promo.write",
-                        "delivery.resolve"
+                        "delivery.resolve",
+                        "order.refund"
                       ],
                       "type": "string"
                     }
@@ -1208,7 +1214,8 @@
                           "content.write",
                           "order.read",
                           "promo.write",
-                          "delivery.resolve"
+                          "delivery.resolve",
+                          "order.refund"
                         ],
                         "type": "string"
                       }
@@ -5895,11 +5902,11 @@
                       "type": "string"
                     },
                     "kind": {
-                      "enum": ["GRANT", "REVOKE"],
+                      "enum": ["GRANT", "REVOKE", "RESTORE"],
                       "type": "string"
                     },
                     "status": {
-                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW", "CANCELLED"],
                       "type": "string"
                     },
                     "serverName": {
@@ -6015,11 +6022,11 @@
                       "type": "string"
                     },
                     "kind": {
-                      "enum": ["GRANT", "REVOKE"],
+                      "enum": ["GRANT", "REVOKE", "RESTORE"],
                       "type": "string"
                     },
                     "status": {
-                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW", "CANCELLED"],
                       "type": "string"
                     },
                     "serverName": {
@@ -6853,11 +6860,18 @@
                             "type": "string"
                           },
                           "kind": {
-                            "enum": ["GRANT", "REVOKE"],
+                            "enum": ["GRANT", "REVOKE", "RESTORE"],
                             "type": "string"
                           },
                           "status": {
-                            "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                            "enum": [
+                              "PENDING",
+                              "RUNNING",
+                              "DONE",
+                              "FAILED",
+                              "NEEDS_REVIEW",
+                              "CANCELLED"
+                            ],
                             "type": "string"
                           },
                           "serverName": {

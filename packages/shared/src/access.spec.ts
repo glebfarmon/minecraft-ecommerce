@@ -4,6 +4,7 @@ import {
   AuditQuerySchema,
   CreateInviteSchema,
   PERMISSIONS,
+  PermissionSchema,
   RoleInputSchema,
   SYSTEM_ROLES,
   hasPermission
@@ -33,6 +34,13 @@ describe('access contract', () => {
   it('lets admin resolve deliveries, not support', () => {
     expect(SYSTEM_ROLES.ADMIN).toContain('delivery.resolve')
     expect(SYSTEM_ROLES.SUPPORT).not.toContain('delivery.resolve')
+  })
+
+  it('keeps order.refund with the owner only', () => {
+    expect(SYSTEM_ROLES.OWNER).toContain('order.refund')
+    expect(SYSTEM_ROLES.ADMIN).not.toContain('order.refund')
+    expect(SYSTEM_ROLES.SUPPORT).not.toContain('order.refund')
+    expect(v.is(PermissionSchema, 'order.refund')).toBe(true)
   })
 
   it('lets admin and support read orders', () => {

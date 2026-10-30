@@ -24,7 +24,8 @@ const TONE: Record<Status, Tone> = {
   RUNNING: 'idle',
   DONE: 'ok',
   FAILED: 'bad',
-  NEEDS_REVIEW: 'bad'
+  NEEDS_REVIEW: 'bad',
+  CANCELLED: 'idle'
 }
 
 export function DeliveriesCard({

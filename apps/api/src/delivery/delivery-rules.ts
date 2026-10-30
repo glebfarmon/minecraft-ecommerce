@@ -70,9 +70,10 @@ export function publicDeliveryState(
   orderStatus: OrderStatus,
   statuses: readonly DeliveryStatus[]
 ): PublicDeliveryState {
-  if ((orderStatus !== 'PAID' && orderStatus !== 'DELIVERED') || statuses.length === 0)
-    return 'none'
-  if (statuses.some(s => s === 'FAILED' || s === 'NEEDS_REVIEW')) return 'delayed'
-  if (statuses.every(s => s === 'DONE')) return 'delivered'
+  // A cancelled delivery is neither done nor open: the buyer never sees it.
+  const live = statuses.filter(s => s !== 'CANCELLED')
+  if ((orderStatus !== 'PAID' && orderStatus !== 'DELIVERED') || live.length === 0) return 'none'
+  if (live.some(s => s === 'FAILED' || s === 'NEEDS_REVIEW')) return 'delayed'
+  if (live.every(s => s === 'DONE')) return 'delivered'
   return 'delivering'
 }
