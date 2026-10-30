@@ -299,6 +299,12 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query: queryArg => ({url: `/api/admin/content/settings`, method: 'PUT', body: queryArg.body})
     }),
+    retryDelivery: build.mutation<RetryDeliveryApiResponse, RetryDeliveryApiArg>({
+      query: queryArg => ({url: `/api/admin/deliveries/${queryArg.id}/retry`, method: 'POST'})
+    }),
+    markDeliveryDone: build.mutation<MarkDeliveryDoneApiResponse, MarkDeliveryDoneApiArg>({
+      query: queryArg => ({url: `/api/admin/deliveries/${queryArg.id}/mark-done`, method: 'POST'})
+    }),
     listAdminOrders: build.query<ListAdminOrdersApiResponse, ListAdminOrdersApiArg>({
       query: queryArg => ({
         url: `/api/admin/orders`,
@@ -381,6 +387,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
   permissions: (
@@ -392,6 +399,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -524,6 +532,7 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -540,6 +549,7 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -554,6 +564,7 @@ export type PostApiAdminRolesApiArg = {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
 }
@@ -570,6 +581,7 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -585,6 +597,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
 }
@@ -1465,6 +1478,40 @@ export type UpdateContentSettingsApiArg = {
     version: number
   }
 }
+export type RetryDeliveryApiResponse = /** status 201 The delivery, now `PENDING` */ {
+  id: string
+  kind: 'GRANT' | 'REVOKE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  serverName: string
+  productName: string | null
+  commands: string[]
+  commandsDone: number
+  attempts: number
+  nextAttemptAt: string
+  lastError: string | null
+  replies: string[]
+  createdAt: string
+}
+export type RetryDeliveryApiArg = {
+  id: string
+}
+export type MarkDeliveryDoneApiResponse = /** status 201 The delivery, now `DONE` */ {
+  id: string
+  kind: 'GRANT' | 'REVOKE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  serverName: string
+  productName: string | null
+  commands: string[]
+  commandsDone: number
+  attempts: number
+  nextAttemptAt: string
+  lastError: string | null
+  replies: string[]
+  createdAt: string
+}
+export type MarkDeliveryDoneApiArg = {
+  id: string
+}
 export type ListAdminOrdersApiResponse = /** status 200 A page of orders */ {
   orders: {
     id: string
@@ -1475,8 +1522,10 @@ export type ListAdminOrdersApiResponse = /** status 200 A page of orders */ {
     currency: 'EUR' | 'PLN'
     totalMinor: number
     status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+    needsAttention: boolean
   }[]
   nextCursor: string | null
+  attentionCount: number
 }
 export type ListAdminOrdersApiArg = {
   q?: string
@@ -1503,11 +1552,26 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   }[]
   createdAt: string
   paidAt: string | null
+  delivery: 'none' | 'delivering' | 'delayed' | 'delivered'
   id: string
   locale: 'en' | 'pl'
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
   deliveryConsentAt: string
+  deliveries: {
+    id: string
+    kind: 'GRANT' | 'REVOKE'
+    status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+    serverName: string
+    productName: string | null
+    commands: string[]
+    commandsDone: number
+    attempts: number
+    nextAttemptAt: string
+    lastError: string | null
+    replies: string[]
+    createdAt: string
+  }[]
 }
 export type GetAdminOrderApiArg = {
   id: string
@@ -1735,6 +1799,8 @@ export const {
   useResetContentMessageMutation,
   useGetContentSettingsQuery,
   useUpdateContentSettingsMutation,
+  useRetryDeliveryMutation,
+  useMarkDeliveryDoneMutation,
   useListAdminOrdersQuery,
   useGetAdminOrderQuery,
   useGetOrderStatsQuery,

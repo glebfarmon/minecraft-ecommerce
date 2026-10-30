@@ -19,7 +19,8 @@ describe('access contract', () => {
       'server.rcon',
       'content.write',
       'order.read',
-      'promo.write'
+      'promo.write',
+      'delivery.resolve'
     ])
     expect(SYSTEM_ROLES.SUPPORT).toEqual(['order.read'])
   })
@@ -27,6 +28,11 @@ describe('access contract', () => {
   it('lets admin write promo codes, not support', () => {
     expect(SYSTEM_ROLES.ADMIN).toContain('promo.write')
     expect(SYSTEM_ROLES.SUPPORT).not.toContain('promo.write')
+  })
+
+  it('lets admin resolve deliveries, not support', () => {
+    expect(SYSTEM_ROLES.ADMIN).toContain('delivery.resolve')
+    expect(SYSTEM_ROLES.SUPPORT).not.toContain('delivery.resolve')
   })
 
   it('lets admin and support read orders', () => {

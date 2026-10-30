@@ -15,16 +15,23 @@ const order = (id: string, status: string) => ({
   email: `${id}@x.io`,
   currency: 'EUR',
   totalMinor: 1250,
-  status
+  status,
+  needsAttention: id === 'o2'
 })
 
 function mockApi() {
   return jest.spyOn(global, 'fetch').mockImplementation(input => {
     const url = new URL(String(input instanceof Request ? input.url : input))
     if (url.searchParams.get('cursor') === 'c1')
-      return Promise.resolve(Response.json({orders: [order('o3', 'EXPIRED')], nextCursor: null}))
+      return Promise.resolve(
+        Response.json({orders: [order('o3', 'EXPIRED')], nextCursor: null, attentionCount: 0})
+      )
     return Promise.resolve(
-      Response.json({orders: [order('o1', 'PAID'), order('o2', 'PENDING')], nextCursor: 'c1'})
+      Response.json({
+        orders: [order('o1', 'PAID'), order('o2', 'PENDING')],
+        nextCursor: 'c1',
+        attentionCount: 3
+      })
     )
   })
 }
@@ -36,6 +43,34 @@ function requestedUrls(fetchMock: jest.SpyInstance) {
 }
 
 describe('OrdersTable', () => {
+  it('shows a danger dot for needsAttention rows only', async () => {
+    mockApi()
+    renderWithStore(<OrdersTable />)
+    const table = await screen.findByRole('table', {name: 'Orders'})
+    const flagged = within(table)
+      .getByRole('link', {name: /SHOP-o2/})
+      .closest('tr') as HTMLElement
+    expect(within(flagged).getByRole('img', {name: 'Needs attention'})).toBeInTheDocument()
+    const plain = within(table).getByRole('link', {name: 'SHOP-o1'}).closest('tr') as HTMLElement
+    expect(within(plain).queryByRole('img', {name: 'Needs attention'})).not.toBeInTheDocument()
+  })
+
+  it('shows the attention count only when positive', async () => {
+    mockApi()
+    const {unmount} = renderWithStore(<OrdersTable />)
+    expect(await screen.findByText('3 orders need attention')).toBeInTheDocument()
+    unmount()
+    jest.restoreAllMocks()
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        Response.json({orders: [order('o1', 'PAID')], nextCursor: null, attentionCount: 0})
+      )
+    renderWithStore(<OrdersTable />)
+    await screen.findByRole('table', {name: 'Orders'})
+    expect(screen.queryByText(/need attention/)).not.toBeInTheDocument()
+  })
+
   it('speaks Polish: tabs, headers and status labels', async () => {
     mockApi()
     renderWithProviders(<OrdersTable />, {locale: 'pl'})

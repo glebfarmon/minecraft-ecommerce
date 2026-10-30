@@ -52,6 +52,29 @@ services:
     image: axllent/mailpit:v1
     ports: ['127.0.0.1:8025:8025', '127.0.0.1:1025:1025']
 
+  # The delivery worker (ADR 0011): the api image with another command. Opt-in, so a plain
+  # `docker compose up -d` still starts only the dev services:
+  # `docker compose --profile worker up -d --build worker` (after `pnpm --filter @shop/api exec prisma migrate deploy`).
+  worker:
+    profiles: [worker]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/worker-main.js']
+    environment:
+      DATABASE_URL: postgresql://shop:shop@postgres:5432/shop
+      REDIS_URL: redis://redis:6379
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: Shop <no-reply@shop.localhost>
+      RCON_ENCRYPTION_KEY: ${RCON_ENCRYPTION_KEY:-}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mailpit: {condition: service_started}
+    # No HTTP server: the image's healthcheck probes port 4000.
+    healthcheck: {disable: true}
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

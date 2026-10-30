@@ -1,5 +1,6 @@
 import {renderWithStore} from '@/test/render-with-store'
-import {screen} from '@testing-library/react'
+import {findToast} from '@/test/toast'
+import {screen, waitFor, within} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import {OrderDetails} from './order-details'
@@ -21,6 +22,8 @@ const base = {
   locale: 'en',
   stripeSessionId: 'cs_test_123',
   stripePaymentIntentId: 'pi_test_456',
+  delivery: 'none',
+  deliveries: [],
   servers: [
     {
       serverName: 'Survival',
@@ -111,5 +114,126 @@ describe('OrderDetails', () => {
     renderWithStore(<OrderDetails id="o1" />)
     await screen.findByText('Survival')
     expect(screen.getByText('Stripe session').nextElementSibling).toHaveTextContent('—')
+  })
+
+  describe('deliveries', () => {
+    const delivery = (o: object) => ({
+      id: 'd1',
+      kind: 'GRANT',
+      status: 'DONE',
+      serverName: 'Survival',
+      productName: 'VIP',
+      commands: ['lp user steve parent add vip', 'give steve diamond 1'],
+      commandsDone: 1,
+      attempts: 2,
+      nextAttemptAt: '2026-10-12T10:00:00.000Z',
+      lastError: null,
+      replies: ['Added steve to vip'],
+      createdAt: '2026-10-12T09:36:00.000Z',
+      ...o
+    })
+
+    function mockWrites(deliveries: object[]) {
+      const writes: {method: string; url: string}[] = []
+      jest.spyOn(global, 'fetch').mockImplementation((input, init) => {
+        const req = input instanceof Request ? input : new Request(String(input), init)
+        if (req.method !== 'GET') {
+          writes.push({method: req.method, url: new URL(req.url).pathname})
+          return Promise.resolve(Response.json(deliveries[0]))
+        }
+        return Promise.resolve(Response.json({...base, deliveries}))
+      })
+      return writes
+    }
+
+    it('lists commands with the sent ones marked, replies, error and status', async () => {
+      mockWrites([delivery({status: 'FAILED', lastError: 'RCON timeout'})])
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      const card = (await screen.findByRole('heading', {name: 'Deliveries'})).closest(
+        'section'
+      ) as HTMLElement
+      expect(within(card).getByText('Grant')).toBeInTheDocument()
+      expect(within(card).getByText('Failed')).toBeInTheDocument()
+      expect(within(card).getByText('Attempts: 2')).toBeInTheDocument()
+      expect(within(card).getByText('RCON timeout')).toBeInTheDocument()
+      expect(within(card).getByText('Added steve to vip')).toBeInTheDocument()
+      const [first, second] = within(card).getAllByRole('listitem')
+      expect(first).toHaveTextContent('lp user steve parent add vip')
+      expect(first).toHaveTextContent('sent')
+      expect(second).toHaveTextContent('not sent')
+      expect(within(card).queryByText(/Next attempt/)).not.toBeInTheDocument()
+    })
+
+    it('shows the next attempt only while pending', async () => {
+      mockWrites([delivery({status: 'PENDING'})])
+      renderWithStore(<OrderDetails id="o1" />)
+      expect(await screen.findByText(/Next attempt 2026-10-12 10:00 UTC/)).toBeInTheDocument()
+    })
+
+    it('shows retry and mark as done only for stuck deliveries and with the permission', async () => {
+      mockWrites([delivery({status: 'FAILED'})])
+      const {unmount} = renderWithStore(<OrderDetails id="o1" canResolve />)
+      expect(await screen.findByRole('button', {name: 'Retry'})).toBeInTheDocument()
+      expect(screen.getByRole('button', {name: 'Mark as done'})).toBeInTheDocument()
+      unmount()
+      jest.restoreAllMocks()
+      mockWrites([delivery({status: 'FAILED'})])
+      const second = renderWithStore(<OrderDetails id="o1" />)
+      await screen.findByText('Failed')
+      expect(screen.queryByRole('button', {name: 'Retry'})).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', {name: 'Mark as done'})).not.toBeInTheDocument()
+      second.unmount()
+      jest.restoreAllMocks()
+      mockWrites([delivery({status: 'DONE'})])
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      await screen.findByText('Done')
+      expect(screen.queryByRole('button', {name: 'Retry'})).not.toBeInTheDocument()
+    })
+
+    it('retries a failed delivery directly and toasts', async () => {
+      const writes = mockWrites([delivery({status: 'FAILED'})])
+      const user = userEvent.setup()
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      await user.click(await screen.findByRole('button', {name: 'Retry'}))
+      await waitFor(() => {
+        expect(writes).toEqual([{method: 'POST', url: '/api/admin/deliveries/d1/retry'}])
+      })
+      expect(await findToast()).toHaveTextContent('Delivery queued again')
+    })
+
+    it('asks before retrying a delivery that needs review', async () => {
+      const writes = mockWrites([delivery({status: 'NEEDS_REVIEW'})])
+      const user = userEvent.setup()
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      await user.click(await screen.findByRole('button', {name: 'Retry'}))
+      expect(writes).toEqual([])
+      expect(screen.getByText(/may already have run/)).toBeInTheDocument()
+      await user.click(screen.getByRole('button', {name: 'Retry anyway'}))
+      await waitFor(() => {
+        expect(writes).toEqual([{method: 'POST', url: '/api/admin/deliveries/d1/retry'}])
+      })
+    })
+
+    it('cancels the review confirm without calling the API', async () => {
+      const writes = mockWrites([delivery({status: 'NEEDS_REVIEW'})])
+      const user = userEvent.setup()
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      await user.click(await screen.findByRole('button', {name: 'Retry'}))
+      await user.click(screen.getByRole('button', {name: 'Cancel'}))
+      expect(screen.queryByText(/may already have run/)).not.toBeInTheDocument()
+      expect(writes).toEqual([])
+    })
+
+    it('confirms mark as done before calling the API', async () => {
+      const writes = mockWrites([delivery({status: 'FAILED'})])
+      const user = userEvent.setup()
+      renderWithStore(<OrderDetails id="o1" canResolve />)
+      await user.click(await screen.findByRole('button', {name: 'Mark as done'}))
+      expect(writes).toEqual([])
+      await user.click(screen.getByRole('button', {name: 'Yes, mark as done'}))
+      await waitFor(() => {
+        expect(writes).toEqual([{method: 'POST', url: '/api/admin/deliveries/d1/mark-done'}])
+      })
+    })
   })
 })

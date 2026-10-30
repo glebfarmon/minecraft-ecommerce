@@ -8,5 +8,5 @@ export default async function OrderPage({params}: {params: Promise<{id: string}>
   const me = await requireMe()
   if (!hasPermission(me.permissions, 'order.read')) notFound()
   const {id} = await params
-  return <OrderDetails id={id} />
+  return <OrderDetails id={id} canResolve={hasPermission(me.permissions, 'delivery.resolve')} />
 }

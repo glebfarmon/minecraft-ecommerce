@@ -1,5 +1,21 @@
 import {RconHostPrivateError, isPrivateAddress, resolveRconHost} from './rcon-host'
 
+async function withEnv(vars: Record<string, string | undefined>, run: () => Promise<void>) {
+  const saved = Object.fromEntries(Object.keys(vars).map(k => [k, process.env[k]]))
+  const apply = (v: Record<string, string | undefined>) => {
+    for (const [k, val] of Object.entries(v)) {
+      if (val === undefined) Reflect.deleteProperty(process.env, k)
+      else process.env[k] = val
+    }
+  }
+  apply(vars)
+  try {
+    await run()
+  } finally {
+    apply(saved)
+  }
+}
+
 describe('RCON host guard', () => {
   it.each([
     '127.0.0.1',
@@ -47,6 +63,32 @@ describe('RCON host guard', () => {
       if (saved.allow === undefined) delete process.env.RCON_ALLOW_PRIVATE_HOSTS
       else process.env.RCON_ALLOW_PRIVATE_HOSTS = saved.allow
     }
+  })
+
+  it('RCON_ALLOW_PRIVATE_HOSTS=true with RCON_ALLOW_PRIVATE_IN_PRODUCTION=true allows private addresses in production', async () => {
+    await withEnv(
+      {
+        NODE_ENV: 'production',
+        RCON_ALLOW_PRIVATE_HOSTS: 'true',
+        RCON_ALLOW_PRIVATE_IN_PRODUCTION: 'true'
+      },
+      async () => {
+        await expect(resolveRconHost('127.0.0.1')).resolves.toBe('127.0.0.1')
+      }
+    )
+  })
+
+  it('RCON_ALLOW_PRIVATE_HOSTS=true alone is still refused in production', async () => {
+    await withEnv(
+      {
+        NODE_ENV: 'production',
+        RCON_ALLOW_PRIVATE_HOSTS: 'true',
+        RCON_ALLOW_PRIVATE_IN_PRODUCTION: undefined
+      },
+      async () => {
+        await expect(resolveRconHost('127.0.0.1')).rejects.toBeInstanceOf(RconHostPrivateError)
+      }
+    )
   })
 
   it('returns a literal public IP as is', async () => {

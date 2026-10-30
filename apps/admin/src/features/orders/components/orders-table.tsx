@@ -2,7 +2,7 @@
 
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
-import {StatusDot} from '@/components/status-dot'
+import {StatusDot, ToneDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {type ListAdminOrdersApiArg, useListAdminOrdersQuery} from '@/lib/api/generated'
@@ -20,7 +20,6 @@ import {Tabs, TabsList, TabsTrigger} from '@shop/ui/tabs'
 type Query = Omit<ListAdminOrdersApiArg, 'cursor'>
 type Status = NonNullable<Query['status']>
 
-// "Problem" (refunds, disputes, failed deliveries) arrives with delivery (5a).
 const TABS: (Status | 'ALL')[] = ['ALL', 'PAID', 'DELIVERED', 'PENDING', 'EXPIRED']
 
 function PageRows({
@@ -55,6 +54,11 @@ function PageRows({
   const next = held ? null : (page.data?.nextCursor ?? null)
   return (
     <>
+      {isFirst && !held && (page.data?.attentionCount ?? 0) > 0 && (
+        <div>
+          <ToneDot tone="bad" label={t('attention', {count: page.data?.attentionCount ?? 0})} />
+        </div>
+      )}
       <DataTable
         caption={t('title')}
         loading={held ? 8 : undefined}
@@ -66,7 +70,19 @@ function PageRows({
           {
             header: t('colOrder'),
             primary: true,
-            cell: o => <span className="font-mono">{o.publicId}</span>
+            cell: o => (
+              <span className="inline-flex items-center gap-2">
+                <span className="font-mono">{o.publicId}</span>
+                {o.needsAttention && (
+                  <span
+                    role="img"
+                    aria-label={t('attentionRow')}
+                    title={t('attentionRow')}
+                    className="size-2 rounded-full bg-bad"
+                  />
+                )}
+              </span>
+            )
           },
           {header: t('colDate'), cell: o => f.time(o.createdAt), className: 'tabular text-muted'},
           {header: t('colNick'), cell: o => o.nick},

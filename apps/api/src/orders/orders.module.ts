@@ -1,5 +1,8 @@
 import {Module} from '@nestjs/common'
 
+import {DeliveriesAdminController} from '../delivery/deliveries-admin.controller'
+import {DeliveriesAdminService} from '../delivery/deliveries-admin.service'
+import {DeliveryModule} from '../delivery/delivery.module'
 import {FakePaymentController} from '../payments/fake-payment.controller'
 import {RatesModule} from '../rates/rates.module'
 import {OrderRatesService} from './order-rates.service'
@@ -17,7 +20,7 @@ import {TURNSTILE, createTurnstile} from './turnstile'
 import {WebhookController} from './webhook.controller'
 
 @Module({
-  imports: [RatesModule],
+  imports: [RatesModule, DeliveryModule],
   controllers: [
     OrdersController,
     OrdersAdminController,
@@ -25,12 +28,14 @@ import {WebhookController} from './webhook.controller'
     WebhookController,
     FakePaymentController,
     PromoController,
-    PromoAdminController
+    PromoAdminController,
+    DeliveriesAdminController
   ],
   providers: [
     OrdersService,
     PromoService,
     PromoAdminService,
+    DeliveriesAdminService,
     OrdersAdminService,
     OrdersStatsService,
     PaymentEventsService,

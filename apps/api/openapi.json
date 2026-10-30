@@ -267,7 +267,8 @@
                               "server.rcon",
                               "content.write",
                               "order.read",
-                              "promo.write"
+                              "promo.write",
+                              "delivery.resolve"
                             ],
                             "type": "string"
                           }
@@ -286,7 +287,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -1014,7 +1016,8 @@
                             "server.rcon",
                             "content.write",
                             "order.read",
-                            "promo.write"
+                            "promo.write",
+                            "delivery.resolve"
                           ],
                           "type": "string"
                         }
@@ -1059,7 +1062,8 @@
                         "server.rcon",
                         "content.write",
                         "order.read",
-                        "promo.write"
+                        "promo.write",
+                        "delivery.resolve"
                       ],
                       "type": "string"
                     }
@@ -1099,7 +1103,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -1161,7 +1166,8 @@
                         "server.rcon",
                         "content.write",
                         "order.read",
-                        "promo.write"
+                        "promo.write",
+                        "delivery.resolve"
                       ],
                       "type": "string"
                     }
@@ -1201,7 +1207,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -5861,6 +5868,246 @@
         "tags": ["Content admin"]
       }
     },
+    "/api/admin/deliveries/{id}/retry": {
+      "post": {
+        "operationId": "retryDelivery",
+        "summary": "Run a stuck delivery again",
+        "description": "Needs `delivery.resolve`. Only a `FAILED` or `NEEDS_REVIEW` delivery: it goes back to `PENDING` with `attempts` reset to 0 and is queued at once. The commands already confirmed (`commandsDone`) are not sent again, and the last error is kept until the next outcome. Audited as `delivery.retry`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The delivery, now `PENDING`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["GRANT", "REVOKE"],
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                      "type": "string"
+                    },
+                    "serverName": {
+                      "type": "string"
+                    },
+                    "productName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "commandsDone": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "attempts": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "nextAttemptAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "lastError": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "replies": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "status",
+                    "serverName",
+                    "productName",
+                    "commands",
+                    "commandsDone",
+                    "attempts",
+                    "nextAttemptAt",
+                    "lastError",
+                    "replies",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: no such delivery"
+          },
+          "409": {
+            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked); `delivery_not_retryable`: the delivery has no commands because the nick could not be used (`lastError` `invalid_nick`), so running it again would send nothing; give the purchase by hand and use mark-done"
+          }
+        },
+        "tags": ["Deliveries admin"]
+      }
+    },
+    "/api/admin/deliveries/{id}/mark-done": {
+      "post": {
+        "operationId": "markDeliveryDone",
+        "summary": "Confirm a stuck delivery by hand",
+        "description": "Needs `delivery.resolve`. Only a `FAILED` or `NEEDS_REVIEW` delivery, for when the owner has given the purchase in game. The delivery becomes `DONE`, a timed product starts or extends its clock, and an order whose deliveries are all done becomes `DELIVERED`. Nothing is sent to the server. Audited as `delivery.mark_done`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The delivery, now `DONE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "enum": ["GRANT", "REVOKE"],
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                      "type": "string"
+                    },
+                    "serverName": {
+                      "type": "string"
+                    },
+                    "productName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "commands": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "commandsDone": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "attempts": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "nextAttemptAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "lastError": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "replies": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "status",
+                    "serverName",
+                    "productName",
+                    "commands",
+                    "commandsDone",
+                    "attempts",
+                    "nextAttemptAt",
+                    "lastError",
+                    "replies",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: no such delivery"
+          },
+          "409": {
+            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked)"
+          }
+        },
+        "tags": ["Deliveries admin"]
+      }
+    },
     "/api/orders": {
       "post": {
         "operationId": "createOrder",
@@ -6171,7 +6418,7 @@
       "get": {
         "operationId": "getPublicOrder",
         "summary": "Status and contents of one order, for the buyer’s return page",
-        "description": "Looked up by the unguessable public id from the order link. The email is masked. No session needed. Never cached.",
+        "description": "Looked up by the unguessable public id from the order link. The email is masked. 'delivery' is the buyer-facing delivery state: 'none' (not paid or nothing to deliver), 'delivering', 'delivered', or 'delayed' (a delivery needs attention); no commands or server replies are exposed. No session needed. Never cached.",
         "parameters": [
           {
             "name": "publicId",
@@ -6274,6 +6521,10 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "delivery": {
+                      "enum": ["none", "delivering", "delayed", "delivered"],
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -6288,7 +6539,8 @@
                     "totalMinor",
                     "servers",
                     "createdAt",
-                    "paidAt"
+                    "paidAt",
+                    "delivery"
                   ]
                 }
               }
@@ -6398,6 +6650,9 @@
                               "DISPUTED"
                             ],
                             "type": "string"
+                          },
+                          "needsAttention": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -6408,7 +6663,8 @@
                           "email",
                           "currency",
                           "totalMinor",
-                          "status"
+                          "status",
+                          "needsAttention"
                         ]
                       }
                     },
@@ -6421,9 +6677,13 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "attentionCount": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
-                  "required": ["orders", "nextCursor"]
+                  "required": ["orders", "nextCursor", "attentionCount"]
                 }
               }
             }
@@ -6549,6 +6809,10 @@
                         }
                       ]
                     },
+                    "delivery": {
+                      "enum": ["none", "delivering", "delayed", "delivered"],
+                      "type": "string"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -6579,6 +6843,90 @@
                     "deliveryConsentAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "enum": ["GRANT", "REVOKE"],
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                            "type": "string"
+                          },
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "productName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "commands": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "commandsDone": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "nextAttemptAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastError": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "replies": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "serverName",
+                          "productName",
+                          "commands",
+                          "commandsDone",
+                          "attempts",
+                          "nextAttemptAt",
+                          "lastError",
+                          "replies",
+                          "createdAt"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -6594,11 +6942,13 @@
                     "servers",
                     "createdAt",
                     "paidAt",
+                    "delivery",
                     "id",
                     "locale",
                     "stripeSessionId",
                     "stripePaymentIntentId",
-                    "deliveryConsentAt"
+                    "deliveryConsentAt",
+                    "deliveries"
                   ]
                 }
               }

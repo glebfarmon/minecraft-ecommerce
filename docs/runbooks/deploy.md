@@ -61,11 +61,16 @@ One-time setup of production. For a step-by-step walkthrough with every click an
 2. Databases: Postgres (`postgres:18-alpine`), Redis (`redis:8-alpine`). Internal only (no external port).
 3. Applications, provider **Docker**, image `ghcr.io/<owner>/<repo>/<app>:latest`:
 
-| App          | Image            | Port | Domains (HTTPS, custom cert)                                                  |
-| ------------ | ---------------- | ---- | ----------------------------------------------------------------------------- |
-| `shop-api`   | `…/api:latest`   | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
-| `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
-| `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
+| App           | Image            | Port | Domains (HTTPS, custom cert)                                                  |
+| ------------- | ---------------- | ---- | ----------------------------------------------------------------------------- |
+| `shop-api`    | `…/api:latest`   | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
+| `shop-web`    | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
+| `shop-admin`  | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
+| `shop-worker` | `…/api:latest`   | —    | none                                                                          |
+
+**`shop-worker`** (ADR 0011) is the delivery worker: the api image with another command and no inbound traffic. Advanced → **Run Command**: `node dist/worker-main.js` (it skips the migrations and the content seed, which `shop-api` runs). Advanced → Swarm Settings → **Health Check**: `{"Test": ["NONE"]}`, because the image's healthcheck probes the API on port 4000 and would otherwise restart the worker forever. Environment: the same as `shop-api` (at least `DATABASE_URL`, `REDIS_URL`, `RCON_ENCRYPTION_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, and `BETTER_AUTH_URL`, the base of the link in the owner alert mail). Without a running worker, paid orders stay `PAID` and nothing reaches the Minecraft server; deliveries wait in Postgres and go out when it starts. On a deploy the worker gets SIGTERM and stops taking jobs; the delivery in progress finishes only if it ends within the stop grace period (Docker's default is 10 s, and one RCON command may take up to 10 s). Raise it for `shop-worker` (Swarm `StopGracePeriod`, e.g. 60 s, under Advanced → Swarm Settings where your Dokploy version offers it). A delivery killed mid-run stays `RUNNING`, and the sweeper hands it to the owners as `NEEDS_REVIEW` after 5 minutes.
+
+**Stuck deliveries.** Every five minutes the worker emails the owners about deliveries that became `FAILED` or `NEEDS_REVIEW` (the link points to `BETTER_AUTH_URL/orders`). Each item names the delivery id and its kind (`GRANT`/`REVOKE`). A `GRANT` belongs to an order and is resolved on that order's page (Retry or Mark done). A `REVOKE` of an expired timed rank belongs to no order (the mail says "revoke for <nick> on <server>"); until sub-project 5b adds a screen for it, resolve it by the delivery id with the admin API, signed in to the admin as a user with `delivery.resolve`: `POST /api/admin/deliveries/<id>/retry` or `POST /api/admin/deliveries/<id>/mark-done`.
 
 Every domain: HTTPS **on**, certificate provider **None** (Traefik picks the Origin certificate by SNI), "strip path" **off**. The `/api` domains must keep the prefix. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
 
@@ -126,13 +131,13 @@ CI verifies `/api/health/ready` (database reachable) after the version check, so
 
 ## 6. GitHub secrets (repo → Settings → Secrets and variables → Actions)
 
-| Secret                                                               | Value                     |
-| -------------------------------------------------------------------- | ------------------------- |
-| `DOKPLOY_URL`                                                        | `https://deploy.<domain>` |
-| `DOKPLOY_API_KEY`                                                    | Dokploy API key           |
-| `DOKPLOY_API_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs           |
-| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`                    | Service token             |
-| `PROD_URL`                                                           | `https://<domain>`        |
+| Secret                                                                                         | Value                     |
+| ---------------------------------------------------------------------------------------------- | ------------------------- |
+| `DOKPLOY_URL`                                                                                  | `https://deploy.<domain>` |
+| `DOKPLOY_API_KEY`                                                                              | Dokploy API key           |
+| `DOKPLOY_API_APP_ID` / `DOKPLOY_WORKER_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs           |
+| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`                                              | Service token             |
+| `PROD_URL`                                                                                     | `https://<domain>`        |
 
 Create a GitHub environment `production` and move these secrets into it.
 
@@ -165,7 +170,7 @@ curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 
 ## 9. First push
 
-Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
+Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 4 Dokploy application IDs (api, worker, web, admin), got N" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
 
 ## 10. Local admin stack
 

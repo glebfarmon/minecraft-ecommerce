@@ -1,7 +1,8 @@
 import {type Page, expect, test} from '@playwright/test'
 import {generateSync} from 'otplib'
 
-import {inviteLink, latestMail, newestMailId} from '../support/mailpit'
+import {buyVip} from '../support/checkout'
+import {type Mail, findMail, inviteLink, latestMail, newestMailId} from '../support/mailpit'
 
 // Runs against a fresh stack: the seed mails the owner invite once (`docker compose ... down -v`
 // before a local rerun), and the tests build on each other (the owner's TOTP secret).
@@ -595,4 +596,63 @@ test('the owner creates a promo code and a player pays less with it', async ({pa
       await expect(actions).toHaveCount(0)
     }
   }
+})
+
+// The two delivery scenarios that need the owner sit here, in the serial group that owns the
+// owner's sign-in (see delivery.spec.ts). The first keeps the alert mail the second checks.
+let silentOrder = ''
+let alertMail: Mail | undefined
+
+test('a silent server leaves the order delayed and the owner can mark it done', async ({
+  page,
+  browser
+}) => {
+  test.setTimeout(180_000)
+  const context = await browser.newContext({viewport: {width: 1600, height: 900}})
+  const shop = await context.newPage()
+  // The demo grant command is `say [demo] {nick} bought vip`: with this nick it contains "silent",
+  // which the fake RCON server never answers, so the delivery ends NEEDS_REVIEW after the 10 s timeout.
+  silentOrder = await buyVip(shop, {
+    nick: 'Silent_Steve',
+    email: `silent-${String(Date.now())}@shop.localhost`
+  })
+  await expect(
+    shop.getByText('Delivery is delayed, we are on it. You do not need to do anything.')
+  ).toBeVisible({timeout: 60_000})
+  // Before the owner signs in: the sign-in reads the owner's newest mail, which must be the code,
+  // and a delivery marked done is never alerted. The e2e worker alerts every 3 s
+  // (DELIVERY_ALERT_INTERVAL_MS) instead of every 5 min.
+  expect(silentOrder).not.toBe('')
+  alertMail = await findMail(OWNER, {subject: 'Delivery needs attention', text: silentOrder})
+
+  await signInOwner(page)
+  await page.getByRole('link', {name: 'Orders'}).click()
+  const search = page.getByLabel('Search by nick, email or order number')
+  await search.fill(silentOrder)
+  await search.press('Enter')
+  const row = page.getByRole('table', {name: 'Orders'}).getByRole('row').filter({
+    hasText: silentOrder
+  })
+  await expect(row).toHaveCount(1)
+  await row.getByRole('cell').nth(1).click()
+  await expect(page).toHaveURL(/\/orders\/\w+$/)
+  await expect(page.getByText('Needs review', {exact: true})).toBeVisible()
+  await page.getByRole('button', {name: 'Mark as done'}).click()
+  await page.getByRole('button', {name: 'Yes, mark as done'}).click()
+  await expect(page.getByText('Delivery marked as done')).toBeVisible()
+
+  // The player's page still polls while delivery is delayed: it flips without a reload.
+  await expect(shop.getByText('Delivered — your items are in the game.')).toBeVisible({
+    timeout: 30_000
+  })
+  await context.close()
+})
+
+test('the owner alert email arrives in Mailpit', () => {
+  // Found by the test above, before the owner signed in; an empty id would match any old alert.
+  expect(silentOrder).not.toBe('')
+  expect(alertMail?.subject).toMatch(/^Delivery needs attention \(\d+\)$/)
+  expect(alertMail?.text).toContain(silentOrder)
+  expect(alertMail?.text).toContain('Silent_Steve')
+  expect(alertMail?.text).toContain('NEEDS_REVIEW')
 })

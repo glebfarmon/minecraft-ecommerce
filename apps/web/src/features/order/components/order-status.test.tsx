@@ -33,7 +33,8 @@ const base: PublicOrder = {
     {serverName: 'Skyblock', items: [{productName: 'Coins', quantity: 2, unitAmountMinor: 250}]}
   ],
   createdAt: '2026-10-16T10:00:00.000Z',
-  paidAt: null
+  paidAt: null,
+  delivery: 'none'
 }
 const pending: PublicOrder = {...base, status: 'PENDING'}
 
@@ -159,5 +160,67 @@ describe('OrderStatus', () => {
     )
     expect(screen.getByText('order.promo')).toBeInTheDocument()
     expect(screen.getByText(/^\u22122\.40\s€$/)).toBeInTheDocument()
+  })
+
+  describe('delivery', () => {
+    const delivering: PublicOrder = {...base, delivery: 'delivering'}
+
+    it('shows "being delivered" and polls every 3 s', async () => {
+      respond(delivering)
+      render(<OrderStatus initial={delivering} />)
+      expect(screen.getByText('order.delivery.delivering')).toBeInTheDocument()
+      await tick(3000)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/orders/ABCDEFGHJKLMNOPQRSTUVW',
+        expect.anything()
+      )
+      await tick(3000)
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('switches to "delivered" and stops polling', async () => {
+      respond({...base, delivery: 'delivered'})
+      render(<OrderStatus initial={delivering} />)
+      await tick(3000)
+      expect(screen.getByText('order.delivery.delivered')).toBeInTheDocument()
+      expect(screen.queryByText('order.delivery.delivering')).not.toBeInTheDocument()
+      await tick(30_000)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows "delayed" without any error detail and keeps polling', async () => {
+      respond({...base, delivery: 'delayed'})
+      render(<OrderStatus initial={delivering} />)
+      await tick(3000)
+      expect(screen.getByText('order.delivery.delayed')).toBeInTheDocument()
+      expect(screen.queryByText(/rcon|error/i)).not.toBeInTheDocument()
+      await tick(6000)
+      expect(fetchMock).toHaveBeenCalledTimes(3)
+    })
+
+    it('stops after 10 minutes with the later line', async () => {
+      respond({...base, delivery: 'delayed'})
+      render(<OrderStatus initial={{...base, delivery: 'delayed'}} />)
+      await tick(600_000)
+      expect(screen.getByText('order.delivery.later')).toBeInTheDocument()
+      const calls = fetchMock.mock.calls.length
+      await tick(30_000)
+      expect(fetchMock.mock.calls.length).toBe(calls)
+    })
+
+    it('does not poll for delivery none', async () => {
+      render(<OrderStatus initial={{...base}} />)
+      await tick(30_000)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(screen.queryByText(/order\.delivery\./)).not.toBeInTheDocument()
+    })
+
+    it('does not poll once the order is DELIVERED', async () => {
+      render(<OrderStatus initial={{...base, status: 'DELIVERED', delivery: 'delivered'}} />)
+      expect(screen.getByText('order.delivery.delivered')).toBeInTheDocument()
+      await tick(30_000)
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
   })
 })

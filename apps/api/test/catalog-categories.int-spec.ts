@@ -1,3 +1,4 @@
+import {waitForAuditRows} from './support/audit'
 import {startCatalogApp} from './support/catalog-app'
 
 jest.setTimeout(180_000)
@@ -62,7 +63,7 @@ describe('catalog categories API', () => {
       })
 
     await editor.delete(`/api/admin/catalog/categories/${id}?version=2`).expect(204)
-    const rows = await ctx.prisma.auditLog.findMany({where: {entityId: id}})
+    const rows = await waitForAuditRows(ctx.prisma, {entityId: id}, 3)
     expect(rows.map(r => r.action).sort()).toEqual(
       ['category.create', 'category.delete', 'category.update'].sort()
     )

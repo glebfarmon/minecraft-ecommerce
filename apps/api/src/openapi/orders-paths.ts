@@ -82,7 +82,7 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
     get: publicOp({
       operationId: 'getPublicOrder',
       summary: 'Status and contents of one order, for the buyer’s return page',
-      description: `Looked up by the unguessable public id from the order link. The email is masked. ${NO_SESSION} Never cached.`,
+      description: `Looked up by the unguessable public id from the order link. The email is masked. 'delivery' is the buyer-facing delivery state: 'none' (not paid or nothing to deliver), 'delivering', 'delivered', or 'delayed' (a delivery needs attention); no commands or server replies are exposed. ${NO_SESSION} Never cached.`,
       parameters: [pathParam('publicId')],
       responses: {
         '200': json('The order', PublicOrderSchema),

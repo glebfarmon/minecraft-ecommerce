@@ -1,6 +1,12 @@
 import type {PublicOrder} from '@shop/shared/orders'
 
-import {inviteMail, orderReceiptMail, signInCodeMail, twoFactorResetMail} from './templates'
+import {
+  deliveryAlertMail,
+  inviteMail,
+  orderReceiptMail,
+  signInCodeMail,
+  twoFactorResetMail
+} from './templates'
 
 const order: PublicOrder = {
   publicId: 'AbCdEfGhIjKlMnOpQrStUv',
@@ -20,7 +26,8 @@ const order: PublicOrder = {
     }
   ],
   createdAt: '2026-10-16T10:00:00.000Z',
-  paidAt: '2026-10-16T10:01:00.000Z'
+  paidAt: '2026-10-16T10:01:00.000Z',
+  delivery: 'none'
 }
 const statusUrl = 'http://shop.test/order/AbCdEfGhIjKlMnOpQrStUv'
 const eur = (locale: string, minor: number) =>
@@ -100,5 +107,73 @@ describe('mail templates', () => {
         expect(mail.text).not.toMatch(/Promo code|Kod promocyjny/)
       }
     })
+  })
+})
+
+describe('deliveryAlertMail', () => {
+  it('renders delivery id, kind, order id, nick, server, status and the admin link', async () => {
+    const mail = await deliveryAlertMail(
+      [
+        {
+          deliveryId: 'cdelivery000000000000001',
+          kind: 'GRANT',
+          orderPublicId: 'AbCdEfGhIjKlMnOpQrStUv',
+          nick: 'Steve_1',
+          serverName: 'Survival',
+          status: 'FAILED',
+          lastError: 'connection refused'
+        },
+        {
+          deliveryId: 'cdelivery000000000000002',
+          kind: 'GRANT',
+          orderPublicId: 'ZzZzZzZzZzZzZzZzZzZzZz',
+          nick: 'Alex',
+          serverName: 'Skyblock',
+          status: 'NEEDS_REVIEW',
+          lastError: null
+        }
+      ],
+      'http://admin.test/orders'
+    )
+    expect(mail.subject).toBe('Delivery needs attention (2)')
+    for (const part of [
+      'cdelivery000000000000001',
+      'cdelivery000000000000002',
+      'GRANT',
+      'AbCdEfGhIjKlMnOpQrStUv',
+      'Steve_1',
+      'Survival',
+      'FAILED',
+      'connection refused',
+      'ZzZzZzZzZzZzZzZzZzZzZz',
+      'Skyblock',
+      'NEEDS_REVIEW',
+      'http://admin.test/orders'
+    ]) {
+      expect(mail.text).toContain(part)
+      expect(mail.html).toContain(part)
+    }
+  })
+
+  it('describes a REVOKE without an order by its nick and server', async () => {
+    const mail = await deliveryAlertMail(
+      [
+        {
+          deliveryId: 'crevoke00000000000000001',
+          kind: 'REVOKE',
+          orderPublicId: null,
+          nick: 'Alex',
+          serverName: 'Skyblock',
+          status: 'FAILED',
+          lastError: 'connection refused'
+        }
+      ],
+      'http://admin.test/orders'
+    )
+    for (const part of ['revoke for Alex on Skyblock', 'crevoke00000000000000001', 'REVOKE']) {
+      expect(mail.text).toContain(part)
+      expect(mail.html).toContain(part)
+    }
+    expect(mail.text).not.toContain('grant ·')
   })
 })

@@ -16,6 +16,7 @@ import type {ReactNode} from 'react'
 import {Button} from '@shop/ui/button'
 
 import {stripePaymentUrl} from '../lib/format'
+import {DeliveriesCard} from './deliveries-card'
 
 function Fields({children}: {children: ReactNode}) {
   return <dl className="grid grid-cols-[8.5rem_1fr] gap-x-4 gap-y-3 text-[13px]">{children}</dl>
@@ -30,7 +31,7 @@ function Row({label, children}: {label: string; children: ReactNode}) {
   )
 }
 
-export function OrderDetails({id}: {id: string}) {
+export function OrderDetails({id, canResolve = false}: {id: string; canResolve?: boolean}) {
   const t = useTranslations('orders.detail')
   const tc = useTranslations('common')
   const f = useFormat()
@@ -101,6 +102,7 @@ export function OrderDetails({id}: {id: string}) {
           </dl>
         </Card>
         <div className="flex min-w-0 flex-col gap-4">
+          <DeliveriesCard deliveries={order.deliveries} canResolve={canResolve} />
           <Card title={t('buyer')}>
             <Fields>
               <Row label={t('nick')}>{order.nick}</Row>

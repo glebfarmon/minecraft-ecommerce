@@ -45,9 +45,15 @@ export function isPrivateAddress(ip: string): boolean {
   return internal.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4')
 }
 
-/** Local development and tests may point RCON at a container; production never may. */
+/**
+ * Local development and tests may point RCON at a container; production never may. The one
+ * exception is the e2e stack, which runs the production image: it sets
+ * `RCON_ALLOW_PRIVATE_IN_PRODUCTION=true` next to `RCON_ALLOW_PRIVATE_HOSTS=true`. That second flag
+ * exists only for it and must never be set on a real deployment.
+ */
 const allowPrivateHosts = (env = process.env) =>
-  env.RCON_ALLOW_PRIVATE_HOSTS === 'true' && env.NODE_ENV !== 'production'
+  env.RCON_ALLOW_PRIVATE_HOSTS === 'true' &&
+  (env.NODE_ENV !== 'production' || env.RCON_ALLOW_PRIVATE_IN_PRODUCTION === 'true')
 
 /**
  * The address to connect to. Every address the name resolves to must be public, and the caller

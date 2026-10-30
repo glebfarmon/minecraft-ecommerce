@@ -57,6 +57,7 @@
     "@thallesp/nestjs-better-auth": "^2.8.0",
     "@valibot/to-json-schema": "^1.8.0",
     "better-auth": "^1.7.7",
+    "bullmq": "^6.5.1",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.1.0",
     "prisma": "^7.10.0",

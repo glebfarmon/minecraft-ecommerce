@@ -11,6 +11,10 @@
       "types": "./dist/orders.d.ts",
       "default": "./dist/orders.js"
     },
+    "./delivery": {
+      "types": "./dist/delivery.d.ts",
+      "default": "./dist/delivery.js"
+    },
     "./promo": {
       "types": "./dist/promo.d.ts",
       "default": "./dist/promo.js"

@@ -41,6 +41,7 @@ visitor ──HTTPS──▶ Cloudflare ──HTTPS──▶ your server (Hetzne
                                             │    ├─ admin.<domain>/api → shop-api
                                             │    ├─ api.<domain>/      → shop-api
                                             │    └─ deploy.<domain>    → Dokploy panel (behind Cloudflare Access)
+                                            ├─ shop-worker (delivers purchases over RCON; no web traffic)
                                             ├─ Postgres (data)
                                             └─ Redis (admin sign-in limits and sessions)
 
@@ -513,7 +514,7 @@ The server runs images that GitHub builds. They appear after the first run of th
 
 1. The workflow runs on every change to `main`. Make a small one in the browser: your fork → `README.md` → pencil icon → change any word → **Commit changes** → "Commit directly to the `main` branch" → **Commit changes**.
 2. Watch **Actions**: `quality`, `e2e` and `gitleaks` run tests (about 10 minutes), then `publish (api)`, `publish (web)`, `publish (admin)` build and upload the images.
-3. `deploy` **fails** with `expected 3 Dokploy application IDs, got 0`. This is expected until part 16.
+3. `deploy` **fails** with `expected 4 Dokploy application IDs (api, worker, web, admin), got 0`. This is expected until part 16.
 
 **Check:** your GitHub profile → **Packages** shows `api`, `web` and `admin`, each **Public**. If one is private: open it → **Package settings → Change visibility → Public**.
 
@@ -568,7 +569,7 @@ Save the output as `RCON_ENCRYPTION_KEY`. It encrypts the RCON password of your 
 
 ## 14. The three applications
 
-Create three applications in project `shop`, one at a time: **Create Service → Application**, then fill the tabs as below. Do `shop-api` first.
+Create three applications in project `shop`, one at a time: **Create Service → Application**, then fill the tabs as below. Do `shop-api` first. A fourth one, the delivery worker, follows in 14.4.
 
 ### 14.1 Source
 
@@ -656,6 +657,17 @@ GOOGLE_SIGN_IN=on
 
 Add `GOOGLE_SIGN_IN=on` only if `shop-api` has the Google keys; otherwise the sign-in page shows a button that cannot work. Do not use `https://api.<domain>` here: requests would leave the server and come back through Cloudflare.
 
+### 14.4 The delivery worker
+
+One more application, `shop-worker`, sends what people bought to your Minecraft server over RCON. It runs the same image as `shop-api` with a different command and gets no web traffic. Without it payments still work, but nothing is delivered: orders stay **Paid** until a worker runs (nothing is lost, it catches up when it starts).
+
+1. **Create Service → Application** → name `shop-worker`.
+2. **General → Provider → Docker**: image `ghcr.io/<owner>/<repo>/api:latest` (the **api** image). **Save.**
+3. **Domains**: none. Add nothing here.
+4. **Environment**: copy everything from `shop-api` (the same `DATABASE_URL`, `REDIS_URL`, `RCON_ENCRYPTION_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, …). **Save.**
+5. **Advanced → Run Command**: `node dist/worker-main.js` → **Save**. This replaces the image's start command (migrations and the API server); `shop-api` runs the migrations.
+6. **Advanced → Swarm Settings → Health Check**: paste `{"Test": ["NONE"]}` → **Save**. The image's built-in check asks the API on port 4000, which the worker does not have; without this line Docker marks the worker unhealthy and keeps restarting it.
+
 ---
 
 ## 15. First start, demo data and the owner account
@@ -683,7 +695,7 @@ Order matters: databases first, then the API, then the two websites.
 
    If the Terminal tab does not open: on the server, `docker ps | grep shop-api` shows the container ID; then `docker exec -it <id> sh` and the same command.
 
-4. `shop-web` → **Deploy**, `shop-admin` → **Deploy**.
+4. `shop-worker` → **Deploy**. Its **Logs** show `delivery worker started`. Then `shop-web` → **Deploy**, `shop-admin` → **Deploy**.
 5. Open the invite link → sign in with the code from your email → set up two-factor authentication: scan the QR code with an authenticator app (Google Authenticator, 1Password, Aegis, Authy) and enter the 6-digit code. **Save the backup codes** in your password manager: they are the only way back in if you lose the phone.
 
 **Check:**
@@ -711,13 +723,14 @@ Now teach GitHub to update the server after every merge.
    Only the **last** part, after `/application/`. Not the project or environment ID.
 
 2. GitHub → your fork → **Settings → Environments → New environment** → name `production` → **Configure environment**.
-3. Under **Environment secrets → Add environment secret**, add eight secrets:
+3. Under **Environment secrets → Add environment secret**, add nine secrets:
 
    | Name                      | Value                                           |
    | ------------------------- | ----------------------------------------------- |
    | `DOKPLOY_URL`             | `https://deploy.<domain>` (no slash at the end) |
    | `DOKPLOY_API_KEY`         | the Dokploy key from 9.4                        |
    | `DOKPLOY_API_APP_ID`      | ID of `shop-api`                                |
+   | `DOKPLOY_WORKER_APP_ID`   | ID of `shop-worker`                             |
    | `DOKPLOY_WEB_APP_ID`      | ID of `shop-web`                                |
    | `DOKPLOY_ADMIN_APP_ID`    | ID of `shop-admin`                              |
    | `CF_ACCESS_CLIENT_ID`     | service token Client ID from 9.3                |
@@ -726,7 +739,7 @@ Now teach GitHub to update the server after every merge.
 
 4. **Actions** → the last CI run on `main` → **Re-run jobs → Re-run failed jobs**.
 
-**Check:** `deploy` turns green. It triggers the three Dokploy deploys, then waits until `https://<domain>/api/health` reports the new version and the database is up.
+**Check:** `deploy` turns green. It triggers the four Dokploy deploys, then waits until `https://<domain>/api/health` reports the new version and the database is up.
 
 From now on: **merge to `main` → about 15 minutes → live.** Nothing to click.
 
@@ -775,32 +788,33 @@ Write migrations that the **previous** version can live with: while the new API 
 
 ## 19. Troubleshooting
 
-| Symptom                                                                                     | Cause and fix                                                                                                                                                                                                            |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `dig NS` still shows the registrar's nameservers                                            | DNS change not propagated yet; wait up to 24 hours. Recheck the nameserver spelling at the registrar.                                                                                                                    |
-| Records added at the registrar do nothing                                                   | After part 3.2 only Cloudflare's DNS counts. Add them in Cloudflare.                                                                                                                                                     |
-| `ssh` hangs and times out                                                                   | Your home IP changed: update the port 22 rule in `shop-fw` (part 6).                                                                                                                                                     |
-| Error **526** (invalid SSL certificate)                                                     | The domain has no HTTPS route on the server, or the Origin certificate is not loaded. For `deploy.<domain>`: part 8.5. For app domains: HTTPS on, certificate provider None (part 14.2); certificate present (part 8.3). |
-| `openssl s_client -connect <server-ip>:443 -servername <host>` shows `TRAEFIK DEFAULT CERT` | Same as 526: no HTTPS router for that host.                                                                                                                                                                              |
-| Error **521 / 522** (web server down / timed out)                                           | The firewall blocks Cloudflare (check the 80/443 rules) or the container is not running (Dokploy → Logs).                                                                                                                |
-| **404** from Traefik on a domain                                                            | The domain is not added to an application, or the path is wrong. Compare with the table in 14.2.                                                                                                                         |
-| `shop-api` stops at start: secret / mail error                                              | `BETTER_AUTH_SECRET` missing or shorter than 32 characters, or `RESEND_API_KEY` missing. Fix the environment, Save, Deploy.                                                                                              |
-| RCON Save says "RCON is not configured on the server"                                       | `RCON_ENCRYPTION_KEY` is missing on `shop-api`. Add it (part 13.4), Save, Deploy.                                                                                                                                        |
-| RCON Save says "public address"                                                             | Use the game host's public IP or name; internal addresses are refused on purpose.                                                                                                                                        |
-| `shop-api` log: `The table public.products does not exist`                                  | Migrations did not run (an image older than automatic migrations). In the Terminal: `node_modules/.bin/prisma migrate deploy`.                                                                                           |
-| A migration fails at start                                                                  | The container stops and the deploy job fails on the version check. Read the Prisma error in `shop-api` → Logs.                                                                                                           |
-| The shop shows "shop unavailable"                                                           | `API_ORIGIN` on `shop-web` is missing or wrong. It must be `http://<App Name of shop-api>:4000`.                                                                                                                         |
-| Admin panel: signed in, then thrown back to sign-in                                         | `admin.<domain>` with path `/api` is missing on `shop-api` (part 14.2), so the session cookie never reaches the API.                                                                                                     |
-| No sign-in code email                                                                       | Resend domain not verified, or `MAIL_FROM` uses a different domain. Resend → Logs shows each attempt. Also check spam.                                                                                                   |
-| Admin sign-in answers 429 / 403 / 500, the shop works                                       | Redis is down or `REDIS_URL` is wrong. Check `shop-redis` is Running.                                                                                                                                                    |
-| Google: `redirect_uri_mismatch`                                                             | The redirect URI in Google Cloud must be exactly `https://admin.<domain>/api/auth/callback/google`.                                                                                                                      |
-| Google: "Access blocked: app not verified" / "not a test user"                              | Add the account under Test users on the OAuth consent screen (part 11).                                                                                                                                                  |
-| Deploy job: `expected 3 Dokploy application IDs, got 0`                                     | The secrets are missing or not in the `production` environment (part 16).                                                                                                                                                |
-| Deploy job: `404 Application not found`                                                     | An application ID is wrong: use the last URL segment after `/application/`. The job stops at the first wrong ID (api, then web, then admin).                                                                             |
-| Deploy job: `403` or an HTML page instead of JSON                                           | Cloudflare Access blocked the robot: the `CI` policy (Service Auth, service token) is not attached to the `Dokploy` application, or the token secrets are wrong (check in 9.3).                                          |
-| Deploy job: `401` / `Unauthorized`                                                          | Wrong `DOKPLOY_API_KEY`.                                                                                                                                                                                                 |
-| Deploy job: `prod serves '<old sha>', expected '<new sha>'`                                 | The new `shop-api` did not start in time: see its Logs. Common reason: a failed migration or a bad environment variable.                                                                                                 |
-| Dokploy cannot pull the image (`denied`, `unauthorized`)                                    | The GHCR package is private: make it public (part 12), or the image name has uppercase letters.                                                                                                                          |
-| Container exits with `exec format error`                                                    | The server is x86, the images are arm64. Create an Arm64 (CAX) server.                                                                                                                                                   |
-| A change merged to `main` is not on the site                                                | It did not reach `main` (check the pull request is merged and the branch was pushed), or the CI run is still going or failed (Actions tab). `curl https://<domain>/api/health` shows the running commit.                 |
-| The hero image is slow on a first visit                                                     | The Cloudflare cache rule from part 17 is missing.                                                                                                                                                                       |
+| Symptom                                                                                     | Cause and fix                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dig NS` still shows the registrar's nameservers                                            | DNS change not propagated yet; wait up to 24 hours. Recheck the nameserver spelling at the registrar.                                                                                                                                                     |
+| Records added at the registrar do nothing                                                   | After part 3.2 only Cloudflare's DNS counts. Add them in Cloudflare.                                                                                                                                                                                      |
+| `ssh` hangs and times out                                                                   | Your home IP changed: update the port 22 rule in `shop-fw` (part 6).                                                                                                                                                                                      |
+| Error **526** (invalid SSL certificate)                                                     | The domain has no HTTPS route on the server, or the Origin certificate is not loaded. For `deploy.<domain>`: part 8.5. For app domains: HTTPS on, certificate provider None (part 14.2); certificate present (part 8.3).                                  |
+| `openssl s_client -connect <server-ip>:443 -servername <host>` shows `TRAEFIK DEFAULT CERT` | Same as 526: no HTTPS router for that host.                                                                                                                                                                                                               |
+| Error **521 / 522** (web server down / timed out)                                           | The firewall blocks Cloudflare (check the 80/443 rules) or the container is not running (Dokploy → Logs).                                                                                                                                                 |
+| **404** from Traefik on a domain                                                            | The domain is not added to an application, or the path is wrong. Compare with the table in 14.2.                                                                                                                                                          |
+| `shop-api` stops at start: secret / mail error                                              | `BETTER_AUTH_SECRET` missing or shorter than 32 characters, or `RESEND_API_KEY` missing. Fix the environment, Save, Deploy.                                                                                                                               |
+| Orders stay **Paid**, nothing arrives in the game                                           | `shop-worker` is not running: open its Logs. Restarting every minute or so means the Health Check line from 14.4 is missing; a mail or RCON error means its environment differs from `shop-api`. Deliveries wait in the database and go out once it runs. |
+| RCON Save says "RCON is not configured on the server"                                       | `RCON_ENCRYPTION_KEY` is missing on `shop-api`. Add it (part 13.4), Save, Deploy.                                                                                                                                                                         |
+| RCON Save says "public address"                                                             | Use the game host's public IP or name; internal addresses are refused on purpose.                                                                                                                                                                         |
+| `shop-api` log: `The table public.products does not exist`                                  | Migrations did not run (an image older than automatic migrations). In the Terminal: `node_modules/.bin/prisma migrate deploy`.                                                                                                                            |
+| A migration fails at start                                                                  | The container stops and the deploy job fails on the version check. Read the Prisma error in `shop-api` → Logs.                                                                                                                                            |
+| The shop shows "shop unavailable"                                                           | `API_ORIGIN` on `shop-web` is missing or wrong. It must be `http://<App Name of shop-api>:4000`.                                                                                                                                                          |
+| Admin panel: signed in, then thrown back to sign-in                                         | `admin.<domain>` with path `/api` is missing on `shop-api` (part 14.2), so the session cookie never reaches the API.                                                                                                                                      |
+| No sign-in code email                                                                       | Resend domain not verified, or `MAIL_FROM` uses a different domain. Resend → Logs shows each attempt. Also check spam.                                                                                                                                    |
+| Admin sign-in answers 429 / 403 / 500, the shop works                                       | Redis is down or `REDIS_URL` is wrong. Check `shop-redis` is Running.                                                                                                                                                                                     |
+| Google: `redirect_uri_mismatch`                                                             | The redirect URI in Google Cloud must be exactly `https://admin.<domain>/api/auth/callback/google`.                                                                                                                                                       |
+| Google: "Access blocked: app not verified" / "not a test user"                              | Add the account under Test users on the OAuth consent screen (part 11).                                                                                                                                                                                   |
+| Deploy job: `expected 4 Dokploy application IDs (api, worker, web, admin), got 0`           | The secrets are missing or not in the `production` environment (part 16).                                                                                                                                                                                 |
+| Deploy job: `404 Application not found`                                                     | An application ID is wrong: use the last URL segment after `/application/`. The job stops at the first wrong ID (api, then worker, then web, then admin).                                                                                                 |
+| Deploy job: `403` or an HTML page instead of JSON                                           | Cloudflare Access blocked the robot: the `CI` policy (Service Auth, service token) is not attached to the `Dokploy` application, or the token secrets are wrong (check in 9.3).                                                                           |
+| Deploy job: `401` / `Unauthorized`                                                          | Wrong `DOKPLOY_API_KEY`.                                                                                                                                                                                                                                  |
+| Deploy job: `prod serves '<old sha>', expected '<new sha>'`                                 | The new `shop-api` did not start in time: see its Logs. Common reason: a failed migration or a bad environment variable.                                                                                                                                  |
+| Dokploy cannot pull the image (`denied`, `unauthorized`)                                    | The GHCR package is private: make it public (part 12), or the image name has uppercase letters.                                                                                                                                                           |
+| Container exits with `exec format error`                                                    | The server is x86, the images are arm64. Create an Arm64 (CAX) server.                                                                                                                                                                                    |
+| A change merged to `main` is not on the site                                                | It did not reach `main` (check the pull request is merged and the branch was pushed), or the CI run is still going or failed (Actions tab). `curl https://<domain>/api/health` shows the running commit.                                                  |
+| The hero image is slow on a first visit                                                     | The Cloudflare cache rule from part 17 is missing.                                                                                                                                                                                                        |

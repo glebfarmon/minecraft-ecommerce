@@ -48,6 +48,8 @@ model Server {
   categories      ServerCategory[]
   products        Product[]
   orderItems      OrderItem[]
+  deliveries      Delivery[]
+  grants          Grant[]
 
   @@map("servers")
 }
@@ -108,6 +110,7 @@ model Product {
   prices         Price[]
   orderItems     OrderItem[]
   promoCodes     PromoCodeProduct[]
+  grants         Grant[]
 
   @@unique([serverId, slug])
   @@index([categoryId])
@@ -372,6 +375,7 @@ model OrderItem {
   order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   server          Server  @relation(fields: [serverId], references: [id], onDelete: Restrict)
+  deliveries      Delivery[]
 
   @@index([orderId])
   @@index([productId])
@@ -434,4 +438,63 @@ model PromoCodeProduct {
   @@id([promoCodeId, productId])
   @@index([productId])
   @@map("promo_code_products")
+}
+
+enum DeliveryKind {
+  GRANT
+  REVOKE
+}
+
+enum DeliveryStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  NEEDS_REVIEW
+}
+
+model Delivery {
+  id            String         @id @default(cuid())
+  orderItemId   String?
+  grantId       String?
+  serverId      String
+  kind          DeliveryKind
+  commands      String[]
+  commandsDone  Int            @default(0)
+  status        DeliveryStatus @default(PENDING)
+  attempts      Int            @default(0)
+  nextAttemptAt DateTime       @default(now())
+  startedAt     DateTime?
+  lastError     String?
+  responseLog   Json           @default("[]")
+  alertedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orderItem     OrderItem?     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  grant         Grant?         @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  server        Server         @relation(fields: [serverId], references: [id], onDelete: Restrict)
+
+  @@index([orderItemId])
+  @@index([grantId])
+  @@index([serverId])
+  @@map("deliveries")
+}
+
+model Grant {
+  id         String     @id @default(cuid())
+  nick       String
+  serverId   String
+  productId  String
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  server     Server     @relation(fields: [serverId], references: [id], onDelete: Restrict)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  deliveries Delivery[]
+
+  @@unique([nick, serverId, productId])
+  @@index([serverId])
+  @@index([productId])
+  @@map("grants")
 }

@@ -241,6 +241,12 @@
       "title": "Paid — thank you!",
       "body": "Items are delivered to the game server shortly. A receipt is on its way to {email}."
     },
+    "delivery": {
+      "delivering": "Your items are being delivered to the game…",
+      "delayed": "Delivery is delayed, we are on it. You do not need to do anything.",
+      "delivered": "Delivered — your items are in the game.",
+      "later": "Still working on it. Check back later or contact support."
+    },
     "pending": {
       "title": "Waiting for the payment…",
       "slow": "The payment is still being processed. You will get an email as soon as it goes through."
