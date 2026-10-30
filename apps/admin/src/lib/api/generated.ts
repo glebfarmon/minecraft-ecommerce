@@ -381,6 +381,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
   permissions: (
@@ -392,6 +393,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -524,6 +526,7 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -540,6 +543,7 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -554,6 +558,7 @@ export type PostApiAdminRolesApiArg = {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
 }
@@ -570,6 +575,7 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
     | 'content.write'
     | 'order.read'
     | 'promo.write'
+    | 'delivery.resolve'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -585,6 +591,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'content.write'
       | 'order.read'
       | 'promo.write'
+      | 'delivery.resolve'
     )[]
   }
 }
@@ -1475,8 +1482,10 @@ export type ListAdminOrdersApiResponse = /** status 200 A page of orders */ {
     currency: 'EUR' | 'PLN'
     totalMinor: number
     status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+    needsAttention: boolean
   }[]
   nextCursor: string | null
+  attentionCount: number
 }
 export type ListAdminOrdersApiArg = {
   q?: string
@@ -1503,11 +1512,26 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   }[]
   createdAt: string
   paidAt: string | null
+  delivery: 'none' | 'delivering' | 'delayed' | 'delivered'
   id: string
   locale: 'en' | 'pl'
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
   deliveryConsentAt: string
+  deliveries: {
+    id: string
+    kind: 'GRANT' | 'REVOKE'
+    status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+    serverName: string
+    productName: string | null
+    commands: string[]
+    commandsDone: number
+    attempts: number
+    nextAttemptAt: string
+    lastError: string | null
+    replies: string[]
+    createdAt: string
+  }[]
 }
 export type GetAdminOrderApiArg = {
   id: string

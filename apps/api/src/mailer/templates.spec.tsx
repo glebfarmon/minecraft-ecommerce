@@ -20,7 +20,8 @@ const order: PublicOrder = {
     }
   ],
   createdAt: '2026-10-16T10:00:00.000Z',
-  paidAt: '2026-10-16T10:01:00.000Z'
+  paidAt: '2026-10-16T10:01:00.000Z',
+  delivery: 'none'
 }
 const statusUrl = 'http://shop.test/order/AbCdEfGhIjKlMnOpQrStUv'
 const eur = (locale: string, minor: number) =>

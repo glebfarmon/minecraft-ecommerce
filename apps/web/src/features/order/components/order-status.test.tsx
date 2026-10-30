@@ -33,7 +33,8 @@ const base: PublicOrder = {
     {serverName: 'Skyblock', items: [{productName: 'Coins', quantity: 2, unitAmountMinor: 250}]}
   ],
   createdAt: '2026-10-16T10:00:00.000Z',
-  paidAt: null
+  paidAt: null,
+  delivery: 'none'
 }
 const pending: PublicOrder = {...base, status: 'PENDING'}
 

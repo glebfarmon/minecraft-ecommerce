@@ -41,9 +41,14 @@ export class OrdersAdminService {
       email: r.email,
       currency: r.currency,
       totalMinor: r.totalMinor,
-      status: r.status
+      status: r.status,
+      needsAttention: false
     }))
-    return {orders, nextCursor: rows.length > PAGE ? (orders.at(-1)?.id ?? null) : null}
+    return {
+      orders,
+      nextCursor: rows.length > PAGE ? (orders.at(-1)?.id ?? null) : null,
+      attentionCount: 0
+    }
   }
 
   async get(id: string): Promise<AdminOrder> {

@@ -39,7 +39,8 @@ export function toPublicOrder(order: OrderWithItems): PublicOrder {
     totalMinor: order.totalMinor,
     servers: groupByServer(order.items),
     createdAt: order.createdAt.toISOString(),
-    paidAt: order.paidAt?.toISOString() ?? null
+    paidAt: order.paidAt?.toISOString() ?? null,
+    delivery: 'none'
   }
 }
 
@@ -51,6 +52,7 @@ export function toAdminOrder(order: OrderWithItems): AdminOrder {
     locale: order.locale,
     stripeSessionId: order.stripeSessionId,
     stripePaymentIntentId: order.stripePaymentIntentId,
-    deliveryConsentAt: order.deliveryConsentAt.toISOString()
+    deliveryConsentAt: order.deliveryConsentAt.toISOString(),
+    deliveries: []
   }
 }

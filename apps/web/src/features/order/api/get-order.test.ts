@@ -15,7 +15,8 @@ const order = {
     {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 500}]}
   ],
   createdAt: '2026-10-16T10:00:00.000Z',
-  paidAt: '2026-10-16T10:01:00.000Z'
+  paidAt: '2026-10-16T10:01:00.000Z',
+  delivery: 'none'
 }
 
 const mockFetch = (status: number, body: unknown = order) => {

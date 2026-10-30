@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 
 import {CurrencySchema, LocaleSchema} from './catalog'
+import {AdminDeliverySchema, PUBLIC_DELIVERY_STATES} from './delivery'
 import {OrderLinesSchema} from './order-lines'
 import {LoosePromoCodeSchema} from './promo'
 
@@ -65,7 +66,8 @@ export const PublicOrderSchema = v.object({
   totalMinor: Minor,
   servers: v.array(OrderServerGroupSchema),
   createdAt: Iso,
-  paidAt: v.nullable(Iso)
+  paidAt: v.nullable(Iso),
+  delivery: v.picklist(PUBLIC_DELIVERY_STATES)
 })
 export type PublicOrder = v.InferOutput<typeof PublicOrderSchema>
 
@@ -91,12 +93,14 @@ export const AdminOrderListItemSchema = v.object({
   email: v.string(),
   currency: CurrencySchema,
   totalMinor: Minor,
-  status: OrderStatusSchema
+  status: OrderStatusSchema,
+  needsAttention: v.boolean()
 })
 export type AdminOrderListItem = v.InferOutput<typeof AdminOrderListItemSchema>
 export const AdminOrderPageSchema = v.object({
   orders: v.array(AdminOrderListItemSchema),
-  nextCursor: v.nullable(v.string())
+  nextCursor: v.nullable(v.string()),
+  attentionCount: Minor
 })
 export type AdminOrderPage = v.InferOutput<typeof AdminOrderPageSchema>
 
@@ -113,7 +117,8 @@ export const AdminOrderSchema = v.object({
   locale: LocaleSchema,
   stripeSessionId: v.nullable(v.string()),
   stripePaymentIntentId: v.nullable(v.string()),
-  deliveryConsentAt: Iso
+  deliveryConsentAt: Iso,
+  deliveries: v.array(AdminDeliverySchema)
 })
 export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
 

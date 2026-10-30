@@ -85,4 +85,10 @@ describe('delivery schema', () => {
     await ctx.prisma.order.delete({where: {id: order.id}})
     expect(await ctx.prisma.delivery.findUnique({where: {id: delivery.id}})).toBeNull()
   })
+
+  it('gives the ADMIN role delivery.resolve', async () => {
+    const rows = await ctx.prisma.$queryRaw<{permissions: string[]}[]>`
+      SELECT "permissions" FROM "roles" WHERE "name" = 'ADMIN'`
+    expect(rows[0]?.permissions).toContain('delivery.resolve')
+  })
 })

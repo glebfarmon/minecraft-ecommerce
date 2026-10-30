@@ -79,9 +79,11 @@ describe('PublicOrderSchema', () => {
         {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 499}]}
       ],
       createdAt: '2026-10-16T10:00:00.000Z',
-      paidAt: '2026-10-16T10:01:00.000Z'
+      paidAt: '2026-10-16T10:01:00.000Z',
+      delivery: 'delivering'
     }
     expect(v.parse(PublicOrderSchema, order)).toEqual(order)
+    expect(v.safeParse(PublicOrderSchema, {...order, delivery: 'broken'}).success).toBe(false)
     const without: Record<string, unknown> = {...order}
     delete without.discountMinor
     expect(v.safeParse(PublicOrderSchema, without).success).toBe(false)

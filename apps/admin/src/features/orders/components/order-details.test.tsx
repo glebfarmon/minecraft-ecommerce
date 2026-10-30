@@ -21,6 +21,8 @@ const base = {
   locale: 'en',
   stripeSessionId: 'cs_test_123',
   stripePaymentIntentId: 'pi_test_456',
+  delivery: 'none',
+  deliveries: [],
   servers: [
     {
       serverName: 'Survival',

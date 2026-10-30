@@ -267,7 +267,8 @@
                               "server.rcon",
                               "content.write",
                               "order.read",
-                              "promo.write"
+                              "promo.write",
+                              "delivery.resolve"
                             ],
                             "type": "string"
                           }
@@ -286,7 +287,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -1014,7 +1016,8 @@
                             "server.rcon",
                             "content.write",
                             "order.read",
-                            "promo.write"
+                            "promo.write",
+                            "delivery.resolve"
                           ],
                           "type": "string"
                         }
@@ -1059,7 +1062,8 @@
                         "server.rcon",
                         "content.write",
                         "order.read",
-                        "promo.write"
+                        "promo.write",
+                        "delivery.resolve"
                       ],
                       "type": "string"
                     }
@@ -1099,7 +1103,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -1161,7 +1166,8 @@
                         "server.rcon",
                         "content.write",
                         "order.read",
-                        "promo.write"
+                        "promo.write",
+                        "delivery.resolve"
                       ],
                       "type": "string"
                     }
@@ -1201,7 +1207,8 @@
                           "server.rcon",
                           "content.write",
                           "order.read",
-                          "promo.write"
+                          "promo.write",
+                          "delivery.resolve"
                         ],
                         "type": "string"
                       }
@@ -6274,6 +6281,10 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "delivery": {
+                      "enum": ["none", "delivering", "delayed", "delivered"],
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -6288,7 +6299,8 @@
                     "totalMinor",
                     "servers",
                     "createdAt",
-                    "paidAt"
+                    "paidAt",
+                    "delivery"
                   ]
                 }
               }
@@ -6398,6 +6410,9 @@
                               "DISPUTED"
                             ],
                             "type": "string"
+                          },
+                          "needsAttention": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -6408,7 +6423,8 @@
                           "email",
                           "currency",
                           "totalMinor",
-                          "status"
+                          "status",
+                          "needsAttention"
                         ]
                       }
                     },
@@ -6421,9 +6437,13 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "attentionCount": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
-                  "required": ["orders", "nextCursor"]
+                  "required": ["orders", "nextCursor", "attentionCount"]
                 }
               }
             }
@@ -6549,6 +6569,10 @@
                         }
                       ]
                     },
+                    "delivery": {
+                      "enum": ["none", "delivering", "delayed", "delivered"],
+                      "type": "string"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -6579,6 +6603,90 @@
                     "deliveryConsentAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "enum": ["GRANT", "REVOKE"],
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": ["PENDING", "RUNNING", "DONE", "FAILED", "NEEDS_REVIEW"],
+                            "type": "string"
+                          },
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "productName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "commands": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "commandsDone": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "nextAttemptAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastError": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "replies": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "serverName",
+                          "productName",
+                          "commands",
+                          "commandsDone",
+                          "attempts",
+                          "nextAttemptAt",
+                          "lastError",
+                          "replies",
+                          "createdAt"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -6594,11 +6702,13 @@
                     "servers",
                     "createdAt",
                     "paidAt",
+                    "delivery",
                     "id",
                     "locale",
                     "stripeSessionId",
                     "stripePaymentIntentId",
-                    "deliveryConsentAt"
+                    "deliveryConsentAt",
+                    "deliveries"
                   ]
                 }
               }
