@@ -71,6 +71,13 @@ export function shrinkGrantExpiry(expiresAt: Date, durationDays: number, quantit
   return new Date(expiresAt.getTime() - durationDays * quantity * DAY_MS)
 }
 
+/** The delivery kinds that decide an order's status; REVOKE rows never do (spec §5.2). */
+export const ORDER_DELIVERY_KINDS = ['GRANT', 'RESTORE'] as const
+
+/** Whether a delivery counts toward its order's status and the buyer's delivery state. */
+export const countsTowardOrder = (d: {kind: string; status: DeliveryStatus}): boolean =>
+  (ORDER_DELIVERY_KINDS as readonly string[]).includes(d.kind) && d.status !== 'CANCELLED'
+
 export function publicDeliveryState(
   orderStatus: OrderStatus,
   statuses: readonly DeliveryStatus[]

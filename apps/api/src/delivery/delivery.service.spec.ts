@@ -48,6 +48,8 @@ function setup(opts: {
   const stored: Record<string, unknown>[] = []
   const tx = {
     delivery: {
+      // `lockOrderOf`: an expiry REVOKE-like row with no order to lock.
+      findUnique: jest.fn().mockResolvedValue({orderItem: null}),
       updateMany: jest.fn().mockImplementation(({data}: {data: Record<string, unknown>}) => {
         stored.push(data)
         return Promise.resolve({count: 1})

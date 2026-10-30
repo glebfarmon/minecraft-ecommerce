@@ -47,7 +47,9 @@ export class DeliveriesAdminService {
   async markDone(id: string, onBefore: (before: AdminDelivery) => void): Promise<AdminDelivery> {
     onBefore(await this.view(id))
     const completed = await this.prisma.$transaction(async tx => {
-      // The conditional guard takes the row lock; `complete` then finishes it like a worker would.
+      // The order first (lock order of `delivery-reversal.ts`), then the conditional guard takes
+      // the row lock; `complete` then finishes it like a worker would.
+      await this.deliveries.lockOrderOf(tx, id)
       const claimed = await tx.delivery.updateMany({
         where: {id, status: {in: [...STUCK]}},
         data: {status: 'RUNNING'}

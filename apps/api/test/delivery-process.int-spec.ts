@@ -6,6 +6,7 @@ import type {RconTarget} from '../src/catalog-admin/rcon/rcon-tester'
 import {DeliveriesAdminService} from '../src/delivery/deliveries-admin.service'
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
 import type {DeliveryQueue} from '../src/delivery/delivery-queue'
+import {cancelUnsentDeliveries} from '../src/delivery/delivery-reversal'
 import type {SendOutcome} from '../src/delivery/delivery-rules'
 import {DeliverySweeperService, STALE_RUNNING_MS} from '../src/delivery/delivery-sweeper.service'
 import {DeliveryService, RCON_TIMEOUT_MS} from '../src/delivery/delivery.service'
@@ -452,5 +453,244 @@ describe('server settings', () => {
       expect(sender.calls).toHaveLength(0)
       expect(await delivery(id)).toMatchObject({status: 'PENDING', lastError: 'server_disabled'})
     })
+  })
+})
+
+describe('refunds and disputes (5b)', () => {
+  const grantOf = async (deliveryId: string) => {
+    const {grantId} = await delivery(deliveryId)
+    if (!grantId) throw new Error('delivery has no grant')
+    return prisma.grant.findUniqueOrThrow({where: {id: grantId}})
+  }
+  const setOrder = (id: string, status: 'PAID' | 'REFUNDED' | 'DISPUTED') =>
+    prisma.order.update({where: {id}, data: {status}})
+  /** A REVOKE or RESTORE planned for the item of `grantRow`, as `delivery-reversal.ts` does. */
+  const plan = async (
+    grantRow: string,
+    kind: 'REVOKE' | 'RESTORE',
+    data: {status?: 'PENDING' | 'FAILED' | 'NEEDS_REVIEW'} = {}
+  ) => {
+    const g = await delivery(grantRow)
+    return prisma.delivery.create({
+      data: {
+        orderItemId: g.orderItemId,
+        serverId: g.serverId,
+        kind,
+        commands: kind === 'RESTORE' ? g.commands : ['lp user Steve parent remove vip'],
+        ...(g.grantId ? {grantId: g.grantId} : {}),
+        ...data
+      }
+    })
+  }
+  const admin = () => new DeliveriesAdminService(prisma, service, {enqueue})
+
+  it('a RESTORE of a revoked timed grant starts the clock again from now', async () => {
+    const p = await product('TIMED')
+    const {order, ids} = await paidOrder([{product: p, quantity: 2}], 'Restore_1')
+    const grantRow = only(ids)
+    await service.process(grantRow)
+    const {id: grantId} = await grantOf(grantRow)
+    await prisma.grant.update({
+      where: {id: grantId},
+      data: {expiresAt: new Date(Date.now() - DAY_MS), revokedAt: new Date()}
+    })
+    const restore = await plan(grantRow, 'RESTORE')
+    const before = Date.now()
+    await service.process(restore.id)
+    expect(sender.calls.at(-1)?.commands).toEqual((await delivery(grantRow)).commands)
+    expect(await delivery(restore.id)).toMatchObject({status: 'DONE'})
+    const grant = await grantOf(grantRow)
+    expect(grant.revokedAt).toBeNull()
+    closeTo(grant.expiresAt, before + (p.durationDays ?? 0) * 2 * DAY_MS)
+    expect(await orderStatus(order.id)).toBe('DELIVERED')
+
+    // The restored privilege still expires: the expiry job takes it back once it lapses.
+    await prisma.grant.update({
+      where: {id: grantId},
+      data: {expiresAt: new Date(Date.now() - 1000)}
+    })
+    expect(await new GrantExpiryService(prisma, {enqueue}).revokeExpired()).toBe(1)
+    expect((await grantOf(grantRow)).revokedAt).not.toBeNull()
+  })
+
+  it('a RESTORE on a live grant extends it from its current expiry', async () => {
+    const p = await product('TIMED')
+    const {ids} = await paidOrder([{product: p}], 'Restore_2')
+    const grantRow = only(ids)
+    await service.process(grantRow)
+    const current = new Date(Date.now() + 3 * DAY_MS)
+    await prisma.grant.update({
+      where: {id: (await grantOf(grantRow)).id},
+      data: {expiresAt: current}
+    })
+    const restore = await plan(grantRow, 'RESTORE')
+    await prisma.$transaction(tx => service.complete(tx, restore.id))
+    const grant = await grantOf(grantRow)
+    expect(grant.expiresAt?.getTime()).toBe(current.getTime() + (p.durationDays ?? 0) * DAY_MS)
+    expect(grant.revokedAt).toBeNull()
+  })
+
+  it('CANCELLED and REVOKE rows do not hold the order off DELIVERED', async () => {
+    const first = await product('PERMANENT')
+    const second = await product('PERMANENT', 1)
+    const {order, ids} = await paidOrder([{product: first}, {product: second}])
+    const [a, b] = ids as [string, string]
+    await prisma.delivery.update({where: {id: b}, data: {status: 'CANCELLED'}})
+    await plan(a, 'REVOKE', {status: 'FAILED'})
+    await service.process(a)
+    expect(await orderStatus(order.id)).toBe('DELIVERED')
+    expect((await delivery(b)).status).toBe('CANCELLED')
+  })
+
+  it('a CANCELLED delivery is never sent nor completed', async () => {
+    const {order, ids} = await paidOrder([{product: await product('PERMANENT')}])
+    const id = only(ids)
+    await prisma.delivery.update({where: {id}, data: {status: 'CANCELLED'}})
+    const before = await delivery(id)
+    await service.process(id)
+    await prisma.$transaction(tx => service.complete(tx, id))
+    expect(sender.calls).toHaveLength(0)
+    expect(await delivery(id)).toEqual(before)
+    expect(await orderStatus(order.id)).toBe('PAID')
+  })
+
+  it('marking a REVOKE done on a REFUNDED order leaves it REFUNDED', async () => {
+    const {order, ids} = await paidOrder([{product: await product('PERMANENT')}])
+    const grantRow = only(ids)
+    await service.process(grantRow)
+    await setOrder(order.id, 'REFUNDED')
+    const revoke = await plan(grantRow, 'REVOKE', {status: 'FAILED'})
+    await admin().markDone(revoke.id, () => undefined)
+    expect((await delivery(revoke.id)).status).toBe('DONE')
+    expect(await orderStatus(order.id)).toBe('REFUNDED')
+  })
+
+  it.each(['REFUNDED', 'DISPUTED'] as const)(
+    'a late GRANT completion on a %s order is DONE but adds no time',
+    async status => {
+      const p = await product('TIMED')
+      const {order, ids} = await paidOrder([{product: p}], `Late_${status}`)
+      const id = only(ids)
+      const {id: grantId} = await grantOf(id)
+      const revokedAt = new Date(Date.now() - DAY_MS)
+      const expiresAt = new Date(Date.now() - 2 * DAY_MS)
+      await prisma.grant.update({where: {id: grantId}, data: {expiresAt, revokedAt}})
+      await prisma.delivery.update({where: {id}, data: {status: 'NEEDS_REVIEW'}})
+      await setOrder(order.id, status)
+      await admin().markDone(id, () => undefined)
+      expect((await delivery(id)).status).toBe('DONE')
+      expect(await grantOf(id)).toMatchObject({expiresAt, revokedAt})
+      expect(await orderStatus(order.id)).toBe(status)
+
+      // The worker's path too: a run that finishes after the order was reversed.
+      const again = await paidOrder([{product: p}], `Late_${status}`)
+      const run = only(again.ids)
+      await setOrder(again.order.id, status)
+      await service.process(run)
+      expect((await delivery(run)).status).toBe('DONE')
+      expect(await grantOf(run)).toMatchObject({expiresAt, revokedAt})
+    }
+  )
+
+  it('the last two deliveries of one order completing together deliver it', async () => {
+    const first = await product('PERMANENT')
+    const second = await product('PERMANENT', 1)
+    const {order, ids} = await paidOrder([{product: first}, {product: second}])
+    await Promise.all(ids.map(id => service.process(id)))
+    expect(await orderStatus(order.id)).toBe('DELIVERED')
+  })
+
+  it('two purchases of one timed product completing together both extend the clock', async () => {
+    const p = await product('TIMED')
+    const a = await paidOrder([{product: p}], 'Parallel_1')
+    const b = await paidOrder([{product: p}], 'Parallel_1')
+    const before = Date.now()
+    await Promise.all([service.process(only(a.ids)), service.process(only(b.ids))])
+    closeTo((await grantOf(only(a.ids))).expiresAt, before + (p.durationDays ?? 0) * 2 * DAY_MS)
+  })
+
+  it('a finishing run waits on the order lock, so a reversal can mark its GRANT', async () => {
+    const {order, ids} = await paidOrder([{product: await product('PERMANENT')}])
+    const id = only(ids)
+    let release: () => void = () => undefined
+    const held = new Promise<void>(resolve => {
+      release = resolve
+    })
+    let answered: () => void = () => undefined
+    const isAnswered = new Promise<void>(resolve => {
+      answered = resolve
+    })
+    let locked: () => void = () => undefined
+    const isLocked = new Promise<void>(resolve => {
+      locked = resolve
+    })
+    let reversal: Promise<unknown> = Promise.resolve()
+    const worker = new DeliveryService(
+      prisma,
+      {
+        send: async (_target, commands) => {
+          // The reversal takes the order row while the command is in flight (RUNNING).
+          reversal = prisma.$transaction(
+            async tx => {
+              await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`
+              locked()
+              await held
+              await tx.delivery.update({where: {id}, data: {reversedAt: new Date()}})
+              await tx.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+            },
+            {timeout: 20_000}
+          )
+          await isLocked
+          answered()
+          return {kind: 'done', replies: commands.map(c => `ok: ${c}`)}
+        }
+      },
+      {enqueue}
+    )
+    const run = worker.process(id)
+    await isAnswered
+    await new Promise(resolve => setTimeout(resolve, 500))
+    release()
+    await reversal
+    await run
+    expect(await delivery(id)).toMatchObject({status: 'DONE'})
+    expect((await delivery(id)).reversedAt).not.toBeNull()
+    expect(await orderStatus(order.id)).toBe('REFUNDED')
+  })
+
+  it('Mark as done waits on the order lock, so it cannot deadlock with a reversal', async () => {
+    const {order, ids} = await paidOrder([{product: await product('PERMANENT')}])
+    const id = only(ids)
+    await prisma.delivery.update({where: {id}, data: {status: 'FAILED', attempts: 10}})
+    let release: () => void = () => undefined
+    const held = new Promise<void>(resolve => {
+      release = resolve
+    })
+    let locked: () => void = () => undefined
+    const isLocked = new Promise<void>(resolve => {
+      locked = resolve
+    })
+    // A reversal: the order row first, then the order's unsent deliveries.
+    const reversal = prisma.$transaction(
+      async tx => {
+        await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${order.id} FOR UPDATE`
+        locked()
+        await held
+        return cancelUnsentDeliveries(tx, order.id)
+      },
+      {timeout: 20_000}
+    )
+    await isLocked
+    const markDone = admin().markDone(id, () => undefined)
+    const outcome = markDone.then(
+      () => 'done',
+      (error: unknown) => (error instanceof Error ? error.message : 'error')
+    )
+    await new Promise(resolve => setTimeout(resolve, 500))
+    release()
+    expect(await reversal).toBe(1)
+    // Waited, then found the row cancelled; before the reorder Postgres aborted one side instead.
+    expect(await outcome).toBe('delivery_not_stuck')
+    expect((await delivery(id)).status).toBe('CANCELLED')
   })
 })
