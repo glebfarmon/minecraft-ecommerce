@@ -14,7 +14,12 @@ import type {Prisma} from '../generated/prisma/client'
 import {PAYMENTS_GATEWAY, type PaymentsGateway} from '../payments/payments-gateway'
 import {PrismaService} from '../prisma/prisma.service'
 import {type PricedItem, priceLines} from './order-pricing'
-import {localePrefix, toPublicOrder} from './order-view'
+import {
+  ORDER_ITEMS_WITH_DELIVERY,
+  deliveryStatuses,
+  localePrefix,
+  toPublicOrder
+} from './order-view'
 import type {DiscountLine} from './promo/promo-rules'
 import {PromoService} from './promo/promo.service'
 import {newPublicId} from './public-id'
@@ -160,10 +165,10 @@ export class OrdersService {
   async getPublic(publicId: string): Promise<PublicOrder> {
     const order = await this.prisma.order.findUnique({
       where: {publicId},
-      include: {items: {orderBy: {id: 'asc'}}}
+      include: ORDER_ITEMS_WITH_DELIVERY
     })
     if (!order) throw notFound()
-    return toPublicOrder(order)
+    return toPublicOrder(order, deliveryStatuses(order))
   }
 
   /** The latest paid lines for the storefront feed: nick, product and amount only. */

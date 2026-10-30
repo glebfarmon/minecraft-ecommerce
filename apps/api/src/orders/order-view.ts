@@ -1,10 +1,21 @@
 import type {Locale} from '@shop/shared/catalog'
 import type {AdminOrder, OrderServerGroup, PublicOrder} from '@shop/shared/orders'
 
-import type {Order, OrderItem} from '../generated/prisma/client'
+import {publicDeliveryState} from '../delivery/delivery-rules'
+import type {DeliveryStatus, Order, OrderItem} from '../generated/prisma/client'
 import {maskEmail} from './mask-email'
 
 export type OrderWithItems = Order & {items: OrderItem[]}
+
+/** Loaded with an order to derive its delivery state; REVOKE deliveries have no item and never count. */
+export const ORDER_ITEMS_WITH_DELIVERY = {
+  items: {orderBy: {id: 'asc'}, include: {deliveries: {select: {status: true}}}}
+} as const
+export type OrderWithDeliveries = Order & {
+  items: (OrderItem & {deliveries: {status: DeliveryStatus}[]})[]
+}
+export const deliveryStatuses = (order: OrderWithDeliveries): {status: DeliveryStatus}[] =>
+  order.items.flatMap(i => i.deliveries)
 
 /** next-intl `localePrefix: 'as-needed'`: the default locale (en) has no prefix. */
 export const localePrefix = (locale: Locale): string => (locale === 'en' ? '' : `/${locale}`)
@@ -26,7 +37,10 @@ function groupByServer(items: OrderItem[]): OrderServerGroup[] {
   return [...groups.values()]
 }
 
-export function toPublicOrder(order: OrderWithItems): PublicOrder {
+export function toPublicOrder(
+  order: OrderWithItems,
+  deliveries: readonly {status: DeliveryStatus}[]
+): PublicOrder {
   return {
     publicId: order.publicId,
     status: order.status,
@@ -40,13 +54,16 @@ export function toPublicOrder(order: OrderWithItems): PublicOrder {
     servers: groupByServer(order.items),
     createdAt: order.createdAt.toISOString(),
     paidAt: order.paidAt?.toISOString() ?? null,
-    delivery: 'none'
+    delivery: publicDeliveryState(
+      order.status,
+      deliveries.map(d => d.status)
+    )
   }
 }
 
-export function toAdminOrder(order: OrderWithItems): AdminOrder {
+export function toAdminOrder(order: OrderWithDeliveries): AdminOrder {
   return {
-    ...toPublicOrder(order),
+    ...toPublicOrder(order, deliveryStatuses(order)),
     email: order.email,
     id: order.id,
     locale: order.locale,

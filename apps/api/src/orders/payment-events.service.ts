@@ -149,7 +149,7 @@ export class PaymentEventsService {
   private async sendReceipt(order: OrderWithItems): Promise<void> {
     try {
       const statusUrl = `${this.origin}${localePrefix(order.locale)}/order/${order.publicId}`
-      const mail = await orderReceiptMail(toPublicOrder(order), order.locale, statusUrl)
+      const mail = await orderReceiptMail(toPublicOrder(order, []), order.locale, statusUrl)
       await this.mailer.send({...mail, to: order.email})
     } catch (error) {
       this.log.error(`receipt for ${order.publicId} not sent`, error)

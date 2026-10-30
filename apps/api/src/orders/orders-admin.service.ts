@@ -5,7 +5,7 @@ import type {AdminOrder, AdminOrderPage, AdminOrderQuery} from '@shop/shared/ord
 import {notFound} from '../common/http-errors'
 import type {Prisma} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
-import {toAdminOrder} from './order-view'
+import {ORDER_ITEMS_WITH_DELIVERY, toAdminOrder} from './order-view'
 
 const PAGE = 50
 
@@ -54,7 +54,7 @@ export class OrdersAdminService {
   async get(id: string): Promise<AdminOrder> {
     const order = await this.prisma.order.findUnique({
       where: {id},
-      include: {items: {orderBy: {id: 'asc'}}}
+      include: ORDER_ITEMS_WITH_DELIVERY
     })
     if (!order) throw notFound()
     return toAdminOrder(order)

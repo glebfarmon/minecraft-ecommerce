@@ -209,6 +209,83 @@ describe('GET /api/orders/:publicId', () => {
     })
   })
 
+  describe('delivery state', () => {
+    const PUBLIC_KEYS = [
+      'createdAt',
+      'currency',
+      'delivery',
+      'discountMinor',
+      'email',
+      'nick',
+      'paidAt',
+      'promoCode',
+      'publicId',
+      'servers',
+      'status',
+      'subtotalMinor',
+      'totalMinor'
+    ]
+    const paidOrder = async (statuses: ('PENDING' | 'DONE' | 'NEEDS_REVIEW')[]) => {
+      const res = await post(body()).expect(201)
+      const {publicId} = created(res)
+      const order = await ctx.prisma.order.update({
+        where: {publicId},
+        data: {status: 'PAID', paidAt: new Date()},
+        include: {items: true}
+      })
+      for (const status of statuses) {
+        // one GRANT per item: each delivery gets its own copy of the line
+        const [line] = order.items
+        if (!line) throw new Error('order has no items')
+        const {orderId, productId, serverId, quantity, unitAmountMinor, productName, serverName} =
+          line
+        const item = await ctx.prisma.orderItem.create({
+          data: {orderId, productId, serverId, quantity, unitAmountMinor, productName, serverName}
+        })
+        await ctx.prisma.delivery.create({
+          data: {
+            orderItemId: item.id,
+            serverId: item.serverId,
+            kind: 'GRANT',
+            commands: ['lp user Steve_1 parent add vip'],
+            lastError: 'secret rcon failure',
+            responseLog: ['secret reply'],
+            status
+          }
+        })
+      }
+      return request(ctx.app.getHttpServer()).get(`/api/orders/${publicId}`).expect(200)
+    }
+    const delivery = (res: {body: unknown}) => (res.body as {delivery: string}).delivery
+
+    it("shows 'delivering' while a delivery is PENDING", async () => {
+      expect(delivery(await paidOrder(['DONE', 'PENDING']))).toBe('delivering')
+    })
+
+    it("shows 'delayed' when one is NEEDS_REVIEW", async () => {
+      expect(delivery(await paidOrder(['PENDING', 'NEEDS_REVIEW']))).toBe('delayed')
+    })
+
+    it("shows 'delivered' when all are DONE", async () => {
+      expect(delivery(await paidOrder(['DONE', 'DONE']))).toBe('delivered')
+    })
+
+    it("shows 'none' for a PENDING order and for a paid order without deliveries", async () => {
+      const pending = await post(body()).expect(201)
+      const res = await request(ctx.app.getHttpServer())
+        .get(`/api/orders/${created(pending).publicId}`)
+        .expect(200)
+      expect(delivery(res)).toBe('none')
+      expect(delivery(await paidOrder([]))).toBe('none')
+    })
+
+    it('never exposes commands, errors or replies', async () => {
+      const res = await paidOrder(['NEEDS_REVIEW'])
+      expect(Object.keys(res.body as object).sort()).toEqual(PUBLIC_KEYS)
+      expect(JSON.stringify(res.body)).not.toMatch(/secret|commands|lastError|responseLog/)
+    })
+  })
+
   it('404s an unknown id', async () => {
     await request(ctx.app.getHttpServer()).get('/api/orders/AAAAAAAAAAAAAAAAAAAAAA').expect(404)
   })

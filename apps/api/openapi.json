@@ -6178,7 +6178,7 @@
       "get": {
         "operationId": "getPublicOrder",
         "summary": "Status and contents of one order, for the buyer’s return page",
-        "description": "Looked up by the unguessable public id from the order link. The email is masked. No session needed. Never cached.",
+        "description": "Looked up by the unguessable public id from the order link. The email is masked. 'delivery' is the buyer-facing delivery state: 'none' (not paid or nothing to deliver), 'delivering', 'delivered', or 'delayed' (a delivery needs attention); no commands or server replies are exposed. No session needed. Never cached.",
         "parameters": [
           {
             "name": "publicId",
