@@ -1,6 +1,7 @@
 import {Inject, Injectable, Logger} from '@nestjs/common'
 
 import {MAILER, type Mailer} from '../mailer/mailer'
+import {adminOrigin, mailOwners} from '../mailer/owner-mail'
 import {type DeliveryAlertItem, deliveryAlertMail} from '../mailer/templates'
 import {PrismaService} from '../prisma/prisma.service'
 
@@ -46,18 +47,8 @@ export class DeliveryAlertService {
       lastError: d.lastError
     }))
     try {
-      const owners = await this.prisma.user.findMany({
-        where: {disabledAt: null, role: {name: 'OWNER'}},
-        select: {email: true}
-      })
-      const mail = await deliveryAlertMail(items, `${process.env.BETTER_AUTH_URL ?? ''}/orders`)
-      for (const {email} of owners) {
-        try {
-          await this.mailer.send({...mail, to: email})
-        } catch (error) {
-          this.log.error(`delivery alert to ${email} not sent`, error)
-        }
-      }
+      const mail = await deliveryAlertMail(items, `${adminOrigin()}/orders`)
+      await mailOwners(this.prisma, this.mailer, mail, this.log, 'delivery alert')
     } catch (error) {
       this.log.error('delivery alert not sent', error)
     }
