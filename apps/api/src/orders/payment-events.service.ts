@@ -30,6 +30,8 @@ export class PaymentEventsService {
 
   async apply(event: PaymentEvent): Promise<void> {
     if (event.kind === 'ignored') return
+    // handled in the refund/dispute task
+    if (event.kind !== 'paid' && event.kind !== 'failed') return
     const result = await this.prisma.$transaction(async tx => {
       // Dedupe. INSERT ... ON CONFLICT DO NOTHING: a replay finds the committed row and inserts
       // nothing; a concurrent duplicate waits on the primary key until the first transaction

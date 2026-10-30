@@ -69,4 +69,66 @@ describe('toPaymentEvent', () => {
     const e = toPaymentEvent(event('checkout.session.completed', session({metadata: {}})))
     expect(e).toMatchObject({kind: 'paid', orderId: null})
   })
+  describe('charge events', () => {
+    const charge = (over: object) => ({
+      amount: 500,
+      amount_refunded: 500,
+      payment_intent: 'pi_1',
+      ...over
+    })
+    const dispute = (over: object) => ({
+      id: 'dp_1',
+      payment_intent: 'pi_1',
+      amount: 500,
+      currency: 'eur',
+      status: 'needs_response',
+      ...over
+    })
+    it('maps a full refund', () => {
+      expect(toPaymentEvent(event('charge.refunded', charge({})))).toEqual({
+        kind: 'refunded',
+        eventId: 'evt_1',
+        type: 'charge.refunded',
+        paymentIntentId: 'pi_1'
+      })
+    })
+    it('ignores a partial refund or a charge without a payment intent', () => {
+      expect(toPaymentEvent(event('charge.refunded', charge({amount_refunded: 100}))).kind).toBe(
+        'ignored'
+      )
+      expect(toPaymentEvent(event('charge.refunded', charge({payment_intent: null}))).kind).toBe(
+        'ignored'
+      )
+    })
+    it('maps an opened dispute', () => {
+      expect(toPaymentEvent(event('charge.dispute.created', dispute({})))).toEqual({
+        kind: 'dispute_opened',
+        eventId: 'evt_1',
+        type: 'charge.dispute.created',
+        paymentIntentId: 'pi_1',
+        disputeId: 'dp_1',
+        amount: 500,
+        currency: 'EUR'
+      })
+      expect(
+        toPaymentEvent(event('charge.dispute.created', dispute({payment_intent: null}))).kind
+      ).toBe('ignored')
+    })
+    it('maps a closed dispute, won only for status won', () => {
+      expect(
+        toPaymentEvent(event('charge.dispute.closed', dispute({status: 'won'})))
+      ).toMatchObject({
+        kind: 'dispute_closed',
+        paymentIntentId: 'pi_1',
+        disputeId: 'dp_1',
+        won: true
+      })
+      expect(
+        toPaymentEvent(event('charge.dispute.closed', dispute({status: 'lost'})))
+      ).toMatchObject({kind: 'dispute_closed', won: false})
+      expect(
+        toPaymentEvent(event('charge.dispute.closed', dispute({payment_intent: null}))).kind
+      ).toBe('ignored')
+    })
+  })
 })

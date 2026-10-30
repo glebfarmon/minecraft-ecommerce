@@ -15,6 +15,8 @@ export const sessionTotal = (s: SessionRequest) =>
 export class FakeGateway implements PaymentsGateway {
   readonly name = 'fake'
   private readonly sessions = new Map<string, FakeSession>()
+  private readonly refunds = new Map<string, string>()
+  readonly refundCalls: {paymentIntentId: string; idempotencyKey: string; refundId: string}[] = []
   constructor(
     private readonly webhookSecret: string,
     private readonly publicOrigin: string
@@ -49,6 +51,61 @@ export class FakeGateway implements PaymentsGateway {
           payment_intent: paid ? `pi_fake_${randomBytes(12).toString('hex')}` : null
         }
       }
+    })
+    return {
+      body: payload,
+      signature: Stripe.webhooks.generateTestHeaderString({payload, secret: this.webhookSecret})
+    }
+  }
+
+  /** Records the call; a repeated key returns the same refund id. */
+  refund(paymentIntentId: string, idempotencyKey: string) {
+    let refundId = this.refunds.get(idempotencyKey)
+    if (!refundId) {
+      refundId = `re_fake_${randomBytes(12).toString('hex')}`
+      this.refunds.set(idempotencyKey, refundId)
+    }
+    this.refundCalls.push({paymentIntentId, idempotencyKey, refundId})
+    return Promise.resolve({refundId})
+  }
+
+  /** e2e hook: a signed Stripe-shaped refund or dispute event for a payment. */
+  signedChargeEvent(
+    kind: 'refunded' | 'dispute_opened' | 'dispute_won' | 'dispute_lost',
+    paymentIntentId: string,
+    amount: number,
+    currency: string
+  ) {
+    const rand = randomBytes(12).toString('hex')
+    const refunded = kind === 'refunded'
+    const type = refunded
+      ? 'charge.refunded'
+      : kind === 'dispute_opened'
+        ? 'charge.dispute.created'
+        : 'charge.dispute.closed'
+    const object = refunded
+      ? {
+          id: `ch_fake_${rand}`,
+          object: 'charge',
+          payment_intent: paymentIntentId,
+          amount,
+          amount_refunded: amount,
+          currency: currency.toLowerCase()
+        }
+      : {
+          id: `dp_fake_${rand}`,
+          object: 'dispute',
+          payment_intent: paymentIntentId,
+          amount,
+          currency: currency.toLowerCase(),
+          status:
+            kind === 'dispute_opened' ? 'needs_response' : kind === 'dispute_won' ? 'won' : 'lost'
+        }
+    const payload = JSON.stringify({
+      id: `evt_fake_${randomBytes(12).toString('hex')}`,
+      object: 'event',
+      type,
+      data: {object}
     })
     return {
       body: payload,

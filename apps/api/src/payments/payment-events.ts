@@ -8,6 +8,32 @@ const FAILED = new Set(['checkout.session.expired', 'checkout.session.async_paym
 /** Stripe event → what the orders module acts on. Card payments complete as `paid`; BLIK/P24 may complete `unpaid` and settle later. */
 export function toPaymentEvent(event: Stripe.Event): PaymentEvent {
   const base = {eventId: event.id, type: event.type}
+  if (event.type === 'charge.refunded') {
+    const c = event.data.object
+    if (typeof c.payment_intent !== 'string' || c.amount_refunded !== c.amount)
+      return {kind: 'ignored', ...base}
+    return {kind: 'refunded', ...base, paymentIntentId: c.payment_intent}
+  }
+  if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
+    const d = event.data.object
+    if (typeof d.payment_intent !== 'string') return {kind: 'ignored', ...base}
+    if (event.type === 'charge.dispute.closed')
+      return {
+        kind: 'dispute_closed',
+        ...base,
+        paymentIntentId: d.payment_intent,
+        disputeId: d.id,
+        won: d.status === 'won'
+      }
+    return {
+      kind: 'dispute_opened',
+      ...base,
+      paymentIntentId: d.payment_intent,
+      disputeId: d.id,
+      amount: d.amount,
+      currency: d.currency.toUpperCase()
+    }
+  }
   if (!PAID.has(event.type) && !FAILED.has(event.type)) return {kind: 'ignored', ...base}
   const s = event.data.object as Stripe.Checkout.Session
   const orderId = s.metadata?.orderId ?? null
