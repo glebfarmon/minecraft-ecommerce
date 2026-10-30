@@ -39,6 +39,14 @@ describe('CreateOrderRequestSchema', () => {
   ])('rejects %s', (_name, patch) => {
     expect(v.safeParse(CreateOrderRequestSchema, {...valid, ...patch}).success).toBe(false)
   })
+  it('takes an optional promo code', () => {
+    expect(v.safeParse(CreateOrderRequestSchema, {...valid, promoCode: ' asf14 '}).success).toBe(
+      true
+    )
+    expect(v.parse(CreateOrderRequestSchema, {...valid, promoCode: ' asf14 '}).promoCode).toBe(
+      'ASF14'
+    )
+  })
   it('rejects more than ORDER_MAX_LINES lines', () => {
     const lines = Array.from({length: ORDER_MAX_LINES + 1}, (_, i) => ({
       server: 'survival',
@@ -63,6 +71,9 @@ describe('PublicOrderSchema', () => {
       nick: 'Steve_1',
       email: 's***@example.com',
       currency: 'EUR',
+      subtotalMinor: 499,
+      discountMinor: 0,
+      promoCode: null,
       totalMinor: 499,
       servers: [
         {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 499}]}
@@ -71,6 +82,9 @@ describe('PublicOrderSchema', () => {
       paidAt: '2026-10-16T10:01:00.000Z'
     }
     expect(v.parse(PublicOrderSchema, order)).toEqual(order)
+    const without: Record<string, unknown> = {...order}
+    delete without.discountMinor
+    expect(v.safeParse(PublicOrderSchema, without).success).toBe(false)
   })
 })
 

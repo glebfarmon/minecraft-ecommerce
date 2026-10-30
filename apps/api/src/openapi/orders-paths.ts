@@ -9,6 +9,7 @@ import {
   PublicOrderSchema,
   RecentPurchasesSchema
 } from '@shop/shared/orders'
+import {ValidatePromoRequestSchema, ValidatePromoResponseSchema} from '@shop/shared/promo'
 
 import {type Method, type Operation, body, guarded, json, pathParam, queryParam} from './helpers'
 
@@ -26,7 +27,7 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
     post: publicOp({
       operationId: 'createOrder',
       summary: 'Start a checkout: price the cart and get the payment page URL',
-      description: `Prices the lines from the database (the client sends only server, slug and quantity), stores a pending order and opens a hosted payment session. Redirect the browser to \`redirectUrl\`. Needs a Turnstile token. ${NO_SESSION}`,
+      description: `Prices the lines from the database (the client sends only server, slug and quantity), applies the optional promo code (reserving one use), stores a pending order and opens a hosted payment session. Redirect the browser to \`redirectUrl\`. Needs a Turnstile token. ${NO_SESSION}`,
       requestBody: body(CreateOrderRequestSchema),
       responses: {
         '201': json(
@@ -39,13 +40,33 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
         },
         '409': {
           description:
-            '`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug)'
+            '`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug). `promo`: the promo code does not apply; `issues.reason` says why (`not_found`, `not_started`, `expired`, `used_up`, `not_applicable`, `wrong_currency`) and no order was created'
         },
         '429': {description: 'Too many orders from this address; try again later'},
         '502': {
           description:
             '`payments_unavailable`: the payment provider could not open a session; nothing was charged'
         }
+      }
+    })
+  },
+  '/api/promo/validate': {
+    post: publicOp({
+      operationId: 'validatePromoCode',
+      summary: 'Check a promo code against the cart and price the discount',
+      description: `Prices the lines from the database and applies the code without using it; the use is reserved when the order is created (and released if the order expires). The code is trimmed and upper-cased; text that is not a code answers \`not_found\` instead of a validation error. A refused code answers 200 with \`ok: false\` and a \`reason\`. ${NO_SESSION}`,
+      requestBody: body(ValidatePromoRequestSchema),
+      responses: {
+        '200': json(
+          'The code applies (`ok: true`) or the reason it does not',
+          ValidatePromoResponseSchema
+        ),
+        '400': {description: 'Invalid body'},
+        '409': {
+          description:
+            '`unavailable`: some lines can no longer be sold; `issues.lines` lists them (server and slug)'
+        },
+        '429': {description: 'Too many checks from this address; try again later'}
       }
     })
   },

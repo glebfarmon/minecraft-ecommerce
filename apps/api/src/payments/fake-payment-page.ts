@@ -1,3 +1,4 @@
+import {sessionTotal} from './fake-gateway'
 import type {SessionRequest} from './payments-gateway'
 
 const ESCAPES: Record<string, string> = {
@@ -16,13 +17,16 @@ export function fakePaymentPage(session: SessionRequest & {id: string}): string 
     currency: session.currency
   })
   const format = (minor: number) => money.format(minor / 100)
-  const total = session.lines.reduce((sum, l) => sum + l.unitAmountMinor * l.quantity, 0)
+  const total = sessionTotal(session)
   const rows = session.lines
     .map(
       l =>
         `<li>${escapeHtml(l.name)} &times; ${escapeHtml(String(l.quantity))} &mdash; ${escapeHtml(format(l.unitAmountMinor * l.quantity))}</li>`
     )
     .join('')
+  const discount = session.discount
+    ? `<p>Discount (${escapeHtml(session.discount.code)}): &minus;${escapeHtml(format(session.discount.minor))}</p>`
+    : ''
   const id = encodeURIComponent(session.id)
   return `<!doctype html>
 <html lang="${escapeHtml(session.locale)}">
@@ -35,6 +39,7 @@ export function fakePaymentPage(session: SessionRequest & {id: string}): string 
 <body>
 <h1>Test payment</h1>
 <ul>${rows}</ul>
+${discount}
 <p><strong>Total: ${escapeHtml(format(total))}</strong></p>
 <form method="post" action="/api/payments/fake/${id}/pay"><button type="submit">Pay</button></form>
 <form method="post" action="/api/payments/fake/${id}/cancel"><button type="submit">Cancel</button></form>

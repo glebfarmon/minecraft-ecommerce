@@ -9,6 +9,10 @@ import {OrdersStatsService} from './orders-stats.service'
 import {OrdersController} from './orders.controller'
 import {OrdersService} from './orders.service'
 import {PaymentEventsService} from './payment-events.service'
+import {PromoAdminController} from './promo/promo-admin.controller'
+import {PromoAdminService} from './promo/promo-admin.service'
+import {PromoController} from './promo/promo.controller'
+import {PromoService} from './promo/promo.service'
 import {TURNSTILE, createTurnstile} from './turnstile'
 import {WebhookController} from './webhook.controller'
 
@@ -19,10 +23,14 @@ import {WebhookController} from './webhook.controller'
     OrdersAdminController,
     OrderStatsController,
     WebhookController,
-    FakePaymentController
+    FakePaymentController,
+    PromoController,
+    PromoAdminController
   ],
   providers: [
     OrdersService,
+    PromoService,
+    PromoAdminService,
     OrdersAdminService,
     OrdersStatsService,
     PaymentEventsService,

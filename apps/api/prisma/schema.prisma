@@ -60,6 +60,7 @@ model Category {
   translations CategoryTranslation[]
   servers      ServerCategory[]
   products     Product[]
+  promoCodes   PromoCodeCategory[]
 
   @@map("categories")
 }
@@ -106,6 +107,7 @@ model Product {
   translations   ProductTranslation[]
   prices         Price[]
   orderItems     OrderItem[]
+  promoCodes     PromoCodeProduct[]
 
   @@unique([serverId, slug])
   @@index([categoryId])
@@ -345,9 +347,14 @@ model Order {
   totalPlnMinor     Int?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+  promoCodeId       String?
+  /// The code text as typed at checkout; kept even if the promo is later soft-deleted.
+  promoCode         String?
+  promo             PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
   items             OrderItem[]
 
   @@index([email])
+  @@index([promoCodeId])
   @@index([status, createdAt])
   @@index([createdAt])
   @@map("orders")
@@ -377,4 +384,54 @@ model ProcessedWebhookEvent {
   createdAt     DateTime @default(now())
 
   @@map("processed_webhook_events")
+}
+
+enum PromoKind {
+  PERCENT
+  FIXED
+}
+
+/// Unique `code` among live rows is a partial unique index (promo_codes_code_live_key, WHERE "deletedAt" IS NULL) that lives in SQL: Prisma 7 partial indexes are still a preview feature.
+model PromoCode {
+  id         String              @id @default(cuid())
+  code       String
+  kind       PromoKind
+  value      Int
+  currency   Currency?
+  maxUses    Int?
+  usedCount  Int                 @default(0)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  isActive   Boolean             @default(true)
+  deletedAt  DateTime?
+  version    Int                 @default(1)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  categories PromoCodeCategory[]
+  products   PromoCodeProduct[]
+  orders     Order[]
+
+  @@map("promo_codes")
+}
+
+model PromoCodeCategory {
+  promoCodeId String
+  categoryId  String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([promoCodeId, categoryId])
+  @@index([categoryId])
+  @@map("promo_code_categories")
+}
+
+model PromoCodeProduct {
+  promoCodeId String
+  productId   String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([promoCodeId, productId])
+  @@index([productId])
+  @@map("promo_code_products")
 }

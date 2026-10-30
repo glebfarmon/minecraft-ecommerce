@@ -142,7 +142,8 @@ describe('admin session', () => {
           'catalog.write',
           'server.rcon',
           'content.write',
-          'order.read'
+          'order.read',
+          'promo.write'
         ]
       },
       permissions: [
@@ -151,7 +152,8 @@ describe('admin session', () => {
         'catalog.write',
         'server.rcon',
         'content.write',
-        'order.read'
+        'order.read',
+        'promo.write'
       ]
     })
   })

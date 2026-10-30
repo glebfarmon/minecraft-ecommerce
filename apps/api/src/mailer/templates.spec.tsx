@@ -8,6 +8,9 @@ const order: PublicOrder = {
   nick: 'Steve_1',
   email: 's***@example.com',
   currency: 'EUR',
+  subtotalMinor: 499,
+  discountMinor: 0,
+  promoCode: null,
   totalMinor: 499,
   servers: [
     {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 299}]},
@@ -71,6 +74,31 @@ describe('mail templates', () => {
       expect(mail.html).toContain('Dziękujemy, Steve_1!')
       expect(mail.text).toContain(eur('pl', 499))
       expect(mail.html).toContain('lang="pl"')
+    })
+
+    const discounted: PublicOrder = {
+      ...order,
+      subtotalMinor: 499,
+      discountMinor: 240,
+      promoCode: 'ASF14',
+      totalMinor: 259
+    }
+    it('shows the promo row between the lines and the total in English', async () => {
+      const mail = await orderReceiptMail(discounted, 'en', statusUrl)
+      expect(mail.text).toContain(`Promo code ASF14`)
+      expect(mail.text).toContain(`\u2212${eur('en', 240)}`)
+      expect(mail.text).toContain(eur('en', 259))
+    })
+    it('shows the promo row in Polish', async () => {
+      const mail = await orderReceiptMail(discounted, 'pl', statusUrl)
+      expect(mail.text).toContain('Kod promocyjny ASF14')
+      expect(mail.text).toContain(`\u2212${eur('pl', 240)}`)
+    })
+    it('has no promo row without a discount', async () => {
+      for (const locale of ['en', 'pl'] as const) {
+        const mail = await orderReceiptMail(order, locale, statusUrl)
+        expect(mail.text).not.toMatch(/Promo code|Kod promocyjny/)
+      }
     })
   })
 })

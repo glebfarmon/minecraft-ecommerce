@@ -1,8 +1,11 @@
 import type {Currency} from '@/config/currencies'
 import {useCatalog} from '@/features/catalog/catalog-provider'
+import {AnimatedMoney} from '@/features/checkout/components/animated-money'
 import {formatPrice} from '@/lib/catalog'
 import {Lock} from 'lucide-react'
+import {AnimatePresence, motion, useReducedMotion} from 'motion/react'
 import {useLocale, useTranslations} from 'next-intl'
+import type {ReactNode} from 'react'
 
 import type {CatalogProduct, CatalogServer} from '@shop/shared/catalog'
 
@@ -22,25 +25,45 @@ function groupByServer(lines: Line[], findServer: (slug: string) => CatalogServe
 export const orderTotal = (lines: Line[], currency: Currency) =>
   lines.reduce((sum, l) => sum + l.product.prices[currency] * l.qty, 0)
 
+// Stands in for the total while the label is translated, so the amount can be a component in any word order.
+const SLOT = '\uE000'
+
 function PayButton({
   total,
+  currency,
   className,
   disabled,
   busy
 }: {
-  total: string
+  total: number
+  currency: Currency
   className: string
   disabled: boolean
   busy: boolean
 }) {
   const t = useTranslations('checkout')
+  const locale = useLocale()
+  const [before, after] = t('pay', {total: SLOT}).split(SLOT)
   return (
     <button
       type="submit"
       disabled={disabled || busy}
+      // The rolling digits are not a name; screen readers get the final amount.
+      aria-label={busy ? undefined : t('pay', {total: formatPrice(total, currency, locale)})}
       className={`flex h-14 items-center justify-center gap-2 rounded-full bg-accent font-semibold text-on-accent transition-[filter] hover:brightness-110 disabled:pointer-events-none disabled:opacity-40 ${className}`}>
       <Lock className="size-5 shrink-0" aria-hidden="true" />
-      {busy ? t('paying') : t('pay', {total})}
+      {busy ? (
+        t('paying')
+      ) : (
+        <span className="whitespace-pre">
+          {before}
+          {after !== undefined && (
+            // On the accent fill the drop glow would vanish, so the label only rolls.
+            <AnimatedMoney minor={total} currency={currency} glow={false} />
+          )}
+          {after}
+        </span>
+      )}
     </button>
   )
 }
@@ -61,16 +84,22 @@ export function PayBar({
   busy: boolean
 }) {
   const t = useTranslations('checkout')
-  const locale = useLocale()
-  const money = formatPrice(total, currency, locale)
   return (
     <div className="sticky -bottom-4 z-10 -mx-4 -mb-4 border-t border-line bg-surface px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
       <div className="flex items-center gap-4">
         <div>
           <p className="text-sm text-muted">{t('total')}</p>
-          <p className="tabular mt-1 font-display text-3xl leading-none font-semibold">{money}</p>
+          <p className="mt-1 font-display text-3xl leading-none font-semibold">
+            <AnimatedMoney minor={total} currency={currency} />
+          </p>
         </div>
-        <PayButton total={money} className="min-w-0 flex-1" disabled={disabled} busy={busy} />
+        <PayButton
+          total={total}
+          currency={currency}
+          className="min-w-0 flex-1"
+          disabled={disabled}
+          busy={busy}
+        />
       </div>
     </div>
   )
@@ -80,6 +109,8 @@ export function OrderSummary({
   lines,
   currency,
   total,
+  discount,
+  promo,
   nick,
   disabled,
   busy,
@@ -88,7 +119,12 @@ export function OrderSummary({
 }: {
   lines: Line[]
   currency: Currency
+  /** What the player pays: the lines minus the discount. */
   total: number
+  /** The promo discount in minor units; 0 without a code. */
+  discount: number
+  /** The promo code field, below the lines. */
+  promo: ReactNode
   nick: string
   disabled: boolean
   busy: boolean
@@ -100,6 +136,7 @@ export function OrderSummary({
   const t = useTranslations('checkout')
   const locale = useLocale()
   const {findServer} = useCatalog()
+  const reduce = useReducedMotion()
   const money = (minor: number) => formatPrice(minor, currency, locale)
 
   return (
@@ -148,16 +185,40 @@ export function OrderSummary({
         ))}
       </ul>
 
-      <div className="mt-5 flex items-baseline justify-between border-t border-line pt-4">
-        <span className="text-muted">{t('total')}</span>
-        <span className="tabular font-display text-3xl leading-none font-semibold">
-          {money(total)}
-        </span>
+      {promo}
+
+      <div className="mt-4 border-t border-line pt-4">
+        <AnimatePresence initial={false}>
+          {discount > 0 && (
+            <motion.div
+              key="discount"
+              initial={{height: 0, opacity: 0}}
+              animate={{height: 'auto', opacity: 1}}
+              exit={{height: 0, opacity: 0}}
+              transition={reduce ? {duration: 0} : {duration: 0.36, ease: [0.16, 1, 0.3, 1]}}
+              className="overflow-hidden">
+              <div className="flex items-baseline justify-between pb-3 text-sm">
+                <span className="text-muted">{t('promo.discount')}</span>
+                <span className="tabular font-medium text-accent">−{money(discount)}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="flex items-baseline justify-between">
+          <span className="text-muted">{t('total')}</span>
+          <AnimatedMoney
+            minor={total}
+            currency={currency}
+            live
+            className="font-display text-3xl leading-none font-semibold"
+          />
+        </div>
       </div>
 
       {/* On phones the pinned bar carries the button. */}
       <PayButton
-        total={money(total)}
+        total={total}
+        currency={currency}
         className="mt-5 w-full max-md:hidden"
         disabled={disabled}
         busy={busy}

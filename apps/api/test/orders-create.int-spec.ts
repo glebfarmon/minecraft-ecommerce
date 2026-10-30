@@ -136,6 +136,58 @@ describe('POST /api/orders', () => {
   })
 })
 
+describe('POST /api/orders with a promo code', () => {
+  it('applies the discount, snapshots the code and takes one use', async () => {
+    const promo = await ctx.prisma.promoCode.create({
+      data: {code: 'ORDERTEN', kind: 'PERCENT', value: 10, maxUses: 5}
+    })
+    const res = await post(body({promoCode: ' orderten '})).expect(201)
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: {publicId: created(res).publicId}
+    })
+    // vip EUR 499 × 2 = 998; 10% = 99
+    expect(order).toMatchObject({
+      subtotalMinor: 998,
+      discountMinor: 99,
+      totalMinor: 899,
+      promoCode: 'ORDERTEN',
+      promoCodeId: promo.id
+    })
+    expect(ctx.gateway.session(order.stripeSessionId ?? '')?.discount).toEqual({
+      minor: 99,
+      code: 'ORDERTEN'
+    })
+    const row = await ctx.prisma.promoCode.findUniqueOrThrow({where: {id: promo.id}})
+    expect(row.usedCount).toBe(1)
+  })
+
+  it('answers 409 promo with the reason and creates nothing for a bad code', async () => {
+    const before = await ctx.prisma.order.count()
+    const res = await post(body({promoCode: 'NOSUCHCODE'})).expect(409)
+    expect(res.body).toMatchObject({message: 'promo', issues: {reason: 'not_found'}})
+    expect(await ctx.prisma.order.count()).toBe(before)
+  })
+
+  it('answers 409 promo used_up, not 502, when the last use goes during the order', async () => {
+    const promo = await ctx.prisma.promoCode.create({
+      data: {code: 'RACEONE', kind: 'PERCENT', value: 10, maxUses: 1}
+    })
+    const before = await ctx.prisma.order.count()
+    const original = ctx.gateway.createSession.bind(ctx.gateway)
+    // Another checkout takes the last use after this one checked the code.
+    const spy = jest.spyOn(ctx.gateway, 'createSession').mockImplementationOnce(async req => {
+      await ctx.prisma.promoCode.update({where: {id: promo.id}, data: {usedCount: 1}})
+      return original(req)
+    })
+    const res = await post(body({promoCode: 'RACEONE'})).expect(409)
+    spy.mockRestore()
+    expect(res.body).toMatchObject({message: 'promo', issues: {reason: 'used_up'}})
+    expect(await ctx.prisma.order.count()).toBe(before)
+    const row = await ctx.prisma.promoCode.findUniqueOrThrow({where: {id: promo.id}})
+    expect(row.usedCount).toBe(1)
+  })
+})
+
 describe('GET /api/orders/:publicId', () => {
   it('returns the public view with a masked email and items grouped by server', async () => {
     const first = await post(body()).expect(201)

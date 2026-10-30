@@ -7,6 +7,10 @@ import {InvalidSignatureError, type PaymentsGateway, type SessionRequest} from '
 
 type FakeSession = SessionRequest & {id: string}
 
+/** What the buyer pays: the lines minus the discount, as Stripe computes `amount_total`. */
+export const sessionTotal = (s: SessionRequest) =>
+  s.lines.reduce((sum, l) => sum + l.unitAmountMinor * l.quantity, 0) - (s.discount?.minor ?? 0)
+
 /** e2e only: a "payment page" on the API that signs Stripe-shaped webhooks with the real secret. */
 export class FakeGateway implements PaymentsGateway {
   readonly name = 'fake'
@@ -39,7 +43,7 @@ export class FakeGateway implements PaymentsGateway {
           id: s.id,
           object: 'checkout.session',
           metadata: {orderId: s.orderId},
-          amount_total: s.lines.reduce((sum, l) => sum + l.unitAmountMinor * l.quantity, 0),
+          amount_total: sessionTotal(s),
           currency: s.currency.toLowerCase(),
           payment_status: paid ? 'paid' : 'unpaid',
           payment_intent: paid ? `pi_fake_${randomBytes(12).toString('hex')}` : null

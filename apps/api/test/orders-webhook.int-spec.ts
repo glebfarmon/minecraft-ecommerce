@@ -1,5 +1,6 @@
 import request from 'supertest'
 
+import {PrismaService} from '../src/prisma/prisma.service'
 import {startOrdersApp} from './support/orders-app'
 
 jest.setTimeout(180_000)
@@ -16,7 +17,7 @@ afterAll(async () => {
 type Signed = {body: string; signature: string}
 type EventType = 'checkout.session.completed' | 'checkout.session.expired'
 
-async function createOrder(locale: 'en' | 'pl' = 'en') {
+async function createOrder(locale: 'en' | 'pl' = 'en', promoCode?: string) {
   const res = await request(ctx.app.getHttpServer())
     .post('/api/orders')
     .send({
@@ -27,6 +28,7 @@ async function createOrder(locale: 'en' | 'pl' = 'en') {
       email: 'steve@example.com',
       deliveryConsent: true,
       termsAccepted: true,
+      ...(promoCode ? {promoCode} : {}),
       turnstileToken: 'XXXX.DUMMY.TOKEN.XXXX'
     })
     .expect(201)
@@ -178,5 +180,107 @@ describe('POST /api/webhooks/stripe', () => {
     spy.mockRestore()
     expect(await statusOf(publicId)).toBe('PAID')
     expect(receipts(publicId)).toHaveLength(0)
+  })
+})
+
+describe('promo uses and webhooks', () => {
+  const makePromo = (code: string, maxUses: number) =>
+    ctx.prisma.promoCode.create({data: {code, kind: 'PERCENT', value: 10, maxUses}})
+  const used = async (id: string) =>
+    (await ctx.prisma.promoCode.findUniqueOrThrow({where: {id}})).usedCount
+
+  it('releases the use when the order expires, once', async () => {
+    const promo = await makePromo('WHEXPIRE', 5)
+    const {sessionId} = await createOrder('en', 'WHEXPIRE')
+    expect(await used(promo.id)).toBe(1)
+    await deliver(sessionId, 'checkout.session.expired').expect(200)
+    expect(await used(promo.id)).toBe(0)
+    await deliver(sessionId, 'checkout.session.expired').expect(200) // different event id
+    expect(await used(promo.id)).toBe(0)
+  })
+
+  it('does not release on a replayed expiry event', async () => {
+    const promo = await makePromo('WHREPLAY', 5)
+    await ctx.prisma.promoCode.update({where: {id: promo.id}, data: {usedCount: 2}})
+    const {sessionId} = await createOrder('en', 'WHREPLAY')
+    const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.expired')
+    await post(signed).expect(200)
+    await post(signed).expect(200)
+    expect(await used(promo.id)).toBe(2)
+  })
+
+  it('re-takes the use on a late payment even past maxUses', async () => {
+    const promo = await makePromo('WHLATE', 1)
+    const {publicId, sessionId} = await createOrder('en', 'WHLATE')
+    await deliver(sessionId, 'checkout.session.expired').expect(200)
+    expect(await used(promo.id)).toBe(0)
+    await createOrder('en', 'WHLATE') // takes the only use meanwhile
+    expect(await used(promo.id)).toBe(1)
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    expect(await statusOf(publicId)).toBe('PAID')
+    expect(await used(promo.id)).toBe(2)
+  })
+
+  it('pays when the expiry commits right after a paid update that matched no row', async () => {
+    const promo = await makePromo('WHRACE', 5)
+    const {publicId, sessionId} = await createOrder('en', 'WHRACE')
+    const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.completed')
+    const service = ctx.app.get(PrismaService)
+    const original = service.$transaction.bind(service) as (...a: unknown[]) => unknown
+    let flipped = false
+    const spy = jest.spyOn(service, '$transaction').mockImplementation(((
+      fn: (tx: Record<string, unknown>) => unknown,
+      ...rest: unknown[]
+    ) =>
+      original(
+        (tx: {order: {updateMany: (...a: unknown[]) => Promise<unknown>}}) =>
+          fn(
+            new Proxy(tx, {
+              get(target, prop, recv) {
+                const value = Reflect.get(target, prop, recv) as unknown
+                if (prop !== 'order') return value
+                return new Proxy(value as object, {
+                  get(o, m, r) {
+                    const f = Reflect.get(o, m, r) as (...a: unknown[]) => unknown
+                    if (m !== 'updateMany') return f.bind(o)
+                    return async (...args: unknown[]) => {
+                      const result = (await f.apply(o, args)) as {count: number}
+                      if (!flipped && result.count === 0) {
+                        flipped = true
+                        // The first paid statement found no row to move; the expiry commits now.
+                        // The old EXPIRED-first order was stranded here (both statements miss).
+                        await ctx.prisma.order.update({
+                          where: {publicId},
+                          data: {status: 'EXPIRED'}
+                        })
+                        await ctx.prisma.promoCode.update({
+                          where: {id: promo.id},
+                          data: {usedCount: {decrement: 1}}
+                        })
+                      }
+                      return result
+                    }
+                  }
+                })
+              }
+            })
+          ),
+        ...rest
+      )) as never)
+    try {
+      await post(signed).expect(200)
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await statusOf(publicId)).toBe('PAID')
+    expect(await used(promo.id)).toBe(1)
+    expect(receipts(publicId)).toHaveLength(1)
+  })
+
+  it('leaves usedCount unchanged on a normal payment', async () => {
+    const promo = await makePromo('WHPAID', 5)
+    const {sessionId} = await createOrder('en', 'WHPAID')
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    expect(await used(promo.id)).toBe(1)
   })
 })

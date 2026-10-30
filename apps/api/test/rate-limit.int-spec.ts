@@ -141,6 +141,16 @@ describe('rate limits', () => {
     await request(app.getHttpServer()).get('/api/catalog?locale=en').expect(200)
   })
 
+  it('limits promo validation to 20 per minute per IP', async () => {
+    const statuses: number[] = []
+    for (let i = 0; i < 21; i++)
+      statuses.push(
+        (await request(app.getHttpServer()).post('/api/promo/validate').send({})).status
+      )
+    expect(statuses.slice(0, 20).every(s => s === 400)).toBe(true)
+    expect(statuses[20]).toBe(429)
+  })
+
   it('limits public routes to 100 per minute per IP', async () => {
     let last = 0
     for (let i = 0; i < 101; i++)

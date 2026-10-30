@@ -7,6 +7,9 @@ const order = {
   nick: 'Steve',
   email: 'a***@example.com',
   currency: 'EUR',
+  subtotalMinor: 500,
+  discountMinor: 0,
+  promoCode: null,
   totalMinor: 500,
   servers: [
     {serverName: 'Survival', items: [{productName: 'VIP', quantity: 1, unitAmountMinor: 500}]}

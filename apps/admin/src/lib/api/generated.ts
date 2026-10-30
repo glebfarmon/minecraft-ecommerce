@@ -320,6 +320,38 @@ const injectedRtkApi = api.injectEndpoints({
           currency: queryArg.currency
         }
       })
+    }),
+    listPromoCodes: build.query<ListPromoCodesApiResponse, ListPromoCodesApiArg>({
+      query: () => ({url: `/api/admin/promo-codes`})
+    }),
+    createPromoCode: build.mutation<CreatePromoCodeApiResponse, CreatePromoCodeApiArg>({
+      query: queryArg => ({url: `/api/admin/promo-codes`, method: 'POST', body: queryArg.body})
+    }),
+    getPromoCode: build.query<GetPromoCodeApiResponse, GetPromoCodeApiArg>({
+      query: queryArg => ({url: `/api/admin/promo-codes/${queryArg.id}`})
+    }),
+    updatePromoCode: build.mutation<UpdatePromoCodeApiResponse, UpdatePromoCodeApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}`,
+        method: 'PATCH',
+        body: queryArg.body
+      })
+    }),
+    deletePromoCode: build.mutation<DeletePromoCodeApiResponse, DeletePromoCodeApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}`,
+        method: 'DELETE',
+        params: {
+          version: queryArg.version
+        }
+      })
+    }),
+    setPromoCodeActive: build.mutation<SetPromoCodeActiveApiResponse, SetPromoCodeActiveApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/promo-codes/${queryArg.id}/active`,
+        method: 'PATCH',
+        body: queryArg.body
+      })
     })
   }),
   overrideExisting: false
@@ -348,6 +380,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
   permissions: (
@@ -358,6 +391,7 @@ export type GetApiAdminMeApiResponse = /** status 200 Current admin */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type GetApiAdminMeApiArg = void
@@ -489,6 +523,7 @@ export type GetApiAdminRolesApiResponse = /** status 200 Roles */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }[]
 export type GetApiAdminRolesApiArg = void
@@ -504,6 +539,7 @@ export type PostApiAdminRolesApiResponse = /** status 201 The role */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type PostApiAdminRolesApiArg = {
@@ -517,6 +553,7 @@ export type PostApiAdminRolesApiArg = {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
 }
@@ -532,6 +569,7 @@ export type PatchApiAdminRolesByIdApiResponse = /** status 200 The role */ {
     | 'server.rcon'
     | 'content.write'
     | 'order.read'
+    | 'promo.write'
   )[]
 }
 export type PatchApiAdminRolesByIdApiArg = {
@@ -546,6 +584,7 @@ export type PatchApiAdminRolesByIdApiArg = {
       | 'server.rcon'
       | 'content.write'
       | 'order.read'
+      | 'promo.write'
     )[]
   }
 }
@@ -1450,6 +1489,9 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   nick: string
   email: string
   currency: 'EUR' | 'PLN'
+  subtotalMinor: number
+  discountMinor: number
+  promoCode: string | null
   totalMinor: number
   servers: {
     serverName: string
@@ -1466,8 +1508,6 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
   deliveryConsentAt: string
-  subtotalMinor: number
-  discountMinor: number
 }
 export type GetAdminOrderApiArg = {
   id: string
@@ -1512,6 +1552,143 @@ export type GetOrderStatsApiResponse = /** status 200 Statistics for the range *
 export type GetOrderStatsApiArg = {
   range?: '7d' | '30d'
   currency?: 'EUR' | 'PLN'
+}
+export type ListPromoCodesApiResponse = /** status 200 Promo codes */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}[]
+export type ListPromoCodesApiArg = void
+export type CreatePromoCodeApiResponse = /** status 201 The new code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type CreatePromoCodeApiArg = {
+  body: {
+    code: string
+    kind: 'PERCENT' | 'FIXED'
+    value: number
+    currency: ('EUR' | 'PLN') | null
+    maxUses: number | null
+    startsAt: string | null
+    endsAt: string | null
+    isActive: boolean
+    categoryIds: string[]
+    productIds: string[]
+  }
+}
+export type GetPromoCodeApiResponse = /** status 200 The code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type GetPromoCodeApiArg = {
+  id: string
+}
+export type UpdatePromoCodeApiResponse = /** status 200 The updated code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type UpdatePromoCodeApiArg = {
+  id: string
+  body: {
+    code: string
+    kind: 'PERCENT' | 'FIXED'
+    value: number
+    currency: ('EUR' | 'PLN') | null
+    maxUses: number | null
+    startsAt: string | null
+    endsAt: string | null
+    isActive: boolean
+    categoryIds: string[]
+    productIds: string[]
+  } & {
+    version: number
+  }
+}
+export type DeletePromoCodeApiResponse = unknown
+export type DeletePromoCodeApiArg = {
+  id: string
+  version: string
+}
+export type SetPromoCodeActiveApiResponse = /** status 200 The updated code */ {
+  id: string
+  code: string
+  kind: 'PERCENT' | 'FIXED'
+  value: number
+  currency: ('EUR' | 'PLN') | null
+  maxUses: number | null
+  usedCount: number
+  startsAt: string | null
+  endsAt: string | null
+  isActive: boolean
+  status: 'active' | 'scheduled' | 'expired' | 'used_up' | 'disabled'
+  locked: boolean
+  categoryIds: string[]
+  productIds: string[]
+  version: number
+  createdAt: string
+}
+export type SetPromoCodeActiveApiArg = {
+  id: string
+  body: {
+    isActive: boolean
+    version: number
+  }
 }
 export const {
   useGetApiInviteLookupByTokenQuery,
@@ -1560,5 +1737,11 @@ export const {
   useUpdateContentSettingsMutation,
   useListAdminOrdersQuery,
   useGetAdminOrderQuery,
-  useGetOrderStatsQuery
+  useGetOrderStatsQuery,
+  useListPromoCodesQuery,
+  useCreatePromoCodeMutation,
+  useGetPromoCodeQuery,
+  useUpdatePromoCodeMutation,
+  useDeletePromoCodeMutation,
+  useSetPromoCodeActiveMutation
 } = injectedRtkApi

@@ -24,7 +24,8 @@ describe('delete races', () => {
           _count: {products: 0}
         }),
         deleteMany: jest.fn().mockRejectedValue(prismaError('P2003'))
-      }
+      },
+      promoCode: {count: jest.fn().mockResolvedValue(0)}
     }
     const error: unknown = await new CategoriesService(prisma as unknown as PrismaService)
       .remove('c1', 1, () => undefined)

@@ -19,7 +19,13 @@ describe('apiErrorMessage', () => {
     ['slug_taken', 'That slug is already used.'],
     ['rcon_host_private', 'Use the game server’s public address, not an internal one.'],
     ['rcon_key_missing', 'RCON is not configured on the server (RCON_ENCRYPTION_KEY).'],
-    ['role_in_use', 'This role is still assigned to admins or open invites. Move them first.']
+    ['role_in_use', 'This role is still assigned to admins or open invites. Move them first.'],
+    [
+      'promo_locked',
+      'This code has been used, so its text, discount and scope cannot change. Create a new code instead.'
+    ],
+    ['max_uses_below_used', 'Max uses cannot be below the times the code was already used.'],
+    ['code_taken', 'That code is already in use. Pick another one.']
   ])('explains %s', (code, text) => {
     expect(apiErrorMessage({status: 409, data: {message: code}}, english)).toBe(text)
   })
@@ -82,6 +88,13 @@ describe('apiErrorMessage in Polish', () => {
     const error = {status: 409, data: {message: 'in_use', issues: {products: 2, servers: 1}}}
     expect(apiErrorMessage(error, polish)).toBe(
       'To jest nadal używane: 2 produkty, 1 serwer. Najpierw przenieś lub usuń te elementy.'
+    )
+  })
+
+  it('counts promo codes', () => {
+    const error = {status: 409, data: {message: 'in_use', issues: {promoCodes: 2}}}
+    expect(apiErrorMessage(error, polish)).toBe(
+      'To jest nadal używane: 2 kody promocyjne. Najpierw przenieś lub usuń te elementy.'
     )
   })
 })

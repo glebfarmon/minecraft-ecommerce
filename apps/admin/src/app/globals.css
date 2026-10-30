@@ -114,6 +114,8 @@ body {
 
 /*
  * Motion. No prefers-reduced-motion opt-out: the owner asked for animations to always run.
+ * Exceptions: the promo code dice (code-dice.tsx) is instant under reduced motion, and Donut
+ * (donut.tsx) skips its draw-in (promo feature spec 2026-10-21-promo-codes-design.md).
  * Page entry: each block of a route's loading state rises in, one after another (capped at the
  * eighth). Only the loading state (`PageEnter`): the page that replaces it does not animate again.
  */

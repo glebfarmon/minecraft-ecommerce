@@ -17,6 +17,19 @@ export class StripeGateway implements PaymentsGateway {
   }
 
   async createSession(req: SessionRequest) {
+    // A one-off coupon per order: Stripe's amount_total then equals the order total.
+    const coupon =
+      req.discount &&
+      (await this.stripe.coupons.create(
+        {
+          amount_off: req.discount.minor,
+          currency: req.currency.toLowerCase(),
+          duration: 'once',
+          max_redemptions: 1,
+          name: req.discount.code
+        },
+        {idempotencyKey: `coupon-${req.orderId}`}
+      ))
     const s = await this.stripe.checkout.sessions.create(
       {
         mode: 'payment',
@@ -33,7 +46,8 @@ export class StripeGateway implements PaymentsGateway {
             unit_amount: l.unitAmountMinor,
             product_data: {name: l.name}
           }
-        }))
+        })),
+        ...(coupon && {discounts: [{coupon: coupon.id}]})
       },
       {idempotencyKey: `order-${req.orderId}`}
     )

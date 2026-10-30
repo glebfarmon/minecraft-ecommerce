@@ -65,6 +65,14 @@ describe('Nav', () => {
     render(<Nav me={me([])} variant="rail" />)
     expect(screen.queryByRole('link', {name: 'Orders'})).not.toBeInTheDocument()
   })
+  it('shows Promo codes with promo.write only', () => {
+    render(<Nav me={me(['promo.write'])} variant="rail" />)
+    expect(screen.getByRole('link', {name: 'Promo codes'})).toHaveAttribute('href', '/promo-codes')
+  })
+  it('hides Promo codes without promo.write', () => {
+    render(<Nav me={me([])} variant="rail" />)
+    expect(screen.queryByRole('link', {name: 'Promo codes'})).not.toBeInTheDocument()
+  })
   it('rail links show keyboard focus without the accent ring', () => {
     render(<Nav me={me([])} variant="rail" />)
     const cls = screen.getByRole('link', {name: 'Catalog'}).className

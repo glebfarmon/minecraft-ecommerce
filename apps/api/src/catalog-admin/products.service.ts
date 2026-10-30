@@ -196,7 +196,11 @@ export class ProductsService {
       .deleteMany({where: {id, version}})
       .catch(async (error: unknown) => {
         if (!isPrismaError(error, 'P2003')) throw error
-        throw inUse({orders: await this.prisma.orderItem.count({where: {productId: id}})})
+        const [orders, promoCodes] = await Promise.all([
+          this.prisma.orderItem.count({where: {productId: id}}),
+          this.prisma.promoCode.count({where: {deletedAt: null, products: {some: {productId: id}}}})
+        ])
+        throw inUse({orders, promoCodes})
       })
     if (count === 0) throw stale()
   }

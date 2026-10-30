@@ -11,6 +11,7 @@ describe('rateLimits', () => {
       adminIp: 600,
       rconTest: 5,
       order: 10,
+      promo: 20,
       default: 100
     })
     expect(rateLimits({})).toEqual(RATE_LIMIT_DEFAULTS)
@@ -27,6 +28,7 @@ describe('rateLimits', () => {
         RATE_LIMIT_ADMIN_IP: '85',
         RATE_LIMIT_RCON_TEST: '95',
         RATE_LIMIT_ORDER: '3',
+        RATE_LIMIT_PROMO: '7',
         RATE_LIMIT_DEFAULT: '90'
       })
     ).toEqual({
@@ -38,6 +40,7 @@ describe('rateLimits', () => {
       adminIp: 85,
       rconTest: 95,
       order: 3,
+      promo: 7,
       default: 90
     })
   })
