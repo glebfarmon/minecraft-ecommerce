@@ -9,6 +9,7 @@ import type {DeliveryQueue} from '../src/delivery/delivery-queue'
 import type {SendOutcome} from '../src/delivery/delivery-rules'
 import {DeliverySweeperService, STALE_RUNNING_MS} from '../src/delivery/delivery-sweeper.service'
 import {DeliveryService, RCON_TIMEOUT_MS} from '../src/delivery/delivery.service'
+import {GrantExpiryService} from '../src/delivery/grant-expiry.service'
 import type {RconSender} from '../src/delivery/rcon-sender'
 import type {Product} from '../src/generated/prisma/client'
 import {PrismaService} from '../src/prisma/prisma.service'
@@ -295,6 +296,41 @@ describe('TIMED grants', () => {
     const grant = await grantOf(only(second.ids))
     expect(grant.revokedAt).toBeNull()
     closeTo(grant.expiresAt, before + (p.durationDays ?? 0) * DAY_MS)
+  })
+
+  it('a REVOKE that runs after the grant was renewed is skipped', async () => {
+    const p = await product('TIMED')
+    await prisma.product.update({
+      where: {id: p.id},
+      data: {revokeCommands: ['lp user {nick} parent remove vip']}
+    })
+    const first = await paidOrder([{product: p}], 'Timed_5')
+    await service.process(only(first.ids))
+    const {id: grantId} = await grantOf(only(first.ids))
+    await prisma.grant.update({
+      where: {id: grantId},
+      data: {expiresAt: new Date(Date.now() - 1000)}
+    })
+    expect(await new GrantExpiryService(prisma, {enqueue}).revokeExpired()).toBe(1)
+    const revoke = await prisma.delivery.findFirstOrThrow({where: {grantId, kind: 'REVOKE'}})
+    expect(revoke.status).toBe('PENDING')
+
+    // The extension's GRANT runs first (the REVOKE was backing off) and renews the clock.
+    const second = await paidOrder([{product: p}], 'Timed_5')
+    await service.process(only(second.ids))
+    expect((await grantOf(only(second.ids))).revokedAt).toBeNull()
+    const sent = sender.calls.length
+
+    await service.process(revoke.id)
+    expect(sender.calls).toHaveLength(sent)
+    expect(await delivery(revoke.id)).toMatchObject({
+      status: 'DONE',
+      startedAt: null,
+      lastError: null,
+      commandsDone: 0,
+      responseLog: ['skipped: grant renewed']
+    })
+    expect((await grantOf(only(second.ids))).revokedAt).toBeNull()
   })
 
   it('complete on a DONE delivery changes nothing', async () => {

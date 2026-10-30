@@ -45,8 +45,12 @@ export class DeliveryService {
       where: {id: deliveryId},
       include: {server: true}
     })
+    const renewed = await this.renewedSinceRevoke(delivery)
     const remaining = delivery.commands.slice(delivery.commandsDone)
-    const outcome = await this.send(delivery.server, remaining)
+    const outcome: SendOutcome = renewed
+      ? {kind: 'done', replies: []}
+      : await this.send(delivery.server, remaining)
+    const logged = renewed ? ['skipped: grant renewed'] : outcome.replies
 
     const now = new Date()
     const next = decideNext(delivery.attempts, outcome, now)
@@ -60,7 +64,7 @@ export class DeliveryService {
           lastError: next.lastError,
           ...(next.nextAttemptAt ? {nextAttemptAt: next.nextAttemptAt} : {}),
           commandsDone: delivery.commandsDone + outcome.replies.length,
-          responseLog: [...logOf(delivery.responseLog), ...outcome.replies],
+          responseLog: [...logOf(delivery.responseLog), ...logged],
           startedAt: null
         }
       })
@@ -128,6 +132,19 @@ export class DeliveryService {
           data: {status: 'DELIVERED'}
         })
     }
+  }
+
+  /**
+   * Deliveries run in `nextAttemptAt` order, not creation order: a GRANT that renewed the grant
+   * (clearing `revokedAt`) may finish before an older REVOKE, which then must not strip the rank.
+   */
+  private async renewedSinceRevoke(delivery: {kind: string; grantId: string | null}) {
+    if (delivery.kind !== 'REVOKE' || delivery.grantId === null) return false
+    const grant = await this.prisma.grant.findUnique({
+      where: {id: delivery.grantId},
+      select: {revokedAt: true}
+    })
+    return grant !== null && grant.revokedAt === null
   }
 
   /** Never throws: anything that keeps the commands from being written is `retryable`. */
