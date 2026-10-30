@@ -106,6 +106,14 @@ services:
       RCON_ALLOW_PRIVATE_IN_PRODUCTION: 'true'
       # e2e only: the owner alert runs every few seconds instead of every 5 minutes.
       DELIVERY_ALERT_INTERVAL_MS: '3000'
+    # `up --wait` on the CI runner rejects a service without a healthcheck ("has no healthcheck
+    # configured"); the image's own check probes the API port, which the worker does not open.
+    healthcheck: !override
+      test: ['CMD-SHELL', 'pgrep -f dist/worker-main.js > /dev/null']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     depends_on:
       migrate: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
