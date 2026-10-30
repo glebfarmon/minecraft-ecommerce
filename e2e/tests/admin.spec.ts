@@ -2,7 +2,7 @@ import {type Page, expect, test} from '@playwright/test'
 import {generateSync} from 'otplib'
 
 import {buyVip} from '../support/checkout'
-import {findMail, inviteLink, latestMail, newestMailId} from '../support/mailpit'
+import {type Mail, findMail, inviteLink, latestMail, newestMailId} from '../support/mailpit'
 
 // Runs against a fresh stack: the seed mails the owner invite once (`docker compose ... down -v`
 // before a local rerun), and the tests build on each other (the owner's TOTP secret).
@@ -599,8 +599,9 @@ test('the owner creates a promo code and a player pays less with it', async ({pa
 })
 
 // The two delivery scenarios that need the owner sit here, in the serial group that owns the
-// owner's sign-in (see delivery.spec.ts). The first leaves the order whose alert the second reads.
+// owner's sign-in (see delivery.spec.ts). The first keeps the alert mail the second checks.
 let silentOrder = ''
+let alertMail: Mail | undefined
 
 test('a silent server leaves the order delayed and the owner can mark it done', async ({
   page,
@@ -618,6 +619,11 @@ test('a silent server leaves the order delayed and the owner can mark it done', 
   await expect(
     shop.getByText('Delivery is delayed, we are on it. You do not need to do anything.')
   ).toBeVisible({timeout: 60_000})
+  // Before the owner signs in: the sign-in reads the owner's newest mail, which must be the code,
+  // and a delivery marked done is never alerted. The e2e worker alerts every 3 s
+  // (DELIVERY_ALERT_INTERVAL_MS) instead of every 5 min.
+  expect(silentOrder).not.toBe('')
+  alertMail = await findMail(OWNER, {subject: 'Delivery needs attention', text: silentOrder})
 
   await signInOwner(page)
   await page.getByRole('link', {name: 'Orders'}).click()
@@ -642,9 +648,11 @@ test('a silent server leaves the order delayed and the owner can mark it done', 
   await context.close()
 })
 
-test('the owner alert email arrives in Mailpit', async () => {
-  // The e2e worker runs the alert every 3 s (DELIVERY_ALERT_INTERVAL_MS) instead of every 5 min.
-  const mail = await findMail(OWNER, {subject: 'Delivery needs attention', text: silentOrder})
-  expect(mail.text).toContain('Silent_Steve')
-  expect(mail.text).toContain('NEEDS_REVIEW')
+test('the owner alert email arrives in Mailpit', () => {
+  // Found by the test above, before the owner signed in; an empty id would match any old alert.
+  expect(silentOrder).not.toBe('')
+  expect(alertMail?.subject).toMatch(/^Delivery needs attention \(\d+\)$/)
+  expect(alertMail?.text).toContain(silentOrder)
+  expect(alertMail?.text).toContain('Silent_Steve')
+  expect(alertMail?.text).toContain('NEEDS_REVIEW')
 })
