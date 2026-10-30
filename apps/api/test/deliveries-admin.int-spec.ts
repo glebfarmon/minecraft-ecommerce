@@ -1,5 +1,6 @@
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
 import type {DeliveryStatus, Product} from '../src/generated/prisma/client'
+import {waitForAuditRows} from './support/audit'
 import {startOrdersApp} from './support/orders-app'
 
 jest.setTimeout(180_000)
@@ -135,9 +136,7 @@ describe('admin delivery actions', () => {
     const two = await stuck('NEEDS_REVIEW')
     await a.post(retry(one.id)).expect(201)
     await a.post(done(two.id)).expect(201)
-    const rows = await ctx.prisma.auditLog.findMany({
-      where: {entityId: {in: [one.id, two.id]}}
-    })
+    const rows = await waitForAuditRows(ctx.prisma, {entityId: {in: [one.id, two.id]}}, 2)
     const first = rows.find(r => r.entityId === one.id)
     const second = rows.find(r => r.entityId === two.id)
     expect(first).toMatchObject({action: 'delivery.retry', entityType: 'delivery'})
