@@ -33,9 +33,12 @@ export class DeliveryService {
   ) {}
 
   async process(deliveryId: string): Promise<void> {
+    // The claim time is this run's ownership token: the sweeper and Retry clear `startedAt`, so a
+    // run that was taken over never matches the final write, even after a newer run claimed it.
+    const claimedAt = new Date()
     const claimed = await this.prisma.delivery.updateMany({
       where: {id: deliveryId, status: 'PENDING'},
-      data: {status: 'RUNNING', startedAt: new Date()}
+      data: {status: 'RUNNING', startedAt: claimedAt}
     })
     if (claimed.count !== 1) return
     const delivery = await this.prisma.delivery.findUniqueOrThrow({
@@ -49,7 +52,7 @@ export class DeliveryService {
     const next = decideNext(delivery.attempts, outcome, now)
     const stored = await this.prisma.$transaction(async tx => {
       const updated = await tx.delivery.updateMany({
-        where: {id: deliveryId, status: 'RUNNING'},
+        where: {id: deliveryId, status: 'RUNNING', startedAt: claimedAt},
         data: {
           // DONE is set by `complete`, together with the grant clock and the order status.
           status: next.status === 'DONE' ? 'RUNNING' : next.status,
@@ -66,7 +69,7 @@ export class DeliveryService {
       return true
     })
     if (!stored) {
-      // The stale-RUNNING sweeper took it over; a human reviews it.
+      // The stale-RUNNING sweeper took it over (and maybe a newer run owns it now); a human reviews it.
       this.log.warn(`delivery ${deliveryId} changed while running; outcome ${outcome.kind} dropped`)
       return
     }

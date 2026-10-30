@@ -1,9 +1,13 @@
 import {randomBytes} from 'node:crypto'
 
+import {Logger} from '@nestjs/common'
+
 import type {RconTarget} from '../src/catalog-admin/rcon/rcon-tester'
+import {DeliveriesAdminService} from '../src/delivery/deliveries-admin.service'
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
 import type {DeliveryQueue} from '../src/delivery/delivery-queue'
 import type {SendOutcome} from '../src/delivery/delivery-rules'
+import {DeliverySweeperService, STALE_RUNNING_MS} from '../src/delivery/delivery-sweeper.service'
 import {DeliveryService, RCON_TIMEOUT_MS} from '../src/delivery/delivery.service'
 import type {RconSender} from '../src/delivery/rcon-sender'
 import type {Product} from '../src/generated/prisma/client'
@@ -302,6 +306,62 @@ describe('TIMED grants', () => {
     await prisma.$transaction(tx => service.complete(tx, id))
     expect((await grantOf(id)).expiresAt).toEqual(once.expiresAt)
   })
+})
+
+it('a run taken over by the sweeper and retried cannot overwrite the next run', async () => {
+  const {order, ids} = await paidOrder([{product: await product('PERMANENT')}])
+  const id = only(ids)
+  await prisma.delivery.update({where: {id}, data: {commands: ['cmd 1', 'cmd 2']}})
+  const gates: (() => void)[] = []
+  const gated: RconSender = {
+    send: (_target, commands) => {
+      const run = gates.length === 0 ? 'A' : 'B'
+      return new Promise(resolve => {
+        gates.push(() => {
+          resolve({kind: 'done', replies: commands.map(c => `${run}: ${c}`)})
+        })
+      })
+    }
+  }
+  const queue: DeliveryQueue = {enqueue}
+  const worker = new DeliveryService(prisma, gated, queue)
+  const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+  try {
+    const waitForGate = async (n: number) => {
+      for (let i = 0; i < 100 && gates.length < n; i += 1)
+        await new Promise(resolve => setTimeout(resolve, 20))
+      expect(gates).toHaveLength(n)
+    }
+    const runA = worker.process(id)
+    await waitForGate(1)
+    // Run A outlives STALE_RUNNING_MS: the sweeper escalates it and the owner retries.
+    const sweeper = new DeliverySweeperService(prisma, queue)
+    expect((await sweeper.sweep(new Date(Date.now() + STALE_RUNNING_MS + 60_000))).escalated).toBe(
+      1
+    )
+    await new DeliveriesAdminService(prisma, worker, queue).retry(id, () => undefined)
+    const runB = worker.process(id)
+    await waitForGate(2)
+    const running = await delivery(id)
+    expect(running.status).toBe('RUNNING')
+
+    gates[0]?.() // A answers while B is still running.
+    await runA
+    expect(await delivery(id)).toEqual(running)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(`delivery ${id} changed`))
+
+    gates[1]?.()
+    await runB
+    expect(await delivery(id)).toMatchObject({
+      status: 'DONE',
+      attempts: 1,
+      commandsDone: 2,
+      responseLog: ['B: cmd 1', 'B: cmd 2']
+    })
+    expect(await orderStatus(order.id)).toBe('DELIVERED')
+  } finally {
+    warn.mockRestore()
+  }
 })
 
 it('process on a non-PENDING delivery does nothing', async () => {
