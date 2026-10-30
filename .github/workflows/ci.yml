@@ -51,7 +51,9 @@ jobs:
         run: pnpm exec commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
   e2e:
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: that label now points at 26.04, where Playwright's WebKit build cannot start
+    # (it needs libicu74 from 24.04: "libicudata.so.74: cannot open shared object file").
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6
