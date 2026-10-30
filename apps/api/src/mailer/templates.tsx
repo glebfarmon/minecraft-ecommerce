@@ -99,3 +99,33 @@ export function orderReceiptMail(order: PublicOrder, locale: 'en' | 'pl', status
     </Layout>
   )
 }
+
+export interface DeliveryAlertItem {
+  orderPublicId: string
+  nick: string
+  serverName: string
+  status: 'FAILED' | 'NEEDS_REVIEW'
+  lastError: string | null
+}
+
+/** Sent to the owners when deliveries get stuck; English only, like the other admin mail. */
+export function deliveryAlertMail(items: DeliveryAlertItem[], adminUrl: string) {
+  return mail(
+    `Delivery needs attention (${String(items.length)})`,
+    <Layout>
+      <Heading as="h1">Delivery needs attention</Heading>
+      <Text>These deliveries did not reach the game server and need a human:</Text>
+      {items.map((item, i) => (
+        <Section key={i}>
+          <Text style={{fontWeight: 700, marginBottom: 0}}>
+            {`${item.orderPublicId} · ${item.nick} · ${item.serverName}`}
+          </Text>
+          <Text style={{margin: 0}}>
+            {item.lastError ? `${item.status}: ${item.lastError}` : item.status}
+          </Text>
+        </Section>
+      ))}
+      <Link href={adminUrl}>{adminUrl}</Link>
+    </Layout>
+  )
+}

@@ -1,6 +1,12 @@
 import type {PublicOrder} from '@shop/shared/orders'
 
-import {inviteMail, orderReceiptMail, signInCodeMail, twoFactorResetMail} from './templates'
+import {
+  deliveryAlertMail,
+  inviteMail,
+  orderReceiptMail,
+  signInCodeMail,
+  twoFactorResetMail
+} from './templates'
 
 const order: PublicOrder = {
   publicId: 'AbCdEfGhIjKlMnOpQrStUv',
@@ -101,5 +107,44 @@ describe('mail templates', () => {
         expect(mail.text).not.toMatch(/Promo code|Kod promocyjny/)
       }
     })
+  })
+})
+
+describe('deliveryAlertMail', () => {
+  it('renders order id, nick, server, status and the admin link', async () => {
+    const mail = await deliveryAlertMail(
+      [
+        {
+          orderPublicId: 'AbCdEfGhIjKlMnOpQrStUv',
+          nick: 'Steve_1',
+          serverName: 'Survival',
+          status: 'FAILED',
+          lastError: 'connection refused'
+        },
+        {
+          orderPublicId: 'ZzZzZzZzZzZzZzZzZzZzZz',
+          nick: 'Alex',
+          serverName: 'Skyblock',
+          status: 'NEEDS_REVIEW',
+          lastError: null
+        }
+      ],
+      'http://admin.test/orders'
+    )
+    expect(mail.subject).toBe('Delivery needs attention (2)')
+    for (const part of [
+      'AbCdEfGhIjKlMnOpQrStUv',
+      'Steve_1',
+      'Survival',
+      'FAILED',
+      'connection refused',
+      'ZzZzZzZzZzZzZzZzZzZzZz',
+      'Skyblock',
+      'NEEDS_REVIEW',
+      'http://admin.test/orders'
+    ]) {
+      expect(mail.text).toContain(part)
+      expect(mail.html).toContain(part)
+    }
   })
 })
