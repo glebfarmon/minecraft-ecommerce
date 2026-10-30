@@ -148,12 +148,13 @@ jobs:
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          APP_IDS: ${{ secrets.DOKPLOY_API_APP_ID }} ${{ secrets.DOKPLOY_WEB_APP_ID }} ${{ secrets.DOKPLOY_ADMIN_APP_ID }}
+          # api first (it runs the migrations), then the delivery worker (same image), then the sites.
+          APP_IDS: ${{ secrets.DOKPLOY_API_APP_ID }} ${{ secrets.DOKPLOY_WORKER_APP_ID }} ${{ secrets.DOKPLOY_WEB_APP_ID }} ${{ secrets.DOKPLOY_ADMIN_APP_ID }}
         run: |
           set -euo pipefail
           read -r -a ids <<< "$APP_IDS"
-          if [ "${#ids[@]}" -ne 3 ]; then
-            echo "expected 3 Dokploy application IDs, got ${#ids[@]}; check the production environment secrets"
+          if [ "${#ids[@]}" -ne 4 ]; then
+            echo "expected 4 Dokploy application IDs (api, worker, web, admin), got ${#ids[@]}; check the production environment secrets"
             exit 1
           fi
           for id in "${ids[@]}"; do

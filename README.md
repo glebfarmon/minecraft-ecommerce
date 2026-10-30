@@ -32,7 +32,7 @@ echo "127.0.0.1 shop.localhost admin.shop.localhost api.shop.localhost" | sudo t
 
 ## Production
 
-One arm64 server behind Cloudflare: Dokploy runs Postgres, Redis and three containers (`shop-api`, `shop-web`, `shop-admin`) from images that CI builds. Every merge to `main` deploys itself. First setup takes two to three hours. New to servers, Docker or GitHub Actions? Follow the step-by-step guide [`docs/guides/deploy-from-scratch.md`](docs/guides/deploy-from-scratch.md); the short reference is [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
+One arm64 server behind Cloudflare: Dokploy runs Postgres, Redis and four containers (`shop-api`, `shop-worker`, `shop-web`, `shop-admin`) from images that CI builds; `shop-worker` is the api image started with `node dist/worker-main.js`. Every merge to `main` deploys itself. First setup takes two to three hours. New to servers, Docker or GitHub Actions? Follow the step-by-step guide [`docs/guides/deploy-from-scratch.md`](docs/guides/deploy-from-scratch.md); the short reference is [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
 
 | #   | Where              | What                                                                                                                                               |
 | --- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |

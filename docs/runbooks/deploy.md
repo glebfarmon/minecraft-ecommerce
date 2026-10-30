@@ -61,11 +61,14 @@ One-time setup of production. For a step-by-step walkthrough with every click an
 2. Databases: Postgres (`postgres:18-alpine`), Redis (`redis:8-alpine`). Internal only (no external port).
 3. Applications, provider **Docker**, image `ghcr.io/<owner>/<repo>/<app>:latest`:
 
-| App          | Image            | Port | Domains (HTTPS, custom cert)                                                  |
-| ------------ | ---------------- | ---- | ----------------------------------------------------------------------------- |
-| `shop-api`   | `…/api:latest`   | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
-| `shop-web`   | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
-| `shop-admin` | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
+| App           | Image            | Port | Domains (HTTPS, custom cert)                                                  |
+| ------------- | ---------------- | ---- | ----------------------------------------------------------------------------- |
+| `shop-api`    | `…/api:latest`   | 4000 | `api.<domain>` path `/`; `<domain>` path `/api`; `admin.<domain>` path `/api` |
+| `shop-web`    | `…/web:latest`   | 3000 | `<domain>` path `/`                                                           |
+| `shop-admin`  | `…/admin:latest` | 3001 | `admin.<domain>` path `/`                                                     |
+| `shop-worker` | `…/api:latest`   | —    | none                                                                          |
+
+**`shop-worker`** (ADR 0011) is the delivery worker: the api image with another command and no inbound traffic. Advanced → **Run Command**: `node dist/worker-main.js` (it skips the migrations and the content seed, which `shop-api` runs). Advanced → Swarm Settings → **Health Check**: `{"Test": ["NONE"]}`, because the image's healthcheck probes the API on port 4000 and would otherwise restart the worker forever. Environment: the same as `shop-api` (at least `DATABASE_URL`, `REDIS_URL`, `RCON_ENCRYPTION_KEY`, `RESEND_API_KEY`, `MAIL_FROM`). Without a running worker, paid orders stay `PAID` and nothing reaches the Minecraft server; deliveries wait in Postgres and go out when it starts. A deploy that stops the worker lets the delivery in progress finish first (SIGTERM).
 
 Every domain: HTTPS **on**, certificate provider **None** (Traefik picks the Origin certificate by SNI), "strip path" **off**. The `/api` domains must keep the prefix. Traefik gives longer rules higher priority, so `Host && PathPrefix(/api)` wins over `Host`.
 
@@ -126,13 +129,13 @@ CI verifies `/api/health/ready` (database reachable) after the version check, so
 
 ## 6. GitHub secrets (repo → Settings → Secrets and variables → Actions)
 
-| Secret                                                               | Value                     |
-| -------------------------------------------------------------------- | ------------------------- |
-| `DOKPLOY_URL`                                                        | `https://deploy.<domain>` |
-| `DOKPLOY_API_KEY`                                                    | Dokploy API key           |
-| `DOKPLOY_API_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs           |
-| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`                    | Service token             |
-| `PROD_URL`                                                           | `https://<domain>`        |
+| Secret                                                                                         | Value                     |
+| ---------------------------------------------------------------------------------------------- | ------------------------- |
+| `DOKPLOY_URL`                                                                                  | `https://deploy.<domain>` |
+| `DOKPLOY_API_KEY`                                                                              | Dokploy API key           |
+| `DOKPLOY_API_APP_ID` / `DOKPLOY_WORKER_APP_ID` / `DOKPLOY_WEB_APP_ID` / `DOKPLOY_ADMIN_APP_ID` | Application IDs           |
+| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`                                              | Service token             |
+| `PROD_URL`                                                                                     | `https://<domain>`        |
 
 Create a GitHub environment `production` and move these secrets into it.
 

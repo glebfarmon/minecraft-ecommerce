@@ -6,7 +6,7 @@ export interface DeliveryQueue {
 
 export const DELIVERY_QUEUE = Symbol('DELIVERY_QUEUE')
 
-/** Placeholder until the BullMQ queue exists; keeps the API and its tests Redis-free. */
+/** For unit tests only: the app binds `DELIVERY_QUEUE` to `BullmqDeliveryQueue`. */
 @Injectable()
 export class NoopDeliveryQueue implements DeliveryQueue {
   enqueue(): Promise<void> {
