@@ -4,7 +4,8 @@ import {FakeRconServer} from './fake-rcon-server'
 async function main() {
   const server = new FakeRconServer({password: process.env.FAKE_RCON_PASSWORD ?? 'fake'})
   const port = Number(process.env.FAKE_RCON_PORT ?? 25575)
-  await server.listen(port)
+  const host = process.env.FAKE_RCON_HOST ?? '0.0.0.0'
+  await server.listen(port, host)
   console.log(`fake RCON listening on ${String(port)}`)
   const stop = () => {
     void server.close().then(() => process.exit(0))

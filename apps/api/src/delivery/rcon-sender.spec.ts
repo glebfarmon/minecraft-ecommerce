@@ -68,4 +68,15 @@ describe('RconClientSender', () => {
     await new RconClientSender().send(target(), ['say a'], 1000)
     await expect(server?.waitForClients(0)).resolves.toBeUndefined()
   })
+
+  it('listens on the host it is given', async () => {
+    server = new FakeRconServer({password})
+    await server.listen(0, '127.0.0.1')
+    port = server.port
+    const outcome = await new RconClientSender().send(target(), ['say a'], 1000)
+    expect(outcome.kind).toBe('done')
+    await server.close()
+    server = new FakeRconServer({password})
+    await expect(server.listen(0, '203.0.113.1')).rejects.toThrow()
+  })
 })
