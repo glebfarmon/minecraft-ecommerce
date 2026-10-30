@@ -1,6 +1,12 @@
 'use client'
 
-import {ORDER_POLL_LIMIT_MS, ORDER_POLL_MS, PENDING_ORDER_KEY} from '@/config/order'
+import {
+  DELIVERY_POLL_LIMIT_MS,
+  DELIVERY_POLL_MS,
+  ORDER_POLL_LIMIT_MS,
+  ORDER_POLL_MS,
+  PENDING_ORDER_KEY
+} from '@/config/order'
 import {clearCart} from '@/features/order/lib/clear-cart'
 import {Link} from '@/i18n/navigation'
 import {formatPrice} from '@/lib/catalog'
@@ -11,17 +17,24 @@ import * as v from 'valibot'
 
 import {type PublicOrder, PublicOrderSchema} from '@shop/shared/orders'
 
-/** Shows the order and, while it is `PENDING`, asks the API every `ORDER_POLL_MS` until it is paid or `ORDER_POLL_LIMIT_MS` has passed. */
+/**
+ * Shows the order and, while it is `PENDING`, asks the API every `ORDER_POLL_MS` until it is paid or
+ * `ORDER_POLL_LIMIT_MS` has passed. After payment it keeps asking every `DELIVERY_POLL_MS` while the
+ * items are being delivered, for at most `DELIVERY_POLL_LIMIT_MS`.
+ */
 export function OrderStatus({initial}: {initial: PublicOrder}) {
   const t = useTranslations('order')
   const locale = useLocale()
   const router = useRouter()
   const [order, setOrder] = useState(initial)
   const [slow, setSlow] = useState(false)
+  const [deliveryLate, setDeliveryLate] = useState(false)
   const cleared = useRef(false)
   const {publicId, status} = order
 
   const paid = status === 'PAID' || status === 'DELIVERED'
+  const delivering =
+    status === 'PAID' && (order.delivery === 'delivering' || order.delivery === 'delayed')
 
   useEffect(() => {
     if (!paid || cleared.current) return
@@ -61,6 +74,30 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
     }
   }, [status, publicId])
 
+  useEffect(() => {
+    if (!delivering) return
+    const controller = new AbortController()
+    const started = Date.now()
+    const timer = setInterval(() => {
+      if (Date.now() - started >= DELIVERY_POLL_LIMIT_MS) {
+        clearInterval(timer)
+        setDeliveryLate(true)
+        return
+      }
+      fetch(`/api/orders/${publicId}`, {cache: 'no-store', signal: controller.signal})
+        .then(res => (res.ok ? res.json() : null))
+        .then((body: unknown) => {
+          const next = v.safeParse(PublicOrderSchema, body)
+          if (next.success) setOrder(next.output)
+        })
+        .catch(() => undefined)
+    }, DELIVERY_POLL_MS)
+    return () => {
+      clearInterval(timer)
+      controller.abort()
+    }
+  }, [delivering, publicId])
+
   return (
     <div>
       <div aria-live="polite">
@@ -68,6 +105,11 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
           <>
             <h2 className="font-display text-3xl uppercase">{t('paid.title')}</h2>
             <p className="mt-3 text-muted">{t('paid.body', {email: order.email})}</p>
+            {order.delivery !== 'none' && (
+              <p className="mt-3">
+                {t(`delivery.${delivering && deliveryLate ? 'later' : order.delivery}`)}
+              </p>
+            )}
           </>
         )}
         {status === 'PENDING' && (

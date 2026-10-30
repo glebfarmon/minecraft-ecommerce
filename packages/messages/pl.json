@@ -241,6 +241,12 @@
       "title": "Opłacone — dziękujemy!",
       "body": "Przedmioty trafią na serwer gry wkrótce. Potwierdzenie wysłaliśmy na {email}."
     },
+    "delivery": {
+      "delivering": "Twoje przedmioty są dostarczane do gry…",
+      "delayed": "Dostawa się opóźnia, zajmujemy się tym. Nie musisz nic robić.",
+      "delivered": "Dostarczone — przedmioty są już w grze.",
+      "later": "Nadal nad tym pracujemy. Zajrzyj później lub skontaktuj się z pomocą."
+    },
     "pending": {
       "title": "Czekamy na płatność…",
       "slow": "Płatność jest jeszcze przetwarzana. Wyślemy e-mail, gdy tylko zostanie potwierdzona."
