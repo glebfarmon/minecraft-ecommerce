@@ -109,8 +109,8 @@ export class PromoAdminService {
     }
     // Only a change of `maxUses` is checked: a late payment can push `usedCount` past an unchanged
     // limit, and that code must still be saveable.
-    const lowersMax = input.maxUses !== null && input.maxUses !== current.maxUses
-    if (lowersMax && input.maxUses < current.usedCount) throw conflict('max_uses_below_used')
+    const newMax = input.maxUses !== current.maxUses ? input.maxUses : null
+    if (newMax !== null && newMax < current.usedCount) throw conflict('max_uses_below_used')
     await this.assertRefs(input)
     const row = await this.prisma
       .$transaction(async tx => {
@@ -125,7 +125,7 @@ export class PromoAdminService {
             // matches 0 rows and answers `stale`, and the re-read shows the code locked. An order
             // always reserves a use, so this covers `orders > 0` too.
             ...(view.locked
-              ? lowersMax && {usedCount: {lte: input.maxUses}}
+              ? newMax !== null && {usedCount: {lte: newMax}}
               : {usedCount: current.usedCount})
           },
           data: {

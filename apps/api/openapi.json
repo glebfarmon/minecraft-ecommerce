@@ -7016,7 +7016,8 @@
                     "type": "string"
                   },
                   "value": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 2147483647
                   },
                   "currency": {
                     "anyOf": [
@@ -7033,7 +7034,8 @@
                     "anyOf": [
                       {
                         "type": "integer",
-                        "minimum": 1
+                        "minimum": 1,
+                        "maximum": 2147483647
                       },
                       {
                         "type": "null"
@@ -7069,13 +7071,15 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "maxItems": 200
                   },
                   "productIds": {
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "maxItems": 200
                   }
                 },
                 "required": [
@@ -7409,7 +7413,8 @@
                         "type": "string"
                       },
                       "value": {
-                        "type": "integer"
+                        "type": "integer",
+                        "maximum": 2147483647
                       },
                       "currency": {
                         "anyOf": [
@@ -7426,7 +7431,8 @@
                         "anyOf": [
                           {
                             "type": "integer",
-                            "minimum": 1
+                            "minimum": 1,
+                            "maximum": 2147483647
                           },
                           {
                             "type": "null"
@@ -7462,13 +7468,15 @@
                         "type": "array",
                         "items": {
                           "type": "string"
-                        }
+                        },
+                        "maxItems": 200
                       },
                       "productIds": {
                         "type": "array",
                         "items": {
                           "type": "string"
-                        }
+                        },
+                        "maxItems": 200
                       }
                     },
                     "required": [
