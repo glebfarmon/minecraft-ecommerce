@@ -109,6 +109,19 @@ describe('admin delivery actions', () => {
     await a.post(done('nope')).expect(404)
   })
 
+  it('retry of an invalid_nick delivery is 409 delivery_not_retryable; mark-done still works', async () => {
+    const {id} = await stuck('NEEDS_REVIEW')
+    await ctx.prisma.delivery.update({
+      where: {id},
+      data: {commands: [], commandsDone: 0, lastError: 'invalid_nick'}
+    })
+    const a = await resolver()
+    const res = await a.post(retry(id)).expect(409)
+    expect(res.body).toMatchObject({message: 'delivery_not_retryable'})
+    expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('NEEDS_REVIEW')
+    await a.post(done(id)).expect(201)
+  })
+
   it('mark-done completes the delivery, starts a TIMED clock and delivers the order', async () => {
     const {id, order} = await stuck('NEEDS_REVIEW', 'TIMED')
     const a = await resolver()

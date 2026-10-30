@@ -100,7 +100,8 @@
     "in_use_servers": "{count, plural, one {# serwer} few {# serwery} many {# serwerów} other {# serwera}}",
     "placeholder_mismatch": "Zachowaj te same znaczniki i tagi co w oryginale.",
     "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}",
-    "delivery_not_stuck": "Ta dostawa już nie jest zablokowana. Odśwież stronę."
+    "delivery_not_stuck": "Ta dostawa już nie jest zablokowana. Odśwież stronę.",
+    "delivery_not_retryable": "Tej dostawy nie da się ponowić: nick był nieprawidłowy, więc nie ma żadnych poleceń. Wydaj zakup w grze ręcznie i oznacz dostawę jako wykonaną."
   },
   "nav": {
     "home": "Strona główna",

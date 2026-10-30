@@ -24,6 +24,11 @@ export class DeliveriesAdminService {
 
   async retry(id: string, onBefore: (before: AdminDelivery) => void): Promise<AdminDelivery> {
     onBefore(await this.view(id))
+    // A nick that cannot be rendered left no commands; running it again would "succeed" silently.
+    const unrenderable = await this.prisma.delivery.count({
+      where: {id, commands: {isEmpty: true}, lastError: 'invalid_nick'}
+    })
+    if (unrenderable > 0) throw conflict('delivery_not_retryable')
     const moved = await this.prisma.delivery.updateMany({
       where: {id, status: {in: [...STUCK]}},
       // lastError, commandsDone and alertedAt stay: the alert is not repeated for this episode.

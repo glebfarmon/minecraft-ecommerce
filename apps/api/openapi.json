@@ -5982,7 +5982,7 @@
             "description": "`not_found`: no such delivery"
           },
           "409": {
-            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked)"
+            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked); `delivery_not_retryable`: the delivery has no commands because the nick could not be used (`lastError` `invalid_nick`), so running it again would send nothing; give the purchase by hand and use mark-done"
           }
         },
         "tags": ["Deliveries admin"]

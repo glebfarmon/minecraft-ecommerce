@@ -100,7 +100,8 @@
     "in_use_servers": "{count, plural, one {# server} other {# servers}}",
     "placeholder_mismatch": "Keep the same placeholders and tags as the original.",
     "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}",
-    "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page."
+    "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page.",
+    "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done."
   },
   "nav": {
     "home": "Home",
