@@ -101,7 +101,10 @@ export function orderReceiptMail(order: PublicOrder, locale: 'en' | 'pl', status
 }
 
 export interface DeliveryAlertItem {
-  orderPublicId: string
+  deliveryId: string
+  kind: 'GRANT' | 'REVOKE'
+  /** Null for a grant's REVOKE, which belongs to no order. */
+  orderPublicId: string | null
   nick: string
   serverName: string
   status: 'FAILED' | 'NEEDS_REVIEW'
@@ -118,8 +121,11 @@ export function deliveryAlertMail(items: DeliveryAlertItem[], adminUrl: string) 
       {items.map((item, i) => (
         <Section key={i}>
           <Text style={{fontWeight: 700, marginBottom: 0}}>
-            {`${item.orderPublicId} · ${item.nick} · ${item.serverName}`}
+            {item.orderPublicId
+              ? `${item.orderPublicId} · ${item.nick} · ${item.serverName}`
+              : `${item.kind.toLowerCase()} for ${item.nick} on ${item.serverName}`}
           </Text>
+          <Text style={{margin: 0}}>{`${item.kind} delivery ${item.deliveryId}`}</Text>
           <Text style={{margin: 0}}>
             {item.lastError ? `${item.status}: ${item.lastError}` : item.status}
           </Text>

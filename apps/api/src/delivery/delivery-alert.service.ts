@@ -37,7 +37,9 @@ export class DeliveryAlertService {
     if (deliveries.length === 0) return 0
 
     const items: DeliveryAlertItem[] = deliveries.map(d => ({
-      orderPublicId: d.orderItem?.order.publicId ?? 'grant',
+      deliveryId: d.id,
+      kind: d.kind,
+      orderPublicId: d.orderItem?.order.publicId ?? null,
       nick: d.orderItem?.order.nick ?? d.grant?.nick ?? '',
       serverName: d.server.name,
       status: d.status as 'FAILED' | 'NEEDS_REVIEW',

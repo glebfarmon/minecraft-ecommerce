@@ -89,6 +89,29 @@ describe('DeliveryAlertService', () => {
     expect(mail.text).toContain('http://admin.test/orders')
   })
 
+  it('a REVOKE is named by its delivery id, nick and server, not by an order', async () => {
+    await owner(1)
+    const grant = await prisma.grant.create({data: {nick: 'Alex', serverId, productId}})
+    const revoke = await prisma.delivery.create({
+      data: {
+        serverId,
+        kind: 'REVOKE',
+        commands: ['lp user Alex parent remove vip'],
+        status: 'FAILED',
+        lastError: 'boom',
+        grantId: grant.id
+      }
+    })
+    const server = await prisma.server.findUniqueOrThrow({where: {id: serverId}})
+    expect(await service.sendPending()).toBe(1)
+    const mail = mailer.lastTo('owner1@example.com')
+    if (!mail) throw new Error('no mail')
+    expect(mail.text).toContain(`revoke for Alex on ${server.name}`)
+    expect(mail.text).toContain(revoke.id)
+    expect(mail.text).toContain('REVOKE')
+    expect(mail.text).not.toContain('grant ·')
+  })
+
   it('a delivery is announced once', async () => {
     await owner(1)
     await make('FAILED')
