@@ -17,7 +17,9 @@ export function toPaymentEvent(event: Stripe.Event): PaymentEvent {
   if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
     const d = event.data.object
     if (typeof d.payment_intent !== 'string') return {kind: 'ignored', ...base}
-    if (event.type === 'charge.dispute.closed')
+    if (event.type === 'charge.dispute.closed') {
+      // Only a decided dispute moves money; warning_closed, charge_refunded and unknowns do not.
+      if (d.status !== 'won' && d.status !== 'lost') return {kind: 'ignored', ...base}
       return {
         kind: 'dispute_closed',
         ...base,
@@ -25,6 +27,9 @@ export function toPaymentEvent(event: Stripe.Event): PaymentEvent {
         disputeId: d.id,
         won: d.status === 'won'
       }
+    }
+    // Inquiries (warning_*) are not chargebacks: no money was taken.
+    if (d.status.startsWith('warning_')) return {kind: 'ignored', ...base}
     return {
       kind: 'dispute_opened',
       ...base,

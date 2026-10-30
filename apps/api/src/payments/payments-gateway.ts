@@ -47,9 +47,9 @@ export type PaymentEvent =
 export interface PaymentsGateway {
   readonly name: 'stripe' | 'fake'
   createSession(req: SessionRequest): Promise<{sessionId: string; url: string}>
-  /** Throws `InvalidSignatureError` when the signature does not match. */
   /** Refunds the whole payment; the same key never refunds twice. */
   refund(paymentIntentId: string, idempotencyKey: string): Promise<{refundId: string}>
+  /** Throws `InvalidSignatureError` when the signature does not match. */
   parseWebhook(rawBody: Buffer, signature: string | undefined): PaymentEvent
 }
 

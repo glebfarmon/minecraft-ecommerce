@@ -30,7 +30,7 @@ export class PaymentEventsService {
 
   async apply(event: PaymentEvent): Promise<void> {
     if (event.kind === 'ignored') return
-    // handled in the refund/dispute task
+    // TODO(refunds-task-5): remove; refund/dispute events are dropped until then
     if (event.kind !== 'paid' && event.kind !== 'failed') return
     const result = await this.prisma.$transaction(async tx => {
       // Dedupe. INSERT ... ON CONFLICT DO NOTHING: a replay finds the committed row and inserts

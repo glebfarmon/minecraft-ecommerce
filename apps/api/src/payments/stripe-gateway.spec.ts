@@ -97,3 +97,13 @@ describe('StripeGateway.createSession', () => {
     await expect(gatewayWith(create).createSession(request)).rejects.toThrow(/without a URL/)
   })
 })
+
+describe('StripeGateway.refund', () => {
+  it('refunds the payment intent with the idempotency key', async () => {
+    const create = jest.fn().mockResolvedValue({id: 're_1'})
+    const gateway = new StripeGateway('sk_test_x', 'whsec_x')
+    ;(gateway as unknown as {stripe: unknown}).stripe = {refunds: {create}}
+    expect(await gateway.refund('pi_1', 'key-1')).toEqual({refundId: 're_1'})
+    expect(create).toHaveBeenCalledWith({payment_intent: 'pi_1'}, {idempotencyKey: 'key-1'})
+  })
+})

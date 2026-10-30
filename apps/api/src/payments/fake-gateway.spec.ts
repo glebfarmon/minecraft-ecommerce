@@ -55,6 +55,14 @@ describe('FakeGateway', () => {
     expect(a.refundId).toMatch(/^re_fake_/)
     expect(await gw.refund('pi_1', 'k1')).toEqual(a)
     expect((await gw.refund('pi_1', 'k2')).refundId).not.toBe(a.refundId)
+    expect(gw.refundCalls.filter(c => c.idempotencyKey === 'k1')).toEqual([
+      {paymentIntentId: 'pi_1', idempotencyKey: 'k1', refundId: a.refundId},
+      {paymentIntentId: 'pi_1', idempotencyKey: 'k1', refundId: a.refundId}
+    ])
+  })
+  it('refuses a reused refund key for another payment', async () => {
+    await gw.refund('pi_a', 'k-reuse')
+    expect(() => gw.refund('pi_b', 'k-reuse')).toThrow('another payment')
   })
   it.each([
     ['refunded', {kind: 'refunded', paymentIntentId: 'pi_9'}],

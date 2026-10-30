@@ -114,6 +114,31 @@ describe('toPaymentEvent', () => {
         toPaymentEvent(event('charge.dispute.created', dispute({payment_intent: null}))).kind
       ).toBe('ignored')
     })
+    it('ignores an inquiry opening (warning_* statuses)', () => {
+      for (const status of ['warning_needs_response', 'warning_under_review'])
+        expect(toPaymentEvent(event('charge.dispute.created', dispute({status}))).kind).toBe(
+          'ignored'
+        )
+      for (const status of ['needs_response', 'under_review'])
+        expect(toPaymentEvent(event('charge.dispute.created', dispute({status}))).kind).toBe(
+          'dispute_opened'
+        )
+    })
+    it('ignores closings that are neither won nor lost', () => {
+      for (const status of ['warning_closed', 'charge_refunded', 'something_new'])
+        expect(toPaymentEvent(event('charge.dispute.closed', dispute({status}))).kind).toBe(
+          'ignored'
+        )
+    })
+    it('ignores an expanded payment_intent object', () => {
+      expect(
+        toPaymentEvent(event('charge.refunded', charge({payment_intent: {id: 'pi_1'}}))).kind
+      ).toBe('ignored')
+      expect(
+        toPaymentEvent(event('charge.dispute.created', dispute({payment_intent: {id: 'pi_1'}})))
+          .kind
+      ).toBe('ignored')
+    })
     it('maps a closed dispute, won only for status won', () => {
       expect(
         toPaymentEvent(event('charge.dispute.closed', dispute({status: 'won'})))

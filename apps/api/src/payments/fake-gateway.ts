@@ -15,7 +15,7 @@ export const sessionTotal = (s: SessionRequest) =>
 export class FakeGateway implements PaymentsGateway {
   readonly name = 'fake'
   private readonly sessions = new Map<string, FakeSession>()
-  private readonly refunds = new Map<string, string>()
+  private readonly refunds = new Map<string, {paymentIntentId: string; refundId: string}>()
   readonly refundCalls: {paymentIntentId: string; idempotencyKey: string; refundId: string}[] = []
   constructor(
     private readonly webhookSecret: string,
@@ -60,11 +60,11 @@ export class FakeGateway implements PaymentsGateway {
 
   /** Records the call; a repeated key returns the same refund id. */
   refund(paymentIntentId: string, idempotencyKey: string) {
-    let refundId = this.refunds.get(idempotencyKey)
-    if (!refundId) {
-      refundId = `re_fake_${randomBytes(12).toString('hex')}`
-      this.refunds.set(idempotencyKey, refundId)
-    }
+    const known = this.refunds.get(idempotencyKey)
+    if (known && known.paymentIntentId !== paymentIntentId)
+      throw new Error(`idempotency key ${idempotencyKey} was used for another payment`)
+    const refundId = known?.refundId ?? `re_fake_${randomBytes(12).toString('hex')}`
+    this.refunds.set(idempotencyKey, {paymentIntentId, refundId})
     this.refundCalls.push({paymentIntentId, idempotencyKey, refundId})
     return Promise.resolve({refundId})
   }
