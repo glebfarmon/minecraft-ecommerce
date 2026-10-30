@@ -16,8 +16,9 @@ export class DeliveryAlertService {
 
   /** Returns how many deliveries were announced. A mail failure never un-sets `alertedAt`. */
   async sendPending(): Promise<number> {
-    const deliveries = await this.prisma.$transaction(async tx => {
-      const claimed = await tx.$queryRaw<{id: string}[]>`
+    const claimed = await this.prisma.$transaction(
+      tx =>
+        tx.$queryRaw<{id: string}[]>`
         UPDATE deliveries SET "alertedAt" = now()
         WHERE id IN (
           SELECT id FROM deliveries
@@ -25,11 +26,13 @@ export class DeliveryAlertService {
           FOR UPDATE SKIP LOCKED
         )
         RETURNING id`
-      return tx.delivery.findMany({
-        where: {id: {in: claimed.map(row => row.id)}},
-        include: {server: true, grant: true, orderItem: {include: {order: true}}},
-        orderBy: {createdAt: 'asc'}
-      })
+    )
+    if (claimed.length === 0) return 0
+    // Outside the transaction: the include sub-queries run in parallel and need a pool.
+    const deliveries = await this.prisma.delivery.findMany({
+      where: {id: {in: claimed.map(row => row.id)}},
+      include: {server: true, grant: true, orderItem: {include: {order: true}}},
+      orderBy: {createdAt: 'asc'}
     })
     if (deliveries.length === 0) return 0
 

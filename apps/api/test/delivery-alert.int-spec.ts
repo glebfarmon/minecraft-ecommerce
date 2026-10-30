@@ -97,6 +97,14 @@ describe('DeliveryAlertService', () => {
     expect(mailer.sent).toHaveLength(1)
   })
 
+  it('parallel calls announce a delivery exactly once', async () => {
+    await owner(1)
+    await make('FAILED')
+    const counts = await Promise.all([service.sendPending(), service.sendPending()])
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(1)
+    expect(mailer.sent).toHaveLength(1)
+  })
+
   it('no stuck deliveries sends nothing', async () => {
     await owner(1)
     await make('PENDING')
