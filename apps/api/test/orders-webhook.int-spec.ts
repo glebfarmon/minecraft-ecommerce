@@ -18,11 +18,15 @@ afterAll(async () => {
 type Signed = {body: string; signature: string}
 type EventType = 'checkout.session.completed' | 'checkout.session.expired'
 
-async function createOrder(locale: 'en' | 'pl' = 'en', promoCode?: string) {
+async function createOrder(
+  locale: 'en' | 'pl' = 'en',
+  promoCode?: string,
+  lines = [{server: 'survival', slug: 'vip', quantity: 2}]
+) {
   const res = await request(ctx.app.getHttpServer())
     .post('/api/orders')
     .send({
-      lines: [{server: 'survival', slug: 'vip', quantity: 2}],
+      lines,
       currency: 'EUR',
       locale,
       nick: 'Steve_1',
@@ -305,6 +309,25 @@ describe('deliveries and webhooks', () => {
     expect(deliveries[0]?.commands[0]).toContain('Steve_1')
     expect(spy).toHaveBeenCalledWith(deliveries[0]?.id)
     spy.mockRestore()
+  })
+
+  it('enqueues the deliveries of one order concurrently', async () => {
+    let inFlight = 0
+    let peak = 0
+    const spy = jest.spyOn(queue(), 'enqueue').mockImplementation(async () => {
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      inFlight -= 1
+    })
+    const {publicId, sessionId} = await createOrder('en', undefined, [
+      {server: 'survival', slug: 'vip', quantity: 1},
+      {server: 'survival', slug: 'coins-1000', quantity: 1}
+    ])
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    spy.mockRestore()
+    expect(await deliveriesOf(publicId)).toHaveLength(2)
+    expect(peak).toBe(2)
   })
 
   it('replayed event creates no second set', async () => {

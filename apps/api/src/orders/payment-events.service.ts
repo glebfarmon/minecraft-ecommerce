@@ -136,13 +136,12 @@ export class PaymentEventsService {
 
   /** A queue outage never fails payment handling; a sweeper picks up what was not enqueued. */
   private async enqueueAll(ids: string[]): Promise<void> {
-    for (const id of ids) {
-      try {
-        await this.queue.enqueue(id)
-      } catch (error) {
-        this.log.error(`delivery ${id} not enqueued`, error)
-      }
-    }
+    // Concurrent: during a Redis outage each call waits for its timeout, and the webhook with it.
+    const results = await Promise.allSettled(ids.map(id => this.queue.enqueue(id)))
+    results.forEach((result, i) => {
+      if (result.status === 'rejected')
+        this.log.error(`delivery ${String(ids[i])} not enqueued`, result.reason)
+    })
   }
 
   /** After commit, at most once per order; a mail failure never undoes the payment. */
