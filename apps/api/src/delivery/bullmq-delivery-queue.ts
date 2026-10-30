@@ -55,13 +55,18 @@ export class BullmqDeliveryQueue implements DeliveryQueue, OnApplicationShutdown
   /** The BullMQ queue itself, for the worker's schedulers and for tests. */
   get jobs(): Queue {
     if (!this.queue) {
-      this.redis = bullmqRedis()
+      this.redis = this.createConnection()
       this.queue = new Queue(DELIVERY_QUEUE_NAME, {connection: this.redis})
       this.queue.on('error', error => {
         this.log.error(`delivery queue: ${error.message}`)
       })
     }
     return this.queue
+  }
+
+  /** BullMQ's connection; a seam so tests can see when one is opened. */
+  protected createConnection(): Redis {
+    return bullmqRedis()
   }
 
   async enqueue(deliveryId: string, delayMs = 0): Promise<void> {

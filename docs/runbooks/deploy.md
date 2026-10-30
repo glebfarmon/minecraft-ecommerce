@@ -168,7 +168,7 @@ curl -s -m 5 http://<server-ip>/ || echo "origin closed to the internet: OK"
 
 ## 9. First push
 
-Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 3 Dokploy application IDs" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
+Images are published and deployed only on a push to `main` (a merged PR); pull requests run the checks alone. `quality`, `commitlint`, `e2e`, `gitleaks` and `publish` should go green. `deploy` fails with "expected 4 Dokploy application IDs (api, worker, web, admin), got N" until sections 1–6 are done and the GHCR packages are public; then re-run the `deploy` job.
 
 ## 10. Local admin stack
 

@@ -12,4 +12,7 @@ async function bootstrap(): Promise<void> {
   await app.get(DeliveryWorker).start()
 }
 
-void bootstrap()
+bootstrap().catch((error: unknown) => {
+  console.error(error)
+  process.exit(1)
+})
