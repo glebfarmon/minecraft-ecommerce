@@ -93,8 +93,13 @@ export class CategoriesService {
     // A product or server link added since the check above makes the foreign key refuse the delete.
     const {count} = await this.prisma.category
       .deleteMany({where: {id, version}})
-      .catch((error: unknown) => {
-        if (isPrismaError(error, 'P2003')) throw inUse({})
+      .catch(async (error: unknown) => {
+        if (isPrismaError(error, 'P2003'))
+          throw inUse({
+            promoCodes: await this.prisma.promoCode.count({
+              where: {deletedAt: null, categories: {some: {categoryId: id}}}
+            })
+          })
         throw error
       })
     if (count === 0) throw stale()

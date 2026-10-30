@@ -5986,7 +5986,7 @@
       "post": {
         "operationId": "validatePromoCode",
         "summary": "Check a promo code against the cart and price the discount",
-        "description": "Prices the lines from the database and applies the code without using it; the use is counted when the order is paid. The code is trimmed and upper-cased; text that is not a code answers `not_found` instead of a validation error. A refused code answers 200 with `ok: false` and a `reason`. No session needed.",
+        "description": "Prices the lines from the database and applies the code without using it; the use is reserved when the order is created (and released if the order expires). The code is trimmed and upper-cased; text that is not a code answers `not_found` instead of a validation error. A refused code answers 200 with `ok: false` and a `reason`. No session needed.",
         "requestBody": {
           "required": true,
           "content": {

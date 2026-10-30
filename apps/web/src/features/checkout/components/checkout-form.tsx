@@ -37,6 +37,8 @@ function LegalLink({href, children}: {href: string; children: ReactNode}) {
   )
 }
 
+const PROMO_RECHECK_DELAY_MS = 300
+
 // A promo failure is not an order error: it is shown on the promo field.
 type OrderError = Exclude<Extract<CreateOrderResult, {ok: false}>, {error: 'promo'}>
 
@@ -107,14 +109,18 @@ export function CheckoutForm({form, titleId, onBack}: Props) {
       currency,
       lines: lines.map(toCartLine).map(({server, slug, qty}) => ({server, slug, quantity: qty}))
     }
-    void validatePromo(body).then(result => {
-      if (cancelled) return
-      const next = settle(result, cartKey)
-      setPromo(next.promo)
-      setPromoError(next.error)
-    })
+    // Quick quantity clicks settle into one check, so they cannot use up the validate rate limit.
+    const timer = setTimeout(() => {
+      void validatePromo(body).then(result => {
+        if (cancelled) return
+        const next = settle(result, cartKey)
+        setPromo(next.promo)
+        setPromoError(next.error)
+      })
+    }, PROMO_RECHECK_DELAY_MS)
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
   }, [promo, cartKey, currency, lines])
 

@@ -32,7 +32,7 @@ const CODES = new Set([
 ])
 
 /** The entities an `in_use` answer counts; each has an ICU plural under `apiErrors.in_use_<entity>`. */
-const COUNTED = new Set(['products', 'orders', 'servers'])
+const COUNTED = new Set(['products', 'orders', 'servers', 'promoCodes'])
 
 /** Turns an RTK Query error into the sentence shown to the admin, in the language `t` speaks. */
 export function apiErrorMessage(error: unknown, t: ApiErrorTranslate): string {

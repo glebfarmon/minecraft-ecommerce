@@ -200,6 +200,96 @@ describe('admin promo codes', () => {
       })
   })
 
+  it('lets maxUses stay below usedCount when it is not changed', async () => {
+    const a = await writer()
+    const over = await ctx.prisma.promoCode.create({
+      data: {code: 'OVERSHOOT', kind: 'PERCENT', value: 10, usedCount: 4, maxUses: 3}
+    })
+    const ok = await a
+      .patch(`${base}/${over.id}`)
+      .send({...input, code: 'OVERSHOOT', maxUses: 3, isActive: false, version: 1})
+      .expect(200)
+    expect(ok.body).toMatchObject({maxUses: 3, isActive: false})
+    await a
+      .patch(`${base}/${over.id}`)
+      .send({...input, code: 'OVERSHOOT', maxUses: 2, version: 2})
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'max_uses_below_used'})
+      })
+  })
+
+  it('frees the catalog on soft delete but a live scoped code still blocks deletes', async () => {
+    const a = await writer()
+    const editor = await ctx.admin({permissions: ['catalog.write']})
+    const survival = await ctx.prisma.server.findUniqueOrThrow({where: {slug: 'survival'}})
+    const ranks = await ctx.prisma.category.findUniqueOrThrow({where: {slug: 'ranks'}})
+    const category = (
+      await editor
+        .post('/api/admin/catalog/categories')
+        .send({slug: 'promo-scope', names: {en: 'Scope', pl: 'Zakres'}, icon: 'pickaxe'})
+        .expect(201)
+    ).body as {id: string; version: number}
+    const product = (
+      await editor
+        .post('/api/admin/catalog/products')
+        .send({
+          serverId: survival.id,
+          categoryId: ranks.id,
+          slug: 'promo-scope-probe',
+          kind: 'TIMED',
+          durationDays: 30,
+          mark: 'PSP',
+          grantCommands: ['lp user {nick} parent addtemp probe 30d'],
+          revokeCommands: ['lp user {nick} parent remove probe'],
+          prices: {EUR: 499, PLN: null},
+          translations: {
+            en: {
+              name: 'Probe',
+              description: 'x',
+              sections: [{title: 'P', entries: [{cmd: '/fly'}]}]
+            },
+            pl: null
+          }
+        })
+        .expect(201)
+    ).body as {id: string; version: number}
+    const code = (
+      await a
+        .post(base)
+        .send({...input, code: 'SCOPED', categoryIds: [category.id], productIds: [product.id]})
+        .expect(201)
+    ).body as Promo
+
+    await editor
+      .delete(`/api/admin/catalog/categories/${category.id}?version=${String(category.version)}`)
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'in_use', issues: {promoCodes: 1}})
+      })
+    await editor
+      .delete(`/api/admin/catalog/products/${product.id}?version=${String(product.version)}`)
+      .expect(409)
+      .expect(res => {
+        expect(res.body).toMatchObject({message: 'in_use', issues: {promoCodes: 1}})
+      })
+
+    await a.delete(`${base}/${code.id}?version=${String(code.version)}`).expect(204)
+    expect(await ctx.prisma.promoCodeCategory.count({where: {promoCodeId: code.id}})).toBe(0)
+    expect(await ctx.prisma.promoCodeProduct.count({where: {promoCodeId: code.id}})).toBe(0)
+    const audit = await ctx.prisma.auditLog.findFirstOrThrow({
+      where: {entityId: code.id, action: 'promo.delete'}
+    })
+    expect(JSON.stringify(audit)).toContain(category.id)
+
+    await editor
+      .delete(`/api/admin/catalog/categories/${category.id}?version=${String(category.version)}`)
+      .expect(204)
+    await editor
+      .delete(`/api/admin/catalog/products/${product.id}?version=${String(product.version)}`)
+      .expect(204)
+  })
+
   it('answers code_taken for a live duplicate, but allows reusing a deleted code', async () => {
     const a = await writer()
     const first = (

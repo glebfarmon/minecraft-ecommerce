@@ -7,7 +7,7 @@ import {createOrder} from '@/features/checkout/api/create-order'
 import {validatePromo} from '@/features/checkout/api/validate-promo'
 import {redirectTo} from '@/features/checkout/lib/redirect'
 import {formatPrice} from '@/lib/catalog'
-import {fireEvent, screen, waitFor, within} from '@testing-library/react'
+import {act, fireEvent, screen, waitFor, within} from '@testing-library/react'
 import {MotionGlobalConfig} from 'motion/react'
 import {useEffect} from 'react'
 import type {ReactNode} from 'react'
@@ -510,6 +510,34 @@ describe('CheckoutModal', () => {
         expect(liveTotal()).toHaveTextContent(eur(product.prices.EUR * 3 - 210))
       })
       expect(screen.getByRole('button', {name: /^promo\.remove/})).toBeInTheDocument()
+    })
+
+    it('turns quick cart changes into one re-check', async () => {
+      validatePromoMock.mockResolvedValue(okReply(subtotal, discount))
+      setup()
+      fireEvent.click(screen.getByRole('button', {name: 'fill-cart'}))
+      await applyCode()
+      await screen.findByRole('button', {name: /^promo\.remove/})
+      validatePromoMock.mockClear()
+      jest.useFakeTimers()
+      try {
+        for (let i = 0; i < 4; i++) fireEvent.click(screen.getByRole('button', {name: 'add-one'}))
+        act(() => {
+          jest.advanceTimersByTime(299)
+        })
+        expect(validatePromoMock).not.toHaveBeenCalled()
+        act(() => {
+          jest.advanceTimersByTime(1)
+        })
+        expect(validatePromoMock).toHaveBeenCalledTimes(1)
+        expect(validatePromoMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            lines: [{server: product.server, slug: product.slug, quantity: 6}]
+          })
+        )
+      } finally {
+        jest.useRealTimers()
+      }
     })
 
     it('drops the code when the cart no longer qualifies', async () => {

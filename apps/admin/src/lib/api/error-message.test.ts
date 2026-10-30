@@ -90,4 +90,11 @@ describe('apiErrorMessage in Polish', () => {
       'To jest nadal używane: 2 produkty, 1 serwer. Najpierw przenieś lub usuń te elementy.'
     )
   })
+
+  it('counts promo codes', () => {
+    const error = {status: 409, data: {message: 'in_use', issues: {promoCodes: 2}}}
+    expect(apiErrorMessage(error, polish)).toBe(
+      'To jest nadal używane: 2 kody promocyjne. Najpierw przenieś lub usuń te elementy.'
+    )
+  })
 })

@@ -109,7 +109,7 @@ The storefront's dark world put to work: card modules on a dark ground. Colour t
 
 ### Motion
 
-Motion always runs: there is **no `prefers-reduced-motion` opt-out** (the owner's decision). Easing is ease-out (`cubic-bezier(0.16,1,0.3,1)` or `(0.22,1,0.36,1)`), never bounce; exits are faster than entrances.
+Motion always runs: there is **no `prefers-reduced-motion` opt-out** (the owner's decision), with two exceptions: the promo code dice is instant under `prefers-reduced-motion` (feature spec `2026-10-21-promo-codes-design.md`), and `Donut` draws its ring at once (`useReducedMotion`). Easing is ease-out (`cubic-bezier(0.16,1,0.3,1)` or `(0.22,1,0.36,1)`), never bounce; exits are faster than entrances.
 
 - **Rolling indicator.** One choice among several (rail, `Tabs`, `SubNav`, server cards, select highlight) shows a pill that slides to the chosen item with a shared Motion `layoutId` (spring, `bounce: 0`, 0.25–0.35 s). Use `RollingIndicator` inside a `LayoutGroup`; `@shop/ui/tabs` has its own. Navs move the pill at click (`usePendingHref`), not when the next page arrives. Inside a sticky or fixed container (the rail, the sheet) the parent is a `motion` element with `layout layoutRoot`, or the scroll reset of a navigation flies the pill in from where the page was.
 - **Page entry.** Each route's `loading.tsx` wraps its skeleton in `PageEnter` (`.page-enter`): the blocks rise 8 px and fade in, 320 ms, 40 ms apart (capped at the eighth). Only the skeleton enters; the page that replaces it swaps in place with no second entry. Sub-navs live in layouts, so switching Rules/Texts/Settings or Products/Categories does not replay the header.

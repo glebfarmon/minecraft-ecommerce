@@ -58,3 +58,20 @@ describe('PromoCodeInputSchema', () => {
     expect(v.safeParse(PromoCodeInputSchema, {...input, ...patch}).success).toBe(false)
   })
 })
+
+describe('PromoCodeInputSchema bounds', () => {
+  const ok = (patch: object) => v.safeParse(PromoCodeInputSchema, {...input, ...patch}).success
+  it('caps a fixed amount and maxUses at int32', () => {
+    const fixed = {kind: 'FIXED', currency: 'EUR'}
+    expect(ok({...fixed, value: 2_147_483_647})).toBe(true)
+    expect(ok({...fixed, value: 2_147_483_648})).toBe(false)
+    expect(ok({maxUses: 2_147_483_647})).toBe(true)
+    expect(ok({maxUses: 2_147_483_648})).toBe(false)
+  })
+  it('caps the scope lists at 200 ids', () => {
+    const ids = (n: number) => Array.from({length: n}, (_, i) => `id${String(i)}`)
+    expect(ok({categoryIds: ids(200), productIds: ids(200)})).toBe(true)
+    expect(ok({categoryIds: ids(201)})).toBe(false)
+    expect(ok({productIds: ids(201)})).toBe(false)
+  })
+})

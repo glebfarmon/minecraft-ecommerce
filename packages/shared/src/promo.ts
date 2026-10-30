@@ -24,6 +24,8 @@ export const PROMO_STATUSES = ['active', 'scheduled', 'expired', 'used_up', 'dis
 export const PromoStatusSchema = v.picklist(PROMO_STATUSES)
 export type PromoStatus = (typeof PROMO_STATUSES)[number]
 
+const MAX_INT = 2_147_483_647
+const MAX_SCOPE_IDS = 200
 const Iso = v.pipe(v.string(), v.isoTimestamp())
 const Minor = v.pipe(v.number(), v.integer(), v.minValue(0))
 
@@ -79,14 +81,14 @@ export type AdminPromoCode = v.InferOutput<typeof AdminPromoCodeSchema>
 const PromoCodeInputEntries = {
   code: PromoCodeSchema,
   kind: PromoKindSchema,
-  value: v.pipe(v.number(), v.integer()),
+  value: v.pipe(v.number(), v.integer(), v.maxValue(MAX_INT)),
   currency: v.nullable(CurrencySchema),
-  maxUses: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1))),
+  maxUses: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_INT))),
   startsAt: v.nullable(Iso),
   endsAt: v.nullable(Iso),
   isActive: v.boolean(),
-  categoryIds: v.array(v.string()),
-  productIds: v.array(v.string())
+  categoryIds: v.pipe(v.array(v.string()), v.maxLength(MAX_SCOPE_IDS)),
+  productIds: v.pipe(v.array(v.string()), v.maxLength(MAX_SCOPE_IDS))
 }
 
 export const PromoCodeInputSchema = v.pipe(

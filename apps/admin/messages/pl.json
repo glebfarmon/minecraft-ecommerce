@@ -96,6 +96,7 @@
     "in_use_counts": "To jest nadal używane: {list}. Najpierw przenieś lub usuń te elementy.",
     "in_use_products": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
     "in_use_orders": "{count, plural, one {# zamówienie} few {# zamówienia} many {# zamówień} other {# zamówienia}}",
+    "in_use_promoCodes": "{count, plural, one {# kod promocyjny} few {# kody promocyjne} many {# kodów promocyjnych} other {# kodu promocyjnego}}",
     "in_use_servers": "{count, plural, one {# serwer} few {# serwery} many {# serwerów} other {# serwera}}",
     "placeholder_mismatch": "Zachowaj te same znaczniki i tagi co w oryginale.",
     "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}"

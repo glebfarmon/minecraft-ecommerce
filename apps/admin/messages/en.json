@@ -96,6 +96,7 @@
     "in_use_counts": "This is still in use: {list}. Move or delete them first.",
     "in_use_products": "{count, plural, one {# product} other {# products}}",
     "in_use_orders": "{count, plural, one {# order} other {# orders}}",
+    "in_use_promoCodes": "{count, plural, one {# promo code} other {# promo codes}}",
     "in_use_servers": "{count, plural, one {# server} other {# servers}}",
     "placeholder_mismatch": "Keep the same placeholders and tags as the original.",
     "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}"

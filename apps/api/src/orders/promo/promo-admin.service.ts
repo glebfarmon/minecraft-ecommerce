@@ -107,8 +107,10 @@ export class PromoAdminService {
         !sameSet(view.productIds, input.productIds)
       if (changed) throw conflict('promo_locked')
     }
-    if (input.maxUses !== null && input.maxUses < current.usedCount)
-      throw conflict('max_uses_below_used')
+    // Only a change of `maxUses` is checked: a late payment can push `usedCount` past an unchanged
+    // limit, and that code must still be saveable.
+    const lowersMax = input.maxUses !== null && input.maxUses !== current.maxUses
+    if (lowersMax && input.maxUses < current.usedCount) throw conflict('max_uses_below_used')
     await this.assertRefs(input)
     const row = await this.prisma
       .$transaction(async tx => {
@@ -117,13 +119,13 @@ export class PromoAdminService {
             id,
             version: input.version,
             deletedAt: null,
-            // Uses are counted without bumping `version` (reserving on order creation, in
-            // orders.service.ts; counting at payment). The locked check above read `usedCount`, so
+            // Uses are counted without bumping `version` (reserved on order creation, in
+            // orders.service.ts). The locked check above read `usedCount`, so
             // an unlocked code is only written while it is still unused: a use that landed since
             // matches 0 rows and answers `stale`, and the re-read shows the code locked. An order
             // always reserves a use, so this covers `orders > 0` too.
             ...(view.locked
-              ? input.maxUses !== null && {usedCount: {lte: input.maxUses}}
+              ? lowersMax && {usedCount: {lte: input.maxUses}}
               : {usedCount: current.usedCount})
           },
           data: {
@@ -172,11 +174,20 @@ export class PromoAdminService {
 
   async remove(id: string, version: number, before: (p: AdminPromoCode) => void): Promise<void> {
     before(toAdminPromoCode(await this.live(id)))
-    const {count} = await this.prisma.promoCode.updateMany({
-      where: {id, version, deletedAt: null},
-      data: {deletedAt: new Date(), version: {increment: 1}}
+    // A deleted code's scope is never read, and its rows would block deleting the products and
+    // categories they reference (ON DELETE RESTRICT), so they go with the soft delete.
+    await this.prisma.$transaction(async tx => {
+      const {count} = await tx.promoCode.updateMany({
+        where: {id, version, deletedAt: null},
+        data: {deletedAt: new Date(), version: {increment: 1}}
+      })
+      await assertUpdated(
+        count,
+        async () => (await tx.promoCode.count({where: {id, deletedAt: null}})) > 0
+      )
+      await tx.promoCodeCategory.deleteMany({where: {promoCodeId: id}})
+      await tx.promoCodeProduct.deleteMany({where: {promoCodeId: id}})
     })
-    await assertUpdated(count, async () => this.exists(id))
   }
 
   private async live(id: string): Promise<Row> {

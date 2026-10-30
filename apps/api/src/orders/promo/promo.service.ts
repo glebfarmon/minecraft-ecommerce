@@ -14,7 +14,7 @@ export type PromoEvaluation =
 export class PromoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Looks the live code up and prices the discount. Reads only; the use is counted at payment. */
+  /** Looks the live code up and prices the discount. Reads only; the use is reserved by POST /api/orders. */
   async evaluate(
     code: string,
     lines: DiscountLine[],
