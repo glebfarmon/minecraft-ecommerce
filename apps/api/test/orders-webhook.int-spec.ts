@@ -1,5 +1,6 @@
 import request from 'supertest'
 
+import {DELIVERY_QUEUE, type DeliveryQueue} from '../src/delivery/delivery-queue'
 import {PrismaService} from '../src/prisma/prisma.service'
 import {startOrdersApp} from './support/orders-app'
 
@@ -282,5 +283,80 @@ describe('promo uses and webhooks', () => {
     const {sessionId} = await createOrder('en', 'WHPAID')
     await deliver(sessionId, 'checkout.session.completed').expect(200)
     expect(await used(promo.id)).toBe(1)
+  })
+})
+
+describe('deliveries and webhooks', () => {
+  const queue = () => ctx.app.get<DeliveryQueue>(DELIVERY_QUEUE)
+  const deliveriesOf = async (publicId: string) =>
+    ctx.prisma.delivery.findMany({
+      where: {orderItem: {order: {publicId}}},
+      orderBy: {id: 'asc'}
+    })
+
+  it('paid webhook creates deliveries and enqueues them', async () => {
+    const spy = jest.spyOn(queue(), 'enqueue')
+    const {publicId, sessionId} = await createOrder()
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    const deliveries = await deliveriesOf(publicId)
+    expect(deliveries).toHaveLength(1)
+    expect(deliveries[0]).toMatchObject({kind: 'GRANT', status: 'PENDING'})
+    expect(deliveries[0]?.commands).toHaveLength(2)
+    expect(deliveries[0]?.commands[0]).toContain('Steve_1')
+    expect(spy).toHaveBeenCalledWith(deliveries[0]?.id)
+    spy.mockRestore()
+  })
+
+  it('replayed event creates no second set', async () => {
+    const {publicId, sessionId} = await createOrder()
+    const signed = ctx.gateway.signedEvent(sessionId, 'checkout.session.completed')
+    await post(signed).expect(200)
+    await post(signed).expect(200)
+    await deliver(sessionId, 'checkout.session.completed').expect(200) // new event id
+    expect(await deliveriesOf(publicId)).toHaveLength(1)
+  })
+
+  it('late payment of an EXPIRED order creates deliveries', async () => {
+    const {publicId, sessionId} = await createOrder()
+    await deliver(sessionId, 'checkout.session.expired').expect(200)
+    expect(await deliveriesOf(publicId)).toHaveLength(0)
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    expect(await deliveriesOf(publicId)).toHaveLength(1)
+  })
+
+  it('queue failure does not fail the payment', async () => {
+    const spy = jest.spyOn(queue(), 'enqueue').mockRejectedValue(new Error('redis down'))
+    const {publicId, sessionId} = await createOrder()
+    await deliver(sessionId, 'checkout.session.completed').expect(200)
+    spy.mockRestore()
+    expect(await statusOf(publicId)).toBe('PAID')
+    const deliveries = await deliveriesOf(publicId)
+    expect(deliveries).toHaveLength(1)
+    expect(deliveries[0]?.status).toBe('PENDING')
+  })
+
+  it('unconfigured server still creates a PENDING delivery', async () => {
+    const {publicId, sessionId} = await createOrder()
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: {publicId},
+      include: {items: true}
+    })
+    const serverId = order.items[0]?.serverId ?? ''
+    const server = await ctx.prisma.server.findUniqueOrThrow({where: {id: serverId}})
+    await ctx.prisma.server.update({
+      where: {id: serverId},
+      data: {rconHost: null, rconPasswordEnc: null}
+    })
+    try {
+      await deliver(sessionId, 'checkout.session.completed').expect(200)
+    } finally {
+      await ctx.prisma.server.update({
+        where: {id: serverId},
+        data: {rconHost: server.rconHost, rconPasswordEnc: server.rconPasswordEnc}
+      })
+    }
+    const deliveries = await deliveriesOf(publicId)
+    expect(deliveries).toHaveLength(1)
+    expect(deliveries[0]?.status).toBe('PENDING')
   })
 })

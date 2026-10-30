@@ -1,5 +1,7 @@
 import {Inject, Injectable, Logger} from '@nestjs/common'
 
+import {createDeliveriesForPaidOrder} from '../delivery/delivery-creation'
+import {DELIVERY_QUEUE, type DeliveryQueue} from '../delivery/delivery-queue'
 import {MAILER, type Mailer} from '../mailer/mailer'
 import {orderReceiptMail} from '../mailer/templates'
 import type {PaymentEvent} from '../payments/payments-gateway'
@@ -22,12 +24,13 @@ export class PaymentEventsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(MAILER) private readonly mailer: Mailer,
-    private readonly rates: OrderRatesService
+    private readonly rates: OrderRatesService,
+    @Inject(DELIVERY_QUEUE) private readonly queue: DeliveryQueue
   ) {}
 
   async apply(event: PaymentEvent): Promise<void> {
     if (event.kind === 'ignored') return
-    const paidNow = await this.prisma.$transaction(async tx => {
+    const result = await this.prisma.$transaction(async tx => {
       // Dedupe. INSERT ... ON CONFLICT DO NOTHING: a replay finds the committed row and inserts
       // nothing; a concurrent duplicate waits on the primary key until the first transaction
       // commits (then inserts nothing) or rolls back (then takes over the event).
@@ -109,21 +112,36 @@ export class PaymentEventsService {
           })
         }
       }
-      return count === 1
-        ? {
-            ...order,
-            status: 'PAID' as const,
-            paidAt,
-            stripePaymentIntentId: event.paymentIntentId
-          }
-        : null
+      if (count !== 1) return null
+      const paid = {
+        ...order,
+        status: 'PAID' as const,
+        paidAt,
+        stripePaymentIntentId: event.paymentIntentId
+      }
+      // Same transaction as the PAID update, in both paths: no paid order without its deliveries.
+      const deliveryIds = await createDeliveriesForPaidOrder(tx, paid)
+      return {order: paid, deliveryIds}
     })
-    if (paidNow) {
+    if (result) {
+      const {order: paidNow, deliveryIds} = result
+      await this.enqueueAll(deliveryIds)
       // Not awaited: payment handling never waits for the rates source (fill logs its own failures).
       this.rates.fill(paidNow.id).catch((error: unknown) => {
         this.log.error(`exchange rate for ${paidNow.publicId} not filled`, error)
       })
       await this.sendReceipt(paidNow)
+    }
+  }
+
+  /** A queue outage never fails payment handling; a sweeper picks up what was not enqueued. */
+  private async enqueueAll(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      try {
+        await this.queue.enqueue(id)
+      } catch (error) {
+        this.log.error(`delivery ${id} not enqueued`, error)
+      }
     }
   }
 

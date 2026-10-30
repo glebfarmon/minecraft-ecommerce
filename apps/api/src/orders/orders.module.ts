@@ -1,5 +1,6 @@
 import {Module} from '@nestjs/common'
 
+import {DeliveryModule} from '../delivery/delivery.module'
 import {FakePaymentController} from '../payments/fake-payment.controller'
 import {RatesModule} from '../rates/rates.module'
 import {OrderRatesService} from './order-rates.service'
@@ -17,7 +18,7 @@ import {TURNSTILE, createTurnstile} from './turnstile'
 import {WebhookController} from './webhook.controller'
 
 @Module({
-  imports: [RatesModule],
+  imports: [RatesModule, DeliveryModule],
   controllers: [
     OrdersController,
     OrdersAdminController,
