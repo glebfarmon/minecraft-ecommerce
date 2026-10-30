@@ -40,3 +40,26 @@ export function inviteLink(mail: Mail): string {
   if (!link) throw new Error(`no invite link in "${mail.subject}"`)
   return link
 }
+
+/**
+ * Waits up to `timeoutMs` for a message to `to` whose subject starts with `subject` and whose text
+ * contains `text`, looking at the newest few on every try.
+ */
+export async function findMail(
+  to: string,
+  {subject, text, timeoutMs = 30_000}: {subject: string; text: string; timeoutMs?: number}
+): Promise<Mail> {
+  const query = encodeURIComponent(`to:${to} subject:"${subject}"`)
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const list = await getJson<Summary>(`/api/v1/search?query=${query}&limit=10`)
+    for (const {ID} of list.messages) {
+      const msg = await getJson<{Subject: string; Text: string}>(`/api/v1/message/${ID}`)
+      if (msg.Subject.startsWith(subject) && msg.Text.includes(text)) {
+        return {id: ID, subject: msg.Subject, text: msg.Text}
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+  throw new Error(`no mail "${subject}…" to ${to} containing "${text}"`)
+}

@@ -24,6 +24,22 @@ export const SCHEDULES: Readonly<Record<ScheduleName, number>> = {
   alert: 300_000
 }
 
+/**
+ * `SCHEDULES`, with the alert interval taken from `DELIVERY_ALERT_INTERVAL_MS` when it is set: an
+ * e2e-only override, so the e2e need not wait five minutes for the owner alert. At least 1000 ms.
+ */
+export function schedulesFromEnv(
+  env: NodeJS.ProcessEnv = process.env
+): Readonly<Record<ScheduleName, number>> {
+  const raw = env.DELIVERY_ALERT_INTERVAL_MS
+  if (!raw) return SCHEDULES
+  const alert = Number(raw)
+  if (!Number.isInteger(alert) || alert < 1000) {
+    throw new Error(`DELIVERY_ALERT_INTERVAL_MS must be an integer of at least 1000, got "${raw}"`)
+  }
+  return {...SCHEDULES, alert}
+}
+
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 /**
