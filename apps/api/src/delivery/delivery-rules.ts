@@ -66,6 +66,11 @@ export function grantExpiry(
   return new Date(start.getTime() + durationDays * quantity * DAY_MS)
 }
 
+/** Takes one item's share back from a shared grant (refund, dispute); the result may be in the past. */
+export function shrinkGrantExpiry(expiresAt: Date, durationDays: number, quantity: number): Date {
+  return new Date(expiresAt.getTime() - durationDays * quantity * DAY_MS)
+}
+
 export function publicDeliveryState(
   orderStatus: OrderStatus,
   statuses: readonly DeliveryStatus[]
