@@ -99,7 +99,8 @@
     "in_use_promoCodes": "{count, plural, one {# promo code} other {# promo codes}}",
     "in_use_servers": "{count, plural, one {# server} other {# servers}}",
     "placeholder_mismatch": "Keep the same placeholders and tags as the original.",
-    "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}"
+    "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}",
+    "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page."
   },
   "nav": {
     "home": "Home",
@@ -213,7 +214,39 @@
       "emailLabel": "Email"
     },
     "orderNumberLabel": "Order number",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "attention": "{count, plural, one {# order needs attention} other {# orders need attention}}",
+    "attentionRow": "Needs attention",
+    "deliveries": {
+      "title": "Deliveries",
+      "kind": {
+        "GRANT": "Grant",
+        "REVOKE": "Revoke"
+      },
+      "status": {
+        "PENDING": "Pending",
+        "RUNNING": "Running",
+        "DONE": "Done",
+        "FAILED": "Failed",
+        "NEEDS_REVIEW": "Needs review"
+      },
+      "attempts": "Attempts: {count}",
+      "nextAttempt": "Next attempt {time}",
+      "commands": "Commands",
+      "sent": "sent",
+      "notSent": "not sent",
+      "replies": "Server replies",
+      "lastError": "Last error",
+      "retry": "Retry",
+      "markDone": "Mark as done",
+      "cancel": "Cancel",
+      "confirmRetry": "The last command may already have run on the server. Retrying may run it twice.",
+      "confirmRetryButton": "Retry anyway",
+      "confirmDone": "Mark this delivery as done without sending anything? This cannot be undone.",
+      "confirmDoneButton": "Yes, mark as done",
+      "retried": "Delivery queued again",
+      "markedDone": "Delivery marked as done"
+    }
   },
   "promo": {
     "title": "Promo codes",

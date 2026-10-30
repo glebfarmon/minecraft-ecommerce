@@ -17,6 +17,7 @@ type Tag =
   | 'ContentMessages'
   | 'ContentSettings'
   | 'PromoCodes'
+  | 'Orders'
 
 /**
  * Invalidate only when the mutation succeeded. A rejected update (409 stale) must not refetch:
@@ -41,7 +42,8 @@ export const enhancedApi = api.enhanceEndpoints({
     'RulesVersions',
     'ContentMessages',
     'ContentSettings',
-    'PromoCodes'
+    'PromoCodes',
+    'Orders'
   ],
   endpoints: {
     getApiAdminAdmins: {providesTags: ['Admins']},
@@ -110,6 +112,10 @@ export const enhancedApi = api.enhanceEndpoints({
     createPromoCode: {invalidatesTags: ['PromoCodes', 'Audit']},
     updatePromoCode: {invalidatesTags: onSuccess(['PromoCodes', 'Audit'])},
     setPromoCodeActive: {invalidatesTags: onSuccess(['PromoCodes', 'Audit'])},
-    deletePromoCode: {invalidatesTags: ['PromoCodes', 'Audit']}
+    deletePromoCode: {invalidatesTags: ['PromoCodes', 'Audit']},
+    listAdminOrders: {providesTags: ['Orders']},
+    getAdminOrder: {providesTags: ['Orders']},
+    retryDelivery: {invalidatesTags: onSuccess(['Orders', 'Audit'])},
+    markDeliveryDone: {invalidatesTags: onSuccess(['Orders', 'Audit'])}
   }
 })

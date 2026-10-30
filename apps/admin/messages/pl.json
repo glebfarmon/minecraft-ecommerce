@@ -99,7 +99,8 @@
     "in_use_promoCodes": "{count, plural, one {# kod promocyjny} few {# kody promocyjne} many {# kodów promocyjnych} other {# kodu promocyjnego}}",
     "in_use_servers": "{count, plural, one {# serwer} few {# serwery} many {# serwerów} other {# serwera}}",
     "placeholder_mismatch": "Zachowaj te same znaczniki i tagi co w oryginale.",
-    "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}"
+    "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}",
+    "delivery_not_stuck": "Ta dostawa już nie jest zablokowana. Odśwież stronę."
   },
   "nav": {
     "home": "Strona główna",
@@ -213,7 +214,39 @@
       "emailLabel": "E-mail"
     },
     "orderNumberLabel": "Numer zamówienia",
-    "emailLabel": "E-mail"
+    "emailLabel": "E-mail",
+    "attention": "{count, plural, one {# zamówienie wymaga uwagi} few {# zamówienia wymagają uwagi} many {# zamówień wymaga uwagi} other {# zamówienia wymaga uwagi}}",
+    "attentionRow": "Wymaga uwagi",
+    "deliveries": {
+      "title": "Dostawy",
+      "kind": {
+        "GRANT": "Nadanie",
+        "REVOKE": "Odebranie"
+      },
+      "status": {
+        "PENDING": "Oczekuje",
+        "RUNNING": "W toku",
+        "DONE": "Dostarczono",
+        "FAILED": "Błąd",
+        "NEEDS_REVIEW": "Do sprawdzenia"
+      },
+      "attempts": "Próby: {count}",
+      "nextAttempt": "Następna próba {time}",
+      "commands": "Polecenia",
+      "sent": "wysłane",
+      "notSent": "niewysłane",
+      "replies": "Odpowiedzi serwera",
+      "lastError": "Ostatni błąd",
+      "retry": "Ponów",
+      "markDone": "Oznacz jako zrobione",
+      "cancel": "Anuluj",
+      "confirmRetry": "Ostatnie polecenie mogło już zostać wykonane na serwerze. Ponowienie może wykonać je dwa razy.",
+      "confirmRetryButton": "Ponów mimo to",
+      "confirmDone": "Oznaczyć tę dostawę jako zrobioną bez wysyłania czegokolwiek? Tego nie można cofnąć.",
+      "confirmDoneButton": "Tak, oznacz jako zrobione",
+      "retried": "Dostawa ponownie w kolejce",
+      "markedDone": "Dostawa oznaczona jako zrobiona"
+    }
   },
   "promo": {
     "title": "Kody promocyjne",
