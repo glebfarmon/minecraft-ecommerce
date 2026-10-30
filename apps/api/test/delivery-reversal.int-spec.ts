@@ -305,7 +305,8 @@ const mkGrant = (expiresAt: Date | null, revokedAt: Date | null = null, nick = '
 const grantRow = (id: string) => prisma.grant.findUniqueOrThrow({where: {id}})
 const deliveryRow = (id: string | undefined) =>
   prisma.delivery.findUniqueOrThrow({where: {id: id ?? ''}})
-const restore = (orderId: string) => prisma.$transaction(tx => restoreOrderDeliveries(tx, orderId))
+const restore = (orderId: string) =>
+  prisma.$transaction(tx => restoreOrderDeliveries(tx, orderId, now))
 
 describe('reversal edge cases', () => {
   it('a non-timed item of quantity 3 gets its revoke commands three times', async () => {
@@ -499,7 +500,7 @@ describe('restoreOrderDeliveries after 5b review', () => {
     }
   )
 
-  it('a timed item whose REVOKE never ran gets its shrunk time back instead of a RESTORE', async () => {
+  it('R11 shrunk DONE: a timed item whose REVOKE never ran is renewed instead of restored', async () => {
     const grant = await mkGrant(new Date(now.getTime() + 7 * DAY_MS))
     const {order: o} = await order([{product: timed, grantId: grant.id}])
     await reverse(o.id)
@@ -511,5 +512,97 @@ describe('restoreOrderDeliveries after 5b review', () => {
       expiresAt: new Date(now.getTime() + 7 * DAY_MS),
       revokedAt: null
     })
+  })
+})
+
+describe('restore and reversal, fix round 1', () => {
+  const restores = (orderId: string) =>
+    prisma.delivery.findMany({
+      where: {kind: 'RESTORE', orderItem: {orderId}},
+      orderBy: {createdAt: 'asc'}
+    })
+  const setStatus = (
+    id: string | undefined,
+    data: {status: DeliveryStatus; commandsDone?: number}
+  ) => prisma.delivery.update({where: {id: id ?? ''}, data})
+  const orderStatus = async (id: string) =>
+    (await prisma.order.findUniqueOrThrow({where: {id}})).status
+
+  it('R10: a win whose REVOKE never ran restores nothing and still delivers the order', async () => {
+    const {order: o} = await order([{product: permanent}])
+    await prisma.order.update({where: {id: o.id}, data: {status: 'DISPUTED'}})
+    await reverse(o.id)
+    await prisma.order.update({where: {id: o.id}, data: {status: 'PAID'}})
+    expect(await restore(o.id)).toEqual([])
+    expect(await restores(o.id)).toHaveLength(0)
+    expect(await orderStatus(o.id)).toBe('DELIVERED')
+  })
+
+  it('R11 I2: a GRANT that finished DONE during the dispute is renewed from now at the win', async () => {
+    const lapsed = new Date(now.getTime() - DAY_MS)
+    const grant = await mkGrant(lapsed)
+    const {order: o, grantDeliveries} = await order([
+      {product: timed, grantId: grant.id, status: 'RUNNING', quantity: 2}
+    ])
+    const [revokeId] = await reverse(o.id)
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: lapsed, revokedAt: now})
+    // complete() during the dispute marks it DONE without adding time.
+    await setStatus(grantDeliveries[0], {status: 'DONE', commandsDone: 1})
+    expect(await restore(o.id)).toEqual([])
+    expect((await deliveryRow(revokeId)).status).toBe('CANCELLED')
+    expect(await grantRow(grant.id)).toMatchObject({
+      expiresAt: new Date(now.getTime() + 14 * DAY_MS),
+      revokedAt: null
+    })
+  })
+
+  it('R11 not DONE at the win: only revokedAt is cleared; its own completion adds the time', async () => {
+    const lapsed = new Date(now.getTime() - DAY_MS)
+    const grant = await mkGrant(lapsed)
+    const {order: o} = await order([{product: timed, grantId: grant.id, status: 'NEEDS_REVIEW'}])
+    const [revokeId] = await reverse(o.id)
+    expect(await restore(o.id)).toEqual([])
+    expect((await deliveryRow(revokeId)).status).toBe('CANCELLED')
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: lapsed, revokedAt: null})
+    expect(await orderStatus(o.id)).toBe('PAID')
+  })
+
+  it('R12: a restored item is taken back once by a later reversal, and restored once again', async () => {
+    const {order: o, grantDeliveries} = await order([{product: permanent, status: 'PENDING'}])
+    await reverse(o.id)
+    const [first] = await restore(o.id)
+    expect(first).toBeDefined()
+    await setStatus(first, {status: 'DONE', commandsDone: 1})
+
+    const revokeIds = await reverse(o.id)
+    expect(revokeIds).toHaveLength(1)
+    expect(await revokes(o.id)).toHaveLength(1)
+    expect((await deliveryRow(first)).reversedAt).toEqual(now)
+    expect(await deliveryRow(grantDeliveries[0])).toMatchObject({
+      status: 'CANCELLED',
+      reversedAt: null
+    })
+    expect(await reverse(o.id)).toEqual([])
+
+    await setStatus(revokeIds[0], {status: 'DONE', commandsDone: 1})
+    const again = await restore(o.id)
+    expect(again).toHaveLength(1)
+    expect(await deliveryRow(again[0])).toMatchObject({
+      kind: 'RESTORE',
+      commands: ['give Steve diamond']
+    })
+    expect((await deliveryRow(first)).reversedAt).toBeNull()
+    expect(await restore(o.id)).toEqual([])
+    expect(await restores(o.id)).toHaveLength(2)
+  })
+
+  it('R12: a RESTORE that never ran is cancelled by a later reversal and takes nothing twice', async () => {
+    const {order: o} = await order([{product: permanent}])
+    const [revokeId] = await reverse(o.id)
+    await setStatus(revokeId, {status: 'DONE', commandsDone: 1})
+    const [restoreId] = await restore(o.id)
+    expect(await reverse(o.id)).toEqual([])
+    expect((await deliveryRow(restoreId)).status).toBe('CANCELLED')
+    expect(await revokes(o.id)).toHaveLength(1)
   })
 })

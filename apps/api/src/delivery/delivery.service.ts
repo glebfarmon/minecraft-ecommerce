@@ -6,7 +6,8 @@ import type {RconTarget} from '../catalog-admin/rcon/rcon-tester'
 import type {Prisma, Server} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
 import {DELIVERY_QUEUE, type DeliveryQueue} from './delivery-queue'
-import {ORDER_DELIVERY_KINDS, type SendOutcome, decideNext, grantExpiry} from './delivery-rules'
+import {type SendOutcome, decideNext, grantExpiry} from './delivery-rules'
+import {settleOrderStatus} from './order-settle'
 import {RCON_SENDER, type RconSender} from './rcon-sender'
 
 /** How long one connection may take to sign in, and each command to be answered. */
@@ -154,20 +155,7 @@ export class DeliveryService {
       }
     }
 
-    if (orderId !== null) {
-      const open = await tx.delivery.count({
-        where: {
-          orderItem: {orderId},
-          kind: {in: [...ORDER_DELIVERY_KINDS]},
-          status: {notIn: ['DONE', 'CANCELLED']}
-        }
-      })
-      if (open === 0)
-        await tx.order.updateMany({
-          where: {id: orderId, status: 'PAID'},
-          data: {status: 'DELIVERED'}
-        })
-    }
+    if (orderId !== null) await settleOrderStatus(tx, orderId)
   }
 
   /**

@@ -1,17 +1,21 @@
 import {Logger} from '@nestjs/common'
 
 import type {Prisma} from '../generated/prisma/client'
-import {renderCommands, shrinkGrantExpiry} from './delivery-rules'
+import {grantExpiry, renderCommands, shrinkGrantExpiry} from './delivery-rules'
+import {settleOrderStatus} from './order-settle'
 
 const log = new Logger('DeliveryReversal')
 
 /** A delivery whose commands may have reached the game (spec §4.4). */
-const MAY_HAVE_SENT: Prisma.DeliveryWhereInput = {
-  OR: [
-    {status: {in: ['DONE', 'RUNNING', 'NEEDS_REVIEW']}},
-    {status: 'FAILED', commandsDone: {gt: 0}}
-  ]
-}
+const maySend = (d: {status: string; commandsDone: number}) =>
+  d.status === 'DONE' ||
+  d.status === 'RUNNING' ||
+  d.status === 'NEEDS_REVIEW' ||
+  (d.status === 'FAILED' && d.commandsDone > 0)
+
+/** Byte order like Postgres' `ORDER BY`, nulls last. */
+const byKey = (a: string | null, b: string | null) =>
+  a === b ? 0 : a === null ? 1 : b === null ? -1 : a < b ? -1 : 1
 
 /** Lock order everywhere: the order row first, then its grants in id order. */
 async function lockOrder(tx: Prisma.TransactionClient, orderId: string) {
@@ -50,13 +54,15 @@ type Reversible = Prisma.DeliveryGetPayload<{
 
 /**
  * Plans what a refund or dispute takes back (spec §4.4, §5.1), inside the caller's transaction.
- * Only `GRANT` rows that may have sent something are considered. A non-timed item gets a REVOKE
- * (its revoke commands × quantity). A timed item gives back only its own share of a grant shared
- * with other orders: a `DONE` row shrinks `expiresAt` by `durationDays × quantity`, and the REVOKE
- * (commands × 1) runs only when nothing is left; a row that is not `DONE` never added time, so it
- * shrinks nothing and revokes only a grant that is not live. Every GRANT row it took something
- * from gets `reversedAt`, which `restoreOrderDeliveries` reads; rows already reversed are skipped.
- * Returns the new REVOKE ids; the caller enqueues them after commit.
+ * Each order item has exactly one delivering row: its latest RESTORE when a won dispute restored
+ * it, otherwise its GRANT; only that row is considered, and only if it may have sent something
+ * (a RESTORE that never ran restored nothing, and its GRANT was already taken back). A non-timed
+ * item gets a REVOKE (its revoke commands × quantity). A timed item gives back only its own share
+ * of a grant shared with other orders: a `DONE` row shrinks `expiresAt` by `durationDays ×
+ * quantity`, and the REVOKE (commands × 1) runs only when nothing is left; a row that is not
+ * `DONE` never added time, so it shrinks nothing and revokes only a grant that is not live. Every
+ * row it took something from gets `reversedAt`, which `restoreOrderDeliveries` reads; rows already
+ * reversed are skipped. Returns the new REVOKE ids; the caller enqueues them after commit.
  */
 export async function reverseOrderDeliveries(
   tx: Prisma.TransactionClient,
@@ -67,8 +73,8 @@ export async function reverseOrderDeliveries(
   await lockOrder(tx, orderId)
   if (opts.cancelUnsent) await cancelUnsentDeliveries(tx, orderId)
   const order = await tx.order.findUniqueOrThrow({where: {id: orderId}, select: {nick: true}})
-  const rows = await tx.delivery.findMany({
-    where: {orderItem: {orderId}, kind: 'GRANT', reversedAt: null, ...MAY_HAVE_SENT},
+  const candidates = await tx.delivery.findMany({
+    where: {orderItem: {orderId}, kind: {in: ['GRANT', 'RESTORE']}},
     include: {
       orderItem: {
         select: {
@@ -78,9 +84,19 @@ export async function reverseOrderDeliveries(
         }
       }
     },
-    // Locks shared grants in one order, so two reversals cannot deadlock.
-    orderBy: [{grantId: 'asc'}, {id: 'asc'}]
+    orderBy: [{createdAt: 'asc'}, {id: 'asc'}]
   })
+  const delivering = new Map<string, Reversible>()
+  for (const row of candidates) {
+    if (row.orderItemId === null) continue
+    // Oldest first: the item's latest RESTORE replaces its GRANT.
+    if (row.kind === 'RESTORE' || !delivering.has(row.orderItemId))
+      delivering.set(row.orderItemId, row)
+  }
+  const rows = [...delivering.values()]
+    .filter(r => r.reversedAt === null && maySend(r))
+    // Locks shared grants in one order, so two reversals cannot deadlock.
+    .sort((a, b) => byKey(a.grantId, b.grantId) || byKey(a.id, b.id))
 
   const ids: string[] = []
   for (const row of rows) {
@@ -164,22 +180,25 @@ const UNSENT: Prisma.DeliveryWhereInput = {
 
 /**
  * Plans the RESTORE deliveries of a won dispute (spec §5.2), inside the caller's transaction, under
- * the same lock order as the reversal (the order row, then grants in id order). Per GRANT row:
- * - reversed (`reversedAt` set) with a REVOKE that sent nothing (`PENDING`, or `FAILED` with no
- *   command done): the REVOKE becomes `CANCELLED` and no RESTORE is made, since nothing reached the
- *   game; a timed `DONE` row gets the share the reversal shrank back (`revokedAt` cleared; the
- *   expiry job takes the grant back if that time has run out meanwhile);
+ * the same lock order as the reversal (the order row, then grants in id order). Per row:
+ * - reversed (`reversedAt` set; a GRANT, or the RESTORE of an earlier won dispute) with a REVOKE
+ *   that sent nothing (`PENDING`, or `FAILED` with no command done): the REVOKE becomes
+ *   `CANCELLED` and no RESTORE is made, since nothing reached the game. A timed grant gets its
+ *   clock back: a `DONE` row renews it like a completion (`grantExpiry` from now), a row that is not
+ *   `DONE` only clears `revokedAt` (its own completion adds the time, the order is PAID again);
  * - reversed otherwise (its REVOKE may have run, or a timed item was only shrunk): a RESTORE;
- * - `CANCELLED` (the reversal cancelled it before anything was sent): a RESTORE too, whose
+ * - a `CANCELLED` GRANT (the reversal cancelled it before anything was sent): a RESTORE too, whose
  *   completion adds the bought time the original never added.
- * A RESTORE runs exactly the commands stored on its GRANT. `reversedAt` is cleared on every row it
- * handled, and a cancelled GRANT whose item already has a RESTORE is skipped, so a second call
- * creates nothing. Callers still guard it with the conditional `DISPUTED → PAID` update.
- * Returns the new ids for enqueueing.
+ * A RESTORE runs exactly the commands stored on the row it restores. `reversedAt` is cleared on
+ * every row it handled, and a cancelled GRANT whose item already has a RESTORE is skipped, so a
+ * second call creates nothing. It always ends by settling the order (`settleOrderStatus`), so a win
+ * that restores nothing still delivers the order. Callers guard it with the conditional
+ * `DISPUTED → PAID` update. Returns the new ids for enqueueing.
  */
 export async function restoreOrderDeliveries(
   tx: Prisma.TransactionClient,
-  orderId: string
+  orderId: string,
+  now: Date = new Date()
 ): Promise<string[]> {
   await lockOrder(tx, orderId)
   const rows = await tx.delivery.findMany({
@@ -187,8 +206,10 @@ export async function restoreOrderDeliveries(
     // CANCELLED GRANT of an order that reaches here was cancelled by the dispute: no marker needed.
     where: {
       orderItem: {orderId},
-      kind: 'GRANT',
-      OR: [{reversedAt: {not: null}}, {status: 'CANCELLED'}]
+      OR: [
+        {kind: {in: ['GRANT', 'RESTORE']}, reversedAt: {not: null}},
+        {kind: 'GRANT', status: 'CANCELLED'}
+      ]
     },
     include: {
       orderItem: {select: {quantity: true, product: {select: {durationDays: true}}}}
@@ -205,7 +226,7 @@ export async function restoreOrderDeliveries(
       if (restored > 0) continue
     } else {
       await tx.delivery.update({where: {id: row.id}, data: {reversedAt: null}})
-      if (await cancelUnsentRevoke(tx, row)) continue
+      if (await cancelUnsentRevoke(tx, row, now)) continue
     }
     const created = await tx.delivery.create({
       data: {
@@ -219,6 +240,7 @@ export async function restoreOrderDeliveries(
     })
     ids.push(created.id)
   }
+  await settleOrderStatus(tx, orderId)
   return ids
 }
 
@@ -230,7 +252,7 @@ type Restorable = Prisma.DeliveryGetPayload<{
  * Cancels the item's latest REVOKE if it sent nothing; true when it did (then the item needs no
  * RESTORE). The update is conditional, so a REVOKE a worker claimed meanwhile counts as sent.
  */
-async function cancelUnsentRevoke(tx: Prisma.TransactionClient, row: Restorable) {
+async function cancelUnsentRevoke(tx: Prisma.TransactionClient, row: Restorable, now: Date) {
   if (row.orderItemId === null) return false
   const revoke = await tx.delivery.findFirst({
     where: {orderItemId: row.orderItemId, kind: 'REVOKE', status: {not: 'CANCELLED'}},
@@ -243,23 +265,22 @@ async function cancelUnsentRevoke(tx: Prisma.TransactionClient, row: Restorable)
     data: {status: 'CANCELLED'}
   })
   if (count !== 1) return false
-  const durationDays = row.orderItem?.product.durationDays
-  if (row.grantId !== null && row.status === 'DONE' && durationDays) {
-    // The reversal shrank this row's share off the clock and revoked the grant: give it back.
+  if (row.grantId !== null) {
+    // The reversal revoked the grant, yet the rank never left the game: put the clock back, or the
+    // expiry job would never take it.
     await tx.$queryRaw`SELECT 1 FROM "grants" WHERE "id" = ${row.grantId} FOR UPDATE`
     const grant = await tx.grant.findUniqueOrThrow({where: {id: row.grantId}})
-    if (grant.expiresAt !== null)
-      await tx.grant.update({
-        where: {id: row.grantId},
-        data: {
-          expiresAt: shrinkGrantExpiry(
-            grant.expiresAt,
-            -durationDays,
-            row.orderItem?.quantity ?? 1
-          ),
-          revokedAt: null
-        }
-      })
+    const durationDays = row.orderItem?.product.durationDays
+    await tx.grant.update({
+      where: {id: row.grantId},
+      data:
+        row.status === 'DONE' && durationDays
+          ? {
+              expiresAt: grantExpiry(grant, now, durationDays, row.orderItem?.quantity ?? 1),
+              revokedAt: null
+            }
+          : {revokedAt: null}
+    })
   }
   return true
 }

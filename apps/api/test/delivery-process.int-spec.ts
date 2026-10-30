@@ -112,6 +112,17 @@ const only = (ids: string[]) => {
   if (!id || ids.length !== 1) throw new Error(`expected one delivery, got ${String(ids.length)}`)
   return id
 }
+/** Polls until another backend of this database is blocked on a row lock. */
+async function waitForLockWaiter() {
+  for (let i = 0; i < 400; i += 1) {
+    const [row] = await prisma.$queryRaw<{n: number}[]>`
+      SELECT count(*)::int AS n FROM pg_stat_activity
+      WHERE datname = current_database() AND wait_event_type = 'Lock'`
+    if ((row?.n ?? 0) > 0) return
+    await new Promise(resolve => setTimeout(resolve, 25))
+  }
+  throw new Error('no backend is waiting on a lock')
+}
 const closeTo = (actual: Date | null, expected: number) => {
   expect(actual).not.toBeNull()
   expect(Math.abs((actual?.getTime() ?? 0) - expected)).toBeLessThan(5_000)
@@ -649,7 +660,7 @@ describe('refunds and disputes (5b)', () => {
     )
     const run = worker.process(id)
     await isAnswered
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await waitForLockWaiter()
     release()
     await reversal
     await run
@@ -686,7 +697,7 @@ describe('refunds and disputes (5b)', () => {
       () => 'done',
       (error: unknown) => (error instanceof Error ? error.message : 'error')
     )
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await waitForLockWaiter()
     release()
     expect(await reversal).toBe(1)
     // Waited, then found the row cancelled; before the reorder Postgres aborted one side instead.
