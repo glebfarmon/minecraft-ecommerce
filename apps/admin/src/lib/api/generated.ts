@@ -299,6 +299,12 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query: queryArg => ({url: `/api/admin/content/settings`, method: 'PUT', body: queryArg.body})
     }),
+    retryDelivery: build.mutation<RetryDeliveryApiResponse, RetryDeliveryApiArg>({
+      query: queryArg => ({url: `/api/admin/deliveries/${queryArg.id}/retry`, method: 'POST'})
+    }),
+    markDeliveryDone: build.mutation<MarkDeliveryDoneApiResponse, MarkDeliveryDoneApiArg>({
+      query: queryArg => ({url: `/api/admin/deliveries/${queryArg.id}/mark-done`, method: 'POST'})
+    }),
     listAdminOrders: build.query<ListAdminOrdersApiResponse, ListAdminOrdersApiArg>({
       query: queryArg => ({
         url: `/api/admin/orders`,
@@ -1472,6 +1478,40 @@ export type UpdateContentSettingsApiArg = {
     version: number
   }
 }
+export type RetryDeliveryApiResponse = /** status 201 The delivery, now `PENDING` */ {
+  id: string
+  kind: 'GRANT' | 'REVOKE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  serverName: string
+  productName: string | null
+  commands: string[]
+  commandsDone: number
+  attempts: number
+  nextAttemptAt: string
+  lastError: string | null
+  replies: string[]
+  createdAt: string
+}
+export type RetryDeliveryApiArg = {
+  id: string
+}
+export type MarkDeliveryDoneApiResponse = /** status 201 The delivery, now `DONE` */ {
+  id: string
+  kind: 'GRANT' | 'REVOKE'
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW'
+  serverName: string
+  productName: string | null
+  commands: string[]
+  commandsDone: number
+  attempts: number
+  nextAttemptAt: string
+  lastError: string | null
+  replies: string[]
+  createdAt: string
+}
+export type MarkDeliveryDoneApiArg = {
+  id: string
+}
 export type ListAdminOrdersApiResponse = /** status 200 A page of orders */ {
   orders: {
     id: string
@@ -1759,6 +1799,8 @@ export const {
   useResetContentMessageMutation,
   useGetContentSettingsQuery,
   useUpdateContentSettingsMutation,
+  useRetryDeliveryMutation,
+  useMarkDeliveryDoneMutation,
   useListAdminOrdersQuery,
   useGetAdminOrderQuery,
   useGetOrderStatsQuery,

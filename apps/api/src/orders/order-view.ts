@@ -2,7 +2,8 @@ import type {Locale} from '@shop/shared/catalog'
 import type {AdminOrder, OrderServerGroup, PublicOrder} from '@shop/shared/orders'
 
 import {publicDeliveryState} from '../delivery/delivery-rules'
-import type {DeliveryStatus, Order, OrderItem} from '../generated/prisma/client'
+import {toAdminDelivery} from '../delivery/delivery-view'
+import type {Delivery, DeliveryStatus, Order, OrderItem} from '../generated/prisma/client'
 import {maskEmail} from './mask-email'
 
 export type OrderWithItems = Order & {items: OrderItem[]}
@@ -16,6 +17,19 @@ export type OrderWithDeliveries = Order & {
 }
 export const deliveryStatuses = (order: OrderWithDeliveries): {status: DeliveryStatus}[] =>
   order.items.flatMap(i => i.deliveries)
+
+/** The admin detail also needs each delivery in full, with its server's name. */
+export const ORDER_ITEMS_WITH_ADMIN_DELIVERY = {
+  items: {
+    orderBy: {id: 'asc'},
+    include: {
+      deliveries: {orderBy: {createdAt: 'asc'}, include: {server: {select: {name: true}}}}
+    }
+  }
+} as const
+export type OrderWithAdminDeliveries = Order & {
+  items: (OrderItem & {deliveries: (Delivery & {server: {name: string}})[]})[]
+}
 
 /** next-intl `localePrefix: 'as-needed'`: the default locale (en) has no prefix. */
 export const localePrefix = (locale: Locale): string => (locale === 'en' ? '' : `/${locale}`)
@@ -61,7 +75,7 @@ export function toPublicOrder(
   }
 }
 
-export function toAdminOrder(order: OrderWithDeliveries): AdminOrder {
+export function toAdminOrder(order: OrderWithAdminDeliveries): AdminOrder {
   return {
     ...toPublicOrder(order, deliveryStatuses(order)),
     email: order.email,
@@ -70,6 +84,6 @@ export function toAdminOrder(order: OrderWithDeliveries): AdminOrder {
     stripeSessionId: order.stripeSessionId,
     stripePaymentIntentId: order.stripePaymentIntentId,
     deliveryConsentAt: order.deliveryConsentAt.toISOString(),
-    deliveries: []
+    deliveries: order.items.flatMap(i => i.deliveries.map(d => toAdminDelivery(d, i.productName)))
   }
 }
