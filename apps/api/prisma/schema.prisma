@@ -476,6 +476,8 @@ model Delivery {
   lastError     String?
   responseLog   Json           @default("[]")
   alertedAt     DateTime?
+  /// Set on a GRANT a refund or dispute took something from; a won dispute restores and clears it.
+  reversedAt    DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   orderItem     OrderItem?     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)

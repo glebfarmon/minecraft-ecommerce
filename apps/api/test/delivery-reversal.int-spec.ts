@@ -1,3 +1,5 @@
+import {Logger} from '@nestjs/common'
+
 import {
   cancelUnsentDeliveries,
   restoreOrderDeliveries,
@@ -191,6 +193,10 @@ describe('reverseOrderDeliveries', () => {
     expect(row.expiresAt).toEqual(new Date(now.getTime() + 7 * DAY_MS))
     expect(row.revokedAt).toBeNull()
     expect(await revokes(a.order.id)).toHaveLength(0)
+    expect(
+      (await prisma.delivery.findUniqueOrThrow({where: {id: a.grantDeliveries[0] ?? ''}}))
+        .reversedAt
+    ).toEqual(now)
 
     const ids = await reverse(b.order.id)
     row = await prisma.grant.findUniqueOrThrow({where: {id: grant.id}})
@@ -279,5 +285,128 @@ describe('restoreOrderDeliveries', () => {
       serverId: timed.serverId,
       commands: ['lp user Steve parent add vip']
     })
+  })
+})
+
+const mkGrant = (expiresAt: Date | null, revokedAt: Date | null = null, nick = 'Steve') =>
+  prisma.grant.create({
+    data: {nick, serverId: timed.serverId, productId: timed.id, expiresAt, revokedAt}
+  })
+const grantRow = (id: string) => prisma.grant.findUniqueOrThrow({where: {id}})
+const deliveryRow = (id: string | undefined) =>
+  prisma.delivery.findUniqueOrThrow({where: {id: id ?? ''}})
+const restore = (orderId: string) => prisma.$transaction(tx => restoreOrderDeliveries(tx, orderId))
+
+describe('reversal edge cases', () => {
+  it('a non-timed item of quantity 3 gets its revoke commands three times', async () => {
+    const {order: o, grantDeliveries} = await order([{product: permanent, quantity: 3}])
+    await reverse(o.id)
+    const rows = await revokes(o.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.commands).toEqual([
+      'clear Steve diamond',
+      'clear Steve diamond',
+      'clear Steve diamond'
+    ])
+    expect((await deliveryRow(grantDeliveries[0])).reversedAt).toEqual(now)
+  })
+
+  it('a timed item of quantity 2 takes back 14 days of a shared grant; the REVOKE runs once', async () => {
+    const grant = await mkGrant(new Date(now.getTime() + 21 * DAY_MS))
+    const a = await order([{product: timed, grantId: grant.id, quantity: 2}])
+    const b = await order([{product: timed, grantId: grant.id}])
+
+    expect(await reverse(a.order.id)).toEqual([])
+    expect((await grantRow(grant.id)).expiresAt).toEqual(new Date(now.getTime() + 7 * DAY_MS))
+    expect((await deliveryRow(a.grantDeliveries[0])).reversedAt).toEqual(now)
+
+    await reverse(b.order.id)
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: now, revokedAt: now})
+    const rows = await revokes(b.order.id)
+    expect(rows.map(r => r.commands)).toEqual([['lp user Steve parent remove vip']])
+  })
+
+  it('an already revoked grant is not shrunk, gets no REVOKE and is not restored', async () => {
+    const past = new Date(now.getTime() - DAY_MS)
+    const grant = await mkGrant(past, past)
+    const {order: o, grantDeliveries} = await order([{product: timed, grantId: grant.id}])
+    expect(await reverse(o.id)).toEqual([])
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: past, revokedAt: past})
+    expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
+    expect(await restore(o.id)).toEqual([])
+  })
+
+  it.each(['RUNNING', 'NEEDS_REVIEW'] as const)(
+    'a %s timed GRANT on a grant another order holds takes nothing',
+    async status => {
+      const live = new Date(now.getTime() + 7 * DAY_MS)
+      const grant = await mkGrant(live)
+      const {order: o, grantDeliveries} = await order([{product: timed, grantId: grant.id, status}])
+      expect(await reverse(o.id)).toEqual([])
+      expect(await grantRow(grant.id)).toMatchObject({expiresAt: live, revokedAt: null})
+      expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
+    }
+  )
+
+  it('a FAILED timed GRANT with commands done on a live grant takes nothing', async () => {
+    const live = new Date(now.getTime() + 7 * DAY_MS)
+    const grant = await mkGrant(live)
+    const {order: o} = await order([
+      {product: timed, grantId: grant.id, status: 'FAILED', commandsDone: 1}
+    ])
+    expect(await reverse(o.id)).toEqual([])
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: live, revokedAt: null})
+  })
+
+  it.each([
+    ['lapsed', new Date(now.getTime() - DAY_MS)],
+    ['never started', null]
+  ] as const)('a not-DONE timed GRANT on a %s grant is revoked', async (_, expiresAt) => {
+    const grant = await mkGrant(expiresAt)
+    const {order: o, grantDeliveries} = await order([
+      {product: timed, grantId: grant.id, status: 'FAILED', commandsDone: 1}
+    ])
+    const ids = await reverse(o.id)
+    expect(ids).toHaveLength(1)
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt, revokedAt: now})
+    expect(await deliveryRow(ids[0])).toMatchObject({
+      kind: 'REVOKE',
+      grantId: grant.id,
+      commands: ['lp user Steve parent remove vip']
+    })
+    expect((await deliveryRow(grantDeliveries[0])).reversedAt).toEqual(now)
+  })
+
+  it('reversing twice creates the REVOKEs once', async () => {
+    const {order: o} = await order([{product: permanent}])
+    expect(await reverse(o.id)).toHaveLength(1)
+    expect(await reverse(o.id)).toEqual([])
+    expect(await revokes(o.id)).toHaveLength(1)
+  })
+
+  it('a nick that cannot be rendered skips the whole item and logs it', async () => {
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const live = new Date(now.getTime() + 7 * DAY_MS)
+    const grant = await mkGrant(live, null, 'x; op')
+    const {order: o, grantDeliveries} = await order([{product: timed, grantId: grant.id}], 'x; op')
+    expect(await reverse(o.id)).toEqual([])
+    expect(await grantRow(grant.id)).toMatchObject({expiresAt: live, revokedAt: null})
+    expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(grantDeliveries[0] ?? '?'),
+      expect.any(Error)
+    )
+    error.mockRestore()
+  })
+
+  it('restoring twice creates the RESTOREs once and clears reversedAt', async () => {
+    const {order: o, grantDeliveries} = await order([{product: permanent}])
+    await reverse(o.id)
+    expect(await restore(o.id)).toHaveLength(1)
+    expect(await restore(o.id)).toEqual([])
+    expect((await deliveryRow(grantDeliveries[0])).reversedAt).toBeNull()
+    expect(
+      await prisma.delivery.count({where: {kind: 'RESTORE', orderItem: {orderId: o.id}}})
+    ).toBe(1)
   })
 })

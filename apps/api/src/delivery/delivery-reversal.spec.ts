@@ -10,6 +10,6 @@ describe('shrinkGrantExpiry', () => {
   })
 
   it('may land in the past', () => {
-    expect(shrinkGrantExpiry(expiresAt, 30, 1).getTime()).toBeLessThan(expiresAt.getTime() - DAY)
+    expect(shrinkGrantExpiry(expiresAt, 30, 1)).toEqual(new Date('2026-10-14T12:00:00Z'))
   })
 })
