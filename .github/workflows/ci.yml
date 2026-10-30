@@ -148,7 +148,9 @@ jobs:
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          # api first (it runs the migrations), then the delivery worker (same image), then the sites.
+          # Listed api first (it runs the migrations), then the worker (same image), then the sites.
+          # Order is not enforced: each deploy call returns at once, so the apps roll out in parallel;
+          # a worker that starts before the migrations retries until the schema is there.
           APP_IDS: ${{ secrets.DOKPLOY_API_APP_ID }} ${{ secrets.DOKPLOY_WORKER_APP_ID }} ${{ secrets.DOKPLOY_WEB_APP_ID }} ${{ secrets.DOKPLOY_ADMIN_APP_ID }}
         run: |
           set -euo pipefail
