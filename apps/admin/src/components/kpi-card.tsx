@@ -3,7 +3,7 @@
 import {useCountUp} from '@/hooks/use-count-up'
 import {formatDelta} from '@/lib/format'
 import {useTranslations} from 'next-intl'
-import {useId} from 'react'
+import {type ReactNode, useId} from 'react'
 
 import {cn} from '@shop/ui/lib/utils'
 
@@ -20,6 +20,7 @@ export function KpiCard({
   count,
   hero = false,
   loading = false,
+  footer,
   className
 }: {
   label: string
@@ -34,6 +35,8 @@ export function KpiCard({
   hero?: boolean
   /** The figures are not in yet: the label stays, the value, trend and note are placeholders. */
   loading?: boolean
+  /** Extra row under the note: a status and a link. */
+  footer?: ReactNode
   className?: string
 }) {
   const t = useTranslations('dashboard')
@@ -58,6 +61,7 @@ export function KpiCard({
         {(delta !== undefined || hint) && (
           <Skeleton className={cn(ph, 'my-0.5 h-3 w-2/5 rounded-full')} />
         )}
+        {footer && <Skeleton className={cn(ph, 'h-6 w-28 rounded-full')} />}
         {spark && hero && <Skeleton className={cn(ph, 'mt-auto h-16')} />}
       </section>
     )
@@ -107,6 +111,7 @@ export function KpiCard({
           {hint}
         </p>
       ) : null}
+      {footer}
       {spark && hero && (
         <Spark
           values={spark}

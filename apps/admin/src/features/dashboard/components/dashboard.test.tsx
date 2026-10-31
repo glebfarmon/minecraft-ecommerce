@@ -37,6 +37,10 @@ const stats = (over: Partial<Record<string, unknown>> = {}) => ({
   ],
   daily: days(7, 1250),
   topProducts: [{productId: 'p1', name: 'VIP', serverName: 'Anarchy', quantity: 3}],
+  attentionCount: 0,
+  disputedCount: 0,
+  refundedCount: 0,
+  refundedMinor: 0,
   ...over
 })
 
@@ -100,6 +104,43 @@ describe('Dashboard', () => {
     ).toBeInTheDocument()
     // The revenue card's sparkline and the chart.
     expect(screen.getAllByRole('img', {name: /Revenue per day/})).toHaveLength(2)
+  })
+
+  it('shows deliveries needing attention with a warning dot and a link to /deliveries', async () => {
+    mockApi(stats({attentionCount: 3}))
+    renderWithStore(<Dashboard />)
+    const card = await findCard('Needs attention')
+    expect(card).toHaveTextContent('3')
+    expect(within(card).getByText('Action needed')).toBeInTheDocument()
+    expect(within(card).getByRole('link', {name: 'Open deliveries'})).toHaveAttribute(
+      'href',
+      '/deliveries'
+    )
+  })
+
+  it('has no warning dot while nothing needs attention', async () => {
+    mockApi(stats())
+    renderWithStore(<Dashboard />)
+    const card = await findCard('Needs attention')
+    expect(card).toHaveTextContent('0')
+    expect(within(card).queryByText('Action needed')).not.toBeInTheDocument()
+    expect(within(card).getByRole('link', {name: 'Open deliveries'})).toBeInTheDocument()
+  })
+
+  it('shows disputed orders and the refunds in range with their amount', async () => {
+    mockApi(stats({disputedCount: 2, refundedCount: 4, refundedMinor: 12345}))
+    renderWithStore(<Dashboard />)
+    const card = await findCard('Disputes and refunds')
+    expect(card).toHaveTextContent('2')
+    expect(card).toHaveTextContent('disputed orders')
+    expect(card).toHaveTextContent('Refunds in range: 4, €123.45')
+  })
+
+  it('speaks Polish on the new cards', async () => {
+    mockApi(stats({attentionCount: 1}))
+    renderWithProviders(<Dashboard />, {locale: 'pl'})
+    expect(await findCard('Wymaga uwagi')).toHaveTextContent('Wymaga reakcji')
+    expect(screen.getByRole('region', {name: 'Spory i zwroty'})).toBeInTheDocument()
   })
 
   it('splits paid orders by original currency', async () => {

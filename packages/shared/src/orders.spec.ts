@@ -120,7 +120,11 @@ describe('OrderStatsSchema', () => {
     byStatus: [{status: 'PAID', count: 2}],
     byCurrency: [{currency: 'EUR', count: 2, totalMinor: 2000}],
     daily: [{day: '2026-10-19', totalMinor: 2000, paidCount: 2}],
-    topProducts: []
+    topProducts: [],
+    attentionCount: 0,
+    disputedCount: 0,
+    refundedCount: 0,
+    refundedMinor: 0
   }
   it('accepts the converted shape, nulls included', () => {
     expect(v.safeParse(OrderStatsSchema, stats).success).toBe(true)

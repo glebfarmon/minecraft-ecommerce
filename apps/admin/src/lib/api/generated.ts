@@ -1708,6 +1708,10 @@ export type GetOrderStatsApiResponse = /** status 200 Statistics for the range *
     serverName: string
     quantity: number
   }[]
+  attentionCount: number
+  disputedCount: number
+  refundedCount: number
+  refundedMinor: number
 }
 export type GetOrderStatsApiArg = {
   range?: '7d' | '30d'

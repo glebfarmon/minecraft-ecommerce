@@ -7,7 +7,7 @@ import {EmptyState} from '@/components/empty-state'
 import {KpiCard} from '@/components/kpi-card'
 import {Skeleton} from '@/components/skeleton'
 import {StatusDonut} from '@/components/status-donut'
-import {StatusDot} from '@/components/status-dot'
+import {StatusDot, ToneDot} from '@/components/status-dot'
 import {useFormat} from '@/hooks/use-format'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useReportCurrency} from '@/hooks/use-report-currency'
@@ -35,10 +35,10 @@ type Stats = GetOrderStatsApiResponse
 const LINK =
   'text-[13px] text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-full'
 
-/** Revenue leads on the left over two rows; the other four sit 2 × 2 beside it, each wide enough for a full amount. */
+/** Revenue leads on the left over two rows; the other six sit 2 × 3 beside it, each wide enough for a full amount. */
 const KPI_GRID =
   'grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]'
-const HERO_CELL = 'sm:col-span-2 xl:col-span-1 xl:row-span-2'
+const HERO_CELL = 'sm:col-span-2 xl:col-span-1 xl:row-span-3'
 
 function Kpis({stats}: {stats: Stats}) {
   const t = useTranslations('dashboard')
@@ -91,6 +91,29 @@ function Kpis({stats}: {stats: Stats}) {
         label={t('ltv')}
         value={money(stats.ltvMinor)}
         hint={t('buyers', {count: stats.buyers})}
+      />
+      <KpiCard
+        label={t('attention')}
+        value={String(stats.attentionCount)}
+        count={{to: stats.attentionCount, format: String}}
+        hint={t('attentionHint')}
+        footer={
+          <div className="flex flex-wrap items-center gap-3">
+            {stats.attentionCount > 0 && <ToneDot tone="warn" label={t('attentionDot')} />}
+            <Link href="/deliveries" className={LINK}>
+              {t('attentionOpen')}
+            </Link>
+          </div>
+        }
+      />
+      <KpiCard
+        label={t('disputesRefunds')}
+        value={String(stats.disputedCount)}
+        count={{to: stats.disputedCount, format: String}}
+        hint={t('disputesHint', {
+          count: stats.refundedCount,
+          amount: f.money(stats.refundedMinor, currency)
+        })}
       />
     </div>
   )
@@ -256,6 +279,8 @@ function Loading() {
         <KpiCard loading label={t('averageOrder')} value="" />
         <KpiCard loading label={t('conversion')} value="" hint=" " />
         <KpiCard loading label={t('ltv')} value="" hint=" " />
+        <KpiCard loading label={t('attention')} value="" hint=" " footer />
+        <KpiCard loading label={t('disputesRefunds')} value="" hint=" " />
       </div>
       <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
         <Card title={t('revenuePerDay')}>

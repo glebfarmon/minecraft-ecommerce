@@ -161,6 +161,14 @@ export const OrderStatsSchema = v.object({
   ),
   topProducts: v.array(
     v.object({productId: v.string(), name: v.string(), serverName: v.string(), quantity: Count})
-  )
+  ),
+  /** Deliveries FAILED or NEEDS_REVIEW right now (the Deliveries page's filter); not range-bound. */
+  attentionCount: Count,
+  /** Orders in DISPUTED right now; not range-bound. */
+  disputedCount: Count,
+  /** Orders refunded (`refundedAt`) inside the range. */
+  refundedCount: Count,
+  /** Their sum in the reporting currency; orders without a rate are counted but not summed. */
+  refundedMinor: Minor
 })
 export type OrderStats = v.InferOutput<typeof OrderStatsSchema>
