@@ -118,9 +118,13 @@ export const AdminOrderSchema = v.object({
   stripeSessionId: v.nullable(v.string()),
   stripePaymentIntentId: v.nullable(v.string()),
   deliveryConsentAt: Iso,
+  refundRequestedAt: v.nullable(Iso),
   deliveries: v.array(AdminDeliverySchema)
 })
 export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
+
+export const RefundInputSchema = v.object({revoke: v.boolean()})
+export type RefundInput = v.InferOutput<typeof RefundInputSchema>
 
 export const STATS_RANGES = ['7d', '30d'] as const
 export const OrderStatsQuerySchema = v.object({

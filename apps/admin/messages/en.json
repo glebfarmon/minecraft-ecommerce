@@ -101,7 +101,11 @@
     "placeholder_mismatch": "Keep the same placeholders and tags as the original.",
     "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}",
     "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page.",
-    "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done."
+    "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done.",
+    "refund_not_allowed": "This order cannot be refunded.",
+    "refund_delivery_open": "Resolve the order's running or stuck deliveries first.",
+    "refund_already_requested": "A refund was already requested. Try again in 15 minutes.",
+    "refund_failed": "The payment provider did not accept the refund. Try again."
   },
   "nav": {
     "home": "Home",

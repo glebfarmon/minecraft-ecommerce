@@ -318,6 +318,13 @@ const injectedRtkApi = api.injectEndpoints({
     getAdminOrder: build.query<GetAdminOrderApiResponse, GetAdminOrderApiArg>({
       query: queryArg => ({url: `/api/admin/orders/${queryArg.id}`})
     }),
+    refundAdminOrder: build.mutation<RefundAdminOrderApiResponse, RefundAdminOrderApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/orders/${queryArg.id}/refund`,
+        method: 'POST',
+        body: queryArg.body
+      })
+    }),
     getOrderStats: build.query<GetOrderStatsApiResponse, GetOrderStatsApiArg>({
       query: queryArg => ({
         url: `/api/admin/stats/orders`,
@@ -1565,6 +1572,7 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
   stripeSessionId: string | null
   stripePaymentIntentId: string | null
   deliveryConsentAt: string
+  refundRequestedAt: string | null
   deliveries: {
     id: string
     kind: 'GRANT' | 'REVOKE' | 'RESTORE'
@@ -1582,6 +1590,55 @@ export type GetAdminOrderApiResponse = /** status 200 The order */ {
 }
 export type GetAdminOrderApiArg = {
   id: string
+}
+export type RefundAdminOrderApiResponse =
+  /** status 201 The refund was requested; the order with `refundRequestedAt` set */ {
+    publicId: string
+    status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+    nick: string
+    email: string
+    currency: 'EUR' | 'PLN'
+    subtotalMinor: number
+    discountMinor: number
+    promoCode: string | null
+    totalMinor: number
+    servers: {
+      serverName: string
+      items: {
+        productName: string
+        quantity: number
+        unitAmountMinor: number
+      }[]
+    }[]
+    createdAt: string
+    paidAt: string | null
+    delivery: 'none' | 'delivering' | 'delayed' | 'delivered'
+    id: string
+    locale: 'en' | 'pl'
+    stripeSessionId: string | null
+    stripePaymentIntentId: string | null
+    deliveryConsentAt: string
+    refundRequestedAt: string | null
+    deliveries: {
+      id: string
+      kind: 'GRANT' | 'REVOKE' | 'RESTORE'
+      status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED'
+      serverName: string
+      productName: string | null
+      commands: string[]
+      commandsDone: number
+      attempts: number
+      nextAttemptAt: string
+      lastError: string | null
+      replies: string[]
+      createdAt: string
+    }[]
+  }
+export type RefundAdminOrderApiArg = {
+  id: string
+  body: {
+    revoke: boolean
+  }
 }
 export type GetOrderStatsApiResponse = /** status 200 Statistics for the range */ {
   range: '7d' | '30d'
@@ -1810,6 +1867,7 @@ export const {
   useMarkDeliveryDoneMutation,
   useListAdminOrdersQuery,
   useGetAdminOrderQuery,
+  useRefundAdminOrderMutation,
   useGetOrderStatsQuery,
   useListPromoCodesQuery,
   useCreatePromoCodeMutation,

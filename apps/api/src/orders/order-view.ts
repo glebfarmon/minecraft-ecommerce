@@ -92,6 +92,7 @@ export function toAdminOrder(order: OrderWithAdminDeliveries): AdminOrder {
     stripeSessionId: order.stripeSessionId,
     stripePaymentIntentId: order.stripePaymentIntentId,
     deliveryConsentAt: order.deliveryConsentAt.toISOString(),
+    refundRequestedAt: order.refundRequestedAt?.toISOString() ?? null,
     deliveries: order.items.flatMap(i => i.deliveries.map(d => toAdminDelivery(d, i.productName)))
   }
 }

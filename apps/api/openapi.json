@@ -6851,6 +6851,17 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "refundRequestedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "deliveries": {
                       "type": "array",
                       "items": {
@@ -6962,6 +6973,7 @@
                     "stripeSessionId",
                     "stripePaymentIntentId",
                     "deliveryConsentAt",
+                    "refundRequestedAt",
                     "deliveries"
                   ]
                 }
@@ -6976,6 +6988,316 @@
           },
           "404": {
             "description": "`not_found`: no such order"
+          }
+        },
+        "tags": ["Orders admin"]
+      }
+    },
+    "/api/admin/orders/{id}/refund": {
+      "post": {
+        "operationId": "refundAdminOrder",
+        "summary": "Refund an order in full at the payment provider",
+        "description": "Needs `order.refund`. Only a `PAID` or `DELIVERED` order with a payment can be refunded, and not while a delivery is running or needs review. The refund is requested at the provider with a fixed idempotency key; the order moves to `REFUNDED` when the provider confirms (webhook). With `revoke: true` the deliveries that sent nothing yet are cancelled and the webhook later takes back what was given. A second request is refused until 15 minutes have passed. The audit entry stores the order before the call.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revoke": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["revoke"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The refund was requested; the order with `refundRequestedAt` set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "publicId": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["PENDING", "PAID", "DELIVERED", "EXPIRED", "REFUNDED", "DISPUTED"],
+                      "type": "string"
+                    },
+                    "nick": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "enum": ["EUR", "PLN"],
+                      "type": "string"
+                    },
+                    "subtotalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "discountMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "promoCode": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "totalMinor": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "servers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "productName": {
+                                  "type": "string"
+                                },
+                                "quantity": {
+                                  "type": "number"
+                                },
+                                "unitAmountMinor": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": ["productName", "quantity", "unitAmountMinor"]
+                            }
+                          }
+                        },
+                        "required": ["serverName", "items"]
+                      }
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "delivery": {
+                      "enum": ["none", "delivering", "delayed", "delivered"],
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "enum": ["en", "pl"],
+                      "type": "string"
+                    },
+                    "stripeSessionId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "stripePaymentIntentId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveryConsentAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "refundRequestedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "deliveries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "enum": ["GRANT", "REVOKE", "RESTORE"],
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "PENDING",
+                              "RUNNING",
+                              "DONE",
+                              "FAILED",
+                              "NEEDS_REVIEW",
+                              "CANCELLED"
+                            ],
+                            "type": "string"
+                          },
+                          "serverName": {
+                            "type": "string"
+                          },
+                          "productName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "commands": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "commandsDone": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "nextAttemptAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lastError": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "replies": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "status",
+                          "serverName",
+                          "productName",
+                          "commands",
+                          "commandsDone",
+                          "attempts",
+                          "nextAttemptAt",
+                          "lastError",
+                          "replies",
+                          "createdAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "publicId",
+                    "status",
+                    "nick",
+                    "email",
+                    "currency",
+                    "subtotalMinor",
+                    "discountMinor",
+                    "promoCode",
+                    "totalMinor",
+                    "servers",
+                    "createdAt",
+                    "paidAt",
+                    "delivery",
+                    "id",
+                    "locale",
+                    "stripeSessionId",
+                    "stripePaymentIntentId",
+                    "deliveryConsentAt",
+                    "refundRequestedAt",
+                    "deliveries"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: `revoke` must be a boolean"
+          },
+          "401": {
+            "description": "No session, or the admin is disabled"
+          },
+          "403": {
+            "description": "`2fa_required`, or the role lacks the permission (`forbidden`)"
+          },
+          "404": {
+            "description": "`not_found`: no such order"
+          },
+          "409": {
+            "description": "`refund_not_allowed`: the order is not `PAID` or `DELIVERED`, or has no payment. `refund_delivery_open`: a delivery is running or needs review; resolve it first. `refund_already_requested`: a refund was requested less than 15 minutes ago"
+          },
+          "502": {
+            "description": "`refund_failed`: the payment provider refused or did not answer; nothing was reserved and it can be retried"
           }
         },
         "tags": ["Orders admin"]

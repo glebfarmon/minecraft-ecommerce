@@ -101,7 +101,11 @@
     "placeholder_mismatch": "Zachowaj te same znaczniki i tagi co w oryginale.",
     "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}",
     "delivery_not_stuck": "Ta dostawa już nie jest zablokowana. Odśwież stronę.",
-    "delivery_not_retryable": "Tej dostawy nie da się ponowić: nick był nieprawidłowy, więc nie ma żadnych poleceń. Wydaj zakup w grze ręcznie i oznacz dostawę jako wykonaną."
+    "delivery_not_retryable": "Tej dostawy nie da się ponowić: nick był nieprawidłowy, więc nie ma żadnych poleceń. Wydaj zakup w grze ręcznie i oznacz dostawę jako wykonaną.",
+    "refund_not_allowed": "To zamówienie nie może zostać zwrócone.",
+    "refund_delivery_open": "Najpierw rozwiąż trwające lub zablokowane dostawy tego zamówienia.",
+    "refund_already_requested": "Zwrot został już zlecony. Spróbuj ponownie za 15 minut.",
+    "refund_failed": "Operator płatności nie przyjął zwrotu. Spróbuj ponownie."
   },
   "nav": {
     "home": "Strona główna",

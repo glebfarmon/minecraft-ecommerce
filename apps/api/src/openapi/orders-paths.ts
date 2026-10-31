@@ -7,7 +7,8 @@ import {
   OrderStatsQuerySchema,
   OrderStatsSchema,
   PublicOrderSchema,
-  RecentPurchasesSchema
+  RecentPurchasesSchema,
+  RefundInputSchema
 } from '@shop/shared/orders'
 import {ValidatePromoRequestSchema, ValidatePromoResponseSchema} from '@shop/shared/promo'
 
@@ -128,6 +129,33 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
       responses: {
         '200': json('The order', AdminOrderSchema),
         '404': {description: '`not_found`: no such order'},
+        ...guarded
+      }
+    })
+  },
+  '/api/admin/orders/{id}/refund': {
+    post: adminOp({
+      operationId: 'refundAdminOrder',
+      summary: 'Refund an order in full at the payment provider',
+      description:
+        'Needs `order.refund`. Only a `PAID` or `DELIVERED` order with a payment can be refunded, and not while a delivery is running or needs review. The refund is requested at the provider with a fixed idempotency key; the order moves to `REFUNDED` when the provider confirms (webhook). With `revoke: true` the deliveries that sent nothing yet are cancelled and the webhook later takes back what was given. A second request is refused until 15 minutes have passed. The audit entry stores the order before the call.',
+      parameters: [pathParam('id')],
+      requestBody: body(RefundInputSchema),
+      responses: {
+        '201': json(
+          'The refund was requested; the order with `refundRequestedAt` set',
+          AdminOrderSchema
+        ),
+        '400': {description: 'Invalid body: `revoke` must be a boolean'},
+        '404': {description: '`not_found`: no such order'},
+        '409': {
+          description:
+            '`refund_not_allowed`: the order is not `PAID` or `DELIVERED`, or has no payment. `refund_delivery_open`: a delivery is running or needs review; resolve it first. `refund_already_requested`: a refund was requested less than 15 minutes ago'
+        },
+        '502': {
+          description:
+            '`refund_failed`: the payment provider refused or did not answer; nothing was reserved and it can be retried'
+        },
         ...guarded
       }
     })

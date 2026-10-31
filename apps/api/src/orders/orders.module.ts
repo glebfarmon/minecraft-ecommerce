@@ -8,6 +8,7 @@ import {RatesModule} from '../rates/rates.module'
 import {OrderRatesService} from './order-rates.service'
 import {OrderStatsController, OrdersAdminController} from './orders-admin.controller'
 import {OrdersAdminService} from './orders-admin.service'
+import {OrdersRefundService} from './orders-refund.service'
 import {OrdersStatsService} from './orders-stats.service'
 import {OrdersController} from './orders.controller'
 import {OrdersService} from './orders.service'
@@ -37,6 +38,7 @@ import {WebhookController} from './webhook.controller'
     PromoAdminService,
     DeliveriesAdminService,
     OrdersAdminService,
+    OrdersRefundService,
     OrdersStatsService,
     PaymentEventsService,
     OrderRatesService,
