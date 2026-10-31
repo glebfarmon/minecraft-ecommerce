@@ -25,7 +25,11 @@ describe('apiErrorMessage', () => {
       'This code has been used, so its text, discount and scope cannot change. Create a new code instead.'
     ],
     ['max_uses_below_used', 'Max uses cannot be below the times the code was already used.'],
-    ['code_taken', 'That code is already in use. Pick another one.']
+    ['code_taken', 'That code is already in use. Pick another one.'],
+    ['refund_not_allowed', 'This order cannot be refunded.'],
+    ['refund_delivery_open', "Resolve the order's running or stuck deliveries first."],
+    ['refund_already_requested', 'A refund was already requested. Try again in 15 minutes.'],
+    ['refund_failed', 'The payment provider did not accept the refund. Try again.']
   ])('explains %s', (code, text) => {
     expect(apiErrorMessage({status: 409, data: {message: code}}, english)).toBe(text)
   })

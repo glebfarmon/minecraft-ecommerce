@@ -119,10 +119,21 @@ describe('OrderStatus', () => {
     expect(clearCart).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['REFUNDED', 'DISPUTED'] as const)('shows a closed view for %%s', status => {
-    render(<OrderStatus initial={{...base, status}} />)
-    expect(screen.getByRole('heading', {name: 'order.closed.title'})).toBeInTheDocument()
-    expect(screen.getByText('order.closed.body')).toBeInTheDocument()
+  it('shows a refunded view and does not poll', async () => {
+    render(<OrderStatus initial={{...base, status: 'REFUNDED'}} />)
+    expect(screen.getByRole('heading', {name: 'order.refunded.title'})).toBeInTheDocument()
+    expect(screen.getByText('order.refunded.body')).toBeInTheDocument()
+    await tick(60_000)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(clearCart).not.toHaveBeenCalled()
+  })
+
+  it('shows a review view for a disputed order and does not poll', async () => {
+    render(<OrderStatus initial={{...base, status: 'DISPUTED'}} />)
+    expect(screen.getByRole('heading', {name: 'order.review.title'})).toBeInTheDocument()
+    expect(screen.getByText('order.review.body')).toBeInTheDocument()
+    await tick(60_000)
+    expect(fetchMock).not.toHaveBeenCalled()
     expect(clearCart).not.toHaveBeenCalled()
   })
 

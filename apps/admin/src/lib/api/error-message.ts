@@ -28,7 +28,11 @@ const CODES = new Set([
   'invalid_locale',
   'promo_locked',
   'max_uses_below_used',
-  'code_taken'
+  'code_taken',
+  'refund_not_allowed',
+  'refund_delivery_open',
+  'refund_already_requested',
+  'refund_failed'
 ])
 
 /** The entities an `in_use` answer counts; each has an ICU plural under `apiErrors.in_use_<entity>`. */

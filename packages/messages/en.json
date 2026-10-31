@@ -257,6 +257,14 @@
     },
     "promo": "Promo code {code}",
     "total": "Total",
+    "refunded": {
+      "title": "This order was refunded",
+      "body": "The money is on its way back to your payment method. Contact support if you have questions about it."
+    },
+    "review": {
+      "title": "This payment is under review",
+      "body": "Your bank has asked us to review this payment. Contact support if you have questions about it."
+    },
     "closed": {
       "title": "This order is closed",
       "body": "Contact support if you have questions about it."

@@ -257,6 +257,14 @@
     },
     "promo": "Kod promocyjny {code}",
     "total": "Razem",
+    "refunded": {
+      "title": "To zamówienie zostało zwrócone",
+      "body": "Pieniądze wracają na Twoją metodę płatności. Skontaktuj się z pomocą, jeśli masz pytania."
+    },
+    "review": {
+      "title": "Ta płatność jest w trakcie weryfikacji",
+      "body": "Twój bank poprosił nas o weryfikację tej płatności. Skontaktuj się z pomocą, jeśli masz pytania."
+    },
     "closed": {
       "title": "To zamówienie jest zamknięte",
       "body": "Skontaktuj się z pomocą, jeśli masz pytania."

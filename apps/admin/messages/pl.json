@@ -222,6 +222,18 @@
     "emailLabel": "E-mail",
     "attention": "{count, plural, one {# zamówienie wymaga uwagi} few {# zamówienia wymagają uwagi} many {# zamówień wymaga uwagi} other {# zamówienia wymaga uwagi}}",
     "attentionRow": "Wymaga uwagi",
+    "refund": {
+      "title": "Zwrot",
+      "button": "Zwróć",
+      "revoke": "Odbierz dostarczone przedmioty",
+      "note": "Produkty bez poleceń odbierających zachowują swoje przedmioty",
+      "confirm": "Potwierdź zwrot",
+      "cancel": "Anuluj",
+      "requested": "Zwrot zlecony",
+      "waiting": "Zwrot zlecony, czekamy na Stripe",
+      "refunded": "To zamówienie zostało zwrócone",
+      "disputed": "Kupujący zakwestionował tę płatność"
+    },
     "deliveries": {
       "title": "Dostawy",
       "kind": {
