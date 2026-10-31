@@ -73,6 +73,46 @@ describe('fake payment page', () => {
     await request(server).post('/api/payments/fake/cs_fake_nope/cancel').expect(404)
   })
 
+  describe('charge event hooks', () => {
+    async function paid() {
+      const {publicId, path} = await createOrder()
+      await request(ctx.app.getHttpServer()).post(`${path}/pay`).expect(303)
+      return publicId
+    }
+    const hook = (publicId: string, kind: string) =>
+      request(ctx.app.getHttpServer()).post(`/api/payments/fake/orders/${publicId}/events/${kind}`)
+    const statusOf = async (publicId: string) =>
+      (await ctx.prisma.order.findUniqueOrThrow({where: {publicId}})).status
+
+    it('refunded moves the order to REFUNDED', async () => {
+      const id = await paid()
+      const res = await hook(id, 'refunded').expect(201)
+      expect(res.body).toEqual({received: true})
+      expect(await statusOf(id)).toBe('REFUNDED')
+    })
+
+    it('dispute_opened moves it to DISPUTED, dispute_lost keeps it there', async () => {
+      const id = await paid()
+      await hook(id, 'dispute_opened').expect(201)
+      expect(await statusOf(id)).toBe('DISPUTED')
+      await hook(id, 'dispute_lost').expect(201)
+      expect(await statusOf(id)).toBe('DISPUTED')
+    })
+
+    it('dispute_won after opened restores the order', async () => {
+      const id = await paid()
+      await hook(id, 'dispute_opened').expect(201)
+      await hook(id, 'dispute_won').expect(201)
+      expect(['PAID', 'DELIVERED']).toContain(await statusOf(id))
+    })
+
+    it('answers 404 for an unknown order and 400 for an unknown kind', async () => {
+      const id = await paid()
+      await hook('nope_nope', 'refunded').expect(404)
+      await hook(id, 'explode').expect(400)
+    })
+  })
+
   it('answers 404 on all routes when the Stripe gateway is active', async () => {
     const saved = {...process.env}
     process.env.PAYMENTS_GATEWAY = 'stripe'
@@ -92,6 +132,7 @@ describe('fake payment page', () => {
       await request(server).get('/api/payments/fake/anything').expect(404)
       await request(server).post('/api/payments/fake/anything/pay').expect(404)
       await request(server).post('/api/payments/fake/anything/cancel').expect(404)
+      await request(server).post('/api/payments/fake/orders/anything/events/refunded').expect(404)
     } finally {
       await stripeApp.close()
     }
