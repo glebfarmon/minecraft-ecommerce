@@ -3,8 +3,8 @@ import {expect, test} from '@playwright/test'
 import {buyVip} from '../support/checkout'
 
 // The scenarios that need the owner (a silent server marked done in admin, the owner alert mail)
-// live in admin.spec.ts: its serial group is the only place that signs the owner in, because a new
-// email code replaces the previous one and the API refuses a reused TOTP step.
+// live in admin.spec.ts: its serial group signs the owner in (refund.spec.ts does too, but only after
+// it), because a new email code replaces the previous one and the API refuses a reused TOTP step.
 
 test.use({viewport: {width: 1600, height: 900}})
 test.skip(({browserName}) => browserName !== 'chromium', 'one browser is enough for payments')

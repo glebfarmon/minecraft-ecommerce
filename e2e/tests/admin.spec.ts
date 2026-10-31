@@ -1,8 +1,10 @@
 import {type Page, expect, test} from '@playwright/test'
 import {generateSync} from 'otplib'
 
+import {setUpTotp, signInWithCode} from '../support/admin-auth'
 import {buyVip} from '../support/checkout'
-import {type Mail, findMail, inviteLink, latestMail, newestMailId} from '../support/mailpit'
+import {type Mail, findMail, inviteLink, latestMail} from '../support/mailpit'
+import {saveOwnerTotp} from '../support/owner-totp'
 
 // Runs against a fresh stack: the seed mails the owner invite once (`docker compose ... down -v`
 // before a local rerun), and the tests build on each other (the owner's TOTP secret).
@@ -14,34 +16,6 @@ const SUE = 'sue@shop.localhost'
 test.describe.configure({mode: 'serial', retries: 0})
 test.skip(({browserName}) => browserName !== 'chromium', 'one browser is enough for the auth flow')
 
-/** Email code sign-in on /login or an invite page (where the email is prefilled and read-only). */
-async function signInWithCode(page: Page, email: string) {
-  const field = page.getByLabel('Email')
-  if (await field.isEditable()) await field.fill(email)
-  else await expect(field).toHaveValue(email)
-  const before = await newestMailId(email)
-  await page.getByRole('button', {name: 'Send code'}).click()
-  await expect(page.getByLabel('6-digit code')).toBeVisible()
-  const mail = await latestMail(email, {after: before})
-  const code = /^(\d{6})/.exec(mail.subject)?.[1]
-  if (!code) throw new Error(`no sign-in code in "${mail.subject}"`)
-  await page.getByLabel('6-digit code').fill(code)
-  await page.getByRole('button', {name: 'Sign in'}).click()
-  await expect(page).toHaveURL(/\/2fa$/)
-}
-
-/** Enrolls TOTP on /2fa, saves the backup codes and returns the secret. */
-async function setUpTotp(page: Page): Promise<string> {
-  const secret = (await page.getByTestId('totp-secret').textContent()) ?? ''
-  expect(secret).not.toBe('')
-  await page.getByLabel('Code from the app').fill(generateSync({secret}))
-  await page.getByRole('button', {name: 'Confirm'}).click()
-  await expect(page.getByTestId('backup-codes')).toBeVisible()
-  await page.getByRole('button', {name: 'I saved them'}).click()
-  await expect(page.getByRole('heading', {name: /^Welcome/})).toBeVisible()
-  return secret
-}
-
 let ownerSecret = ''
 let lastOwnerStep = 0
 
@@ -50,6 +24,7 @@ async function ownerCode(page: Page): Promise<string> {
   const step = Math.max(Math.floor(Date.now() / 30_000), lastOwnerStep + 1)
   while (step > Math.floor(Date.now() / 30_000) + 1) await page.waitForTimeout(1000)
   lastOwnerStep = step
+  saveOwnerTotp({secret: ownerSecret, lastStep: step})
   return generateSync({secret: ownerSecret, epoch: step * 30})
 }
 
@@ -62,6 +37,7 @@ test('the owner accepts the seeded invite, sets up TOTP and reaches the team pag
   await signInWithCode(page, OWNER)
   ownerSecret = await setUpTotp(page)
   lastOwnerStep = Math.floor(Date.now() / 30_000)
+  saveOwnerTotp({secret: ownerSecret, lastStep: lastOwnerStep})
   await page.getByRole('link', {name: 'Team'}).click()
   await expect(page.getByRole('heading', {name: 'Team'})).toBeVisible()
 })
