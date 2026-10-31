@@ -203,3 +203,136 @@ describe('admin delivery actions', () => {
     expect(filtered.attentionCount).toBe(2)
   })
 })
+
+describe('admin deliveries list', () => {
+  type Item = {
+    id: string
+    kind: string
+    status: string
+    nick: string
+    orderId: string | null
+    orderPublicId: string | null
+    productName: string | null
+  }
+  type Page = {deliveries: Item[]; nextCursor: string | null; attentionCount: number}
+
+  const clear = () =>
+    ctx.prisma.delivery.updateMany({
+      where: {status: {in: ['FAILED', 'NEEDS_REVIEW']}},
+      data: {status: 'DONE'}
+    })
+  const reader = () => ctx.admin({permissions: ['order.read']})
+
+  async function expiryRevoke(status: DeliveryStatus) {
+    seq += 1
+    const p = await product('TIMED')
+    const grant = await ctx.prisma.grant.create({
+      data: {nick: `Gone${String(seq)}`, serverId: p.serverId, productId: p.id}
+    })
+    return ctx.prisma.delivery.create({
+      data: {
+        grantId: grant.id,
+        serverId: p.serverId,
+        kind: 'REVOKE',
+        commands: ['lp user x parent remove vip'],
+        status,
+        lastError: 'timeout'
+      }
+    })
+  }
+
+  async function refundRevoke(status: DeliveryStatus, kind: 'REVOKE' | 'RESTORE' = 'REVOKE') {
+    const {order, id} = await stuck('DONE')
+    const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+    const row = await ctx.prisma.delivery.create({
+      data: {
+        orderItemId: grant.orderItemId,
+        serverId: grant.serverId,
+        kind,
+        commands: ['lp user x parent remove vip'],
+        status,
+        lastError: 'timeout'
+      }
+    })
+    return {order, row}
+  }
+
+  it('lists an expiry REVOKE without an order and a refund REVOKE with its order', async () => {
+    await clear()
+    const expiry = await expiryRevoke('FAILED')
+    const {order, row} = await refundRevoke('NEEDS_REVIEW')
+    const page = (await (await reader()).get('/api/admin/deliveries').expect(200)).body as Page
+    const byId = (id: string) => page.deliveries.find(d => d.id === id)
+    expect(byId(expiry.id)).toMatchObject({
+      kind: 'REVOKE',
+      status: 'FAILED',
+      orderId: null,
+      orderPublicId: null,
+      nick: expect.stringMatching(/^Gone/) as string
+    })
+    expect(byId(expiry.id)?.productName).toEqual(expect.any(String))
+    expect(byId(row.id)).toMatchObject({
+      kind: 'REVOKE',
+      status: 'NEEDS_REVIEW',
+      orderId: order.id,
+      orderPublicId: order.publicId,
+      nick: order.nick,
+      productName: 'Name of product'
+    })
+    expect(page.attentionCount).toBe(2)
+  })
+
+  it('lists a RESTORE and leaves out DONE, PENDING, RUNNING and CANCELLED', async () => {
+    await clear()
+    const restore = await refundRevoke('FAILED', 'RESTORE')
+    await expiryRevoke('PENDING')
+    await expiryRevoke('RUNNING')
+    await expiryRevoke('CANCELLED')
+    await expiryRevoke('DONE')
+    const page = (await (await reader()).get('/api/admin/deliveries').expect(200)).body as Page
+    expect(page.deliveries.map(d => d.id)).toEqual([restore.row.id])
+    expect(page.deliveries[0]?.kind).toBe('RESTORE')
+    expect(page.attentionCount).toBe(1)
+  })
+
+  it('pages newest first with a cursor, 50 per page', async () => {
+    await clear()
+    const created: string[] = []
+    for (let i = 0; i < 52; i += 1) created.push((await expiryRevoke('FAILED')).id)
+    const a = await reader()
+    const first = (await a.get('/api/admin/deliveries').expect(200)).body as Page
+    expect(first.deliveries).toHaveLength(50)
+    expect(first.nextCursor).toBe(first.deliveries[49]?.id)
+    expect(first.attentionCount).toBe(52)
+    const second = (
+      await a.get('/api/admin/deliveries').query({cursor: first.nextCursor}).expect(200)
+    ).body as Page
+    expect(second.deliveries).toHaveLength(2)
+    expect(second.nextCursor).toBeNull()
+    const all = [...first.deliveries, ...second.deliveries].map(d => d.id)
+    expect(new Set(all).size).toBe(52)
+    expect(new Set(all)).toEqual(new Set(created))
+  })
+
+  it('needs order.read, and delivery.resolve alone is not enough', async () => {
+    await (await ctx.admin({permissions: []})).get('/api/admin/deliveries').expect(403)
+    await (await resolver()).get('/api/admin/deliveries').expect(403)
+    await (await reader()).get('/api/admin/deliveries').expect(200)
+    // The existing actions keep their own guard.
+    const {id} = await stuck('FAILED')
+    await (await reader()).post(retry(id)).expect(403)
+  })
+
+  it('marking a refund REVOKE done through the list leaves the order REFUNDED', async () => {
+    await clear()
+    const {order, row} = await refundRevoke('FAILED')
+    await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+    const a = await ctx.admin({permissions: ['order.read', 'delivery.resolve']})
+    await a.post(done(row.id)).expect(201)
+    expect((await ctx.prisma.order.findUniqueOrThrow({where: {id: order.id}})).status).toBe(
+      'REFUNDED'
+    )
+    const page = (await a.get('/api/admin/deliveries').expect(200)).body as Page
+    expect(page.deliveries.find(d => d.id === row.id)).toBeUndefined()
+  })
+})

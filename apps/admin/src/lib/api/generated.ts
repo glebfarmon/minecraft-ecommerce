@@ -299,6 +299,14 @@ const injectedRtkApi = api.injectEndpoints({
     >({
       query: queryArg => ({url: `/api/admin/content/settings`, method: 'PUT', body: queryArg.body})
     }),
+    listAdminDeliveries: build.query<ListAdminDeliveriesApiResponse, ListAdminDeliveriesApiArg>({
+      query: queryArg => ({
+        url: `/api/admin/deliveries`,
+        params: {
+          cursor: queryArg.cursor
+        }
+      })
+    }),
     retryDelivery: build.mutation<RetryDeliveryApiResponse, RetryDeliveryApiArg>({
       query: queryArg => ({url: `/api/admin/deliveries/${queryArg.id}/retry`, method: 'POST'})
     }),
@@ -1492,6 +1500,30 @@ export type UpdateContentSettingsApiArg = {
     version: number
   }
 }
+export type ListAdminDeliveriesApiResponse = /** status 200 A page of stuck deliveries */ {
+  deliveries: {
+    id: string
+    kind: 'GRANT' | 'REVOKE' | 'RESTORE'
+    status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED'
+    serverName: string
+    productName: string | null
+    commands: string[]
+    commandsDone: number
+    attempts: number
+    nextAttemptAt: string
+    lastError: string | null
+    replies: string[]
+    createdAt: string
+    nick: string
+    orderId: string | null
+    orderPublicId: string | null
+  }[]
+  nextCursor: string | null
+  attentionCount: number
+}
+export type ListAdminDeliveriesApiArg = {
+  cursor?: string
+}
 export type RetryDeliveryApiResponse = /** status 201 The delivery, now `PENDING` */ {
   id: string
   kind: 'GRANT' | 'REVOKE' | 'RESTORE'
@@ -1863,6 +1895,7 @@ export const {
   useResetContentMessageMutation,
   useGetContentSettingsQuery,
   useUpdateContentSettingsMutation,
+  useListAdminDeliveriesQuery,
   useRetryDeliveryMutation,
   useMarkDeliveryDoneMutation,
   useListAdminOrdersQuery,

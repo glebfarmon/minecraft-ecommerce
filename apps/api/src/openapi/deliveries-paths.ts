@@ -1,6 +1,10 @@
-import {AdminDeliverySchema} from '@shop/shared/delivery'
+import {
+  AdminDeliveryPageSchema,
+  AdminDeliveryQuerySchema,
+  AdminDeliverySchema
+} from '@shop/shared/delivery'
 
-import {type Method, type Operation, guarded, json, pathParam} from './helpers'
+import {type Method, type Operation, guarded, json, pathParam, queryParam} from './helpers'
 
 const op = (o: Omit<Operation, 'tags'>): Operation => ({...o, tags: ['Deliveries admin']})
 const notStuck = {
@@ -11,6 +15,21 @@ const notStuck = {
 }
 
 export const deliveriesPaths: Record<string, Partial<Record<Method, Operation>>> = {
+  '/api/admin/deliveries': {
+    get: op({
+      operationId: 'listAdminDeliveries',
+      summary: 'Stuck deliveries of every kind, newest first, 50 per page',
+      description:
+        'Needs `order.read`. Only `FAILED` and `NEEDS_REVIEW` deliveries (grants, revokes and restores). `orderId` and `orderPublicId` are null for a revoke created by a timed product expiring; `nick` then comes from its grant. `attentionCount` is the number of stuck deliveries over all pages. Pass the returned `nextCursor` as `cursor` for the next page. Retry and mark-done need `delivery.resolve`.',
+      parameters: Object.entries(AdminDeliveryQuerySchema.entries).map(([name, s]) =>
+        queryParam(name, s.wrapped)
+      ),
+      responses: {
+        '200': json('A page of stuck deliveries', AdminDeliveryPageSchema),
+        ...guarded
+      }
+    })
+  },
   '/api/admin/deliveries/{id}/retry': {
     post: op({
       operationId: 'retryDelivery',

@@ -32,3 +32,26 @@ export const AdminDeliverySchema = v.object({
   createdAt: Iso
 })
 export type AdminDelivery = v.InferOutput<typeof AdminDeliverySchema>
+
+/** A stuck delivery in the admin's deliveries list, with what it belongs to. */
+export const AdminDeliveryListItemSchema = v.object({
+  ...AdminDeliverySchema.entries,
+  nick: v.string(),
+  orderId: v.nullable(v.string()),
+  orderPublicId: v.nullable(v.string()),
+  productName: v.nullable(v.string())
+})
+export type AdminDeliveryListItem = v.InferOutput<typeof AdminDeliveryListItemSchema>
+
+export const AdminDeliveryPageSchema = v.object({
+  deliveries: v.array(AdminDeliveryListItemSchema),
+  nextCursor: v.nullable(v.string()),
+  /** Every `FAILED` or `NEEDS_REVIEW` delivery, whatever page this is. */
+  attentionCount: v.pipe(v.number(), v.integer(), v.minValue(0))
+})
+export type AdminDeliveryPage = v.InferOutput<typeof AdminDeliveryPageSchema>
+
+export const AdminDeliveryQuerySchema = v.object({
+  cursor: v.optional(v.pipe(v.string(), v.maxLength(64)))
+})
+export type AdminDeliveryQuery = v.InferOutput<typeof AdminDeliveryQuerySchema>

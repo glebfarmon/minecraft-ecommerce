@@ -1,6 +1,6 @@
 import {Inject, Injectable, Logger} from '@nestjs/common'
 
-import type {AdminDelivery} from '@shop/shared/delivery'
+import type {AdminDelivery, AdminDeliveryPage, AdminDeliveryQuery} from '@shop/shared/delivery'
 
 import {conflict, notFound} from '../common/http-errors'
 import {PrismaService} from '../prisma/prisma.service'
@@ -8,6 +8,7 @@ import {DELIVERY_QUEUE, type DeliveryQueue} from './delivery-queue'
 import {toAdminDelivery} from './delivery-view'
 import {DeliveryService} from './delivery.service'
 
+const PAGE = 50
 const STUCK = ['FAILED', 'NEEDS_REVIEW'] as const
 const notStuck = () => conflict('delivery_not_stuck')
 
@@ -21,6 +22,50 @@ export class DeliveriesAdminService {
     private readonly deliveries: DeliveryService,
     @Inject(DELIVERY_QUEUE) private readonly queue: DeliveryQueue
   ) {}
+
+  /** The deliveries a human has to look at, newest first, of every kind. */
+  async page(query: AdminDeliveryQuery): Promise<AdminDeliveryPage> {
+    const where = {status: {in: [...STUCK]}}
+    const [rows, attentionCount] = await Promise.all([
+      this.prisma.delivery.findMany({
+        where,
+        orderBy: [{createdAt: 'desc'}, {id: 'desc'}],
+        take: PAGE + 1,
+        ...(query.cursor ? {cursor: {id: query.cursor}, skip: 1} : {}),
+        include: {
+          server: {select: {name: true}},
+          orderItem: {
+            select: {productName: true, order: {select: {id: true, publicId: true, nick: true}}}
+          },
+          grant: {
+            select: {
+              nick: true,
+              product: {select: {translations: {select: {locale: true, name: true}}}}
+            }
+          }
+        }
+      }),
+      this.prisma.delivery.count({where})
+    ])
+    const deliveries = rows.slice(0, PAGE).map(row => {
+      const order = row.orderItem?.order ?? null
+      const names = row.grant?.product.translations ?? []
+      // An expiry revoke has no item snapshot: the grant's product in English, else any language.
+      const grantName = (names.find(n => n.locale === 'en') ?? names[0])?.name
+      const productName = row.orderItem?.productName ?? grantName ?? null
+      return {
+        ...toAdminDelivery(row, productName),
+        nick: order?.nick ?? row.grant?.nick ?? '',
+        orderId: order?.id ?? null,
+        orderPublicId: order?.publicId ?? null
+      }
+    })
+    return {
+      deliveries,
+      nextCursor: rows.length > PAGE ? (deliveries.at(-1)?.id ?? null) : null,
+      attentionCount
+    }
+  }
 
   async retry(id: string, onBefore: (before: AdminDelivery) => void): Promise<AdminDelivery> {
     onBefore(await this.view(id))

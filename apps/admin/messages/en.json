@@ -110,12 +110,33 @@
   "nav": {
     "home": "Home",
     "orders": "Orders",
+    "deliveries": "Deliveries",
+    "attention": "{label}, {count} need attention",
     "promo": "Promo codes",
     "catalog": "Catalog",
     "content": "Content",
     "team": "Team",
     "audit": "Audit log",
     "account": "Account"
+  },
+  "deliveries": {
+    "title": "Deliveries",
+    "description": "Deliveries that failed or need a look, of every kind.",
+    "loadMore": "Load more",
+    "forbidden": "You do not have permission to read deliveries.",
+    "loadFailed": "Could not load deliveries. Try again.",
+    "colKind": "Kind",
+    "colNick": "Nick",
+    "colServer": "Server",
+    "colProduct": "Product",
+    "colStatus": "Status",
+    "colAttempts": "Attempts",
+    "colError": "Last error",
+    "colOrder": "Order",
+    "colActions": "Actions",
+    "none": "None",
+    "noOrder": "No order (expiry)",
+    "empty": "No stuck deliveries."
   },
   "status": {
     "PAID": "Paid",

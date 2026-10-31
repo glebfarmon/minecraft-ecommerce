@@ -110,12 +110,33 @@
   "nav": {
     "home": "Strona główna",
     "orders": "Zamówienia",
+    "deliveries": "Dostawy",
+    "attention": "{label}, wymagają uwagi: {count}",
     "promo": "Kody promocyjne",
     "catalog": "Katalog",
     "content": "Treść",
     "team": "Zespół",
     "audit": "Dziennik audytu",
     "account": "Konto"
+  },
+  "deliveries": {
+    "title": "Dostawy",
+    "description": "Dostawy, które się nie powiodły lub wymagają sprawdzenia, wszystkich rodzajów.",
+    "loadMore": "Wczytaj więcej",
+    "forbidden": "Nie masz uprawnień do odczytu dostaw.",
+    "loadFailed": "Nie udało się wczytać dostaw. Spróbuj ponownie.",
+    "colKind": "Rodzaj",
+    "colNick": "Nick",
+    "colServer": "Serwer",
+    "colProduct": "Produkt",
+    "colStatus": "Status",
+    "colAttempts": "Próby",
+    "colError": "Ostatni błąd",
+    "colOrder": "Zamówienie",
+    "colActions": "Akcje",
+    "none": "Brak",
+    "noOrder": "Brak zamówienia (wygaśnięcie)",
+    "empty": "Brak zablokowanych dostaw."
   },
   "status": {
     "PAID": "Opłacone",
