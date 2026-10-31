@@ -146,7 +146,7 @@ Create a GitHub environment `production` and move these secrets into it.
 The owner pastes these values in Dokploy and never sends them to the assistant.
 
 1. Stripe (test mode) → Developers → API keys → the secret key goes into `STRIPE_SECRET_KEY` on `shop-api`.
-2. Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`. Its signing secret goes into `STRIPE_WEBHOOK_SECRET` on `shop-api`.
+2. Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed` (an older endpoint: open it → Update events → add the three `charge.*` events). Its signing secret goes into `STRIPE_WEBHOOK_SECRET` on `shop-api`. The admin Refund button needs `order.refund` (OWNER only; for anyone else, a custom role in Team → Roles).
 3. Optional: Settings → Payment methods → enable BLIK and Przelewy24 for PLN.
 4. Cloudflare → Turnstile → add a widget for `<domain>`. The site key goes into `TURNSTILE_SITE_KEY` on `shop-web` (read at runtime); the secret goes into `TURNSTILE_SECRET_KEY` on `shop-api`.
 5. On `shop-api` also set `PAYMENTS_GATEWAY=stripe` and `PUBLIC_WEB_ORIGIN=https://<domain>`. Never set `PAYMENTS_ALLOW_FAKE` in production.

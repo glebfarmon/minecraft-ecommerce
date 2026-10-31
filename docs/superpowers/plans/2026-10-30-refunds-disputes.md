@@ -46,11 +46,11 @@ Failure modes the spec implies; each has a test in the named task.
 
 - Produces: `DeliveryKind` gains `RESTORE`; `DeliveryStatus` gains `CANCELLED`; `Order` gains `refundRequestedAt DateTime?`, `refundRevoke Boolean?`, `refundedAt DateTime?` and `@@index([stripePaymentIntentId])`; shared `DELIVERY_STATUSES` includes `'CANCELLED'`, `AdminDeliverySchema.kind` picklist `['GRANT','REVOKE','RESTORE']`; `PERMISSIONS` includes `'order.refund'` (in `SYSTEM_ROLES.OWNER` automatically, absent from ADMIN and SUPPORT).
 
-- [ ] **Step 1: Failing tests.** Int: a `Delivery` can be created with `kind: 'RESTORE'` and `status: 'CANCELLED'`; an `Order` stores `refundRequestedAt`, `refundRevoke`, `refundedAt`. Unit: `SYSTEM_ROLES.OWNER` contains `order.refund`, `SYSTEM_ROLES.ADMIN` does not, `PermissionSchema` accepts it.
-- [ ] **Step 2: Run, expect FAIL** (`pnpm --filter @shop/api test:int -- delivery-schema`, `pnpm --filter @shop/shared test`).
-- [ ] **Step 3: Implement** the schema change, write the migration by hand in the style of `20261030100000_deliveries` (`ALTER TYPE ... ADD VALUE`, `ALTER TABLE orders ADD COLUMN`, `CREATE INDEX`), regenerate the client (`pnpm --filter @shop/api prisma generate`), update the shared constants. Fix every exhaustive `switch` or `Record<DeliveryStatus, …>` the compiler now flags (`pnpm typecheck`), choosing the neutral behaviour for `CANCELLED` (not stuck, not open) and `RESTORE` (like `GRANT`).
-- [ ] **Step 4: Run tests, expect PASS;** run the gate.
-- [ ] **Step 5: Commit** `feat(api): schema and permission for refunds and disputes`.
+- [x] **Step 1: Failing tests.** Int: a `Delivery` can be created with `kind: 'RESTORE'` and `status: 'CANCELLED'`; an `Order` stores `refundRequestedAt`, `refundRevoke`, `refundedAt`. Unit: `SYSTEM_ROLES.OWNER` contains `order.refund`, `SYSTEM_ROLES.ADMIN` does not, `PermissionSchema` accepts it.
+- [x] **Step 2: Run, expect FAIL** (`pnpm --filter @shop/api test:int -- delivery-schema`, `pnpm --filter @shop/shared test`).
+- [x] **Step 3: Implement** the schema change, write the migration by hand in the style of `20261030100000_deliveries` (`ALTER TYPE ... ADD VALUE`, `ALTER TABLE orders ADD COLUMN`, `CREATE INDEX`), regenerate the client (`pnpm --filter @shop/api prisma generate`), update the shared constants. Fix every exhaustive `switch` or `Record<DeliveryStatus, …>` the compiler now flags (`pnpm typecheck`), choosing the neutral behaviour for `CANCELLED` (not stuck, not open) and `RESTORE` (like `GRANT`).
+- [x] **Step 4: Run tests, expect PASS;** run the gate.
+- [x] **Step 5: Commit** `feat(api): schema and permission for refunds and disputes`.
 
 ### Task 2: Reversal planner (`delivery-reversal.ts`)
 
@@ -67,11 +67,11 @@ Failure modes the spec implies; each has a test in the named task.
   - `restoreOrderDeliveries(tx, orderId): Promise<string[]>`: creates a `RESTORE` delivery (`orderItemId`, `serverId`, `grantId`, `commands` copied from the `GRANT` row) for every `GRANT` delivery of the order whose commands may have reached the game and that the reversal took something from: a non-timed item that has a `REVOKE` row (match by `orderItemId` and `kind = 'REVOKE'`), and every timed item (its grant was shrunk or revoked; completing the `RESTORE` adds the time back). Returns their ids. A non-timed item whose product had no `revokeCommands` gets none (nothing was taken).
 - Consumes: `renderCommands`, `grantExpiry` (T1 schema).
 
-- [ ] **Step 1: Failing tests.** Unit: `shrinkGrantExpiry` subtracts exactly `durationDays × quantity` days. Int: (a) `DONE` non-timed GRANT → one `REVOKE` with rendered commands, orderItemId set; (b) product without `revokeCommands` → none; (c) `PENDING` and `FAILED(commandsDone=0)` become `CANCELLED` and get no `REVOKE`, `FAILED(commandsDone=2)` and `NEEDS_REVIEW` get one; (d) Review Focus 2: orders A (7 d) and B (7 d) of one nick/product share a grant with `expiresAt` = start + 14 d; reversing A leaves the grant live with `expiresAt` = start + 7 d and creates no `REVOKE`; reversing B afterwards (expiry now past) sets `revokedAt` and creates the `REVOKE`; (e) `restoreOrderDeliveries` returns one `RESTORE` per reversed item with the original commands even after the product's `grantCommands` were edited.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement** as specified. No enqueueing here (callers enqueue after commit).
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(api): plan cancel, revoke and restore deliveries for an order`.
+- [x] **Step 1: Failing tests.** Unit: `shrinkGrantExpiry` subtracts exactly `durationDays × quantity` days. Int: (a) `DONE` non-timed GRANT → one `REVOKE` with rendered commands, orderItemId set; (b) product without `revokeCommands` → none; (c) `PENDING` and `FAILED(commandsDone=0)` become `CANCELLED` and get no `REVOKE`, `FAILED(commandsDone=2)` and `NEEDS_REVIEW` get one; (d) Review Focus 2: orders A (7 d) and B (7 d) of one nick/product share a grant with `expiresAt` = start + 14 d; reversing A leaves the grant live with `expiresAt` = start + 7 d and creates no `REVOKE`; reversing B afterwards (expiry now past) sets `revokedAt` and creates the `REVOKE`; (e) `restoreOrderDeliveries` returns one `RESTORE` per reversed item with the original commands even after the product's `grantCommands` were edited.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement** as specified. No enqueueing here (callers enqueue after commit).
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(api): plan cancel, revoke and restore deliveries for an order`.
 
 ### Task 3: Delivery completion for `RESTORE` and the new order-status rule
 
@@ -84,11 +84,11 @@ Failure modes the spec implies; each has a test in the named task.
 
 - Changes: `complete()` treats `RESTORE` like `GRANT` for the grant clock (same `grantExpiry` rule, `revokedAt: null`). Order promotion `PAID → DELIVERED` counts only deliveries of kind `GRANT` or `RESTORE` that are not `CANCELLED`; `REVOKE` rows (now carrying `orderItemId`) never count. `deliveryStatuses(order)` (buyer state) uses the same filter, so it needs `kind` selected. The worker already claims only `PENDING`, so a `CANCELLED` job is a no-op; keep that and test it.
 
-- [ ] **Step 1: Failing tests.** (a) completing a `RESTORE` for a timed product renews the grant (`max(current if live, now) + days × quantity`) and clears `revokedAt`; (b) an order with all `GRANT`s `DONE`, one `CANCELLED` and one `REVOKE` in `FAILED` still promotes to `DELIVERED`; (c) `publicDeliveryState`/`deliveryStatuses` ignore `CANCELLED` and `REVOKE` rows; (d) `DeliveryService.process` on a `CANCELLED` delivery sends nothing and leaves it `CANCELLED`; (e) Review Focus 5: marking a `REVOKE` done on a `REFUNDED` order leaves the order `REFUNDED`.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(api): complete restore deliveries and ignore cancelled and revoke rows in order status`.
+- [x] **Step 1: Failing tests.** (a) completing a `RESTORE` for a timed product renews the grant (`max(current if live, now) + days × quantity`) and clears `revokedAt`; (b) an order with all `GRANT`s `DONE`, one `CANCELLED` and one `REVOKE` in `FAILED` still promotes to `DELIVERED`; (c) `publicDeliveryState`/`deliveryStatuses` ignore `CANCELLED` and `REVOKE` rows; (d) `DeliveryService.process` on a `CANCELLED` delivery sends nothing and leaves it `CANCELLED`; (e) Review Focus 5: marking a `REVOKE` done on a `REFUNDED` order leaves the order `REFUNDED`.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(api): complete restore deliveries and ignore cancelled and revoke rows in order status`.
 
 ### Task 4: Gateway refund and Stripe event mapping
 
@@ -106,11 +106,11 @@ Failure modes the spec implies; each has a test in the named task.
   - `{kind: 'dispute_closed'; paymentIntentId: string; disputeId: string; won: boolean}` from `charge.dispute.closed` (`won = dispute.status === 'won'`).
 - `FakeGateway.signedChargeEvent(kind: 'refunded' | 'dispute_opened' | 'dispute_won' | 'dispute_lost', paymentIntentId: string, amount: number, currency: string): {body: string; signature: string}` builds Stripe-shaped, correctly signed events.
 
-- [ ] **Step 1: Failing tests.** `toPaymentEvent` maps each of the three Stripe event types to the right kind; partial refund, missing payment intent and `dispute.status` other than `won` behave as above; `FakeGateway` events round-trip through `parseWebhook`; repeated refund key returns one id.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement.** Use Context7 (`/stripe/stripe-node`) if a Stripe type is unclear.
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(api): refund call and charge events on the payments gateway`.
+- [x] **Step 1: Failing tests.** `toPaymentEvent` maps each of the three Stripe event types to the right kind; partial refund, missing payment intent and `dispute.status` other than `won` behave as above; `FakeGateway` events round-trip through `parseWebhook`; repeated refund key returns one id.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement.** Use Context7 (`/stripe/stripe-node`) if a Stripe type is unclear.
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(api): refund call and charge events on the payments gateway`.
 
 ### Task 5: Webhook handling of refunds and disputes
 
@@ -129,11 +129,11 @@ Failure modes the spec implies; each has a test in the named task.
   - After commit enqueue all created delivery ids through the existing `enqueueAll`.
 - `disputeMail(order, dispute, locale?: never): Mail` English only, like `deliveryAlertMail`.
 
-- [ ] **Step 1: Failing tests** (Postgres; FakeGateway-signed events through `PaymentEventsService`): (a) refund with `refundRevoke = true` → order `REFUNDED`, one `REVOKE` per delivered item, ids enqueued; with `false` → `REFUNDED`, no `REVOKE`; with `null` (refund made in Stripe) → revoked; (b) Review Focus 1: the same event replayed, and two concurrent applications, leave one `REVOKE` set and one status change; (c) Review Focus 4: unknown payment intent → no change, no throw; a refund event for an `EXPIRED` order → ignored; `dispute_opened` on a `REFUNDED` order → ignored (no mail); `dispute_closed(won)` on a `REFUNDED` order → ignored; (d) dispute opened → `DISPUTED`, `REVOKE`s created, owner mail captured by the test mailer (EN, contains public id); dispute won → `PAID` with one `RESTORE` per revoked item, and after those complete the order is `DELIVERED`; dispute lost → stays `DISPUTED`, no `RESTORE`.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement.** Keep `apply` readable: one private method per kind.
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(api): apply refund and dispute events with revoke and restore`.
+- [x] **Step 1: Failing tests** (Postgres; FakeGateway-signed events through `PaymentEventsService`): (a) refund with `refundRevoke = true` → order `REFUNDED`, one `REVOKE` per delivered item, ids enqueued; with `false` → `REFUNDED`, no `REVOKE`; with `null` (refund made in Stripe) → revoked; (b) Review Focus 1: the same event replayed, and two concurrent applications, leave one `REVOKE` set and one status change; (c) Review Focus 4: unknown payment intent → no change, no throw; a refund event for an `EXPIRED` order → ignored; `dispute_opened` on a `REFUNDED` order → ignored (no mail); `dispute_closed(won)` on a `REFUNDED` order → ignored; (d) dispute opened → `DISPUTED`, `REVOKE`s created, owner mail captured by the test mailer (EN, contains public id); dispute won → `PAID` with one `RESTORE` per revoked item, and after those complete the order is `DELIVERED`; dispute lost → stays `DISPUTED`, no `RESTORE`.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement.** Keep `apply` readable: one private method per kind.
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(api): apply refund and dispute events with revoke and restore`.
 
 ### Task 6: Refund endpoint
 
@@ -152,11 +152,11 @@ Failure modes the spec implies; each has a test in the named task.
   5. On success with `revoke`, set the order's unsent deliveries (`PENDING`, or `FAILED` with `commandsDone = 0`) to `CANCELLED`. Order status is not touched (webhook does that).
 - OpenAPI entry documents the four 409/4xx codes.
 
-- [ ] **Step 1: Failing tests.** (a) `PAID` order, `revoke: true`: gateway called once with the key, reservation stored, unsent deliveries `CANCELLED`, status unchanged; (b) `revoke: false` cancels nothing; (c) Review Focus 3: `RUNNING` and `NEEDS_REVIEW` → 409 `refund_delivery_open`, nothing reserved; two parallel requests → one gateway call; second after 15 min → allowed, same key; (d) gateway throws → reservation cleared, nothing cancelled, error code returned; (e) `PENDING`/`EXPIRED`/`REFUNDED`/no payment intent → 409 `refund_not_allowed`; (f) a role without `order.refund` gets 403 and an audit row exists for a success.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement;** add the permission label wherever roles list permissions in the admin (search `delivery.resolve` in `apps/admin` and add `order.refund` beside it, EN and PL).
-- [ ] **Step 4: Run tests, expect PASS;** `pnpm --filter @shop/api openapi` (the repo's script that rewrites `openapi.json`; use the one `apps/api/package.json` defines), gate.
-- [ ] **Step 5: Commit** `feat(api): admin refund endpoint with optional revoke`.
+- [x] **Step 1: Failing tests.** (a) `PAID` order, `revoke: true`: gateway called once with the key, reservation stored, unsent deliveries `CANCELLED`, status unchanged; (b) `revoke: false` cancels nothing; (c) Review Focus 3: `RUNNING` and `NEEDS_REVIEW` → 409 `refund_delivery_open`, nothing reserved; two parallel requests → one gateway call; second after 15 min → allowed, same key; (d) gateway throws → reservation cleared, nothing cancelled, error code returned; (e) `PENDING`/`EXPIRED`/`REFUNDED`/no payment intent → 409 `refund_not_allowed`; (f) a role without `order.refund` gets 403 and an audit row exists for a success.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement;** add the permission label wherever roles list permissions in the admin (search `delivery.resolve` in `apps/admin` and add `order.refund` beside it, EN and PL).
+- [x] **Step 4: Run tests, expect PASS;** `pnpm --filter @shop/api openapi` (the repo's script that rewrites `openapi.json`; use the one `apps/api/package.json` defines), gate.
+- [x] **Step 5: Commit** `feat(api): admin refund endpoint with optional revoke`.
 
 ### Task 7: Fake-gateway event hooks for the e2e
 
@@ -169,9 +169,9 @@ Failure modes the spec implies; each has a test in the named task.
 
 - e2e only (404 unless `FakeGateway` is active): `POST /api/payments/fake/orders/:publicId/events/:kind` with `kind` in `refunded | dispute_opened | dispute_won | dispute_lost`; loads the order's `stripePaymentIntentId`, `totalMinor`, `currency`, builds `FakeGateway.signedChargeEvent`, applies it through `PaymentEventsService.apply(gateway.parseWebhook(...))`, answers `{received: true}`. 404 for an unknown order, 400 for an unknown kind.
 
-- [ ] **Step 1: Failing tests:** each kind reaches the order (status changes as T5 says); 404 with the Stripe gateway.
-- [ ] **Step 2: Run, expect FAIL. Step 3: Implement. Step 4: Run, expect PASS; gate.**
-- [ ] **Step 5: Commit** `feat(api): fake gateway hooks for refund and dispute events`.
+- [x] **Step 1: Failing tests:** each kind reaches the order (status changes as T5 says); 404 with the Stripe gateway.
+- [x] **Step 2: Run, expect FAIL. Step 3: Implement. Step 4: Run, expect PASS; gate.**
+- [x] **Step 5: Commit** `feat(api): fake gateway hooks for refund and dispute events`.
 
 ### Task 8: Admin refund UI and buyer-facing states
 
@@ -185,11 +185,11 @@ Failure modes the spec implies; each has a test in the named task.
 - Admin order detail, for users with `order.refund` and an order `PAID|DELIVERED` with no live reservation: a "Refund" button opens an inline confirm bar with a checkbox "Take the delivered items back" (checked by default), a line "Products without revoke commands keep their items", Confirm / Cancel; Confirm calls the mutation and invalidates the order tag. When `refundRequestedAt` is set and status is not yet `REFUNDED`: show "Refund requested, waiting for Stripe" and, after 15 minutes, the button again. `REFUNDED` and `DISPUTED` show a plain status line. Errors show `apiErrors.*` texts.
 - Buyer page: `REFUNDED` renders "This order was refunded", `DISPUTED` renders "This payment is under review"; neither polls.
 
-- [ ] **Step 1: Failing tests** (Vitest): bar hidden without permission and for ineligible statuses; default checkbox on; confirm posts `{revoke: true}`; unchecked posts `{revoke: false}`; waiting line when requested; web page shows the two new states and does not start polling for them.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement;** run `pnpm --filter @shop/admin codegen` first; keep EN and PL keys identical (the key-parity test enforces it).
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(admin,web): refund control and refunded or disputed order states`.
+- [x] **Step 1: Failing tests** (Vitest): bar hidden without permission and for ineligible statuses; default checkbox on; confirm posts `{revoke: true}`; unchecked posts `{revoke: false}`; waiting line when requested; web page shows the two new states and does not start polling for them.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement;** run `pnpm --filter @shop/admin codegen` first; keep EN and PL keys identical (the key-parity test enforces it).
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(admin,web): refund control and refunded or disputed order states`.
 
 ### Task 9: Deliveries page (stuck deliveries in one place)
 
@@ -205,11 +205,11 @@ Failure modes the spec implies; each has a test in the named task.
 - Page `/deliveries`: `DataTable` with kind, nick, server, product, status dot, attempts, last error, order link; Retry and Mark as done reuse the existing mutations and the NEEDS_REVIEW "may run twice" confirmation of `deliveries-card.tsx` (extract the confirm bar into a shared component rather than copying it) and are shown only with `delivery.resolve`. Nav gets a "Deliveries" entry (needs `order.read`) showing the attention count when above zero.
 - `GET` stays read-only; Retry / Mark as done endpoints are unchanged.
 
-- [ ] **Step 1: Failing tests.** API: list returns an expiry `REVOKE` (no order) and a refund `REVOKE` (with order link), excludes `DONE`/`PENDING`/`CANCELLED`, pages with a cursor, requires `order.read`. Admin: table renders rows and the empty state; actions hidden without `delivery.resolve`; retry on a `NEEDS_REVIEW` row asks for confirmation first; nav shows the badge.
-- [ ] **Step 2: Run, expect FAIL.**
-- [ ] **Step 3: Implement;** codegen; EN/PL parity.
-- [ ] **Step 4: Run tests, expect PASS;** gate.
-- [ ] **Step 5: Commit** `feat(admin,api): deliveries page for stuck deliveries of every kind`.
+- [x] **Step 1: Failing tests.** API: list returns an expiry `REVOKE` (no order) and a refund `REVOKE` (with order link), excludes `DONE`/`PENDING`/`CANCELLED`, pages with a cursor, requires `order.read`. Admin: table renders rows and the empty state; actions hidden without `delivery.resolve`; retry on a `NEEDS_REVIEW` row asks for confirmation first; nav shows the badge.
+- [x] **Step 2: Run, expect FAIL.**
+- [x] **Step 3: Implement;** codegen; EN/PL parity.
+- [x] **Step 4: Run tests, expect PASS;** gate.
+- [x] **Step 5: Commit** `feat(admin,api): deliveries page for stuck deliveries of every kind`.
 
 ### Task 10: Dashboard cards
 
@@ -223,9 +223,9 @@ Failure modes the spec implies; each has a test in the named task.
 - `attentionCount`: deliveries `FAILED` or `NEEDS_REVIEW` now (not range-bound). `disputedCount`: orders in `DISPUTED` now. `refundedCount`: orders with `refundedAt` in the range. `refundedMinor`: their sum in the reporting currency (`totalEurMinor` / `totalPlnMinor` as for revenue; orders without a rate are skipped from the sum only).
 - Dashboard: two `KpiCard`s beside the existing five, neither accent: "Needs attention" (value `attentionCount`, warning `ToneDot` when above zero, links to `/deliveries`) and "Disputes and refunds" (value `disputedCount` with label "disputed orders", hint "refunds in range: N, amount"); skeleton `Loading` gets matching placeholders; grid still has no horizontal scroll at 390 px.
 
-- [ ] **Step 1: Failing tests.** Int: counts and the refunded sum for a seeded mix (stuck `REVOKE` counts; `CANCELLED` does not; a refund outside the range is excluded). Component: cards render the figures, the attention card links to `/deliveries`, warning dot only when above zero.
-- [ ] **Step 2: Run, expect FAIL. Step 3: Implement. Step 4: Run, expect PASS; gate.**
-- [ ] **Step 5: Commit** `feat(admin,api): dashboard cards for deliveries needing attention, disputes and refunds`.
+- [x] **Step 1: Failing tests.** Int: counts and the refunded sum for a seeded mix (stuck `REVOKE` counts; `CANCELLED` does not; a refund outside the range is excluded). Component: cards render the figures, the attention card links to `/deliveries`, warning dot only when above zero.
+- [x] **Step 2: Run, expect FAIL. Step 3: Implement. Step 4: Run, expect PASS; gate.**
+- [x] **Step 5: Commit** `feat(admin,api): dashboard cards for deliveries needing attention, disputes and refunds`.
 
 ### Task 11: e2e, docs and operations notes
 
@@ -233,8 +233,8 @@ Failure modes the spec implies; each has a test in the named task.
 
 - Modify: `e2e/tests/delivery.spec.ts` or create `e2e/tests/refund.spec.ts`, `e2e/support/checkout.ts` if a helper is needed; `docs/guides/deploy-from-scratch.md` (Stripe webhook step), `docs/runbooks/deploy.md`, `CLAUDE.md` (one bullet), `README.md` (feature list line); tick this plan's checkboxes.
 
-- [ ] **Step 1: Write the e2e** (follow `delivery.spec.ts`): (a) buyer pays, order `DELIVERED`; owner opens the order, refunds with "take back" on, the test then posts `POST /api/payments/fake/orders/:publicId/events/refunded`; the order page shows "refunded", the admin detail shows a `REVOKE` delivery reaching `DONE` (worker runs against the fake RCON); (b) pay, `dispute_opened` event → buyer page "under review", owner mail in Mailpit; `dispute_won` → items restored (a `RESTORE` delivery `DONE`), order `DELIVERED`; (c) a `SUPPORT`-style session (or a direct API call without `order.refund`) gets 403 on the refund endpoint; (d) a silent-server `NEEDS_REVIEW` delivery blocks the refund with the "resolve the delivery first" message and appears on the Deliveries page where Mark as done clears it.
-- [ ] **Step 2: Run** `pnpm test:e2e -- refund` against `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait`; fix flakiness by waiting on UI state, not sleeping.
-- [ ] **Step 3: Docs.** In `deploy-from-scratch.md` add that the Stripe webhook endpoint must also listen to `charge.refunded`, `charge.dispute.created` and `charge.dispute.closed` (Stripe dashboard → Developers → Webhooks → the endpoint → Update events), and that the refund button needs the new `order.refund` permission (OWNER has it). `CLAUDE.md`: one bullet on refunds and disputes (events, `order.refund`, reversal rules, fake hooks e2e-only). `README.md`: one line.
-- [ ] **Step 4: Gate** (`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`, then `pnpm --filter @shop/api test:int`), `graphify update .`.
-- [ ] **Step 5: Commit** `docs: refunds, disputes and the stripe events to subscribe to` (and the e2e in its own `test(e2e): …` commit first).
+- [x] **Step 1: Write the e2e** (follow `delivery.spec.ts`): (a) buyer pays, order `DELIVERED`; owner opens the order, refunds with "take back" on, the test then posts `POST /api/payments/fake/orders/:publicId/events/refunded`; the order page shows "refunded", the admin detail shows a `REVOKE` delivery reaching `DONE` (worker runs against the fake RCON); (b) pay, `dispute_opened` event → buyer page "under review", owner mail in Mailpit; `dispute_won` → items restored (a `RESTORE` delivery `DONE`), order `DELIVERED`; (c) a `SUPPORT`-style session (or a direct API call without `order.refund`) gets 403 on the refund endpoint; (d) a silent-server `NEEDS_REVIEW` delivery blocks the refund with the "resolve the delivery first" message and appears on the Deliveries page where Mark as done clears it.
+- [x] **Step 2: Run** `pnpm test:e2e -- refund` against `docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait`; fix flakiness by waiting on UI state, not sleeping.
+- [x] **Step 3: Docs.** In `deploy-from-scratch.md` add that the Stripe webhook endpoint must also listen to `charge.refunded`, `charge.dispute.created` and `charge.dispute.closed` (Stripe dashboard → Developers → Webhooks → the endpoint → Update events), and that the refund button needs the new `order.refund` permission (OWNER has it). `CLAUDE.md`: one bullet on refunds and disputes (events, `order.refund`, reversal rules, fake hooks e2e-only). `README.md`: one line.
+- [x] **Step 4: Gate** (`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`, then `pnpm --filter @shop/api test:int`), `graphify update .`.
+- [x] **Step 5: Commit** `docs: refunds, disputes and the stripe events to subscribe to` (and the e2e in its own `test(e2e): …` commit first).
