@@ -1,4 +1,7 @@
+import {Logger} from '@nestjs/common'
+
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
+import * as reversal from '../src/delivery/delivery-reversal'
 import type {DeliveryStatus, OrderStatus} from '../src/generated/prisma/client'
 import {waitForAuditRows} from './support/audit'
 import {startOrdersApp} from './support/orders-app'
@@ -192,5 +195,69 @@ describe('admin refund', () => {
     const [audit] = await waitForAuditRows(ctx.prisma, {entityId: o.id}, 1)
     expect(audit).toMatchObject({action: 'order.refund', entityType: 'order'})
     expect(audit?.before).toMatchObject({id: o.id, status: 'PAID'})
+  })
+
+  it('FAILED deliveries do not block a refund; refund_delivery_open also holds with revoke false', async () => {
+    const a = await owner()
+    const failed = await order({delivery: 'FAILED'})
+    await a.post(url(failed.id)).send({revoke: false}).expect(201)
+    const running = await order({delivery: 'RUNNING'})
+    const res = await a.post(url(running.id)).send({revoke: false}).expect(409)
+    expect(res.body).toMatchObject({message: 'refund_delivery_open'})
+    expect((await row(running.id)).refundRequestedAt).toBeNull()
+  })
+
+  it('a failing cancel step still answers 201, logs the error and keeps the reservation', async () => {
+    const o = await order()
+    const a = await owner()
+    const log = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    const cancel = jest
+      .spyOn(reversal, 'cancelUnsentDeliveries')
+      .mockRejectedValueOnce(new Error('db down'))
+    try {
+      await a.post(url(o.id)).send({revoke: true}).expect(201)
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(o.id), expect.any(Error))
+    } finally {
+      cancel.mockRestore()
+      log.mockRestore()
+    }
+    expect((await row(o.id)).refundRequestedAt).not.toBeNull()
+    expect((await delivery(o.deliveryId)).status).toBe('PENDING')
+  })
+
+  it('a failed retry after a stale reservation restores the earlier values', async () => {
+    const o = await order()
+    const stale = new Date(Date.now() - 16 * 60_000)
+    await ctx.prisma.order.update({
+      where: {id: o.id},
+      data: {refundRequestedAt: stale, refundRevoke: true}
+    })
+    const a = await owner()
+    const spy = jest
+      .spyOn(ctx.gateway, 'refund')
+      .mockImplementationOnce(() => Promise.reject(new Error('stripe down')))
+    await a.post(url(o.id)).send({revoke: false}).expect(502)
+    spy.mockRestore()
+    const after = await row(o.id)
+    expect(after.refundRequestedAt?.getTime()).toBe(stale.getTime())
+    expect(after.refundRevoke).toBe(true)
+  })
+
+  it('an older failing request does not clear a newer reservation', async () => {
+    const o = await order()
+    const a = await owner()
+    const newer = new Date(Date.now() + 60_000)
+    const spy = jest.spyOn(ctx.gateway, 'refund').mockImplementationOnce(async () => {
+      await ctx.prisma.order.update({
+        where: {id: o.id},
+        data: {refundRequestedAt: newer, refundRevoke: true}
+      })
+      throw new Error('stripe down')
+    })
+    await a.post(url(o.id)).send({revoke: false}).expect(502)
+    spy.mockRestore()
+    const after = await row(o.id)
+    expect(after.refundRequestedAt?.getTime()).toBe(newer.getTime())
+    expect(after.refundRevoke).toBe(true)
   })
 })

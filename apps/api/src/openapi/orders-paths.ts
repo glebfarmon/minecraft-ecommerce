@@ -154,7 +154,7 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
         },
         '502': {
           description:
-            '`refund_failed`: the payment provider refused or did not answer; nothing was reserved and it can be retried'
+            '`refund_failed`: the payment provider refused or did not answer; the reservation was released and it can be retried'
         },
         ...guarded
       }

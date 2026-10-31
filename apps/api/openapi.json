@@ -7297,7 +7297,7 @@
             "description": "`refund_not_allowed`: the order is not `PAID` or `DELIVERED`, or has no payment. `refund_delivery_open`: a delivery is running or needs review; resolve it first. `refund_already_requested`: a refund was requested less than 15 minutes ago"
           },
           "502": {
-            "description": "`refund_failed`: the payment provider refused or did not answer; nothing was reserved and it can be retried"
+            "description": "`refund_failed`: the payment provider refused or did not answer; the reservation was released and it can be retried"
           }
         },
         "tags": ["Orders admin"]

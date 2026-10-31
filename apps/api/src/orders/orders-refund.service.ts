@@ -34,17 +34,25 @@ export class OrdersRefundService {
   ): Promise<AdminOrder> {
     onBefore(await this.view(id))
     const reservedAt = new Date()
-    // The delivery check and the reservation share the order lock, so no delivery starts between.
-    const paymentIntentId = await this.prisma.$transaction(async tx => {
+    // The order lock serialises refund requests: the state check and the reservation cannot race
+    // with another refund. A delivery that starts after the check is harmless: with `revoke` the
+    // refund webhook reverses it, without `revoke` it is kept by design.
+    const reservation = await this.prisma.$transaction(async tx => {
       await lockOrder(tx, id)
       const order = await tx.order.findUnique({
         where: {id},
-        select: {status: true, stripePaymentIntentId: true}
+        select: {
+          status: true,
+          stripePaymentIntentId: true,
+          refundRequestedAt: true,
+          refundRevoke: true
+        }
       })
       if (!order) throw notFound()
       const pi = order.stripePaymentIntentId
       if (!(REFUNDABLE as readonly string[]).includes(order.status) || pi === null)
         throw conflict('refund_not_allowed')
+      const previous = {at: order.refundRequestedAt, revoke: order.refundRevoke}
       const open = await tx.delivery.count({
         where: {orderItem: {orderId: id}, status: {in: ['RUNNING', 'NEEDS_REVIEW']}}
       })
@@ -61,26 +69,37 @@ export class OrdersRefundService {
         data: {refundRequestedAt: reservedAt, refundRevoke: revoke}
       })
       if (reserved.count !== 1) throw conflict('refund_already_requested')
-      return pi
+      return {pi, previous}
     })
+    const paymentIntentId = reservation.pi
 
     try {
       await Promise.resolve().then(() => this.gateway.refund(paymentIntentId, `refund-${id}`))
     } catch (error) {
       this.log.error(`refund of order ${id} failed at the gateway`, error)
-      // Only our own reservation: a newer request keeps its own.
+      // Back to what was there before, and only if the reservation is still ours.
       await this.prisma.order.updateMany({
         where: {id, refundRequestedAt: reservedAt},
-        data: {refundRequestedAt: null, refundRevoke: null}
+        data: {
+          refundRequestedAt: reservation.previous.at,
+          refundRevoke: reservation.previous.revoke
+        }
       })
       throw badGateway('refund_failed')
     }
 
-    if (revoke)
-      await this.prisma.$transaction(async tx => {
-        await lockOrder(tx, id)
-        await cancelUnsentDeliveries(tx, id)
-      })
+    if (revoke) {
+      try {
+        await this.prisma.$transaction(async tx => {
+          await lockOrder(tx, id)
+          await cancelUnsentDeliveries(tx, id)
+        })
+      } catch (error) {
+        // The money moved, so the request succeeded. The Stripe `refunded` webhook cancels the
+        // unsent deliveries too, so the state heals itself.
+        this.log.error(`order ${id}: refunded, but unsent deliveries were not cancelled`, error)
+      }
+    }
     return this.view(id)
   }
 
