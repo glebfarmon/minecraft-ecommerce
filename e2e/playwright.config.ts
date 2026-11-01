@@ -26,7 +26,8 @@ export default defineConfig({
       name: 'refund',
       use: {...devices['Desktop Chrome']},
       testMatch: /refund\.spec\.ts/,
-      dependencies: ['admin']
+      // Last: after admin.spec.ts (the owner) and after the specs that read or edit VIP.
+      dependencies: ['admin', 'chromium', 'webkit']
     }
   ]
 })

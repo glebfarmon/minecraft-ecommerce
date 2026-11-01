@@ -6,9 +6,13 @@ import {buyVip} from '../support/checkout'
 import {findMail, inviteLink, latestMail} from '../support/mailpit'
 import {loadOwnerTotp} from '../support/owner-totp'
 
-// Runs in the `refund` project, after admin.spec.ts (playwright.config.ts): that file enrolls the
-// owner's TOTP and is the only other one that signs the owner in. The owner signs in once here, in
-// beforeAll, before any mail this file causes reaches the owner (the sign-in reads the newest mail).
+// Runs in the `refund` project, after every other project (playwright.config.ts): admin.spec.ts
+// enrolls the owner's TOTP and is the only other file that signs the owner in, and the VIP edit
+// below must not race the specs that read or edit VIP. The owner signs in once here, in beforeAll,
+// before any mail this file causes reaches the owner (the sign-in reads the newest mail).
+// Needs a fresh stack even when run alone (`pnpm test:e2e -- refund`): the dependency runs the
+// `admin` project first, which consumes the seeded owner invite. Before a rerun:
+// `docker compose -f compose.yaml -f compose.e2e.yaml down -v`, then `up -d --wait`.
 const ADMIN = process.env.ADMIN_URL ?? 'http://admin.shop.localhost'
 const WEB = process.env.WEB_URL ?? 'http://shop.localhost'
 const OWNER = 'owner@shop.localhost'
@@ -62,9 +66,17 @@ test.beforeAll(async ({browser}) => {
 })
 
 test.afterAll(async () => {
-  // Leave the VIP product as seeded.
-  await setVipRevoke('')
-  await owner.context().close()
+  // beforeAll may have failed before the owner page existed: then there is nothing to undo.
+  const page = owner as Page | undefined
+  if (!page) return
+  try {
+    // Leave the VIP product as seeded.
+    await setVipRevoke('')
+  } catch (error) {
+    console.error('refund.spec.ts: could not clear the VIP revoke command', error)
+  } finally {
+    await page.context().close()
+  }
 })
 
 /** Opens the order in the admin through the search and returns its admin id. */
@@ -167,7 +179,8 @@ test('a dispute takes the items back, mails the owner and a won dispute restores
   await expect(delivery('Restore')).toContainText(`say [demo] ${player} bought vip`)
   await expect(async () => {
     await owner.reload()
-    await expect(owner.getByText('Delivered', {exact: true}).first()).toBeVisible({
+    // The order's status pill in the page header.
+    await expect(owner.locator('main header').getByText('Delivered', {exact: true})).toBeVisible({
       timeout: 2_000
     })
   }).toPass({timeout: 30_000, intervals: [1_000]})
