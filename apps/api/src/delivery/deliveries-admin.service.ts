@@ -11,6 +11,14 @@ import {DeliveryService} from './delivery.service'
 const PAGE = 50
 const STUCK = ['FAILED', 'NEEDS_REVIEW'] as const
 const notStuck = () => conflict('delivery_not_stuck')
+/**
+ * A GRANT or RESTORE of a refunded or disputed order: its items were taken back, so giving them
+ * out again is not a retry. Its REVOKE rows stay retryable, and Mark as done stays for the owner.
+ */
+const REVERSED_GRANT = {
+  kind: {in: ['GRANT' as const, 'RESTORE' as const]},
+  orderItem: {order: {status: {in: ['REFUNDED' as const, 'DISPUTED' as const]}}}
+}
 
 /** The owner's two ways out of a stuck delivery (spec §7): run it again, or confirm it by hand. */
 @Injectable()
@@ -35,7 +43,10 @@ export class DeliveriesAdminService {
         include: {
           server: {select: {name: true}},
           orderItem: {
-            select: {productName: true, order: {select: {id: true, publicId: true, nick: true}}}
+            select: {
+              productName: true,
+              order: {select: {id: true, publicId: true, nick: true, status: true}}
+            }
           },
           grant: {
             select: {
@@ -57,7 +68,8 @@ export class DeliveriesAdminService {
         ...toAdminDelivery(row, productName),
         nick: order?.nick ?? row.grant?.nick ?? '',
         orderId: order?.id ?? null,
-        orderPublicId: order?.publicId ?? null
+        orderPublicId: order?.publicId ?? null,
+        orderStatus: order?.status ?? null
       }
     })
     return {
@@ -74,12 +86,23 @@ export class DeliveriesAdminService {
       where: {id, commands: {isEmpty: true}, lastError: 'invalid_nick'}
     })
     if (unrenderable > 0) throw conflict('delivery_not_retryable')
-    const moved = await this.prisma.delivery.updateMany({
-      where: {id, status: {in: [...STUCK]}},
-      // lastError, commandsDone and alertedAt stay: the alert is not repeated for this episode.
-      data: {status: 'PENDING', attempts: 0, nextAttemptAt: new Date(), startedAt: null}
+    const moved = await this.prisma.$transaction(async tx => {
+      // The order first (lock order of `delivery-reversal.ts`), so a refund or dispute cannot
+      // land between the check below and the update.
+      await this.deliveries.lockOrderOf(tx, id)
+      const updated = await tx.delivery.updateMany({
+        where: {id, status: {in: [...STUCK]}, NOT: REVERSED_GRANT},
+        // lastError, commandsDone and alertedAt stay: the alert is not repeated for this episode.
+        data: {status: 'PENDING', attempts: 0, nextAttemptAt: new Date(), startedAt: null}
+      })
+      if (updated.count === 1) return 'moved'
+      const reversed = await tx.delivery.count({
+        where: {id, status: {in: [...STUCK]}, ...REVERSED_GRANT}
+      })
+      return reversed > 0 ? 'reversed' : 'not_stuck'
     })
-    if (moved.count !== 1) throw notStuck()
+    if (moved === 'reversed') throw conflict('delivery_order_reversed')
+    if (moved === 'not_stuck') throw notStuck()
     try {
       await this.queue.enqueue(id)
     } catch (error) {

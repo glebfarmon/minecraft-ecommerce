@@ -102,6 +102,7 @@
     "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}",
     "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page.",
     "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done.",
+    "delivery_order_reversed": "This order was refunded or disputed, so its items are not given out again. Mark the delivery done if you settled it by hand.",
     "refund_not_allowed": "This order cannot be refunded.",
     "refund_delivery_open": "Resolve the order's running or stuck deliveries first.",
     "refund_already_requested": "A refund was already requested. Try again in 15 minutes.",

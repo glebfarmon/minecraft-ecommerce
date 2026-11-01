@@ -18,12 +18,15 @@ export function DeliveryActions({
   id,
   status,
   canResolve,
+  canRetry = true,
   onError,
   onStart
 }: {
   id: string
   status: Status
   canResolve: boolean
+  /** False when running it again is refused (a grant of a refunded or disputed order). */
+  canRetry?: boolean
   /** The owner of the error banner shows a failed action. */
   onError: (error: unknown) => void
   /** Called before an action runs, to clear the owner's previous error. */
@@ -70,14 +73,16 @@ export function DeliveryActions({
     )
   return (
     <div className="flex flex-wrap gap-2">
-      <Button
-        variant="outline"
-        onClick={() => {
-          if (status === 'NEEDS_REVIEW') setConfirm('retry')
-          else void doRetry()
-        }}>
-        {t('retry')}
-      </Button>
+      {canRetry && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (status === 'NEEDS_REVIEW') setConfirm('retry')
+            else void doRetry()
+          }}>
+          {t('retry')}
+        </Button>
+      )}
       <Button
         variant="ghost"
         onClick={() => {

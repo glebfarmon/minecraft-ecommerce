@@ -1,4 +1,5 @@
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
+import {DeliveryService} from '../src/delivery/delivery.service'
 import type {DeliveryStatus, Product} from '../src/generated/prisma/client'
 import {waitForAuditRows} from './support/audit'
 import {startOrdersApp} from './support/orders-app'
@@ -120,6 +121,73 @@ describe('admin delivery actions', () => {
     expect(res.body).toMatchObject({message: 'delivery_not_retryable'})
     expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('NEEDS_REVIEW')
     await a.post(done(id)).expect(201)
+  })
+
+  it.each(['REFUNDED', 'DISPUTED'] as const)(
+    'retry of a GRANT or RESTORE on a %s order is 409 delivery_order_reversed; mark-done still works',
+    async status => {
+      const a = await resolver()
+      const {id, order} = await stuck('FAILED')
+      await ctx.prisma.order.update({where: {id: order.id}, data: {status}})
+      const res = await a.post(retry(id)).expect(409)
+      expect(res.body).toMatchObject({message: 'delivery_order_reversed'})
+      expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('FAILED')
+
+      const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+      const restore = await ctx.prisma.delivery.create({
+        data: {
+          orderItemId: grant.orderItemId,
+          serverId: grant.serverId,
+          kind: 'RESTORE',
+          commands: grant.commands,
+          status: 'NEEDS_REVIEW',
+          lastError: 'timeout'
+        }
+      })
+      const again = await a.post(retry(restore.id)).expect(409)
+      expect(again.body).toMatchObject({message: 'delivery_order_reversed'})
+
+      await a.post(done(id)).expect(201)
+      expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('DONE')
+    }
+  )
+
+  it('retry checks the order status atomically with the move to PENDING', async () => {
+    const {id, order} = await stuck('FAILED')
+    const service = ctx.app.get(DeliveryService)
+    const original = service.lockOrderOf.bind(service)
+    // A refund webhook commits just before the retry's update runs.
+    const spy = jest
+      .spyOn(service, 'lockOrderOf')
+      .mockImplementationOnce(async (tx, deliveryId) => {
+        await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+        return original(tx, deliveryId)
+      })
+    try {
+      const res = await (await resolver()).post(retry(id)).expect(409)
+      expect(res.body).toMatchObject({message: 'delivery_order_reversed'})
+    } finally {
+      spy.mockRestore()
+    }
+    expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('FAILED')
+  })
+
+  it('retry of a REVOKE on a REFUNDED order is allowed', async () => {
+    const {id, order} = await stuck('DONE')
+    await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+    const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+    const revoke = await ctx.prisma.delivery.create({
+      data: {
+        orderItemId: grant.orderItemId,
+        serverId: grant.serverId,
+        kind: 'REVOKE',
+        commands: ['lp user x parent remove vip'],
+        status: 'FAILED',
+        lastError: 'timeout'
+      }
+    })
+    const res = await (await resolver()).post(retry(revoke.id)).expect(201)
+    expect(res.body).toMatchObject({id: revoke.id, status: 'PENDING'})
   })
 
   it('mark-done completes the delivery, starts a TIMED clock and delivers the order', async () => {
@@ -268,6 +336,7 @@ describe('admin deliveries list', () => {
       status: 'FAILED',
       orderId: null,
       orderPublicId: null,
+      orderStatus: null,
       nick: expect.stringMatching(/^Gone/) as string
     })
     expect(byId(expiry.id)?.productName).toEqual(expect.any(String))
@@ -276,6 +345,7 @@ describe('admin deliveries list', () => {
       status: 'NEEDS_REVIEW',
       orderId: order.id,
       orderPublicId: order.publicId,
+      orderStatus: 'PAID',
       nick: order.nick,
       productName: 'Name of product'
     })

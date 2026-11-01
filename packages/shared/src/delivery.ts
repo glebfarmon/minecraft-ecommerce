@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+import {OrderStatusSchema} from './order-status'
+
 export const DELIVERY_STATUSES = [
   'PENDING',
   'RUNNING',
@@ -39,6 +41,7 @@ export const AdminDeliveryListItemSchema = v.object({
   nick: v.string(),
   orderId: v.nullable(v.string()),
   orderPublicId: v.nullable(v.string()),
+  orderStatus: v.nullable(OrderStatusSchema),
   productName: v.nullable(v.string())
 })
 export type AdminDeliveryListItem = v.InferOutput<typeof AdminDeliveryListItemSchema>

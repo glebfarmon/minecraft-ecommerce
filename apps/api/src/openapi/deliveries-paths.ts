@@ -41,7 +41,7 @@ export const deliveriesPaths: Record<string, Partial<Record<Method, Operation>>>
         '201': json('The delivery, now `PENDING`', AdminDeliverySchema),
         '404': {description: '`not_found`: no such delivery'},
         '409': {
-          description: `${notStuck['409'].description}; \`delivery_not_retryable\`: the delivery has no commands because the nick could not be used (\`lastError\` \`invalid_nick\`), so running it again would send nothing; give the purchase by hand and use mark-done`
+          description: `${notStuck['409'].description}; \`delivery_not_retryable\`: the delivery has no commands because the nick could not be used (\`lastError\` \`invalid_nick\`), so running it again would send nothing; give the purchase by hand and use mark-done; \`delivery_order_reversed\`: a \`GRANT\` or \`RESTORE\` of an order that is \`REFUNDED\` or \`DISPUTED\` is not given out again (its \`REVOKE\` rows stay retryable, and mark-done still works)`
         },
         ...guarded
       }

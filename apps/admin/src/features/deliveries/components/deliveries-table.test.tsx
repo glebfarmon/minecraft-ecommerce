@@ -20,6 +20,7 @@ const row = (over: object) => ({
   nick: 'Alex',
   orderId: 'o1',
   orderPublicId: 'SHOP-1',
+  orderStatus: 'PAID',
   ...over
 })
 
@@ -32,6 +33,7 @@ const ROWS = [
     nick: 'Gone',
     orderId: null,
     orderPublicId: null,
+    orderStatus: null,
     productName: null,
     lastError: null
   })
@@ -65,6 +67,7 @@ describe('DeliveriesTable', () => {
     expect(within(first).getByText('4')).toBeInTheDocument()
     expect(within(first).getByText('timeout')).toBeInTheDocument()
     expect(within(first).getByRole('link', {name: 'SHOP-1'})).toHaveAttribute('href', '/orders/o1')
+    expect(within(first).getByText('Paid')).toBeInTheDocument()
     const second = within(table).getByText('Gone').closest('tr') as HTMLElement
     expect(within(second).getByText('Revoke')).toBeInTheDocument()
     expect(within(second).getByText('Needs review')).toBeInTheDocument()
@@ -110,4 +113,24 @@ describe('DeliveriesTable', () => {
       expect(writes).toEqual([{method: 'POST', url: '/api/admin/deliveries/d2/retry'}])
     })
   })
+
+  it.each(['REFUNDED', 'DISPUTED'])(
+    'offers no Retry for a GRANT or RESTORE of a %s order, but keeps Mark as done and REVOKE retry',
+    async orderStatus => {
+      mockApi([
+        row({orderStatus}),
+        row({id: 'd2', kind: 'RESTORE', nick: 'Back', orderStatus}),
+        row({id: 'd3', kind: 'REVOKE', nick: 'Taken', orderStatus})
+      ])
+      renderWithStore(<DeliveriesTable canResolve />)
+      const table = await screen.findByRole('table', {name: 'Deliveries'})
+      for (const nick of ['Alex', 'Back']) {
+        const tr = within(table).getByText(nick).closest('tr') as HTMLElement
+        expect(within(tr).queryByRole('button', {name: 'Retry'})).not.toBeInTheDocument()
+        expect(within(tr).getByRole('button', {name: 'Mark as done'})).toBeInTheDocument()
+      }
+      const revoke = within(table).getByText('Taken').closest('tr') as HTMLElement
+      expect(within(revoke).getByRole('button', {name: 'Retry'})).toBeInTheDocument()
+    }
+  )
 })

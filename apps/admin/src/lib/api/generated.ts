@@ -1517,6 +1517,7 @@ export type ListAdminDeliveriesApiResponse = /** status 200 A page of stuck deli
     nick: string
     orderId: string | null
     orderPublicId: string | null
+    orderStatus: ('PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED') | null
   }[]
   nextCursor: string | null
   attentionCount: number

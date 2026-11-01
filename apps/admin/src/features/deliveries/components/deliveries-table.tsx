@@ -2,7 +2,7 @@
 
 import {DataTable} from '@/components/data-table'
 import {EmptyState} from '@/components/empty-state'
-import {type Tone, ToneDot} from '@/components/status-dot'
+import {StatusDot, type Tone, ToneDot} from '@/components/status-dot'
 import {useHoldLoading} from '@/hooks/use-hold-loading'
 import {useMessage} from '@/hooks/use-message'
 import {useReportError} from '@/hooks/use-report-error'
@@ -17,6 +17,7 @@ import {Button} from '@shop/ui/button'
 import {DeliveryActions} from './delivery-actions'
 
 const TONE: Record<string, Tone> = {FAILED: 'bad', NEEDS_REVIEW: 'bad'}
+const REVERSED = new Set(['REFUNDED', 'DISPUTED'])
 
 function PageRows({
   cursor,
@@ -83,11 +84,14 @@ function PageRows({
             header: t('colOrder'),
             cell: d =>
               d.orderId && d.orderPublicId ? (
-                <Link
-                  href={`/orders/${d.orderId}`}
-                  className="rounded-sm font-mono hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
-                  {d.orderPublicId}
-                </Link>
+                <span className="inline-flex items-center gap-2">
+                  <Link
+                    href={`/orders/${d.orderId}`}
+                    className="rounded-sm font-mono hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none">
+                    {d.orderPublicId}
+                  </Link>
+                  {d.orderStatus && <StatusDot status={d.orderStatus} />}
+                </span>
               ) : (
                 t('noOrder')
               )
@@ -98,13 +102,21 @@ function PageRows({
                   header: t('colActions'),
                   cell: (d: {
                     id: string
+                    kind: string
                     status: Parameters<typeof DeliveryActions>[0]['status']
+                    orderStatus: string | null
                   }) => (
                     <div className="whitespace-normal">
                       <DeliveryActions
                         id={d.id}
                         status={d.status}
                         canResolve
+                        // The api refuses to give out the items of a reversed order again.
+                        canRetry={
+                          d.kind === 'REVOKE' ||
+                          d.orderStatus === null ||
+                          !REVERSED.has(d.orderStatus)
+                        }
                         onStart={onStart}
                         onError={onError}
                       />

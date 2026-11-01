@@ -3,20 +3,12 @@ import * as v from 'valibot'
 import {CurrencySchema, LocaleSchema} from './catalog'
 import {AdminDeliverySchema, PUBLIC_DELIVERY_STATES} from './delivery'
 import {OrderLinesSchema} from './order-lines'
+import {OrderStatusSchema} from './order-status'
 import {LoosePromoCodeSchema} from './promo'
 
 export {OrderLinesSchema}
 
-export const ORDER_STATUSES = [
-  'PENDING',
-  'PAID',
-  'DELIVERED',
-  'EXPIRED',
-  'REFUNDED',
-  'DISPUTED'
-] as const
-export const OrderStatusSchema = v.picklist(ORDER_STATUSES)
-export type OrderStatus = (typeof ORDER_STATUSES)[number]
+export {ORDER_STATUSES, OrderStatusSchema, type OrderStatus} from './order-status'
 
 export {ORDER_MAX_LINES, ORDER_MAX_QTY} from './order-lines'
 /** The game server's nickname rule; RCON commands are rendered only from nicks that pass it. */

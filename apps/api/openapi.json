@@ -5995,6 +5995,24 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "orderStatus": {
+                            "anyOf": [
+                              {
+                                "enum": [
+                                  "PENDING",
+                                  "PAID",
+                                  "DELIVERED",
+                                  "EXPIRED",
+                                  "REFUNDED",
+                                  "DISPUTED"
+                                ],
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -6012,7 +6030,8 @@
                           "createdAt",
                           "nick",
                           "orderId",
-                          "orderPublicId"
+                          "orderPublicId",
+                          "orderStatus"
                         ]
                       }
                     },
@@ -6160,7 +6179,7 @@
             "description": "`not_found`: no such delivery"
           },
           "409": {
-            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked); `delivery_not_retryable`: the delivery has no commands because the nick could not be used (`lastError` `invalid_nick`), so running it again would send nothing; give the purchase by hand and use mark-done"
+            "description": "`delivery_not_stuck`: the delivery is not `FAILED` or `NEEDS_REVIEW` (it may have moved on since you looked); `delivery_not_retryable`: the delivery has no commands because the nick could not be used (`lastError` `invalid_nick`), so running it again would send nothing; give the purchase by hand and use mark-done; `delivery_order_reversed`: a `GRANT` or `RESTORE` of an order that is `REFUNDED` or `DISPUTED` is not given out again (its `REVOKE` rows stay retryable, and mark-done still works)"
           }
         },
         "tags": ["Deliveries admin"]
