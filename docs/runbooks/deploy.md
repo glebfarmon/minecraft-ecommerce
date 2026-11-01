@@ -153,6 +153,8 @@ The owner pastes these values in Dokploy and never sends them to the assistant.
 
 A paid event whose amount or currency does not match the order, or whose session is unknown, is logged and acknowledged with 200 (Stripe will not retry it). Find it in the `shop-api` logs and resolve it by hand in the Stripe dashboard (refund or fix the order).
 
+A refund call uses the idempotency key `refund-<orderId>`, and Stripe caches its result for 24 hours. A refund Stripe refused (for example, insufficient balance) keeps failing on every retry 15 minutes later until the key expires. Fix the cause and wait out the 24 hours, or refund in the Stripe dashboard: the `charge.refunded` webhook still processes it.
+
 ## 7. Verify
 
 ```bash
@@ -179,3 +181,5 @@ Images are published and deployed only on a push to `main` (a merged PR); pull r
 ## 11. Rollback
 
 In Dokploy set the app image to `ghcr.io/<owner>/<repo>/<app>:sha-<previous sha>` and redeploy. Set it back to `:latest` after the fix lands. `<owner>/<repo>` must be lowercase in GHCR names.
+
+Once a refund or dispute has created `CANCELLED` deliveries or `RESTORE` rows, a release from before refunds (sub-project 5b) may fail to read them with its Prisma client. Roll forward with a fix instead of rolling back past that release.

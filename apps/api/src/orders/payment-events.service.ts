@@ -103,7 +103,7 @@ export class PaymentEventsService {
       take: 2
     })
     if (!order || other) {
-      this.log.warn(
+      this.log.error(
         `webhook ${event.type}: ${order ? 'several orders' : 'no order'} for payment ${event.paymentIntentId}, ignored`
       )
       return null

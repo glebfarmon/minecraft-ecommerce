@@ -1,3 +1,4 @@
+import {Logger} from '@nestjs/common'
 import request from 'supertest'
 
 import {DELIVERY_QUEUE, type DeliveryQueue} from '../src/delivery/delivery-queue'
@@ -200,8 +201,17 @@ describe('charge.refunded', () => {
 describe('ignored charge events', () => {
   it('answers 200 for an unknown payment intent', async () => {
     const o = await paidOrder()
-    await charge('refunded', {...o, pi: 'pi_unknown_refund'}).expect(200)
-    await charge('dispute_opened', {...o, pi: 'pi_unknown_refund'}).expect(200)
+    const log = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    try {
+      await charge('refunded', {...o, pi: 'pi_unknown_refund'}).expect(200)
+      await charge('dispute_opened', {...o, pi: 'pi_unknown_refund'}).expect(200)
+      const unmatched = log.mock.calls.filter(([m]) =>
+        String(m).includes('no order for payment pi_unknown_refund')
+      )
+      expect(unmatched).toHaveLength(2)
+    } finally {
+      log.mockRestore()
+    }
     expect((await orderOf(o.id)).status).toBe('DELIVERED')
     expect(await deliveries(o.id, 'REVOKE')).toHaveLength(0)
   })

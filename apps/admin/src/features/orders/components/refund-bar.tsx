@@ -11,7 +11,10 @@ import {useEffect, useId, useState} from 'react'
 
 import {Button} from '@shop/ui/button'
 
-type Order = Pick<GetAdminOrderApiResponse, 'id' | 'status' | 'refundRequestedAt'>
+type Order = Pick<
+  GetAdminOrderApiResponse,
+  'id' | 'status' | 'refundRequestedAt' | 'stripePaymentIntentId'
+>
 
 /** `now` is injectable so the 15-minute rule can be tested without waiting. */
 export function RefundBar({
@@ -55,7 +58,8 @@ export function RefundBar({
       </Card>
     )
   }
-  if (!eligible || !canRefund) return null
+  // No payment intent recorded: the api could not refund it, so there is no button.
+  if (!eligible || !canRefund || !order.stripePaymentIntentId) return null
 
   async function confirm() {
     setError(null)

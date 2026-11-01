@@ -12,7 +12,7 @@ type Props = Partial<React.ComponentProps<typeof RefundBar>>
 const bar = (props: Props = {}) =>
   renderWithStore(
     <RefundBar
-      order={{id: 'o1', status: 'PAID', refundRequestedAt: null}}
+      order={{id: 'o1', stripePaymentIntentId: 'pi_1', status: 'PAID', refundRequestedAt: null}}
       canRefund
       now={NOW}
       {...props}
@@ -40,24 +40,34 @@ describe('RefundBar', () => {
   it.each(['PENDING', 'EXPIRED', 'REFUNDED', 'DISPUTED'] as const)(
     'offers no button for %s',
     status => {
-      bar({order: {id: 'o1', status, refundRequestedAt: null}})
+      bar({order: {id: 'o1', stripePaymentIntentId: 'pi_1', status, refundRequestedAt: null}})
       expect(screen.queryByRole('button', {name: 'Refund'})).not.toBeInTheDocument()
     }
   )
 
+  it('offers no button for an order without a Stripe payment', () => {
+    bar({
+      order: {id: 'o1', stripePaymentIntentId: null, status: 'PAID', refundRequestedAt: null}
+    })
+    expect(screen.queryByRole('button', {name: 'Refund'})).not.toBeInTheDocument()
+  })
+
   it.each(['PAID', 'DELIVERED'] as const)('offers the button for %s', status => {
-    bar({order: {id: 'o1', status, refundRequestedAt: null}})
+    bar({order: {id: 'o1', stripePaymentIntentId: 'pi_1', status, refundRequestedAt: null}})
     expect(screen.getByRole('button', {name: 'Refund'})).toBeInTheDocument()
   })
 
   it('shows plain status lines for refunded and disputed orders, even without the permission', () => {
     const {unmount} = bar({
       canRefund: false,
-      order: {id: 'o1', status: 'REFUNDED', refundRequestedAt: null}
+      order: {id: 'o1', stripePaymentIntentId: 'pi_1', status: 'REFUNDED', refundRequestedAt: null}
     })
     expect(screen.getByText('This order was refunded')).toBeInTheDocument()
     unmount()
-    bar({canRefund: false, order: {id: 'o1', status: 'DISPUTED', refundRequestedAt: null}})
+    bar({
+      canRefund: false,
+      order: {id: 'o1', stripePaymentIntentId: 'pi_1', status: 'DISPUTED', refundRequestedAt: null}
+    })
     expect(screen.getByText('The buyer disputed this payment')).toBeInTheDocument()
   })
 
@@ -117,13 +127,27 @@ describe('RefundBar', () => {
   })
 
   it('waits for Stripe while the reservation is under 15 minutes old', () => {
-    bar({order: {id: 'o1', status: 'PAID', refundRequestedAt: minutesAgo(14)}})
+    bar({
+      order: {
+        id: 'o1',
+        stripePaymentIntentId: 'pi_1',
+        status: 'PAID',
+        refundRequestedAt: minutesAgo(14)
+      }
+    })
     expect(screen.getByText('Refund requested, waiting for Stripe')).toBeInTheDocument()
     expect(screen.queryByRole('button', {name: 'Refund'})).not.toBeInTheDocument()
   })
 
   it('offers the button again after 15 minutes', () => {
-    bar({order: {id: 'o1', status: 'PAID', refundRequestedAt: minutesAgo(15)}})
+    bar({
+      order: {
+        id: 'o1',
+        stripePaymentIntentId: 'pi_1',
+        status: 'PAID',
+        refundRequestedAt: minutesAgo(15)
+      }
+    })
     expect(screen.queryByText('Refund requested, waiting for Stripe')).not.toBeInTheDocument()
     expect(screen.getByRole('button', {name: 'Refund'})).toBeInTheDocument()
   })

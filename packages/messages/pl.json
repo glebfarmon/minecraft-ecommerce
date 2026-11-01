@@ -264,10 +264,6 @@
     "review": {
       "title": "Ta płatność jest w trakcie weryfikacji",
       "body": "Twój bank poprosił nas o weryfikację tej płatności. Skontaktuj się z pomocą, jeśli masz pytania."
-    },
-    "closed": {
-      "title": "To zamówienie jest zamknięte",
-      "body": "Skontaktuj się z pomocą, jeśli masz pytania."
     }
   }
 }
