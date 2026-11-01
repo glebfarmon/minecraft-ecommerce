@@ -106,9 +106,11 @@ export class DeliveryService {
 
   /**
    * Marks a delivery DONE; idempotent, and never touches a CANCELLED one. A GRANT or RESTORE of a
-   * timed product starts or extends its grant's clock, unless its order was refunded or disputed
-   * meanwhile. An order whose GRANT and RESTORE deliveries are all DONE (or CANCELLED) becomes
-   * DELIVERED; REVOKE rows never count.
+   * timed product starts or extends its grant's clock, unless its order was disputed or refunded
+   * with its items taken back meanwhile (a refund with `refundRevoke: false` keeps the items, so
+   * the clock still runs; `null` is a Stripe-dashboard refund and counts as taken back). An order
+   * whose GRANT and RESTORE deliveries are all DONE (or CANCELLED) becomes DELIVERED; REVOKE rows
+   * never count.
    */
   async complete(tx: Prisma.TransactionClient, deliveryId: string): Promise<void> {
     // Serializes the last two deliveries of one order, so one of them sees both DONE.
@@ -117,13 +119,18 @@ export class DeliveryService {
       where: {id: deliveryId},
       include: {
         orderItem: {
-          include: {product: {select: {durationDays: true}}, order: {select: {status: true}}}
+          include: {
+            product: {select: {durationDays: true}},
+            order: {select: {status: true, refundRevoke: true}}
+          }
         }
       }
     })
     if (!delivery || delivery.status === 'DONE' || delivery.status === 'CANCELLED') return
     const item = delivery.orderItem
-    const reversed = item?.order.status === 'REFUNDED' || item?.order.status === 'DISPUTED'
+    const reversed =
+      item?.order.status === 'DISPUTED' ||
+      (item?.order.status === 'REFUNDED' && item.order.refundRevoke !== false)
     const grantId =
       (delivery.kind === 'GRANT' || delivery.kind === 'RESTORE') && !reversed
         ? delivery.grantId

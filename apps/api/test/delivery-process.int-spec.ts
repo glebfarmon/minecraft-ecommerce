@@ -603,6 +603,36 @@ describe('refunds and disputes (5b)', () => {
     }
   )
 
+  it('a late GRANT on a REFUNDED order with refundRevoke true adds no time', async () => {
+    const p = await product('TIMED')
+    const {order, ids} = await paidOrder([{product: p}], 'Late_RevokeTrue')
+    const id = only(ids)
+    await prisma.order.update({
+      where: {id: order.id},
+      data: {status: 'REFUNDED', refundRequestedAt: new Date(), refundRevoke: true}
+    })
+    await service.process(id)
+    expect((await delivery(id)).status).toBe('DONE')
+    expect(await grantOf(id)).toMatchObject({expiresAt: null})
+  })
+
+  it('a late timed GRANT on an order refunded with revoke:false still starts the clock', async () => {
+    const p = await product('TIMED')
+    const {order, ids} = await paidOrder([{product: p}], 'Late_Kept')
+    const id = only(ids)
+    await prisma.order.update({
+      where: {id: order.id},
+      data: {status: 'REFUNDED', refundRequestedAt: new Date(), refundRevoke: false}
+    })
+    const before = Date.now()
+    await service.process(id)
+    expect((await delivery(id)).status).toBe('DONE')
+    const grant = await grantOf(id)
+    expect(grant.revokedAt).toBeNull()
+    closeTo(grant.expiresAt, before + (p.durationDays ?? 0) * DAY_MS)
+    expect(await orderStatus(order.id)).toBe('REFUNDED')
+  })
+
   it('the last two deliveries of one order completing together deliver it', async () => {
     const first = await product('PERMANENT')
     const second = await product('PERMANENT', 1)
