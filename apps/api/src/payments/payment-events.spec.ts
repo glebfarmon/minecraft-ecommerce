@@ -124,6 +124,37 @@ describe('toPaymentEvent', () => {
           'dispute_opened'
         )
     })
+    it('maps funds_withdrawn of an open chargeback as an opened dispute', () => {
+      const type = 'charge.dispute.funds_withdrawn'
+      expect(toPaymentEvent(event(type, dispute({})))).toEqual({
+        kind: 'dispute_opened',
+        eventId: 'evt_1',
+        type,
+        paymentIntentId: 'pi_1',
+        disputeId: 'dp_1',
+        amount: 500,
+        currency: 'EUR'
+      })
+      expect(toPaymentEvent(event(type, dispute({status: 'under_review'}))).kind).toBe(
+        'dispute_opened'
+      )
+      for (const status of [
+        'won',
+        'lost',
+        'charge_refunded',
+        'warning_closed',
+        'warning_needs_response',
+        'something_new'
+      ])
+        expect(toPaymentEvent(event(type, dispute({status}))).kind).toBe('ignored')
+      expect(toPaymentEvent(event(type, dispute({payment_intent: null}))).kind).toBe('ignored')
+    })
+    it('ignores charge.dispute.updated: a late replay would re-open a won dispute', () => {
+      for (const status of ['needs_response', 'under_review', 'won'])
+        expect(toPaymentEvent(event('charge.dispute.updated', dispute({status}))).kind).toBe(
+          'ignored'
+        )
+    })
     it('ignores closings that are neither won nor lost', () => {
       for (const status of ['warning_closed', 'charge_refunded', 'something_new'])
         expect(toPaymentEvent(event('charge.dispute.closed', dispute({status}))).kind).toBe(
