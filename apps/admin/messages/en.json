@@ -101,17 +101,43 @@
     "placeholder_mismatch": "Keep the same placeholders and tags as the original.",
     "placeholder_mismatch_expected": "Keep the same placeholders and tags as the original: {expected}",
     "delivery_not_stuck": "This delivery is no longer stuck. Refresh the page.",
-    "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done."
+    "delivery_not_retryable": "This delivery has no commands to run because the nick could not be used. Give the purchase in game and mark it done.",
+    "delivery_order_reversed": "This order was refunded or disputed, so its items are not given out again. Mark the delivery done if you settled it by hand.",
+    "refund_not_allowed": "This order cannot be refunded.",
+    "refund_delivery_open": "Resolve the order's running or stuck deliveries first.",
+    "refund_already_requested": "A refund was already requested. Try again in 15 minutes.",
+    "refund_failed": "The payment provider did not accept the refund. Try again."
   },
   "nav": {
     "home": "Home",
     "orders": "Orders",
+    "deliveries": "Deliveries",
+    "attention": "{label}, {count} need attention",
     "promo": "Promo codes",
     "catalog": "Catalog",
     "content": "Content",
     "team": "Team",
     "audit": "Audit log",
     "account": "Account"
+  },
+  "deliveries": {
+    "title": "Deliveries",
+    "description": "Deliveries that failed or need a look, of every kind.",
+    "loadMore": "Load more",
+    "forbidden": "You do not have permission to read deliveries.",
+    "loadFailed": "Could not load deliveries. Try again.",
+    "colKind": "Kind",
+    "colNick": "Nick",
+    "colServer": "Server",
+    "colProduct": "Product",
+    "colStatus": "Status",
+    "colAttempts": "Attempts",
+    "colError": "Last error",
+    "colOrder": "Order",
+    "colActions": "Actions",
+    "none": "None",
+    "noOrder": "No order (expiry)",
+    "empty": "No stuck deliveries."
   },
   "status": {
     "PAID": "Paid",
@@ -131,6 +157,12 @@
     "averageOrder": "Average order",
     "conversion": "Conversion",
     "ltv": "LTV",
+    "attention": "Needs attention",
+    "attentionHint": "stuck deliveries",
+    "attentionDot": "Action needed",
+    "attentionOpen": "Open deliveries",
+    "disputesRefunds": "Disputes and refunds",
+    "disputesHint": "disputed orders. Refunds in range: {count}, {amount}",
     "noSalesPrevious": "No sales in the previous period",
     "vsPrevious": "vs previous period",
     "partialRevenue": "Partial: some orders wait for a rate",
@@ -218,18 +250,32 @@
     "emailLabel": "Email",
     "attention": "{count, plural, one {# order needs attention} other {# orders need attention}}",
     "attentionRow": "Needs attention",
+    "refund": {
+      "title": "Refund",
+      "button": "Refund",
+      "revoke": "Take the delivered items back",
+      "note": "Products without revoke commands keep their items",
+      "confirm": "Confirm refund",
+      "cancel": "Cancel",
+      "requested": "Refund requested",
+      "waiting": "Refund requested, waiting for Stripe",
+      "refunded": "This order was refunded",
+      "disputed": "The buyer disputed this payment"
+    },
     "deliveries": {
       "title": "Deliveries",
       "kind": {
         "GRANT": "Grant",
-        "REVOKE": "Revoke"
+        "REVOKE": "Revoke",
+        "RESTORE": "Restore"
       },
       "status": {
         "PENDING": "Pending",
         "RUNNING": "Running",
         "DONE": "Done",
         "FAILED": "Failed",
-        "NEEDS_REVIEW": "Needs review"
+        "NEEDS_REVIEW": "Needs review",
+        "CANCELLED": "Cancelled"
       },
       "attempts": "Attempts: {count}",
       "nextAttempt": "Next attempt {time}",

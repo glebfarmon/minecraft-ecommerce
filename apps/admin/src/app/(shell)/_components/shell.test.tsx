@@ -22,21 +22,31 @@ const me = {
 } as unknown as Me
 
 describe('shell', () => {
+  beforeEach(() => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(() =>
+        Promise.resolve(Response.json({deliveries: [], nextCursor: null, attentionCount: 0}))
+      )
+  })
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
   it('rail links are named by label and mark the current page', () => {
-    renderWithProviders(<Nav me={me} variant="rail" />, {store: false})
+    renderWithProviders(<Nav me={me} variant="rail" />)
     const orders = screen.getByRole('link', {name: 'Orders'})
     expect(orders).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', {name: 'Audit log'})).toBeInTheDocument()
   })
 
   it('names the rail links in Polish', () => {
-    renderWithProviders(<Nav me={me} variant="rail" />, {store: false, locale: 'pl'})
+    renderWithProviders(<Nav me={me} variant="rail" />, {locale: 'pl'})
     expect(screen.getByRole('link', {name: 'Zamówienia'})).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('navigation', {name: 'Panel'})).toBeInTheDocument()
   })
 
   it('hides entries the user lacks permission for', () => {
-    renderWithProviders(<Nav me={{...me, permissions: []}} variant="rail" />, {store: false})
+    renderWithProviders(<Nav me={{...me, permissions: []}} variant="rail" />)
     expect(screen.queryByRole('link', {name: 'Orders'})).toBeNull()
     expect(screen.getByRole('link', {name: 'Catalog'})).toBeInTheDocument()
   })
@@ -49,7 +59,7 @@ describe('shell', () => {
   })
 
   it('mobile menu opens as a dialog with the nav and closes on navigate', async () => {
-    renderWithProviders(<MobileNav me={me} />, {store: false})
+    renderWithProviders(<MobileNav me={me} />)
     fireEvent.click(screen.getByRole('button', {name: 'Open menu'}))
     const dialog = screen.getByRole('dialog', {name: 'Menu'})
     fireEvent.click(within(dialog).getByRole('link', {name: 'Catalog'}))

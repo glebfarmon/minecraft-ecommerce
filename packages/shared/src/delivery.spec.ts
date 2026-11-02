@@ -24,7 +24,14 @@ const valid = {
 
 describe('delivery contract', () => {
   it('lists the statuses and public states', () => {
-    expect(DELIVERY_STATUSES).toEqual(['PENDING', 'RUNNING', 'DONE', 'FAILED', 'NEEDS_REVIEW'])
+    expect(DELIVERY_STATUSES).toEqual([
+      'PENDING',
+      'RUNNING',
+      'DONE',
+      'FAILED',
+      'NEEDS_REVIEW',
+      'CANCELLED'
+    ])
     expect(PUBLIC_DELIVERY_STATES).toEqual(['none', 'delivering', 'delayed', 'delivered'])
   })
 

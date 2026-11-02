@@ -1,4 +1,4 @@
-import {renderWithIntl} from '@/test/render-with-providers'
+import {renderWithProviders} from '@/test/render-with-providers'
 import {fireEvent, screen} from '@testing-library/react'
 import type {ReactElement} from 'react'
 
@@ -6,7 +6,7 @@ import {TooltipProvider} from '@shop/ui/tooltip'
 
 import {Nav} from './nav'
 
-const render = (ui: ReactElement) => renderWithIntl(<TooltipProvider>{ui}</TooltipProvider>)
+const render = (ui: ReactElement) => renderWithProviders(<TooltipProvider>{ui}</TooltipProvider>)
 
 let mockPath = '/team'
 jest.mock('next/navigation', () => ({usePathname: () => mockPath}))
@@ -21,8 +21,42 @@ const me = (permissions: string[]) =>
   }) as never
 
 describe('Nav', () => {
+  let attention = 0
   beforeEach(() => {
     mockPath = '/team'
+    attention = 0
+    jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(() =>
+        Promise.resolve(
+          Response.json({deliveries: [], nextCursor: null, attentionCount: attention})
+        )
+      )
+  })
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+  it('shows Deliveries with order.read and hides it without', () => {
+    const {unmount} = render(<Nav me={me(['order.read'])} variant="rail" />)
+    expect(screen.getByRole('link', {name: 'Deliveries'})).toHaveAttribute('href', '/deliveries')
+    unmount()
+    render(<Nav me={me([])} variant="rail" />)
+    expect(screen.queryByRole('link', {name: 'Deliveries'})).not.toBeInTheDocument()
+  })
+  it('shows the attention count on Deliveries when above zero', async () => {
+    attention = 3
+    render(<Nav me={me(['order.read'])} variant="sheet" />)
+    const link = await screen.findByRole('link', {name: 'Deliveries, 3 need attention'})
+    expect(link).toHaveTextContent('3')
+  })
+  it('shows no badge at zero and asks nothing without order.read', async () => {
+    render(<Nav me={me(['order.read'])} variant="sheet" />)
+    expect(await screen.findByRole('link', {name: 'Deliveries'})).not.toHaveTextContent('0')
+    expect(screen.queryByText(/need attention/)).not.toBeInTheDocument()
+  })
+  it('does not fetch deliveries without order.read', () => {
+    render(<Nav me={me([])} variant="rail" />)
+    expect(global.fetch).not.toHaveBeenCalled()
   })
   it('shows only sections the admin may open', () => {
     render(<Nav me={me(['admin.invite'])} variant="rail" />)

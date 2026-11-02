@@ -1,22 +1,30 @@
 import type {Locale} from '@shop/shared/catalog'
 import type {AdminOrder, OrderServerGroup, PublicOrder} from '@shop/shared/orders'
 
-import {publicDeliveryState} from '../delivery/delivery-rules'
+import {countsTowardOrder, publicDeliveryState} from '../delivery/delivery-rules'
 import {toAdminDelivery} from '../delivery/delivery-view'
-import type {Delivery, DeliveryStatus, Order, OrderItem} from '../generated/prisma/client'
+import type {
+  Delivery,
+  DeliveryKind,
+  DeliveryStatus,
+  Order,
+  OrderItem
+} from '../generated/prisma/client'
 import {maskEmail} from './mask-email'
 
 export type OrderWithItems = Order & {items: OrderItem[]}
 
-/** Loaded with an order to derive its delivery state; REVOKE deliveries have no item and never count. */
+/** Loaded with an order to derive its delivery state. */
 export const ORDER_ITEMS_WITH_DELIVERY = {
-  items: {orderBy: {id: 'asc'}, include: {deliveries: {select: {status: true}}}}
+  items: {orderBy: {id: 'asc'}, include: {deliveries: {select: {kind: true, status: true}}}}
 } as const
+type KindAndStatus = {kind: DeliveryKind; status: DeliveryStatus}
 export type OrderWithDeliveries = Order & {
-  items: (OrderItem & {deliveries: {status: DeliveryStatus}[]})[]
+  items: (OrderItem & {deliveries: KindAndStatus[]})[]
 }
-export const deliveryStatuses = (order: OrderWithDeliveries): {status: DeliveryStatus}[] =>
-  order.items.flatMap(i => i.deliveries)
+/** The deliveries the buyer's state is made of: GRANT and RESTORE rows that are not CANCELLED. */
+export const deliveryStatuses = (order: OrderWithDeliveries): KindAndStatus[] =>
+  order.items.flatMap(i => i.deliveries).filter(countsTowardOrder)
 
 /** The admin detail also needs each delivery in full, with its server's name. */
 export const ORDER_ITEMS_WITH_ADMIN_DELIVERY = {
@@ -84,6 +92,7 @@ export function toAdminOrder(order: OrderWithAdminDeliveries): AdminOrder {
     stripeSessionId: order.stripeSessionId,
     stripePaymentIntentId: order.stripePaymentIntentId,
     deliveryConsentAt: order.deliveryConsentAt.toISOString(),
+    refundRequestedAt: order.refundRequestedAt?.toISOString() ?? null,
     deliveries: order.items.flatMap(i => i.deliveries.map(d => toAdminDelivery(d, i.productName)))
   }
 }

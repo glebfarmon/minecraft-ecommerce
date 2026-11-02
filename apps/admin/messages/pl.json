@@ -101,17 +101,43 @@
     "placeholder_mismatch": "Zachowaj te same znaczniki i tagi co w oryginale.",
     "placeholder_mismatch_expected": "Zachowaj te same znaczniki i tagi co w oryginale: {expected}",
     "delivery_not_stuck": "Ta dostawa już nie jest zablokowana. Odśwież stronę.",
-    "delivery_not_retryable": "Tej dostawy nie da się ponowić: nick był nieprawidłowy, więc nie ma żadnych poleceń. Wydaj zakup w grze ręcznie i oznacz dostawę jako wykonaną."
+    "delivery_not_retryable": "Tej dostawy nie da się ponowić: nick był nieprawidłowy, więc nie ma żadnych poleceń. Wydaj zakup w grze ręcznie i oznacz dostawę jako wykonaną.",
+    "delivery_order_reversed": "To zamówienie zostało zwrócone lub jest sporne, więc jego zakupy nie są wydawane ponownie. Oznacz dostawę jako wykonaną, jeśli rozwiązano to ręcznie.",
+    "refund_not_allowed": "To zamówienie nie może zostać zwrócone.",
+    "refund_delivery_open": "Najpierw rozwiąż trwające lub zablokowane dostawy tego zamówienia.",
+    "refund_already_requested": "Zwrot został już zlecony. Spróbuj ponownie za 15 minut.",
+    "refund_failed": "Operator płatności nie przyjął zwrotu. Spróbuj ponownie."
   },
   "nav": {
     "home": "Strona główna",
     "orders": "Zamówienia",
+    "deliveries": "Dostawy",
+    "attention": "{label}, wymagają uwagi: {count}",
     "promo": "Kody promocyjne",
     "catalog": "Katalog",
     "content": "Treść",
     "team": "Zespół",
     "audit": "Dziennik audytu",
     "account": "Konto"
+  },
+  "deliveries": {
+    "title": "Dostawy",
+    "description": "Dostawy, które się nie powiodły lub wymagają sprawdzenia, wszystkich rodzajów.",
+    "loadMore": "Wczytaj więcej",
+    "forbidden": "Nie masz uprawnień do odczytu dostaw.",
+    "loadFailed": "Nie udało się wczytać dostaw. Spróbuj ponownie.",
+    "colKind": "Rodzaj",
+    "colNick": "Nick",
+    "colServer": "Serwer",
+    "colProduct": "Produkt",
+    "colStatus": "Status",
+    "colAttempts": "Próby",
+    "colError": "Ostatni błąd",
+    "colOrder": "Zamówienie",
+    "colActions": "Akcje",
+    "none": "Brak",
+    "noOrder": "Brak zamówienia (wygaśnięcie)",
+    "empty": "Brak zablokowanych dostaw."
   },
   "status": {
     "PAID": "Opłacone",
@@ -131,6 +157,12 @@
     "averageOrder": "Średnie zamówienie",
     "conversion": "Konwersja",
     "ltv": "LTV",
+    "attention": "Wymaga uwagi",
+    "attentionHint": "zablokowane dostawy",
+    "attentionDot": "Wymaga reakcji",
+    "attentionOpen": "Otwórz dostawy",
+    "disputesRefunds": "Spory i zwroty",
+    "disputesHint": "zamówienia w sporze. Zwroty w okresie: {count}, {amount}",
     "noSalesPrevious": "Brak sprzedaży w poprzednim okresie",
     "vsPrevious": "vs poprzedni okres",
     "partialRevenue": "Częściowe: część zamówień czeka na kurs",
@@ -218,18 +250,32 @@
     "emailLabel": "E-mail",
     "attention": "{count, plural, one {# zamówienie wymaga uwagi} few {# zamówienia wymagają uwagi} many {# zamówień wymaga uwagi} other {# zamówienia wymaga uwagi}}",
     "attentionRow": "Wymaga uwagi",
+    "refund": {
+      "title": "Zwrot",
+      "button": "Zwróć",
+      "revoke": "Odbierz dostarczone przedmioty",
+      "note": "Produkty bez poleceń odbierających zachowują swoje przedmioty",
+      "confirm": "Potwierdź zwrot",
+      "cancel": "Anuluj",
+      "requested": "Zwrot zlecony",
+      "waiting": "Zwrot zlecony, czekamy na Stripe",
+      "refunded": "To zamówienie zostało zwrócone",
+      "disputed": "Kupujący zakwestionował tę płatność"
+    },
     "deliveries": {
       "title": "Dostawy",
       "kind": {
         "GRANT": "Nadanie",
-        "REVOKE": "Odebranie"
+        "REVOKE": "Odebranie",
+        "RESTORE": "Przywrócenie"
       },
       "status": {
         "PENDING": "Oczekuje",
         "RUNNING": "W toku",
         "DONE": "Dostarczono",
         "FAILED": "Błąd",
-        "NEEDS_REVIEW": "Do sprawdzenia"
+        "NEEDS_REVIEW": "Do sprawdzenia",
+        "CANCELLED": "Anulowano"
       },
       "attempts": "Próby: {count}",
       "nextAttempt": "Następna próba {time}",

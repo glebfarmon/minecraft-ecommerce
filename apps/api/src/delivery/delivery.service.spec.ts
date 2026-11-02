@@ -3,6 +3,7 @@ import {randomBytes} from 'node:crypto'
 import {Logger} from '@nestjs/common'
 
 import {encryptRconPassword} from '../catalog-admin/rcon/rcon-crypto'
+import type {Prisma} from '../generated/prisma/client'
 import type {PrismaService} from '../prisma/prisma.service'
 import type {SendOutcome} from './delivery-rules'
 import {DeliveryService, RCON_TIMEOUT_MS} from './delivery.service'
@@ -48,6 +49,16 @@ function setup(opts: {
   const stored: Record<string, unknown>[] = []
   const tx = {
     delivery: {
+      // Per call: `lockOrderOf` selects the order id, `complete` includes the item and order.
+      findUnique: jest
+        .fn()
+        .mockImplementation(({select}: {select?: unknown}) =>
+          Promise.resolve(
+            select
+              ? {orderItem: null}
+              : {id: 'd1', kind: 'GRANT', status: 'RUNNING', grantId: null, orderItem: null}
+          )
+        ),
       updateMany: jest.fn().mockImplementation(({data}: {data: Record<string, unknown>}) => {
         stored.push(data)
         return Promise.resolve({count: 1})
@@ -124,5 +135,97 @@ describe('DeliveryService.process', () => {
     expect(stored[0]).toMatchObject({status: 'PENDING'})
     expect(logged).toHaveBeenCalledWith('delivery d1 not re-enqueued', expect.any(Error))
     logged.mockRestore()
+  })
+})
+
+describe('DeliveryService.complete', () => {
+  type Row = {kind: string; status: string; grantId: string | null; orderStatus?: string}
+  function completeSetup(row: Row) {
+    const item = row.orderStatus
+      ? {orderId: 'o1', quantity: 2, product: {durationDays: 30}, order: {status: row.orderStatus}}
+      : null
+    const tx = {
+      delivery: {
+        findUnique: jest
+          .fn()
+          .mockImplementation(({select}: {select?: unknown}) =>
+            Promise.resolve(
+              select
+                ? {orderItem: item && {orderId: item.orderId}}
+                : {id: 'd1', ...row, orderItem: item}
+            )
+          ),
+        updateMany: jest.fn().mockResolvedValue({count: 1}),
+        count: jest.fn().mockResolvedValue(0)
+      },
+      grant: {
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({id: 'g1', expiresAt: null, revokedAt: null}),
+        update: jest.fn().mockResolvedValue({})
+      },
+      order: {updateMany: jest.fn().mockResolvedValue({count: 1})},
+      $queryRaw: jest.fn().mockResolvedValue([])
+    }
+    const service = new DeliveryService(
+      {} as PrismaService,
+      {send: jest.fn()},
+      {enqueue: jest.fn()}
+    )
+    const run = () => service.complete(tx as unknown as Prisma.TransactionClient, 'd1')
+    return {tx, run}
+  }
+
+  it.each(['CANCELLED', 'DONE'])('leaves a %s delivery alone', async status => {
+    const {tx, run} = completeSetup({kind: 'GRANT', status, grantId: 'g1', orderStatus: 'PAID'})
+    await run()
+    expect(tx.delivery.updateMany).not.toHaveBeenCalled()
+    expect(tx.grant.update).not.toHaveBeenCalled()
+    expect(tx.order.updateMany).not.toHaveBeenCalled()
+  })
+
+  it.each(['GRANT', 'RESTORE'])(
+    'a timed %s on a PAID order extends the clock and settles',
+    async kind => {
+      const {tx, run} = completeSetup({kind, status: 'RUNNING', grantId: 'g1', orderStatus: 'PAID'})
+      await run()
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2) // the order row, then the grant
+      expect(tx.grant.update).toHaveBeenCalledWith({
+        where: {id: 'g1'},
+        data: {expiresAt: expect.any(Date) as Date, revokedAt: null}
+      })
+      expect(tx.order.updateMany).toHaveBeenCalledWith({
+        where: {id: 'o1', status: 'PAID'},
+        data: {status: 'DELIVERED'}
+      })
+    }
+  )
+
+  it.each(['REFUNDED', 'DISPUTED'])(
+    'on a %s order it is DONE but adds no time',
+    async orderStatus => {
+      const {tx, run} = completeSetup({
+        kind: 'GRANT',
+        status: 'NEEDS_REVIEW',
+        grantId: 'g1',
+        orderStatus
+      })
+      await run()
+      expect(tx.delivery.updateMany).toHaveBeenCalledTimes(1)
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(1) // only the order row
+      expect(tx.grant.update).not.toHaveBeenCalled()
+    }
+  )
+
+  it('a REVOKE never touches the grant clock', async () => {
+    const {tx, run} = completeSetup({
+      kind: 'REVOKE',
+      status: 'FAILED',
+      grantId: 'g1',
+      orderStatus: 'REFUNDED'
+    })
+    await run()
+    expect(tx.delivery.updateMany).toHaveBeenCalledTimes(1)
+    expect(tx.grant.update).not.toHaveBeenCalled()
   })
 })

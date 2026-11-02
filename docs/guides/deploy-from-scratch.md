@@ -629,11 +629,13 @@ PUBLIC_WEB_ORIGIN=https://<domain>
 
 You paste these values into Dokploy yourself. Never send them to the assistant or anyone else.
 
-**Stripe (test mode).** Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired`; its signing secret is `STRIPE_WEBHOOK_SECRET`. Optionally enable BLIK and Przelewy24 for PLN under Settings → Payment methods.
+**Stripe (test mode).** Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.funds_withdrawn` and `charge.dispute.closed`; its signing secret is `STRIPE_WEBHOOK_SECRET`. Stripe's docs do not state which event announces an inquiry that escalates to a chargeback, so `charge.dispute.funds_withdrawn` is subscribed too, and such a chargeback is still caught when the money is taken (verify it in Stripe test mode). An endpoint added before refunds existed lacks the four `charge.*` events: open it under Developers → Webhooks, choose **Update events** and add them, or refunds and disputes never reach the shop. Optionally enable BLIK and Przelewy24 for PLN under Settings → Payment methods.
 
 **Turnstile.** Cloudflare → Turnstile → add a widget for `<domain>`. The secret goes to `shop-api` (`TURNSTILE_SECRET_KEY`); the site key goes to `shop-web` as `TURNSTILE_SITE_KEY` (below).
 
 If a paid event does not match its order (wrong amount or currency) or names an unknown session, the API logs it and answers 200, so Stripe does not retry. Find it in the `shop-api` logs and resolve it by hand in the Stripe dashboard.
+
+The **Refund** button on an admin order needs the `order.refund` permission. OWNER has it; the system roles are read-only, so to let someone else refund, create a role under Team → Roles → New role with `order.refund` and give it to them. The order turns refunded only when Stripe's `charge.refunded` event arrives; a refund made in the Stripe dashboard arrives the same way and takes the items back.
 
 Optional: `MC_SERVER_ADDRESS=play.example.org:25565` — the Minecraft server whose online count the site shows.
 

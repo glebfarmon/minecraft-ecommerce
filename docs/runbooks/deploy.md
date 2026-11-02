@@ -146,12 +146,14 @@ Create a GitHub environment `production` and move these secrets into it.
 The owner pastes these values in Dokploy and never sends them to the assistant.
 
 1. Stripe (test mode) → Developers → API keys → the secret key goes into `STRIPE_SECRET_KEY` on `shop-api`.
-2. Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`. Its signing secret goes into `STRIPE_WEBHOOK_SECRET` on `shop-api`.
+2. Developers → Webhooks → add the endpoint `https://<domain>/api/webhooks/stripe` with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.funds_withdrawn`, `charge.dispute.closed` (an older endpoint: open it → Update events → add the four `charge.*` events). Its signing secret goes into `STRIPE_WEBHOOK_SECRET` on `shop-api`. The admin Refund button needs `order.refund` (OWNER only; for anyone else, a custom role in Team → Roles).
 3. Optional: Settings → Payment methods → enable BLIK and Przelewy24 for PLN.
 4. Cloudflare → Turnstile → add a widget for `<domain>`. The site key goes into `TURNSTILE_SITE_KEY` on `shop-web` (read at runtime); the secret goes into `TURNSTILE_SECRET_KEY` on `shop-api`.
 5. On `shop-api` also set `PAYMENTS_GATEWAY=stripe` and `PUBLIC_WEB_ORIGIN=https://<domain>`. Never set `PAYMENTS_ALLOW_FAKE` in production.
 
 A paid event whose amount or currency does not match the order, or whose session is unknown, is logged and acknowledged with 200 (Stripe will not retry it). Find it in the `shop-api` logs and resolve it by hand in the Stripe dashboard (refund or fix the order).
+
+A refund call uses the idempotency key `refund-<orderId>`, and Stripe caches its result for 24 hours. A refund Stripe refused (for example, insufficient balance) keeps failing on every retry 15 minutes later until the key expires. Fix the cause and wait out the 24 hours, or refund in the Stripe dashboard: the `charge.refunded` webhook still processes it.
 
 ## 7. Verify
 
@@ -179,3 +181,5 @@ Images are published and deployed only on a push to `main` (a merged PR); pull r
 ## 11. Rollback
 
 In Dokploy set the app image to `ghcr.io/<owner>/<repo>/<app>:sha-<previous sha>` and redeploy. Set it back to `:latest` after the fix lands. `<owner>/<repo>` must be lowercase in GHCR names.
+
+Once a refund or dispute has created `CANCELLED` deliveries or `RESTORE` rows, a release from before refunds (sub-project 5b) may fail to read them with its Prisma client. Roll forward with a fix instead of rolling back past that release.

@@ -7,6 +7,8 @@ import {PrismaService} from '../prisma/prisma.service'
 
 const CURRENCIES = ['EUR', 'PLN'] as const
 const DAY = 86_400_000
+// Same filter as the Deliveries page, so the card, the nav badge and the page agree.
+const STUCK_DELIVERIES = ['FAILED', 'NEEDS_REVIEW'] as const
 const REVENUE_STATUSES = ['PAID', 'DELIVERED'] as const
 
 const startOfUtcDay = (d: Date) =>
@@ -27,6 +29,7 @@ export class OrdersStatsService {
       status: {in: [...REVENUE_STATUSES]},
       paidAt: {gte, lt}
     })
+    const refundedWhere: Prisma.OrderWhereInput = {refundedAt: {gte: from, lt: now}}
     const converted = (gte: Date, lt: Date) =>
       this.prisma.order.aggregate({
         where: {...revenueWhere(gte, lt), eurPlnRate: {not: null}},
@@ -44,7 +47,11 @@ export class OrdersStatsService {
       buyers,
       byStatus,
       daily,
-      top
+      top,
+      attentionCount,
+      disputedCount,
+      refunded,
+      refundedWithRate
     ] = await Promise.all([
       this.prisma.order.groupBy({
         by: ['currency'],
@@ -82,6 +89,13 @@ export class OrdersStatsService {
         _sum: {quantity: true},
         orderBy: {_sum: {quantity: 'desc'}},
         take: 5
+      }),
+      this.prisma.delivery.count({where: {status: {in: [...STUCK_DELIVERIES]}}}),
+      this.prisma.order.count({where: {status: 'DISPUTED'}}),
+      this.prisma.order.count({where: refundedWhere}),
+      this.prisma.order.aggregate({
+        where: {...refundedWhere, eurPlnRate: {not: null}},
+        _sum: {totalEurMinor: true, totalPlnMinor: true}
       })
     ])
 
@@ -132,7 +146,11 @@ export class OrdersStatsService {
         name: t.productName,
         serverName: t.serverName,
         quantity: t._sum.quantity ?? 0
-      }))
+      })),
+      attentionCount,
+      disputedCount,
+      refundedCount: refunded,
+      refundedMinor: inCurrency(refundedWithRate._sum)
     }
   }
 }

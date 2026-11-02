@@ -126,10 +126,16 @@ export function OrderStatus({initial}: {initial: PublicOrder}) {
             </Link>
           </>
         )}
-        {(status === 'REFUNDED' || status === 'DISPUTED') && (
+        {status === 'REFUNDED' && (
           <>
-            <h2 className="font-display text-3xl uppercase">{t('closed.title')}</h2>
-            <p className="mt-3 text-muted">{t('closed.body')}</p>
+            <h2 className="font-display text-3xl uppercase">{t('refunded.title')}</h2>
+            <p className="mt-3 text-muted">{t('refunded.body')}</p>
+          </>
+        )}
+        {status === 'DISPUTED' && (
+          <>
+            <h2 className="font-display text-3xl uppercase">{t('review.title')}</h2>
+            <p className="mt-3 text-muted">{t('review.body')}</p>
           </>
         )}
       </div>

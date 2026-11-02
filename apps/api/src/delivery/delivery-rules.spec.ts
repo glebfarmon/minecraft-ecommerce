@@ -1,6 +1,7 @@
 import {
   MAX_ATTEMPTS,
   type SendOutcome,
+  countsTowardOrder,
   decideNext,
   grantExpiry,
   publicDeliveryState,
@@ -113,8 +114,27 @@ describe('publicDeliveryState', () => {
   it('is delivered when all DONE', () => {
     expect(publicDeliveryState('DELIVERED', ['DONE', 'DONE'])).toBe('delivered')
   })
+  it('ignores CANCELLED deliveries', () => {
+    expect(publicDeliveryState('PAID', ['DONE', 'CANCELLED'])).toBe('delivered')
+    expect(publicDeliveryState('PAID', ['CANCELLED', 'RUNNING'])).toBe('delivering')
+    expect(publicDeliveryState('PAID', ['CANCELLED', 'FAILED'])).toBe('delayed')
+    expect(publicDeliveryState('PAID', ['CANCELLED'])).toBe('none')
+  })
   it('is delivering otherwise', () => {
     expect(publicDeliveryState('PAID', ['DONE', 'RUNNING'])).toBe('delivering')
     expect(publicDeliveryState('PAID', ['PENDING'])).toBe('delivering')
+  })
+})
+
+describe('countsTowardOrder', () => {
+  it('counts GRANT and RESTORE rows that are not CANCELLED', () => {
+    expect(countsTowardOrder({kind: 'GRANT', status: 'PENDING'})).toBe(true)
+    expect(countsTowardOrder({kind: 'RESTORE', status: 'FAILED'})).toBe(true)
+    expect(countsTowardOrder({kind: 'GRANT', status: 'CANCELLED'})).toBe(false)
+    expect(countsTowardOrder({kind: 'RESTORE', status: 'CANCELLED'})).toBe(false)
+  })
+  it('never counts a REVOKE', () => {
+    expect(countsTowardOrder({kind: 'REVOKE', status: 'FAILED'})).toBe(false)
+    expect(countsTowardOrder({kind: 'REVOKE', status: 'DONE'})).toBe(false)
   })
 })

@@ -55,6 +55,11 @@ export class StripeGateway implements PaymentsGateway {
     return {sessionId: s.id, url: s.url}
   }
 
+  async refund(paymentIntentId: string, idempotencyKey: string) {
+    const r = await this.stripe.refunds.create({payment_intent: paymentIntentId}, {idempotencyKey})
+    return {refundId: r.id}
+  }
+
   parseWebhook(rawBody: Buffer, signature: string | undefined) {
     if (!signature) throw new InvalidSignatureError('missing signature')
     try {

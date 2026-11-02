@@ -2,6 +2,7 @@ import type {PublicOrder} from '@shop/shared/orders'
 
 import {
   deliveryAlertMail,
+  disputeMail,
   inviteMail,
   orderReceiptMail,
   signInCodeMail,
@@ -175,5 +176,29 @@ describe('deliveryAlertMail', () => {
       expect(mail.html).toContain(part)
     }
     expect(mail.text).not.toContain('grant ·')
+  })
+})
+
+describe('disputeMail', () => {
+  it('names the order, nick and amount and links the admin order and the Stripe dispute', async () => {
+    const mail = await disputeMail(
+      {
+        publicId: 'AbCdEfGhIjKlMnOpQrStUv',
+        nick: 'Steve_1',
+        adminUrl: 'http://admin.test/orders/corder1'
+      },
+      {id: 'dp_123', amountMinor: 499, currency: 'EUR'}
+    )
+    expect(mail.subject).toBe('Dispute opened for order AbCdEfGhIjKlMnOpQrStUv')
+    for (const part of [
+      'AbCdEfGhIjKlMnOpQrStUv',
+      'Steve_1',
+      eur('en', 499),
+      'http://admin.test/orders/corder1',
+      'https://dashboard.stripe.com/disputes/dp_123'
+    ]) {
+      expect(mail.text).toContain(part)
+      expect(mail.html).toContain(part)
+    }
   })
 })

@@ -3,20 +3,12 @@ import * as v from 'valibot'
 import {CurrencySchema, LocaleSchema} from './catalog'
 import {AdminDeliverySchema, PUBLIC_DELIVERY_STATES} from './delivery'
 import {OrderLinesSchema} from './order-lines'
+import {OrderStatusSchema} from './order-status'
 import {LoosePromoCodeSchema} from './promo'
 
 export {OrderLinesSchema}
 
-export const ORDER_STATUSES = [
-  'PENDING',
-  'PAID',
-  'DELIVERED',
-  'EXPIRED',
-  'REFUNDED',
-  'DISPUTED'
-] as const
-export const OrderStatusSchema = v.picklist(ORDER_STATUSES)
-export type OrderStatus = (typeof ORDER_STATUSES)[number]
+export {ORDER_STATUSES, OrderStatusSchema, type OrderStatus} from './order-status'
 
 export {ORDER_MAX_LINES, ORDER_MAX_QTY} from './order-lines'
 /** The game server's nickname rule; RCON commands are rendered only from nicks that pass it. */
@@ -118,9 +110,13 @@ export const AdminOrderSchema = v.object({
   stripeSessionId: v.nullable(v.string()),
   stripePaymentIntentId: v.nullable(v.string()),
   deliveryConsentAt: Iso,
+  refundRequestedAt: v.nullable(Iso),
   deliveries: v.array(AdminDeliverySchema)
 })
 export type AdminOrder = v.InferOutput<typeof AdminOrderSchema>
+
+export const RefundInputSchema = v.object({revoke: v.boolean()})
+export type RefundInput = v.InferOutput<typeof RefundInputSchema>
 
 export const STATS_RANGES = ['7d', '30d'] as const
 export const OrderStatsQuerySchema = v.object({
@@ -157,6 +153,14 @@ export const OrderStatsSchema = v.object({
   ),
   topProducts: v.array(
     v.object({productId: v.string(), name: v.string(), serverName: v.string(), quantity: Count})
-  )
+  ),
+  /** Deliveries FAILED or NEEDS_REVIEW right now (the Deliveries page's filter); not range-bound. */
+  attentionCount: Count,
+  /** Orders in DISPUTED right now; not range-bound. */
+  disputedCount: Count,
+  /** Orders refunded (`refundedAt`) inside the range. */
+  refundedCount: Count,
+  /** Their sum in the reporting currency; orders without a rate are counted but not summed. */
+  refundedMinor: Minor
 })
 export type OrderStats = v.InferOutput<typeof OrderStatsSchema>

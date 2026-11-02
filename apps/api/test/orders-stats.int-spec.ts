@@ -29,10 +29,15 @@ type Stats = {
   byCurrency: {currency: string; count: number; totalMinor: number}[]
   daily: {day: string; totalMinor: number; paidCount: number}[]
   topProducts: {name: string; serverName: string; quantity: number}[]
+  attentionCount: number
+  disputedCount: number
+  refundedCount: number
+  refundedMinor: number
 }
 
 async function order(opts: {
-  status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED'
+  status: 'PENDING' | 'PAID' | 'DELIVERED' | 'EXPIRED' | 'REFUNDED' | 'DISPUTED'
+  refundedAt?: Date
   currency?: 'EUR' | 'PLN'
   totalMinor?: number
   at: Date
@@ -48,7 +53,7 @@ async function order(opts: {
   }[]
 }) {
   n += 1
-  const paid = ['PAID', 'DELIVERED', 'REFUNDED'].includes(opts.status)
+  const paid = ['PAID', 'DELIVERED', 'REFUNDED', 'DISPUTED'].includes(opts.status)
   const currency = opts.currency ?? 'EUR'
   const totalMinor = opts.totalMinor ?? 1000
   const rate = opts.rate === undefined ? '4.3000' : opts.rate
@@ -72,6 +77,7 @@ async function order(opts: {
       deliveryConsentAt: opts.at,
       createdAt: opts.at,
       paidAt: paid ? opts.at : null,
+      refundedAt: opts.refundedAt ?? null,
       items: opts.items
         ? {
             create: opts.items.map(i => ({
@@ -95,6 +101,8 @@ afterAll(async () => {
   await ctx.stop()
 })
 beforeEach(async () => {
+  await ctx.prisma.delivery.deleteMany()
+  await ctx.prisma.grant.deleteMany()
   await ctx.prisma.orderItem.deleteMany()
   await ctx.prisma.order.deleteMany()
 })
@@ -278,6 +286,58 @@ describe('order stats', () => {
       [6, 5, 4, 3, 2].slice(0, Math.min(5, products.length))
     )
     expect(s.topProducts[0]?.serverName).toBe(server.name)
+  })
+
+  it('counts stuck deliveries, disputed orders and refunds in range with their sum', async () => {
+    const now = new Date()
+    const product = await ctx.prisma.product.findFirstOrThrow()
+    const delivery = async (status: 'FAILED' | 'NEEDS_REVIEW' | 'CANCELLED' | 'DONE') => {
+      const grant = await ctx.prisma.grant.create({
+        data: {nick: `Gone${String(++n)}`, serverId: product.serverId, productId: product.id}
+      })
+      await ctx.prisma.delivery.create({
+        data: {
+          grantId: grant.id,
+          serverId: product.serverId,
+          kind: 'REVOKE',
+          commands: ['lp user x parent remove vip'],
+          status
+        }
+      })
+    }
+    await delivery('FAILED')
+    await delivery('NEEDS_REVIEW')
+    await delivery('CANCELLED')
+    await delivery('DONE')
+    await order({status: 'DISPUTED', at: now})
+    await order({status: 'REFUNDED', totalMinor: 2000, at: now, refundedAt: now})
+    await order({
+      status: 'REFUNDED',
+      currency: 'PLN',
+      totalMinor: 4300,
+      at: now,
+      refundedAt: new Date(now.getTime() - 2 * DAY)
+    })
+    await order({
+      status: 'REFUNDED',
+      totalMinor: 9000,
+      at: now,
+      rate: null,
+      refundedAt: now
+    })
+    await order({
+      status: 'REFUNDED',
+      totalMinor: 7000,
+      at: new Date(now.getTime() - 40 * DAY),
+      refundedAt: new Date(now.getTime() - 40 * DAY)
+    })
+    const s = await get()
+    expect(s.attentionCount).toBe(2)
+    expect(s.disputedCount).toBe(1)
+    expect(s.refundedCount).toBe(3)
+    expect(s.refundedMinor).toBe(2000 + 1000)
+    const pln = await get('?currency=PLN')
+    expect(pln.refundedMinor).toBe(2000 * 4.3 + 4300)
   })
 
   it('accepts 30d, rejects other ranges and needs order.read', async () => {

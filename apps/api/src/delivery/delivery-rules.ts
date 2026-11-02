@@ -66,13 +66,26 @@ export function grantExpiry(
   return new Date(start.getTime() + durationDays * quantity * DAY_MS)
 }
 
+/** Takes one item's share back from a shared grant (refund, dispute); the result may be in the past. */
+export function shrinkGrantExpiry(expiresAt: Date, durationDays: number, quantity: number): Date {
+  return new Date(expiresAt.getTime() - durationDays * quantity * DAY_MS)
+}
+
+/** The delivery kinds that decide an order's status; REVOKE rows never do (spec §5.2). */
+export const ORDER_DELIVERY_KINDS = ['GRANT', 'RESTORE'] as const
+
+/** Whether a delivery counts toward its order's status and the buyer's delivery state. */
+export const countsTowardOrder = (d: {kind: string; status: DeliveryStatus}): boolean =>
+  (ORDER_DELIVERY_KINDS as readonly string[]).includes(d.kind) && d.status !== 'CANCELLED'
+
 export function publicDeliveryState(
   orderStatus: OrderStatus,
   statuses: readonly DeliveryStatus[]
 ): PublicDeliveryState {
-  if ((orderStatus !== 'PAID' && orderStatus !== 'DELIVERED') || statuses.length === 0)
-    return 'none'
-  if (statuses.some(s => s === 'FAILED' || s === 'NEEDS_REVIEW')) return 'delayed'
-  if (statuses.every(s => s === 'DONE')) return 'delivered'
+  // A cancelled delivery is neither done nor open: the buyer never sees it.
+  const live = statuses.filter(s => s !== 'CANCELLED')
+  if ((orderStatus !== 'PAID' && orderStatus !== 'DELIVERED') || live.length === 0) return 'none'
+  if (live.some(s => s === 'FAILED' || s === 'NEEDS_REVIEW')) return 'delayed'
+  if (live.every(s => s === 'DONE')) return 'delivered'
   return 'delivering'
 }

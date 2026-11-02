@@ -1,4 +1,4 @@
-import {Get, Param, Query} from '@nestjs/common'
+import {Body, Get, Param, Post, Query, Req} from '@nestjs/common'
 
 import {
   type AdminOrder,
@@ -7,18 +7,25 @@ import {
   AdminOrderQuerySchema,
   type OrderStats,
   type OrderStatsQuery,
-  OrderStatsQuerySchema
+  OrderStatsQuerySchema,
+  type RefundInput,
+  RefundInputSchema
 } from '@shop/shared/orders'
 
 import {AdminController} from '../access/admin-controller'
 import {RequirePermission} from '../access/require-permission'
+import {type AuditableRequest, Audited} from '../audit/audit.interceptor'
 import {ValibotPipe} from '../common/valibot.pipe'
 import {OrdersAdminService} from './orders-admin.service'
+import {OrdersRefundService} from './orders-refund.service'
 import {OrdersStatsService} from './orders-stats.service'
 
 @AdminController('orders')
 export class OrdersAdminController {
-  constructor(private readonly orders: OrdersAdminService) {}
+  constructor(
+    private readonly orders: OrdersAdminService,
+    private readonly refunds: OrdersRefundService
+  ) {}
 
   @Get()
   @RequirePermission('order.read')
@@ -30,6 +37,19 @@ export class OrdersAdminController {
   @RequirePermission('order.read')
   get(@Param('id') id: string): Promise<AdminOrder> {
     return this.orders.get(id)
+  }
+
+  @Post(':id/refund')
+  @RequirePermission('order.refund')
+  @Audited('order.refund', 'order')
+  refund(
+    @Param('id') id: string,
+    @Body(new ValibotPipe(RefundInputSchema)) body: RefundInput,
+    @Req() req: AuditableRequest
+  ): Promise<AdminOrder> {
+    return this.refunds.refund(id, body.revoke, before => {
+      req.auditBefore = before
+    })
   }
 }
 

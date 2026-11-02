@@ -17,6 +17,7 @@ import {Button} from '@shop/ui/button'
 
 import {stripePaymentUrl} from '../lib/format'
 import {DeliveriesCard} from './deliveries-card'
+import {RefundBar} from './refund-bar'
 
 function Fields({children}: {children: ReactNode}) {
   return <dl className="grid grid-cols-[8.5rem_1fr] gap-x-4 gap-y-3 text-[13px]">{children}</dl>
@@ -31,7 +32,15 @@ function Row({label, children}: {label: string; children: ReactNode}) {
   )
 }
 
-export function OrderDetails({id, canResolve = false}: {id: string; canResolve?: boolean}) {
+export function OrderDetails({
+  id,
+  canResolve = false,
+  canRefund = false
+}: {
+  id: string
+  canResolve?: boolean
+  canRefund?: boolean
+}) {
   const t = useTranslations('orders.detail')
   const tc = useTranslations('common')
   const f = useFormat()
@@ -102,6 +111,7 @@ export function OrderDetails({id, canResolve = false}: {id: string; canResolve?:
           </dl>
         </Card>
         <div className="flex min-w-0 flex-col gap-4">
+          <RefundBar order={order} canRefund={canRefund} />
           <DeliveriesCard deliveries={order.deliveries} canResolve={canResolve} />
           <Card title={t('buyer')}>
             <Fields>

@@ -7,7 +7,8 @@ import {
   OrderStatsQuerySchema,
   OrderStatsSchema,
   PublicOrderSchema,
-  RecentPurchasesSchema
+  RecentPurchasesSchema,
+  RefundInputSchema
 } from '@shop/shared/orders'
 import {ValidatePromoRequestSchema, ValidatePromoResponseSchema} from '@shop/shared/promo'
 
@@ -132,12 +133,39 @@ export const ordersPaths: Record<string, Partial<Record<Method, Operation>>> = {
       }
     })
   },
+  '/api/admin/orders/{id}/refund': {
+    post: adminOp({
+      operationId: 'refundAdminOrder',
+      summary: 'Refund an order in full at the payment provider',
+      description:
+        'Needs `order.refund`. Only a `PAID` or `DELIVERED` order with a payment can be refunded, and not while a delivery is running or needs review. The refund is requested at the provider with a fixed idempotency key; the order moves to `REFUNDED` when the provider confirms (webhook). With `revoke: true` the deliveries that sent nothing yet are cancelled and the webhook later takes back what was given. A second request is refused until 15 minutes have passed. The audit entry stores the order before the call.',
+      parameters: [pathParam('id')],
+      requestBody: body(RefundInputSchema),
+      responses: {
+        '201': json(
+          'The refund was requested; the order with `refundRequestedAt` set',
+          AdminOrderSchema
+        ),
+        '400': {description: 'Invalid body: `revoke` must be a boolean'},
+        '404': {description: '`not_found`: no such order'},
+        '409': {
+          description:
+            '`refund_not_allowed`: the order is not `PAID` or `DELIVERED`, or has no payment. `refund_delivery_open`: a delivery is running or needs review; resolve it first. `refund_already_requested`: a refund was requested less than 15 minutes ago'
+        },
+        '502': {
+          description:
+            '`refund_failed`: the payment provider refused or did not answer; the reservation was released and it can be retried'
+        },
+        ...guarded
+      }
+    })
+  },
   '/api/admin/stats/orders': {
     get: adminOp({
       operationId: 'getOrderStats',
       summary: 'Order and revenue statistics for the dashboard',
       description:
-        'Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. `currency` (`EUR` default or `PLN`) is the reporting currency: revenue, average order, LTV and the daily series are sums of the totals stored on each order when it was paid, converted at the NBP rate of the previous business day. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before, converted the same way. Paid orders still without a rate are left out of those figures and counted in `awaitingRate` (`previousAwaitingRate` for the previous range); `averageMinor` and `ltvMinor` are `null` when no order has a rate. `ltvMinor` is revenue per distinct buyer email (case-insensitive). `byCurrency` splits paid orders by the currency they were paid in, with sums in that original currency. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none.',
+        "Needs `order.read`. `range` is `7d` (default) or `30d`, ending now; days are UTC. `currency` (`EUR` default or `PLN`) is the reporting currency: revenue, average order, LTV and the daily series are sums of the totals stored on each order when it was paid, converted at the NBP rate of the previous business day. Revenue counts PAID and DELIVERED orders by payment time; `previous*` cover the same-length range before, converted the same way. Paid orders still without a rate are left out of those figures and counted in `awaitingRate` (`previousAwaitingRate` for the previous range); `averageMinor` and `ltvMinor` are `null` when no order has a rate. `ltvMinor` is revenue per distinct buyer email (case-insensitive). `byCurrency` splits paid orders by the currency they were paid in, with sums in that original currency. `conversion` is paid ÷ (paid + expired) over orders created in the range, `null` when there are none. `attentionCount` is the number of FAILED or NEEDS_REVIEW deliveries now (the Deliveries page's filter, not range-bound), `disputedCount` the orders in DISPUTED now; `refundedCount` is the orders refunded inside the range and `refundedMinor` their sum in the reporting currency (orders without a rate are counted, not summed).",
       parameters: [
         queryParam('range', OrderStatsQuerySchema.entries.range.wrapped),
         queryParam('currency', OrderStatsQuerySchema.entries.currency.wrapped)

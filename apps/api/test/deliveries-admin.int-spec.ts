@@ -1,4 +1,5 @@
 import {createDeliveriesForPaidOrder} from '../src/delivery/delivery-creation'
+import {DeliveryService} from '../src/delivery/delivery.service'
 import type {DeliveryStatus, Product} from '../src/generated/prisma/client'
 import {waitForAuditRows} from './support/audit'
 import {startOrdersApp} from './support/orders-app'
@@ -122,6 +123,73 @@ describe('admin delivery actions', () => {
     await a.post(done(id)).expect(201)
   })
 
+  it.each(['REFUNDED', 'DISPUTED'] as const)(
+    'retry of a GRANT or RESTORE on a %s order is 409 delivery_order_reversed; mark-done still works',
+    async status => {
+      const a = await resolver()
+      const {id, order} = await stuck('FAILED')
+      await ctx.prisma.order.update({where: {id: order.id}, data: {status}})
+      const res = await a.post(retry(id)).expect(409)
+      expect(res.body).toMatchObject({message: 'delivery_order_reversed'})
+      expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('FAILED')
+
+      const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+      const restore = await ctx.prisma.delivery.create({
+        data: {
+          orderItemId: grant.orderItemId,
+          serverId: grant.serverId,
+          kind: 'RESTORE',
+          commands: grant.commands,
+          status: 'NEEDS_REVIEW',
+          lastError: 'timeout'
+        }
+      })
+      const again = await a.post(retry(restore.id)).expect(409)
+      expect(again.body).toMatchObject({message: 'delivery_order_reversed'})
+
+      await a.post(done(id)).expect(201)
+      expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('DONE')
+    }
+  )
+
+  it('retry checks the order status atomically with the move to PENDING', async () => {
+    const {id, order} = await stuck('FAILED')
+    const service = ctx.app.get(DeliveryService)
+    const original = service.lockOrderOf.bind(service)
+    // A refund webhook commits just before the retry's update runs.
+    const spy = jest
+      .spyOn(service, 'lockOrderOf')
+      .mockImplementationOnce(async (tx, deliveryId) => {
+        await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+        return original(tx, deliveryId)
+      })
+    try {
+      const res = await (await resolver()).post(retry(id)).expect(409)
+      expect(res.body).toMatchObject({message: 'delivery_order_reversed'})
+    } finally {
+      spy.mockRestore()
+    }
+    expect((await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})).status).toBe('FAILED')
+  })
+
+  it('retry of a REVOKE on a REFUNDED order is allowed', async () => {
+    const {id, order} = await stuck('DONE')
+    await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+    const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+    const revoke = await ctx.prisma.delivery.create({
+      data: {
+        orderItemId: grant.orderItemId,
+        serverId: grant.serverId,
+        kind: 'REVOKE',
+        commands: ['lp user x parent remove vip'],
+        status: 'FAILED',
+        lastError: 'timeout'
+      }
+    })
+    const res = await (await resolver()).post(retry(revoke.id)).expect(201)
+    expect(res.body).toMatchObject({id: revoke.id, status: 'PENDING'})
+  })
+
   it('mark-done completes the delivery, starts a TIMED clock and delivers the order', async () => {
     const {id, order} = await stuck('NEEDS_REVIEW', 'TIMED')
     const a = await resolver()
@@ -201,5 +269,140 @@ describe('admin delivery actions', () => {
     ).body as Page
     expect(filtered.orders).toHaveLength(0)
     expect(filtered.attentionCount).toBe(2)
+  })
+})
+
+describe('admin deliveries list', () => {
+  type Item = {
+    id: string
+    kind: string
+    status: string
+    nick: string
+    orderId: string | null
+    orderPublicId: string | null
+    productName: string | null
+  }
+  type Page = {deliveries: Item[]; nextCursor: string | null; attentionCount: number}
+
+  const clear = () =>
+    ctx.prisma.delivery.updateMany({
+      where: {status: {in: ['FAILED', 'NEEDS_REVIEW']}},
+      data: {status: 'DONE'}
+    })
+  const reader = () => ctx.admin({permissions: ['order.read']})
+
+  async function expiryRevoke(status: DeliveryStatus) {
+    seq += 1
+    const p = await product('TIMED')
+    const grant = await ctx.prisma.grant.create({
+      data: {nick: `Gone${String(seq)}`, serverId: p.serverId, productId: p.id}
+    })
+    return ctx.prisma.delivery.create({
+      data: {
+        grantId: grant.id,
+        serverId: p.serverId,
+        kind: 'REVOKE',
+        commands: ['lp user x parent remove vip'],
+        status,
+        lastError: 'timeout'
+      }
+    })
+  }
+
+  async function refundRevoke(status: DeliveryStatus, kind: 'REVOKE' | 'RESTORE' = 'REVOKE') {
+    const {order, id} = await stuck('DONE')
+    const grant = await ctx.prisma.delivery.findUniqueOrThrow({where: {id}})
+    const row = await ctx.prisma.delivery.create({
+      data: {
+        orderItemId: grant.orderItemId,
+        serverId: grant.serverId,
+        kind,
+        commands: ['lp user x parent remove vip'],
+        status,
+        lastError: 'timeout'
+      }
+    })
+    return {order, row}
+  }
+
+  it('lists an expiry REVOKE without an order and a refund REVOKE with its order', async () => {
+    await clear()
+    const expiry = await expiryRevoke('FAILED')
+    const {order, row} = await refundRevoke('NEEDS_REVIEW')
+    const page = (await (await reader()).get('/api/admin/deliveries').expect(200)).body as Page
+    const byId = (id: string) => page.deliveries.find(d => d.id === id)
+    expect(byId(expiry.id)).toMatchObject({
+      kind: 'REVOKE',
+      status: 'FAILED',
+      orderId: null,
+      orderPublicId: null,
+      orderStatus: null,
+      nick: expect.stringMatching(/^Gone/) as string
+    })
+    expect(byId(expiry.id)?.productName).toEqual(expect.any(String))
+    expect(byId(row.id)).toMatchObject({
+      kind: 'REVOKE',
+      status: 'NEEDS_REVIEW',
+      orderId: order.id,
+      orderPublicId: order.publicId,
+      orderStatus: 'PAID',
+      nick: order.nick,
+      productName: 'Name of product'
+    })
+    expect(page.attentionCount).toBe(2)
+  })
+
+  it('lists a RESTORE and leaves out DONE, PENDING, RUNNING and CANCELLED', async () => {
+    await clear()
+    const restore = await refundRevoke('FAILED', 'RESTORE')
+    await expiryRevoke('PENDING')
+    await expiryRevoke('RUNNING')
+    await expiryRevoke('CANCELLED')
+    await expiryRevoke('DONE')
+    const page = (await (await reader()).get('/api/admin/deliveries').expect(200)).body as Page
+    expect(page.deliveries.map(d => d.id)).toEqual([restore.row.id])
+    expect(page.deliveries[0]?.kind).toBe('RESTORE')
+    expect(page.attentionCount).toBe(1)
+  })
+
+  it('pages newest first with a cursor, 50 per page', async () => {
+    await clear()
+    const created: string[] = []
+    for (let i = 0; i < 52; i += 1) created.push((await expiryRevoke('FAILED')).id)
+    const a = await reader()
+    const first = (await a.get('/api/admin/deliveries').expect(200)).body as Page
+    expect(first.deliveries).toHaveLength(50)
+    expect(first.nextCursor).toBe(first.deliveries[49]?.id)
+    expect(first.attentionCount).toBe(52)
+    const second = (
+      await a.get('/api/admin/deliveries').query({cursor: first.nextCursor}).expect(200)
+    ).body as Page
+    expect(second.deliveries).toHaveLength(2)
+    expect(second.nextCursor).toBeNull()
+    const all = [...first.deliveries, ...second.deliveries].map(d => d.id)
+    expect(new Set(all).size).toBe(52)
+    expect(new Set(all)).toEqual(new Set(created))
+  })
+
+  it('needs order.read, and delivery.resolve alone is not enough', async () => {
+    await (await ctx.admin({permissions: []})).get('/api/admin/deliveries').expect(403)
+    await (await resolver()).get('/api/admin/deliveries').expect(403)
+    await (await reader()).get('/api/admin/deliveries').expect(200)
+    // The existing actions keep their own guard.
+    const {id} = await stuck('FAILED')
+    await (await reader()).post(retry(id)).expect(403)
+  })
+
+  it('marking a refund REVOKE done through the list leaves the order REFUNDED', async () => {
+    await clear()
+    const {order, row} = await refundRevoke('FAILED')
+    await ctx.prisma.order.update({where: {id: order.id}, data: {status: 'REFUNDED'}})
+    const a = await ctx.admin({permissions: ['order.read', 'delivery.resolve']})
+    await a.post(done(row.id)).expect(201)
+    expect((await ctx.prisma.order.findUniqueOrThrow({where: {id: order.id}})).status).toBe(
+      'REFUNDED'
+    )
+    const page = (await a.get('/api/admin/deliveries').expect(200)).body as Page
+    expect(page.deliveries.find(d => d.id === row.id)).toBeUndefined()
   })
 })

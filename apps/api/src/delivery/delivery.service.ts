@@ -7,6 +7,7 @@ import type {Prisma, Server} from '../generated/prisma/client'
 import {PrismaService} from '../prisma/prisma.service'
 import {DELIVERY_QUEUE, type DeliveryQueue} from './delivery-queue'
 import {type SendOutcome, decideNext, grantExpiry} from './delivery-rules'
+import {settleOrderStatus} from './order-settle'
 import {RCON_SENDER, type RconSender} from './rcon-sender'
 
 /** How long one connection may take to sign in, and each command to be answered. */
@@ -55,6 +56,7 @@ export class DeliveryService {
     const now = new Date()
     const next = decideNext(delivery.attempts, outcome, now)
     const stored = await this.prisma.$transaction(async tx => {
+      await this.lockOrderOf(tx, deliveryId)
       const updated = await tx.delivery.updateMany({
         where: {id: deliveryId, status: 'RUNNING', startedAt: claimedAt},
         data: {
@@ -87,27 +89,67 @@ export class DeliveryService {
   }
 
   /**
-   * Marks a delivery DONE; idempotent. A GRANT of a timed product starts or extends its grant's
-   * clock, and an order whose deliveries are all DONE becomes DELIVERED.
+   * Locks the order a delivery belongs to (none for an expiry REVOKE). Call it first in any
+   * transaction that writes a delivery row of an order: the lock order everywhere is the order row,
+   * then its deliveries and grants (`delivery-reversal.ts`).
+   */
+  async lockOrderOf(tx: Prisma.TransactionClient, deliveryId: string): Promise<string | null> {
+    const row = await tx.delivery.findUnique({
+      where: {id: deliveryId},
+      select: {orderItem: {select: {orderId: true}}}
+    })
+    const orderId = row?.orderItem?.orderId ?? null
+    if (orderId !== null)
+      await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`
+    return orderId
+  }
+
+  /**
+   * Marks a delivery DONE; idempotent, and never touches a CANCELLED one. A GRANT or RESTORE of a
+   * timed product starts or extends its grant's clock, unless its order was disputed or refunded
+   * with its items taken back meanwhile (a refund with `refundRevoke: false` keeps the items, so
+   * the clock still runs; `null` is a Stripe-dashboard refund and counts as taken back). An order
+   * whose GRANT and RESTORE deliveries are all DONE (or CANCELLED) becomes DELIVERED; REVOKE rows
+   * never count.
    */
   async complete(tx: Prisma.TransactionClient, deliveryId: string): Promise<void> {
+    // Serializes the last two deliveries of one order, so one of them sees both DONE.
+    const orderId = await this.lockOrderOf(tx, deliveryId)
+    const delivery = await tx.delivery.findUnique({
+      where: {id: deliveryId},
+      include: {
+        orderItem: {
+          include: {
+            product: {select: {durationDays: true}},
+            order: {select: {status: true, refundRevoke: true}}
+          }
+        }
+      }
+    })
+    if (!delivery || delivery.status === 'DONE' || delivery.status === 'CANCELLED') return
+    const item = delivery.orderItem
+    const reversed =
+      item?.order.status === 'DISPUTED' ||
+      (item?.order.status === 'REFUNDED' && item.order.refundRevoke !== false)
+    const grantId =
+      (delivery.kind === 'GRANT' || delivery.kind === 'RESTORE') && !reversed
+        ? delivery.grantId
+        : null
+    const durationDays = item?.product.durationDays
+    if (grantId !== null && item && durationDays)
+      // Before the row update below: its FK check takes a share lock on the grant, and two
+      // purchases of one product finishing together must both extend the clock.
+      await tx.$queryRaw`SELECT 1 FROM "grants" WHERE "id" = ${grantId} FOR UPDATE`
+
     const marked = await tx.delivery.updateMany({
-      where: {id: deliveryId, status: {not: 'DONE'}},
+      where: {id: deliveryId, status: {notIn: ['DONE', 'CANCELLED']}},
       data: {status: 'DONE', startedAt: null, lastError: null}
     })
     if (marked.count !== 1) return
-    const delivery = await tx.delivery.findUniqueOrThrow({
-      where: {id: deliveryId},
-      include: {orderItem: {include: {product: {select: {durationDays: true}}}}}
-    })
-    const item = delivery.orderItem
 
-    if (delivery.kind === 'GRANT' && delivery.grantId !== null) {
-      const durationDays = item?.product.durationDays
+    if (grantId !== null) {
       if (item && durationDays) {
-        // Two purchases of one product finishing together must both extend the clock.
-        await tx.$queryRaw`SELECT 1 FROM "grants" WHERE "id" = ${delivery.grantId} FOR UPDATE`
-        const grant = await tx.grant.findUniqueOrThrow({where: {id: delivery.grantId}})
+        const grant = await tx.grant.findUniqueOrThrow({where: {id: grantId}})
         await tx.grant.update({
           where: {id: grant.id},
           data: {
@@ -116,22 +158,11 @@ export class DeliveryService {
           }
         })
       } else {
-        this.log.error(`delivery ${deliveryId}: grant ${delivery.grantId} has no duration`)
+        this.log.error(`delivery ${deliveryId}: grant ${grantId} has no duration`)
       }
     }
 
-    if (item) {
-      // Serializes the last two deliveries of one order, so one of them sees both DONE.
-      await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${item.orderId} FOR UPDATE`
-      const open = await tx.delivery.count({
-        where: {orderItem: {orderId: item.orderId}, status: {not: 'DONE'}}
-      })
-      if (open === 0)
-        await tx.order.updateMany({
-          where: {id: item.orderId, status: 'PAID'},
-          data: {status: 'DELIVERED'}
-        })
-    }
+    if (orderId !== null) await settleOrderStatus(tx, orderId)
   }
 
   /**

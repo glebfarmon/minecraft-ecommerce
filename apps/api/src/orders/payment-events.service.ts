@@ -2,19 +2,27 @@ import {Inject, Injectable, Logger} from '@nestjs/common'
 
 import {createDeliveriesForPaidOrder} from '../delivery/delivery-creation'
 import {DELIVERY_QUEUE, type DeliveryQueue} from '../delivery/delivery-queue'
+import {restoreOrderDeliveries, reverseOrderDeliveries} from '../delivery/delivery-reversal'
+import type {Prisma} from '../generated/prisma/client'
 import {MAILER, type Mailer} from '../mailer/mailer'
-import {orderReceiptMail} from '../mailer/templates'
+import {adminOrigin, mailOwners} from '../mailer/owner-mail'
+import {disputeMail, orderReceiptMail} from '../mailer/templates'
 import type {PaymentEvent} from '../payments/payments-gateway'
 import {PrismaService} from '../prisma/prisma.service'
 import {OrderRatesService} from './order-rates.service'
 import {type OrderWithItems, localePrefix, toPublicOrder} from './order-view'
 import {publicWebOrigin} from './public-origin'
 
+type CheckoutEvent = Extract<PaymentEvent, {kind: 'paid' | 'failed'}>
+type ChargeEvent = Extract<PaymentEvent, {kind: 'refunded' | 'dispute_opened' | 'dispute_closed'}>
+
 /**
  * Applies verified Stripe events to orders. Stripe delivers at least once, possibly to several API
  * replicas at the same time, so each event is recorded in `processed_webhook_events` inside the
  * same transaction that changes the order, and only the transaction that actually moves an order
- * to PAID sends the receipt.
+ * to PAID sends the receipt. Refunds and disputes follow the same rule: a conditional status update
+ * first (it takes the order row lock), then the reversal or restore in the same transaction, and
+ * the enqueue and owner mail after commit.
  */
 @Injectable()
 export class PaymentEventsService {
@@ -29,46 +37,103 @@ export class PaymentEventsService {
   ) {}
 
   async apply(event: PaymentEvent): Promise<void> {
-    if (event.kind === 'ignored') return
-    const result = await this.prisma.$transaction(async tx => {
-      // Dedupe. INSERT ... ON CONFLICT DO NOTHING: a replay finds the committed row and inserts
-      // nothing; a concurrent duplicate waits on the primary key until the first transaction
-      // commits (then inserts nothing) or rolls back (then takes over the event).
+    switch (event.kind) {
+      case 'ignored':
+        return
+      case 'paid':
+        return this.applyPaid(event)
+      case 'failed':
+        return this.applyFailed(event)
+      case 'refunded':
+        return this.applyRefunded(event)
+      case 'dispute_opened':
+        return this.applyDisputeOpened(event)
+      case 'dispute_closed':
+        return this.applyDisputeClosed(event)
+    }
+  }
+
+  /**
+   * Runs `fn` in one transaction with the event's dedupe row; null when the event was seen.
+   * INSERT ... ON CONFLICT DO NOTHING: a replay finds the committed row and inserts nothing; a
+   * concurrent duplicate waits on the primary key until the first transaction commits (then inserts
+   * nothing) or rolls back (then takes over the event).
+   */
+  private deduped<T>(
+    event: PaymentEvent,
+    fn: (tx: Prisma.TransactionClient) => Promise<T | null>
+  ): Promise<T | null> {
+    return this.prisma.$transaction(async tx => {
       const fresh = await tx.processedWebhookEvent.createMany({
         data: [{stripeEventId: event.eventId, type: event.type}],
         skipDuplicates: true
       })
       if (fresh.count === 0) return null
+      return fn(tx)
+    })
+  }
 
-      const order = await tx.order.findUnique({
-        where: {stripeSessionId: event.sessionId},
-        include: {items: {orderBy: {id: 'asc'}}}
+  /** The order of a checkout session event; null (logged) when unknown or the metadata disagrees. */
+  private async orderBySession(tx: Prisma.TransactionClient, event: CheckoutEvent) {
+    const order = await tx.order.findUnique({
+      where: {stripeSessionId: event.sessionId},
+      include: {items: {orderBy: {id: 'asc'}}}
+    })
+    if (!order) {
+      this.log.warn(`webhook ${event.type} for unknown session ${event.sessionId}`)
+      return null
+    }
+    if (event.orderId !== null && event.orderId !== order.id) {
+      this.log.error(
+        `webhook ${event.type}: session ${event.sessionId} names order ${event.orderId}, expected ${order.id}`
+      )
+      return null
+    }
+    return order
+  }
+
+  /**
+   * The order of a charge event. The payment intent column is indexed, not unique: no match or
+   * several matches are logged and the event is acknowledged without a change.
+   */
+  private async orderByPaymentIntent(tx: Prisma.TransactionClient, event: ChargeEvent) {
+    const [order, other] = await tx.order.findMany({
+      where: {stripePaymentIntentId: event.paymentIntentId},
+      select: {id: true, publicId: true, nick: true, status: true},
+      take: 2
+    })
+    if (!order || other) {
+      this.log.error(
+        `webhook ${event.type}: ${order ? 'several orders' : 'no order'} for payment ${event.paymentIntentId}, ignored`
+      )
+      return null
+    }
+    return order
+  }
+
+  private async applyFailed(event: Extract<PaymentEvent, {kind: 'failed'}>): Promise<void> {
+    await this.deduped(event, async tx => {
+      const order = await this.orderBySession(tx, event)
+      if (!order) return null
+      const expired = await tx.order.updateMany({
+        where: {id: order.id, status: 'PENDING'},
+        data: {status: 'EXPIRED'}
       })
-      if (!order) {
-        this.log.warn(`webhook ${event.type} for unknown session ${event.sessionId}`)
-        return null
-      }
-      if (event.orderId !== null && event.orderId !== order.id) {
-        this.log.error(
-          `webhook ${event.type}: session ${event.sessionId} names order ${event.orderId}, expected ${order.id}`
-        )
-        return null
-      }
-
-      if (event.kind === 'failed') {
-        const expired = await tx.order.updateMany({
-          where: {id: order.id, status: 'PENDING'},
-          data: {status: 'EXPIRED'}
+      if (expired.count === 1 && order.promoCodeId !== null) {
+        // Give the use back; the guard keeps the counter from going below zero.
+        await tx.promoCode.updateMany({
+          where: {id: order.promoCodeId, usedCount: {gt: 0}},
+          data: {usedCount: {decrement: 1}}
         })
-        if (expired.count === 1 && order.promoCodeId !== null) {
-          // Give the use back; the guard keeps the counter from going below zero.
-          await tx.promoCode.updateMany({
-            where: {id: order.promoCodeId, usedCount: {gt: 0}},
-            data: {usedCount: {decrement: 1}}
-          })
-        }
-        return null
       }
+      return null
+    })
+  }
+
+  private async applyPaid(event: Extract<PaymentEvent, {kind: 'paid'}>): Promise<void> {
+    const result = await this.deduped(event, async tx => {
+      const order = await this.orderBySession(tx, event)
+      if (!order) return null
 
       // `amountTotal` is -1 when Stripe sent no amount; totals are never negative.
       if (
@@ -131,6 +196,114 @@ export class PaymentEventsService {
         this.log.error(`exchange rate for ${paidNow.publicId} not filled`, error)
       })
       await this.sendReceipt(paidNow)
+    }
+  }
+
+  /**
+   * A whole refund (spec §4.4): `PAID|DELIVERED → REFUNDED`, then, unless the owner refunded
+   * without taking the items back, the reversal. The conditional update takes the order row lock
+   * and makes the reversal single-shot: a second refund event for the order matches no row.
+   */
+  private async applyRefunded(event: Extract<PaymentEvent, {kind: 'refunded'}>): Promise<void> {
+    const ids = await this.deduped(event, async tx => {
+      const order = await this.orderByPaymentIntent(tx, event)
+      if (!order) return null
+      const now = new Date()
+      const moved = await tx.order.updateMany({
+        where: {id: order.id, status: {in: ['PAID', 'DELIVERED']}},
+        data: {status: 'REFUNDED', refundedAt: now}
+      })
+      if (moved.count !== 1) return this.ignored(event, order)
+      // Read under the row lock. Null: refunded in the Stripe dashboard, revoked (spec §4.5).
+      const {refundRevoke} = await tx.order.findUniqueOrThrow({
+        where: {id: order.id},
+        select: {refundRevoke: true}
+      })
+      this.log.log(`order ${order.publicId}: refunded, revoke ${String(refundRevoke ?? true)}`)
+      if (!(refundRevoke ?? true)) return []
+      return reverseOrderDeliveries(tx, order.id, now, {cancelUnsent: true})
+    })
+    if (ids) await this.enqueueAll(ids)
+  }
+
+  /** `PAID|DELIVERED → DISPUTED`, the items taken back, the owners mailed (spec §5.1). */
+  private async applyDisputeOpened(
+    event: Extract<PaymentEvent, {kind: 'dispute_opened'}>
+  ): Promise<void> {
+    const result = await this.deduped(event, async tx => {
+      const order = await this.orderByPaymentIntent(tx, event)
+      if (!order) return null
+      const moved = await tx.order.updateMany({
+        where: {id: order.id, status: {in: ['PAID', 'DELIVERED']}},
+        data: {status: 'DISPUTED'}
+      })
+      if (moved.count !== 1) return this.ignored(event, order)
+      const ids = await reverseOrderDeliveries(tx, order.id, new Date(), {cancelUnsent: true})
+      return {order, ids}
+    })
+    if (!result) return
+    const {order, ids} = result
+    this.log.log(
+      `order ${order.publicId}: dispute ${event.disputeId} opened for ${String(event.amount)} ${event.currency}, ${String(ids.length)} revoke(s) queued`
+    )
+    await this.enqueueAll(ids)
+    await this.mailDispute(order, event)
+  }
+
+  /**
+   * A won dispute: `DISPUTED → PAID` (the guard that makes the restore single-shot) and the
+   * RESTOREs, which settle the order themselves. A lost one changes nothing (spec §5.2, §5.3).
+   */
+  private async applyDisputeClosed(
+    event: Extract<PaymentEvent, {kind: 'dispute_closed'}>
+  ): Promise<void> {
+    const ids = await this.deduped(event, async tx => {
+      const order = await this.orderByPaymentIntent(tx, event)
+      if (!order) return null
+      if (!event.won) {
+        this.log.log(`order ${order.publicId}: dispute ${event.disputeId} lost`)
+        return null
+      }
+      const moved = await tx.order.updateMany({
+        where: {id: order.id, status: 'DISPUTED'},
+        data: {status: 'PAID'}
+      })
+      if (moved.count !== 1) return this.ignored(event, order)
+      this.log.log(`order ${order.publicId}: dispute ${event.disputeId} won`)
+      return restoreOrderDeliveries(tx, order.id, new Date())
+    })
+    if (ids) await this.enqueueAll(ids)
+  }
+
+  /** A charge event the order's status does not allow (Review Focus 4): logged, nothing changes. */
+  private ignored(event: ChargeEvent, order: {publicId: string; status: string}): null {
+    this.log.warn(`webhook ${event.type}: order ${order.publicId} was ${order.status}, ignored`)
+    return null
+  }
+
+  /** After commit; a mail failure never undoes the dispute handling. */
+  private async mailDispute(
+    order: {id: string; publicId: string; nick: string},
+    event: Extract<PaymentEvent, {kind: 'dispute_opened'}>
+  ): Promise<void> {
+    try {
+      const mail = await disputeMail(
+        {
+          publicId: order.publicId,
+          nick: order.nick,
+          adminUrl: `${adminOrigin()}/orders/${order.id}`
+        },
+        {id: event.disputeId, amountMinor: event.amount, currency: event.currency}
+      )
+      await mailOwners(
+        this.prisma,
+        this.mailer,
+        mail,
+        this.log,
+        `dispute mail for ${order.publicId}`
+      )
+    } catch (error) {
+      this.log.error(`dispute mail for ${order.publicId} not sent`, error)
     }
   }
 

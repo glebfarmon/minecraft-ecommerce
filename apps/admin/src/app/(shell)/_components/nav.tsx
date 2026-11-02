@@ -4,6 +4,7 @@ import {Hint} from '@/components/hint'
 import {RollingIndicator} from '@/components/rolling-indicator'
 import {NAV} from '@/config/nav'
 import {usePendingHref} from '@/hooks/use-pending-href'
+import {useListAdminDeliveriesQuery} from '@/lib/api/generated'
 import {LayoutGroup, motion} from 'motion/react'
 import {useTranslations} from 'next-intl'
 import Link from 'next/link'
@@ -33,6 +34,12 @@ export function Nav({
   // The path changes only once the next page is ready; the clicked item is current at once.
   const {pending, mark} = usePendingHref(pathname)
   const rail = variant === 'rail'
+  // The first page of the list is what the deliveries page shows, so the cache is shared.
+  const attention =
+    useListAdminDeliveriesQuery(
+      {cursor: undefined},
+      {skip: !hasPermission(me.permissions, 'order.read')}
+    ).data?.attentionCount ?? 0
   return (
     <LayoutGroup id={rail ? 'rail' : 'sheet'}>
       {/* As a layout root, Motion measures the pill against the nav; the rail's own scroll root
@@ -46,6 +53,7 @@ export function Nav({
           item => {
             const Icon = item.icon
             const label = t(item.key)
+            const badge = item.key === 'deliveries' ? attention : 0
             const current = pending
               ? pending === item.href
               : isCurrent(pathname, item.match ?? item.href)
@@ -57,7 +65,9 @@ export function Nav({
                   onNavigate?.()
                 }}
                 aria-current={current ? 'page' : undefined}
-                aria-label={rail ? label : undefined}
+                aria-label={
+                  badge > 0 ? t('attention', {label, count: badge}) : rail ? label : undefined
+                }
                 className={cn(
                   PILL_FOCUS,
                   rail
@@ -68,6 +78,16 @@ export function Nav({
                 {current && <RollingIndicator className="rounded-full bg-fg" />}
                 <Icon aria-hidden className="size-5 shrink-0" />
                 {!rail && label}
+                {badge > 0 && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'tabular rounded-full bg-bad px-1.5 text-[11px] leading-4 font-medium text-bg',
+                      rail ? 'absolute -top-0.5 -right-0.5' : 'ml-auto'
+                    )}>
+                    {badge}
+                  </span>
+                )}
               </Link>
             )
             return rail ? (

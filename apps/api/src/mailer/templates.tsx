@@ -102,7 +102,7 @@ export function orderReceiptMail(order: PublicOrder, locale: 'en' | 'pl', status
 
 export interface DeliveryAlertItem {
   deliveryId: string
-  kind: 'GRANT' | 'REVOKE'
+  kind: 'GRANT' | 'REVOKE' | 'RESTORE'
   /** Null for a grant's REVOKE, which belongs to no order. */
   orderPublicId: string | null
   nick: string
@@ -134,4 +134,51 @@ export function deliveryAlertMail(items: DeliveryAlertItem[], adminUrl: string) 
       <Link href={adminUrl}>{adminUrl}</Link>
     </Layout>
   )
+}
+
+export interface DisputeMailOrder {
+  publicId: string
+  nick: string
+  /** The order's page in the admin. */
+  adminUrl: string
+}
+
+export interface DisputeMailDispute {
+  /** Stripe's dispute id (`dp_…`). */
+  id: string
+  amountMinor: number
+  currency: string
+}
+
+/** Sent to the owners when a buyer disputes a payment; English only, like the other admin mail. */
+export function disputeMail(order: DisputeMailOrder, dispute: DisputeMailDispute) {
+  const stripeUrl = `https://dashboard.stripe.com/disputes/${encodeURIComponent(dispute.id)}`
+  return mail(
+    `Dispute opened for order ${order.publicId}`,
+    <Layout>
+      <Heading as="h1">Payment disputed</Heading>
+      <Text>
+        The buyer disputed this payment. The items were taken back; they are returned if the dispute
+        is won.
+      </Text>
+      <Text style={{fontWeight: 700, marginBottom: 0}}>{`${order.publicId} · ${order.nick}`}</Text>
+      <Text
+        style={{
+          margin: 0
+        }}>{`Disputed amount: ${money(dispute.amountMinor, dispute.currency)}`}</Text>
+      <Text>Order:</Text>
+      <Link href={order.adminUrl}>{order.adminUrl}</Link>
+      <Text>Answer the dispute in Stripe:</Text>
+      <Link href={stripeUrl}>{stripeUrl}</Link>
+    </Layout>
+  )
+}
+
+/** English money like the receipt; a code Intl does not know still shows the amount. */
+function money(minor: number, currency: string) {
+  try {
+    return new Intl.NumberFormat('en', {style: 'currency', currency}).format(minor / 100)
+  } catch {
+    return `${(minor / 100).toFixed(2)} ${currency}`
+  }
 }

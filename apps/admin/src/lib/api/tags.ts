@@ -115,7 +115,9 @@ export const enhancedApi = api.enhanceEndpoints({
     deletePromoCode: {invalidatesTags: ['PromoCodes', 'Audit']},
     listAdminOrders: {providesTags: ['Orders']},
     getAdminOrder: {providesTags: ['Orders']},
+    listAdminDeliveries: {providesTags: ['Orders']},
     retryDelivery: {invalidatesTags: onSuccess(['Orders', 'Audit'])},
-    markDeliveryDone: {invalidatesTags: onSuccess(['Orders', 'Audit'])}
+    markDeliveryDone: {invalidatesTags: onSuccess(['Orders', 'Audit'])},
+    refundAdminOrder: {invalidatesTags: onSuccess(['Orders', 'Audit'])}
   }
 })

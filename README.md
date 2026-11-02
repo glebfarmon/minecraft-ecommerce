@@ -61,7 +61,7 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
 docker compose -f compose.yaml -f compose.e2e.yaml up -d --build --wait && pnpm test:e2e
 ```
 
-The e2e stack also starts the delivery worker and a fake RCON server (`fake-rcon`, the api image running `node dist/delivery/fake-rcon-main.js`), so paid orders are really delivered; a command containing "silent" is never answered. It expects a fresh stack: `docker compose -f compose.yaml -f compose.e2e.yaml down -v` before a rerun.
+The e2e stack also starts the delivery worker and a fake RCON server (`fake-rcon`, the api image running `node dist/delivery/fake-rcon-main.js`), so paid orders are really delivered; a command containing "silent" is never answered. It expects a fresh stack: `docker compose -f compose.yaml -f compose.e2e.yaml down -v` before a rerun. That holds for a single spec too: `pnpm test:e2e -- refund` first runs the `admin` project (a dependency), which consumes the seeded owner invite.
 
 ## Docs
 

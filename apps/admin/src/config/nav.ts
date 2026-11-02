@@ -3,6 +3,7 @@ import {
   FileText,
   LayoutGrid,
   type LucideIcon,
+  PackageCheck,
   ReceiptText,
   ScrollText,
   TicketPercent,
@@ -14,13 +15,23 @@ import type {Permission} from '@shop/shared/access'
 
 export const NAV: {
   href: string
-  key: 'home' | 'orders' | 'promo' | 'catalog' | 'content' | 'team' | 'audit' | 'account'
+  key:
+    | 'home'
+    | 'orders'
+    | 'deliveries'
+    | 'promo'
+    | 'catalog'
+    | 'content'
+    | 'team'
+    | 'audit'
+    | 'account'
   icon: LucideIcon
   permission?: Permission
   match?: string
 }[] = [
   {href: '/', key: 'home', icon: LayoutGrid},
   {href: '/orders', key: 'orders', icon: ReceiptText, permission: 'order.read'},
+  {href: '/deliveries', key: 'deliveries', icon: PackageCheck, permission: 'order.read'},
   {href: '/catalog', key: 'catalog', icon: Boxes},
   {href: '/promo-codes', key: 'promo', icon: TicketPercent, permission: 'promo.write'},
   {
