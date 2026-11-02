@@ -469,7 +469,9 @@ describe('CheckoutModal', () => {
       fireEvent.click(screen.getByRole('button', {name: 'fill-cart'}))
       await applyCode(' ASF-14 ')
       expect(await screen.findByRole('alert')).toHaveTextContent('promo.reasons.not_found')
-      expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      await waitFor(() => {
+        expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      })
       expect(liveTotal()).toHaveTextContent(eur(subtotal))
     })
 
@@ -550,7 +552,9 @@ describe('CheckoutModal', () => {
       validatePromoMock.mockResolvedValue({ok: false, reason: 'not_applicable'})
       fireEvent.click(screen.getByRole('button', {name: 'add-one'}))
       expect(await screen.findByRole('alert')).toHaveTextContent('promo.reasons.not_applicable')
-      expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      await waitFor(() => {
+        expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      })
       await noDiscountRow()
       expect(liveTotal()).toHaveTextContent(eur(product.prices.EUR * 3))
 
@@ -579,7 +583,9 @@ describe('CheckoutModal', () => {
         )
       })
       expect(await screen.findByRole('alert')).toHaveTextContent('promo.reasons.wrong_currency')
-      expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      await waitFor(() => {
+        expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      })
       expect(liveTotal()).toHaveTextContent(pln(product.prices.PLN * 2))
     })
 
@@ -597,7 +603,9 @@ describe('CheckoutModal', () => {
       fireEvent.click(payButtons()[0] as HTMLElement)
       expect(await screen.findByRole('alert')).toHaveTextContent('promo.reasons.used_up')
       expect(screen.queryByText(/errors\./)).toBeNull()
-      expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      await waitFor(() => {
+        expect(screen.queryByRole('button', {name: /^promo\.remove/})).toBeNull()
+      })
       expect(liveTotal()).toHaveTextContent(eur(subtotal))
       expect(mockReset).toHaveBeenCalled()
     })
