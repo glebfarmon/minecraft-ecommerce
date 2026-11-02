@@ -148,7 +148,8 @@ describe('reverseOrderDeliveries', () => {
       {product: permanent, status: 'PENDING'},
       {product: permanent, status: 'FAILED', commandsDone: 0},
       {product: permanent, status: 'FAILED', commandsDone: 2},
-      {product: permanent, status: 'NEEDS_REVIEW'}
+      {product: permanent, status: 'NEEDS_REVIEW'},
+      {product: permanent, status: 'PENDING', commandsDone: 1}
     ])
     const ids = await reverse(o.id)
     const statuses = await Promise.all(
@@ -156,10 +157,12 @@ describe('reverseOrderDeliveries', () => {
         async id => (await prisma.delivery.findUniqueOrThrow({where: {id}})).status
       )
     )
-    expect(statuses).toEqual(['CANCELLED', 'CANCELLED', 'FAILED', 'NEEDS_REVIEW'])
+    expect(statuses).toEqual(['CANCELLED', 'CANCELLED', 'FAILED', 'NEEDS_REVIEW', 'PENDING'])
     const rows = await revokes(o.id)
-    expect(ids).toHaveLength(2)
-    expect(rows.map(r => r.orderItemId).sort()).toEqual([o.items[2]?.id, o.items[3]?.id].sort())
+    expect(ids).toHaveLength(3)
+    expect(rows.map(r => r.orderItemId).sort()).toEqual(
+      [o.items[2]?.id, o.items[3]?.id, o.items[4]?.id].sort()
+    )
   })
 
   it('without cancelUnsent leaves unsent deliveries alone and gives them no REVOKE', async () => {
@@ -480,6 +483,7 @@ describe('restoreOrderDeliveries after 5b review', () => {
   it.each([
     ['DONE', 1],
     ['FAILED', 1],
+    ['PENDING', 1],
     ['RUNNING', 0],
     ['NEEDS_REVIEW', 0]
   ] as const)(

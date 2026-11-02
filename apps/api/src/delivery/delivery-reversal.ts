@@ -11,7 +11,7 @@ const maySend = (d: {status: string; commandsDone: number}) =>
   d.status === 'DONE' ||
   d.status === 'RUNNING' ||
   d.status === 'NEEDS_REVIEW' ||
-  (d.status === 'FAILED' && d.commandsDone > 0)
+  ((d.status === 'FAILED' || d.status === 'PENDING') && d.commandsDone > 0)
 
 /** Byte order like Postgres' `ORDER BY`, nulls last. */
 const byKey = (a: string | null, b: string | null) =>
@@ -22,8 +22,17 @@ async function lockOrder(tx: Prisma.TransactionClient, orderId: string) {
   await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "id" = ${orderId} FOR UPDATE`
 }
 
+/** A delivery that sent nothing (spec §4.3); `cancelUnsentDeliveries` and the REVOKE planners share it. */
+const UNSENT: Prisma.DeliveryWhereInput = {
+  // A PENDING retry with commands already done has reached the game: it gets a REVOKE, not a cancel.
+  OR: [
+    {status: 'PENDING', commandsDone: 0},
+    {status: 'FAILED', commandsDone: 0}
+  ]
+}
+
 /**
- * Moves the order's deliveries that sent nothing (`PENDING`, or `FAILED` with no command done)
+ * Moves the order's deliveries that sent nothing (`PENDING` or `FAILED` with no command done)
  * to `CANCELLED`, so nothing new reaches the game. Returns how many it cancelled.
  */
 export async function cancelUnsentDeliveries(
@@ -33,7 +42,7 @@ export async function cancelUnsentDeliveries(
   const {count} = await tx.delivery.updateMany({
     where: {
       orderItem: {orderId},
-      OR: [{status: 'PENDING'}, {status: 'FAILED', commandsDone: 0}]
+      ...UNSENT
     },
     data: {status: 'CANCELLED'}
   })
@@ -173,16 +182,11 @@ async function takeGrantShare(
   return {revoke: true, shrunk: false}
 }
 
-/** A REVOKE that sent nothing yet; the same filter `cancelUnsentDeliveries` uses. */
-const UNSENT: Prisma.DeliveryWhereInput = {
-  OR: [{status: 'PENDING'}, {status: 'FAILED', commandsDone: 0}]
-}
-
 /**
  * Plans the RESTORE deliveries of a won dispute (spec §5.2), inside the caller's transaction, under
  * the same lock order as the reversal (the order row, then grants in id order). Per row:
  * - reversed (`reversedAt` set; a GRANT, or the RESTORE of an earlier won dispute) with a REVOKE
- *   that sent nothing (`PENDING`, or `FAILED` with no command done): the REVOKE becomes
+ *   that sent nothing (`PENDING` or `FAILED` with no command done): the REVOKE becomes
  *   `CANCELLED` and no RESTORE is made, since nothing reached the game. A timed grant gets its
  *   clock back: a `DONE` row renews it like a completion (`grantExpiry` from now), a row that is not
  *   `DONE` only clears `revokedAt` (its own completion adds the time, the order is PAID again);
