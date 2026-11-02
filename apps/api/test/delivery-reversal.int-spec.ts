@@ -157,7 +157,7 @@ describe('reverseOrderDeliveries', () => {
         async id => (await prisma.delivery.findUniqueOrThrow({where: {id}})).status
       )
     )
-    expect(statuses).toEqual(['CANCELLED', 'CANCELLED', 'FAILED', 'NEEDS_REVIEW', 'PENDING'])
+    expect(statuses).toEqual(['CANCELLED', 'CANCELLED', 'FAILED', 'NEEDS_REVIEW', 'CANCELLED'])
     const rows = await revokes(o.id)
     expect(ids).toHaveLength(3)
     expect(rows.map(r => r.orderItemId).sort()).toEqual(

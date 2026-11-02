@@ -143,6 +143,18 @@ export async function reverseOrderDeliveries(
     if (revokeId !== undefined || share.shrunk)
       await tx.delivery.update({where: {id: row.id}, data: {reversedAt: now}})
   }
+  // A retry waiting for its turn after a partial send is planned above; stop its remaining
+  // commands so they cannot run after the REVOKE.
+  if (opts.cancelUnsent)
+    await tx.delivery.updateMany({
+      where: {
+        orderItem: {orderId},
+        kind: {in: ['GRANT', 'RESTORE']},
+        status: 'PENDING',
+        commandsDone: {gt: 0}
+      },
+      data: {status: 'CANCELLED'}
+    })
   return ids
 }
 
