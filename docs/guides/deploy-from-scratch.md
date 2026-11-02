@@ -666,7 +666,7 @@ One more application, `shop-worker`, sends what people bought to your Minecraft 
 3. **Domains**: none. Add nothing here.
 4. **Environment**: copy everything from `shop-api` (the same `DATABASE_URL`, `REDIS_URL`, `RCON_ENCRYPTION_KEY`, `RESEND_API_KEY`, `MAIL_FROM`, …). **Save.**
 5. **Advanced → Run Command**: `node dist/worker-main.js` → **Save**. This replaces the image's start command (migrations and the API server); `shop-api` runs the migrations.
-6. **Advanced → Swarm Settings → Health Check**: paste `{"Test": ["NONE"]}` → **Save**. The image's built-in check asks the API on port 4000, which the worker does not have; without this line Docker marks the worker unhealthy and keeps restarting it.
+6. **Advanced → Swarm Settings → Health Check**: in the **Command to run for health check** field enter `["NONE"]`, leave the other fields empty → **Save**. The image's built-in check asks the API on port 4000, which the worker does not have; without this line Docker marks the worker unhealthy and keeps restarting it.
 
 ---
 
